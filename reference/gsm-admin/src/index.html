@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GSM Supply Admin · demo</title>
+<meta name="description" content="Interactive demo of the GSM supplier admin console: orders, merchants, pricing, suppliers, ledger and commissions.">
+<meta name="color-scheme" content="light dark">
+<style>/*__FONTS__*/</style>
+<style>/*__CSS__*/</style>
+<script>try{var t=localStorage.getItem('gsm-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);if(localStorage.getItem('gsm-dense')==='1')document.documentElement.classList.add('dense')}catch(e){}</script>
+</head>
+<body>
+<a href="#main" id="skip" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[70] focus:bg-ink focus:text-surface focus:px-3 focus:py-2 focus:rounded-md focus:text-sm">Skip to content</a>
+
+<div id="app" class="min-h-dvh lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
+  <div id="scrim" class="fixed inset-0 z-30 bg-black/40 lg:hidden" hidden></div>
+  <aside id="sidebar" aria-label="Primary" class="fixed inset-y-0 start-0 z-40 w-[260px] -translate-x-full rtl:translate-x-full transition-transform data-[open=true]:translate-x-0 lg:translate-x-0 lg:rtl:translate-x-0 lg:sticky lg:top-0 lg:h-dvh lg:w-auto bg-side border-e border-line flex flex-col"></aside>
+  <div class="min-w-0 flex flex-col min-h-dvh">
+    <header id="topbar" class="sticky top-0 z-20 h-12 flex items-center gap-2 px-3 lg:px-6 bg-bg/95 border-b border-line"></header>
+    <main id="main" tabindex="-1" class="flex-1 min-w-0 w-full max-w-[1480px] mx-auto px-4 py-4 lg:px-6 lg:py-5 outline-none"></main>
+  </div>
+</div>
+
+<div id="toasts" popover="manual" role="status" aria-live="polite"></div>
+<dialog id="dlg" class="dlg" aria-labelledby="dlg-title"></dialog>
+<dialog id="drawer" class="drawer" aria-labelledby="drawer-title"></dialog>
+<dialog id="palette" class="palette" aria-label="Command palette"></dialog>
+
+<script>/*__APP__*/</script>
+</body>
+</html>
