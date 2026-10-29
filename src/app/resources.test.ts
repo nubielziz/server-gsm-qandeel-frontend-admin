@@ -3,24 +3,32 @@ import { describe, expect, it } from 'vitest';
 import { dataRegistry, NAV_GROUPS, resources, toPageResource } from './resources';
 
 // The demo's ROUTES (90-app.js) with the permission each page needs (the map's permission names).
-const EXPECTED: [name: string, label: string, group: string, icon: string, permission: string][] = [
-  ['dashboard', 'Dashboard', 'Operations', 'dashboard', 'dashboard:read'],
-  ['orders', 'Orders', 'Operations', 'orders', 'orders:read'],
-  ['merchants', 'Merchants', 'Operations', 'users', 'clients:read'],
-  ['customers', 'Customers', 'Operations', 'user', 'customers:read'],
-  ['support', 'Support', 'Operations', 'life', 'support:read'],
-  ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
-  ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
-  ['services', 'Services & pricing', 'Catalog', 'tag', 'catalog:read'],
-  ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
-  ['storefront', 'Storefront', 'Catalog', 'store', 'storefront:read'],
-  ['finance', 'Finance', 'Money', 'wallet', 'ledger:read'],
-  ['commissions', 'Commissions', 'Money', 'percent', 'commissions:read'],
-  ['refunds', 'Refunds & disputes', 'Money', 'undo', 'refunds:read'],
-  ['access', 'Admins & access', 'System', 'lock', 'staff:read'],
-  ['settings', 'Settings', 'System', 'sliders', 'settings:read'],
-  ['audit', 'Audit log', 'System', 'history', 'audit:read'],
-];
+const EXPECTED: [name: string, label: string, group: string, icon: string, permission: string | string[]][] =
+  [
+    ['dashboard', 'Dashboard', 'Operations', 'dashboard', 'dashboard:read'],
+    ['orders', 'Orders', 'Operations', 'orders', 'orders:read'],
+    ['merchants', 'Merchants', 'Operations', 'users', 'clients:read'],
+    ['customers', 'Customers', 'Operations', 'user', 'customers:read'],
+    ['support', 'Support', 'Operations', 'life', 'support:read'],
+    ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
+    ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
+    ['services', 'Services & pricing', 'Catalog', 'tag', 'catalog:read'],
+    ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
+    ['storefront', 'Storefront', 'Catalog', 'store', 'storefront:read'],
+    ['finance', 'Finance', 'Money', 'wallet', 'ledger:read'],
+    ['commissions', 'Commissions', 'Money', 'percent', 'commissions:read'],
+    ['refunds', 'Refunds & disputes', 'Money', 'undo', 'refunds:read'],
+    // Any one tab permission opens Admins & access (MISMATCHES M19).
+    [
+      'access',
+      'Admins & access',
+      'System',
+      'lock',
+      ['staff:read', 'access:read', 'roles:read', 'sessions:read'],
+    ],
+    ['settings', 'Settings', 'System', 'sliders', 'settings:read'],
+    ['audit', 'Audit log', 'System', 'history', 'audit:read'],
+  ];
 
 describe('page resources', () => {
   it('are the demo’s 16 pages, in its order', () => {

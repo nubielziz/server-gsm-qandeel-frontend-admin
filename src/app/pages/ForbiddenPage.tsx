@@ -19,8 +19,9 @@ export function ForbiddenPage({ page }: { page: PageResource }) {
             elsewhere ? <ButtonLink to={elsewhere.path}>Go to {elsewhere.meta.label}</ButtonLink> : undefined
           }
         >
-          Your role does not include the <span className="mono">{page.meta.permission}</span> permission. Ask
-          an owner to change your role if you need it.
+          Your role does not include the{' '}
+          <span className="mono">{[page.meta.permission].flat().join(' or ')}</span> permission. Ask an owner
+          to change your role if you need it.
         </EmptyState>
       </Panel>
     </>

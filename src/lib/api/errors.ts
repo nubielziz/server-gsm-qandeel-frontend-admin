@@ -220,18 +220,21 @@ function isKnownField(name: string, fields: readonly string[]): boolean {
 /**
  * Puts a server error onto a react-hook-form form: each field message goes to its field (the first one gets
  * focus, like the demo), and the messages that have no field are returned so the dialog can show them in its
- * error slot. Pass `fields` (the form's field names) so messages about unknown fields are returned too.
+ * error slot. Pass `fields` (the form's field names) so messages about unknown fields are returned too, and
+ * `aliases` when the API's field name differs from the form's (`{ cidr: 'ip' }`).
  * If the error carries no field messages at all, its detail or title is returned, so something is always shown.
  */
 export function applyServerErrors<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,
-  options: { fields?: readonly string[] } = {},
+  options: { fields?: readonly string[]; aliases?: Readonly<Record<string, string>> } = {},
 ): string[] {
   if (!isApiError(error)) return [error instanceof Error ? error.message : 'Something went wrong.'];
   const rest = [...error.formErrors];
   let placed = false;
-  for (const [field, messages] of Object.entries(error.fieldErrors)) {
+  for (const [serverField, messages] of Object.entries(error.fieldErrors)) {
+    // The API may name a field differently from the form (`cidr` for the form's `ip`).
+    const field = options.aliases?.[serverField] ?? serverField;
     if (options.fields && !isKnownField(field, options.fields)) {
       rest.push(...messages.map((message) => `${field}: ${message}`));
       continue;

@@ -25,6 +25,8 @@ export type UseApiMutationOptions<TData, TVariables> = {
   errorNotification?: (error: ApiError, variables: TVariables) => Toast | false;
   onSuccess?: (data: TData, variables: TVariables) => void | Promise<void>;
   onError?: (error: ApiError, variables: TVariables) => void;
+  /** How long the last result stays cached after the component unmounts; 0 for one-time secrets (passwords). */
+  gcTime?: number;
 };
 
 /** `useMutation` for one endpoint call: toasts, invalidation and sign-out handling in one place. */
@@ -38,6 +40,7 @@ export function useApiMutation<TData = void, TVariables = void>(
 
   return useMutation<TData, ApiError, TVariables>({
     mutationFn: options.mutationFn,
+    gcTime: options.gcTime,
     onSuccess: async (data, variables) => {
       const toast = options.successNotification?.(data, variables);
       if (toast) open?.({ type: 'success', ...toast });

@@ -19,7 +19,8 @@ export interface UseDialogOptions {
 export function useDialog({ open, onClose, dismissible = true, focusField = true }: UseDialogOptions) {
   const ref = useRef<HTMLDialogElement>(null);
   const pressStartedOnBackdrop = useRef<boolean | null>(null);
-  const unmounting = useRef(false);
+  // Set when our own cleanup closes the dialog, so the `close` event that follows is not mistaken for the user's.
+  const closedByCleanup = useRef(false);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -31,12 +32,14 @@ export function useDialog({ open, onClose, dismissible = true, focusField = true
   }, [open, focusField]);
 
   // Unmount (and React Strict Mode's simulated unmount): close through close() so focus returns to the trigger.
+  // Strict Mode re-opens the dialog at once, but the browser fires `close` in a later task, when it is open again;
+  // `closedByCleanup` lets that late event pass without asking the parent to close (a dialog mounted already open
+  // would otherwise vanish in development).
   useEffect(() => {
     const dialog = ref.current;
-    unmounting.current = false;
     return () => {
       if (!dialog?.open) return;
-      unmounting.current = true;
+      closedByCleanup.current = true;
       closeModal(dialog);
     };
   }, []);
@@ -48,7 +51,11 @@ export function useDialog({ open, onClose, dismissible = true, focusField = true
     },
     // Safety net for a native close the parent did not ask for.
     onClose() {
-      if (open && !unmounting.current) onClose();
+      if (closedByCleanup.current) {
+        closedByCleanup.current = false;
+        return;
+      }
+      if (open) onClose();
     },
     onPointerDown(e: PointerEvent<HTMLDialogElement>) {
       pressStartedOnBackdrop.current = e.target === e.currentTarget;

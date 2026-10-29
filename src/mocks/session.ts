@@ -9,7 +9,7 @@ import type { Me, SetPasswordBody } from '@/features/auth';
 import { csrfCookieName } from '@/lib/api/config';
 import { latency } from './latency';
 import { problem } from './problem';
-import { permissionsOf, roleOf } from './roles';
+import { roleStore } from './roles';
 import { staffStore, type MockStaff } from './staff';
 
 export const DEMO_PASSWORD = 'demo-password';
@@ -117,15 +117,25 @@ async function readBody<T>(request: Request): Promise<Partial<T>> {
   }
 }
 
+/**
+ * The staff member behind the signed-in mock session (or the half-signed-in one), for handlers that need to know
+ * who is asking: whose address a restriction must keep, who created a record, which session is the caller's.
+ */
+export async function currentStaff(): Promise<MockStaff | undefined> {
+  const session = readSession();
+  return session ? (await staffStore()).find(session.staffId) : undefined;
+}
+
 function toMe(staff: MockStaff): Me {
-  const { id, name } = roleOf(staff.role);
+  // A role that was deleted since gives the least access: no permissions.
+  const role = roleStore().find(staff.roleId) ?? { id: staff.roleId, name: 'No role', permissions: [] };
   return {
     id: staff.id,
     email: staff.email,
     name: staff.name,
     status: staff.status,
-    role: { id, name },
-    permissions: permissionsOf(staff.role),
+    role: { id: role.id, name: role.name },
+    permissions: role.permissions,
     twofaEnabled: staff.twofaEnabled,
     mustChangePassword: staff.mustChangePassword,
     lastLoginAt: staff.lastLoginAt,

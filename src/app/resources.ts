@@ -2,18 +2,22 @@
 // access checks need, plus the registry that serves Refine's data hooks.
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
+import { accessResources } from '@/features/access';
 import { mergeRegistries } from '@/lib/api';
 
 /** Sidebar sections, in the order the demo shows them. */
 export const NAV_GROUPS = ['Operations', 'Catalog', 'Money', 'System'] as const;
 export type NavGroup = (typeof NAV_GROUPS)[number];
 
-/** What every page resource keeps in its Refine `meta`. `permission` is checked by the access-control provider. */
+/**
+ * What every page resource keeps in its Refine `meta`. `permission` is checked by the access-control provider; a list
+ * means any one of them opens the page (for pages whose tabs need different permissions).
+ */
 export type PageMeta = {
   label: string;
   group: NavGroup;
   icon: IconName;
-  permission: string;
+  permission: string | readonly string[];
 };
 
 // One page resource. `detail` adds the `/<id>/:id` route of the pages that have a detail view (merchants, customers).
@@ -64,7 +68,13 @@ export const resources: ResourceProps[] = [
     permission: 'commissions:read',
   }),
   page('refunds', { label: 'Refunds & disputes', group: 'Money', icon: 'undo', permission: 'refunds:read' }),
-  page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),
+  // Any tab's read permission opens the page; each tab then shows only what the role may read (MISMATCHES M19).
+  page('access', {
+    label: 'Admins & access',
+    group: 'System',
+    icon: 'lock',
+    permission: ['staff:read', 'access:read', 'roles:read', 'sessions:read'],
+  }),
   page('settings', { label: 'Settings', group: 'System', icon: 'sliders', permission: 'settings:read' }),
   page('audit', { label: 'Audit log', group: 'System', icon: 'history', permission: 'audit:read' }),
 ];
@@ -73,7 +83,7 @@ export const resources: ResourceProps[] = [
  * Which API function serves each CRUD resource for Refine's data hooks (decision 005).
  * Every feature exports a registry from its `api/resources.ts`; list them here as they are built.
  */
-export const dataRegistry = mergeRegistries(/* features add their registries here */);
+export const dataRegistry = mergeRegistries(accessResources /* features add their registries here */);
 
 /** A resource that is a console page, with its `meta` checked. Resources without page meta give undefined. */
 export type PageResource = {
@@ -89,7 +99,8 @@ function isPageMeta(meta: unknown): meta is PageMeta {
   const m = meta as Partial<PageMeta> | undefined;
   return (
     typeof m?.label === 'string' &&
-    typeof m.permission === 'string' &&
+    (typeof m.permission === 'string' ||
+      (Array.isArray(m.permission) && m.permission.every((p) => typeof p === 'string'))) &&
     typeof m.icon === 'string' &&
     NAV_GROUPS.includes(m.group as NavGroup)
   );

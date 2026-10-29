@@ -10,6 +10,7 @@ import { PublicArea } from './gates/PublicArea';
 import { RedirectWhenSignedIn } from './gates/RedirectWhenSignedIn';
 import { SignInRedirect } from './gates/SignInRedirect';
 import { AppShell } from './layout/AppShell';
+import { lazyPage } from './lazyPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { resources, toPageResource, type PageResource } from './resources';
 
@@ -18,7 +19,9 @@ import { resources, toPageResource, type PageResource } from './resources';
  * placeholder by adding its lazily loaded page here (see `lazyPage`):
  *   `orders: lazyPage(() => import('@/features/orders/pages'), 'OrdersPage')`
  */
-const PAGES: Partial<Record<string, ComponentType>> = {};
+const PAGES: Partial<Record<string, ComponentType>> = {
+  access: lazyPage(() => import('@/features/access/pages'), 'AccessPage'),
+};
 
 /** The same for detail views (`/merchants/:id`, `/customers/:id`): `merchants: lazyPage(…, 'MerchantPage')`. */
 const DETAIL_PAGES: Partial<Record<string, ComponentType>> = {};

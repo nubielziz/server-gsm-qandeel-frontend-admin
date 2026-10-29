@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
-import { renderApp, mockMe, setupMockApi } from '@/test/renderApp';
+import { renderApp, mockMe, setupMockApi, signInAs } from '@/test/renderApp';
 import { AppProviders } from './App';
 import { resources, toPageResource, type PageResource } from './resources';
 import { AppRoutes } from './routes';
@@ -13,8 +13,12 @@ setupMockApi();
 
 const PAGES = resources.map(toPageResource).filter((page): page is PageResource => page !== undefined);
 
+// Pages whose feature is built show their own heading (it can differ from the sidebar label) instead of the placeholder.
+// Add a page here when its feature lands.
+const BUILT: Record<string, string> = { access: 'Admins and access' };
+
 describe('routes', () => {
-  it.each(PAGES.map((page) => [page.meta.label, page.path] as const))(
+  it.each(PAGES.filter((page) => !(page.name in BUILT)).map((page) => [page.meta.label, page.path] as const))(
     'opens %s at %s',
     async (label, path) => {
       mockMe({ permissions: ['*'] });
@@ -23,6 +27,25 @@ describe('routes', () => {
       expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
       expect(app.location()).toBe(path);
     },
+  );
+
+  it.each(
+    PAGES.filter((page) => page.name in BUILT).map(
+      (page) => [page.meta.label, page.path, BUILT[page.name]] as const,
+    ),
+  )(
+    'opens the built page %s at %s',
+    async (_label, path, heading) => {
+      // A built page calls the API, so the mock session must be signed in.
+      await signInAs();
+      const app = renderApp(path);
+      // A built page is a lazy chunk, which loads slowly while the whole suite runs in parallel.
+      const title = await screen.findByRole('heading', { level: 1, name: heading }, { timeout: 10_000 });
+      expect(title).toBeInTheDocument();
+      expect(screen.queryByText('This page is being ported')).not.toBeInTheDocument();
+      expect(app.location()).toBe(path);
+    },
+    20_000,
   );
 
   it.each(PAGES.filter((page) => page.detailPath).map((page) => [page.meta.label, page.name] as const))(

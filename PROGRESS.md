@@ -19,7 +19,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | # | Feature | Page | Route groups | Rows | Endpoints | Status | Agents | Commit |
 |---|---|---|---|---|---|---|---|---|
 | 0 | foundation | shell | auth, system | 7 | 7 | done | 5/6 | Phase 2 commit |
-| 1 | access | `/access` | auth | 13 | 23 | todo | 0/6 | – |
+| 1 | access | `/access` | auth | 13 | 23 | done | 2/6 | feat(access) |
 | 2 | orders | `/orders` | orders, suppliers | 16 | 17 | todo | 0/6 | – |
 | 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | todo | 0/6 | – |
 | 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
@@ -148,6 +148,7 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - foundation: a signed-in staff member who opens an invite/reset link (`/set-password?token=…`) is redirected into the console instead of being told to sign out first.
 - foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
 - foundation: `LoginPage` / `SetPasswordPage` keep their small form handlers in the page instead of a form component.
+- access: editing your own account or role does not refresh `me` at once (name and permission hints update within the 60 s `me` cache or at the next sign-in); clearing `meCache` from a feature needs a small auth API.
 
 ## Open questions for the backend (not blocking)
 
