@@ -1,0 +1,9 @@
+# 011 Entity types from schema.mjs
+
+**Context.** `reference/gsm-map/data/schema.mjs` lists 61 tables with snake_case columns and few type hints (`nullable`, `text[]`, `jsonb`, `bigint[]`, `cidr[]`, `int[]`). The API speaks camelCase JSON, sends money as 4-decimal strings, dates as ISO strings, IDs as numbers, and never sends secrets. Table descriptions are Arabic; dev artifacts must be English.
+
+**Options.** (a) Hand-write types per feature from the schema. (b) Generate base row types once, then narrow per feature. (c) Wait for the server's OpenAPI (only REST v1 has one).
+
+**Decision.** (b). `scripts/gen-entity-types.mjs` (`npm run gen:types`) writes `src/lib/api/schema.gen.ts`: one `XxxRow` interface per table (e.g. `StaffUserRow`) with `id: Id`, `createdAt: IsoDateTime`, `updatedAt?: IsoDateTime`, camelCase keys, an English JSDoc per table (`scripts/table-descriptions.en.mjs`). Type rules: `*_hash`/`*_enc` columns are omitted (never sent); `nullable` → `| null`; arrays as hinted (`bigint[]` → `Id[]`, `text[]`/`cidr[]` → `string[]`); `jsonb` → `JsonObject`; `*_at` → `IsoDateTime | null`; `*_id` → `Id`; boolean names (`is_*`, `has_*`, `allow_*`, `supports_*`, `*_enabled`, `must_*`, `requires_*`, a short explicit list) → `boolean`; money names (`amount`, `*_amount`, `price`, `*_price`, `cost`, `*_cost`, `balance`, `fee*`, `total*`, `*_limit`, `credit`, `fixed`, `min_profit`, `low_balance_alert`) → `Money`; rates/percents → `Decimal`; counters/sizes/ms/sort/priority → `number`; else `string`. Feature `types/` build DTOs with `Pick`/`Omit`, narrow enums (`status: "invited" | "active" | "suspended"`) and add joined fields the screen needs (`role: { id, name }`).
+
+**Consequences.** Consistent names across features and one place to fix a wrong guess. Generated types are a starting point; the feature DTO is the contract a screen relies on, and any guess the backend contradicts is fixed in the generator rules or the DTO.

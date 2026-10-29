@@ -1,0 +1,288 @@
+{
+  "about": "Build order and endpoint ownership. Each route row key (\"CRUD <path>\" or \"METHOD <path>\", as in docs/route-manifest.json origin) belongs to exactly one feature. Checked by scripts/check-route-coverage.mjs.",
+  "features": [
+    {
+      "id": "foundation",
+      "phase": 2,
+      "page": null,
+      "demo": ["00-util.js", "13-b2c-ui.js", "20-ui.js", "30-charts.js", "90-app.js", "input.css", "tailwind.config.cjs"],
+      "folders": ["src/app", "src/lib", "src/components", "src/features/auth", "src/mocks", "src/styles"],
+      "rows": [
+        "POST /admin/auth/login",
+        "POST /admin/auth/2fa",
+        "POST /admin/auth/2fa/setup",
+        "POST /admin/auth/logout",
+        "GET /admin/auth/me",
+        "POST /admin/auth/password/set",
+        "GET /health"
+      ],
+      "notes": "Shell, UI kit, fetch client, providers, sign-in screens (no demo screen: built in the demo's style), API health in the sidebar footer, mock layer."
+    },
+    {
+      "id": "access",
+      "page": "/access",
+      "demo": ["56-p-access.js", "14-state-access.js"],
+      "folders": ["src/features/access"],
+      "rows": [
+        "CRUD /admin/staff",
+        "POST /admin/staff/:id/password",
+        "POST /admin/staff/:id/sessions/revoke",
+        "POST /admin/staff/:id/suspend",
+        "POST /admin/staff/:id/reactivate",
+        "POST /admin/staff/:id/reset-2fa",
+        "CRUD /admin/ip-rules",
+        "POST /admin/ip-rules/check",
+        "PUT /admin/access/restriction",
+        "CRUD /admin/roles",
+        "GET /admin/permissions",
+        "GET /admin/sessions",
+        "DELETE /admin/sessions/:id"
+      ],
+      "notes": "Admins, IP allow/block, roles (demo ROLE_MATRIX is a UI reference only), active sessions (new tab, no demo screen)."
+    },
+    {
+      "id": "orders",
+      "page": "/orders",
+      "demo": ["41-p-orders.js", "11-state.js (order selectors/mutations)"],
+      "folders": ["src/features/orders"],
+      "rows": [
+        "CRUD /admin/orders",
+        "GET /admin/orders/:id/events",
+        "POST /admin/orders/:id/accept",
+        "POST /admin/orders/:id/reply",
+        "POST /admin/orders/:id/reject",
+        "POST /admin/orders/:id/reopen",
+        "POST /admin/orders/:id/refund",
+        "POST /admin/orders/:id/verification",
+        "POST /admin/orders/:id/notes",
+        "POST /admin/orders/bulk-reply/preview",
+        "POST /admin/orders/bulk-reply/apply",
+        "GET /admin/orders/export",
+        "GET /admin/files/:id",
+        "POST /admin/orders/:id/dispatch",
+        "POST /admin/orders/:id/fetch",
+        "POST /admin/orders/:id/change-supplier"
+      ],
+      "notes": "Queue, filters, bulk actions, order drawer. Dispatch/fetch/change-supplier come from the suppliers route group but are order-drawer actions."
+    },
+    {
+      "id": "dashboard",
+      "page": "/dashboard",
+      "demo": ["40-p-dashboard.js"],
+      "folders": ["src/features/dashboard"],
+      "rows": ["GET /admin/dashboard", "GET /admin/queues", "GET /admin/reports/top-clients"],
+      "notes": "GET /admin/queues is the Bull Board UI: exposed as a link, not fetched."
+    },
+    {
+      "id": "customers",
+      "page": "/customers",
+      "demo": ["48-p-customers.js", "12-state-b2c.js (customer mutations)"],
+      "folders": ["src/features/customers"],
+      "rows": [
+        "CRUD /admin/customers",
+        "POST /admin/customers/:id/account",
+        "POST /admin/customers/:id/password",
+        "POST /admin/customers/:id/sessions/revoke",
+        "POST /admin/customers/:id/suspend",
+        "POST /admin/customers/:id/reactivate",
+        "POST /admin/customers/:id/block",
+        "GET /admin/customers/:id/export",
+        "POST /admin/customers/:id/anonymize",
+        "CRUD /admin/data-requests"
+      ],
+      "notes": "Block IP from a customer reuses createIpRule from features/access. Data requests: new tab."
+    },
+    {
+      "id": "merchants",
+      "page": "/merchants",
+      "demo": ["42-p-merchants.js"],
+      "folders": ["src/features/merchants"],
+      "rows": [
+        "CRUD /admin/clients",
+        "GET /admin/clients/:id/wallet",
+        "GET /admin/clients/:id/statement",
+        "POST /admin/clients/:id/wallet/adjust",
+        "PATCH /admin/clients/:id/credit-limit",
+        "GET /admin/clients/:id/api-keys",
+        "DELETE /admin/api-keys/:id",
+        "CRUD /admin/client-groups",
+        "CRUD /admin/client-prices",
+        "CRUD /admin/kyc-submissions",
+        "POST /admin/kyc-submissions/:id/decide",
+        "GET /admin/reports/client-statement/:clientId"
+      ],
+      "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups and KYC live here."
+    },
+    {
+      "id": "services",
+      "page": "/services",
+      "demo": ["43-p-services.js"],
+      "folders": ["src/features/services"],
+      "rows": [
+        "CRUD /admin/service-categories",
+        "CRUD /admin/services",
+        "PUT /admin/services/:id/fields",
+        "PUT /admin/services/:id/options",
+        "PUT /admin/services/:id/group-prices",
+        "CRUD /admin/pricing-rules",
+        "POST /admin/services/bulk-price/preview",
+        "POST /admin/services/bulk-price/apply",
+        "GET /admin/pricing/resolve",
+        "CRUD /admin/inventory-codes",
+        "POST /admin/services/:id/inventory/import",
+        "POST /admin/inventory-codes/void"
+      ],
+      "notes": "Services, categories, pricing rules, price resolver, inventory codes (from the orders route group; managed per service)."
+    },
+    {
+      "id": "suppliers",
+      "page": "/suppliers",
+      "demo": ["44-p-suppliers.js"],
+      "folders": ["src/features/suppliers"],
+      "rows": [
+        "CRUD /admin/suppliers",
+        "POST /admin/suppliers/:id/test",
+        "POST /admin/suppliers/:id/sync",
+        "GET /admin/suppliers/:id/services",
+        "POST /admin/suppliers/:id/import/preview",
+        "POST /admin/suppliers/:id/import",
+        "PUT /admin/services/:id/supplier-links",
+        "CRUD /admin/supplier-api-logs",
+        "GET /admin/reports/suppliers"
+      ],
+      "notes": "Master-detail page; reroute uses supplier-links; supplier report feeds the detail stats."
+    },
+    {
+      "id": "finance",
+      "page": "/finance",
+      "demo": ["45-p-finance.js"],
+      "folders": ["src/features/finance"],
+      "rows": [
+        "CRUD /admin/ledger/transactions",
+        "GET /admin/ledger/accounts",
+        "POST /admin/ledger/reconcile",
+        "CRUD /admin/invoices",
+        "CRUD /admin/payments",
+        "POST /admin/payments/:id/approve",
+        "POST /admin/payments/:id/reject",
+        "GET /admin/reports/profit",
+        "GET /admin/reports/wallet-exposure",
+        "GET /admin/reports/vat"
+      ],
+      "notes": "Ledger, accounts, payments review, invoices and reports. Demo withdrawals tab has no admin API (see MISMATCHES)."
+    },
+    {
+      "id": "refunds",
+      "page": "/refunds",
+      "demo": ["53-p-refunds.js", "12-state-b2c.js (refund/dispute mutations)"],
+      "folders": ["src/features/refunds"],
+      "rows": [
+        "CRUD /admin/refunds",
+        "POST /admin/refunds/:id/approve",
+        "POST /admin/refunds/:id/decline",
+        "POST /admin/refunds/:id/retry",
+        "CRUD /admin/disputes",
+        "POST /admin/disputes/:id/evidence",
+        "POST /admin/disputes/:id/accept",
+        "GET /admin/reports/payments"
+      ],
+      "notes": "Demo payments tab = storefront payments report."
+    },
+    {
+      "id": "risk",
+      "page": "/risk",
+      "demo": ["54-p-risk.js", "12-state-b2c.js (risk mutations)"],
+      "folders": ["src/features/risk"],
+      "rows": [
+        "GET /admin/risk/queue",
+        "POST /admin/risk/orders/:id/approve",
+        "POST /admin/risk/orders/:id/refund",
+        "CRUD /admin/imei-checks",
+        "CRUD /admin/blocklist",
+        "GET /admin/risk/rules",
+        "PUT /admin/risk/rules"
+      ],
+      "notes": "Held queue, IMEI checks, blocklist, rules."
+    },
+    {
+      "id": "checkouts",
+      "page": "/checkouts",
+      "demo": ["51-p-checkouts.js"],
+      "folders": ["src/features/checkouts"],
+      "rows": ["GET /admin/checkouts/abandoned", "POST /admin/checkouts/recover", "GET /admin/reports/funnel"],
+      "notes": "Recovery only for customers with marketing consent (map rule, MISMATCHES M1). Funnel: new panel."
+    },
+    {
+      "id": "support",
+      "page": "/support",
+      "demo": ["49-p-support.js", "12-state-b2c.js (ticket mutations)"],
+      "folders": ["src/features/support"],
+      "rows": [
+        "CRUD /admin/support-tickets",
+        "POST /admin/support-tickets/:id/reply",
+        "POST /admin/support-tickets/:id/note",
+        "CRUD /admin/reply-templates"
+      ],
+      "notes": "Inbox + thread; reply templates as macros and a manage view."
+    },
+    {
+      "id": "storefront",
+      "page": "/storefront",
+      "demo": ["50-p-storefront.js"],
+      "folders": ["src/features/storefront"],
+      "rows": [
+        "CRUD /admin/tac-catalog",
+        "CRUD /admin/service-listings",
+        "CRUD /admin/content-pages",
+        "POST /admin/content-pages/:id/publish",
+        "POST /admin/content-pages/generate",
+        "CRUD /admin/help-articles",
+        "CRUD /admin/legal-documents",
+        "POST /admin/legal-documents/:id/publish"
+      ],
+      "notes": "Listings, landing pages, help, legal, TAC catalogue. The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES."
+    },
+    {
+      "id": "commissions",
+      "page": "/commissions",
+      "demo": ["46-p-commissions.js"],
+      "folders": ["src/features/commissions"],
+      "rows": [
+        "CRUD /admin/commission-plans",
+        "CRUD /admin/commission-assignments",
+        "CRUD /admin/commission-accruals",
+        "POST /admin/commission-accruals/approve"
+      ],
+      "notes": "Accruals, agents (assignments), plans."
+    },
+    {
+      "id": "settings",
+      "page": "/settings",
+      "demo": ["55-p-settings.js", "12-state-b2c.js (fx/gateway/policy/notif mutations)"],
+      "folders": ["src/features/settings"],
+      "rows": [
+        "GET /admin/settings",
+        "PATCH /admin/settings",
+        "CRUD /admin/payment-gateways",
+        "CRUD /admin/tax-rates",
+        "CRUD /admin/currencies",
+        "POST /admin/currencies/refresh-fx",
+        "PATCH /admin/storefront/settings",
+        "CRUD /admin/notification-templates",
+        "POST /admin/notification-templates/:id/preview",
+        "CRUD /admin/notifications",
+        "CRUD /admin/webhook-deliveries",
+        "POST /admin/webhook-deliveries/:id/retry"
+      ],
+      "notes": "Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs."
+    },
+    {
+      "id": "audit",
+      "page": "/audit",
+      "demo": ["47-p-audit.js"],
+      "folders": ["src/features/audit"],
+      "rows": ["CRUD /admin/audit-logs"],
+      "notes": "Audit log with filters and expandable before/after."
+    }
+  ]
+}

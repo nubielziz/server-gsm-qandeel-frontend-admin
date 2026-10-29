@@ -6,15 +6,137 @@ Single source of truth for status. The lead updates it after every step. Read it
 
 | Phase | Status | Commit | Agents used |
 |---|---|---|---|
-| 0 Recon and setup | done | see git log | 1 (implementer: route manifest script, + 1 follow-up message) |
-| 1 Architecture | todo | – | 0 |
-| 2 Foundation | todo | – | 0 |
-| 3 Feature loop | todo | – | – |
+| 0 Recon and setup | done | `9c6d484` (baseline `479694f`) | 1 (implementer: route manifest script, + 1 follow-up message) |
+| 1 Architecture | done | see git log | 0 (Opus lead only) |
+| 2 Foundation | todo | – | 0/6 |
+| 3 Feature loop | todo | – | per feature below |
 | 4 Final verification | todo | – | 0 |
 
-## Features (Phase 3)
+## Feature plan (build order)
 
-Filled in Phase 1 from `docs/route-manifest.json`. Every admin endpoint belongs to exactly one feature.
+Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manifest.json` belongs to exactly one feature: 238 admin + `GET /health` = 239, checked). Orders comes before dashboard, customers and merchants because their screens embed order lists and the order drawer.
+
+| # | Feature | Page | Route groups | Rows | Endpoints | Status | Agents | Commit |
+|---|---|---|---|---|---|---|---|---|
+| 0 | foundation | shell | auth, system | 7 | 7 | todo | 0/6 | – |
+| 1 | access | `/access` | auth | 13 | 23 | todo | 0/6 | – |
+| 2 | orders | `/orders` | orders, suppliers | 16 | 17 | todo | 0/6 | – |
+| 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | todo | 0/6 | – |
+| 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
+| 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | todo | 0/6 | – |
+| 6 | services | `/services` | catalog, orders | 12 | 24 | todo | 0/6 | – |
+| 7 | suppliers | `/suppliers` | suppliers, growth | 9 | 14 | todo | 0/6 | – |
+| 8 | finance | `/finance` | clients, billing, growth, refunds | 10 | 14 | todo | 0/6 | – |
+| 9 | refunds | `/refunds` | refunds | 8 | 10 | todo | 0/6 | – |
+| 10 | risk | `/risk` | risk | 7 | 11 | todo | 0/6 | – |
+| 11 | checkouts | `/checkouts` | promo | 3 | 3 | todo | 0/6 | – |
+| 12 | support | `/support` | support | 4 | 10 | todo | 0/6 | – |
+| 13 | storefront | `/storefront` | storefront | 8 | 22 | todo | 0/6 | – |
+| 14 | commissions | `/commissions` | growth | 4 | 13 | todo | 0/6 | – |
+| 15 | settings | `/settings` | auth, billing, refunds, clients, ops | 12 | 28 | todo | 0/6 | – |
+| 16 | audit | `/audit` | auth | 1 | 2 | todo | 0/6 | – |
+
+### 0. foundation (Phase 2) — 7 endpoints
+
+Demo: `00-util.js`, `13-b2c-ui.js`, `20-ui.js`, `30-charts.js`, `90-app.js`, `input.css`, `tailwind.config.cjs`. Shell, UI kit, fetch client, providers, sign-in screens (no demo screen: built in the demo's style), API health in the sidebar footer, mock layer.
+
+`POST /admin/auth/login` · `POST /admin/auth/2fa` · `POST /admin/auth/2fa/setup` · `POST /admin/auth/logout` · `GET /admin/auth/me` · `POST /admin/auth/password/set` · `GET /health`
+
+### 1. access (`/access`) — 23 endpoints
+
+Demo: `56-p-access.js`, `14-state-access.js`. Admins, IP allow/block, roles (demo ROLE_MATRIX is a UI reference only), active sessions (new tab, no demo screen).
+
+`CRUD[LSCU] /admin/staff` · `POST /admin/staff/:id/password` · `POST /admin/staff/:id/sessions/revoke` · `POST /admin/staff/:id/suspend` · `POST /admin/staff/:id/reactivate` · `POST /admin/staff/:id/reset-2fa` · `CRUD[LSCD] /admin/ip-rules` · `POST /admin/ip-rules/check` · `PUT /admin/access/restriction` · `CRUD[LSCUD] /admin/roles` · `GET /admin/permissions` · `GET /admin/sessions` · `DELETE /admin/sessions/:id`
+
+### 2. orders (`/orders`) — 17 endpoints
+
+Demo: `41-p-orders.js`, `11-state.js (order selectors/mutations)`. Queue, filters, bulk actions, order drawer. Dispatch/fetch/change-supplier come from the suppliers route group but are order-drawer actions.
+
+`CRUD[LS] /admin/orders` · `GET /admin/orders/:id/events` · `POST /admin/orders/:id/accept` · `POST /admin/orders/:id/reply` · `POST /admin/orders/:id/reject` · `POST /admin/orders/:id/reopen` · `POST /admin/orders/:id/refund` · `POST /admin/orders/:id/verification` · `POST /admin/orders/:id/notes` · `POST /admin/orders/bulk-reply/preview` · `POST /admin/orders/bulk-reply/apply` · `GET /admin/orders/export` · `GET /admin/files/:id` · `POST /admin/orders/:id/dispatch` · `POST /admin/orders/:id/fetch` · `POST /admin/orders/:id/change-supplier`
+
+### 3. dashboard (`/dashboard`) — 3 endpoints
+
+Demo: `40-p-dashboard.js`. GET /admin/queues is the Bull Board UI: exposed as a link, not fetched.
+
+`GET /admin/dashboard` · `GET /admin/queues` · `GET /admin/reports/top-clients`
+
+### 4. customers (`/customers`) — 15 endpoints
+
+Demo: `48-p-customers.js`, `12-state-b2c.js (customer mutations)`. Block IP from a customer reuses createIpRule from features/access. Data requests: new tab.
+
+`CRUD[LSCU] /admin/customers` · `POST /admin/customers/:id/account` · `POST /admin/customers/:id/password` · `POST /admin/customers/:id/sessions/revoke` · `POST /admin/customers/:id/suspend` · `POST /admin/customers/:id/reactivate` · `POST /admin/customers/:id/block` · `GET /admin/customers/:id/export` · `POST /admin/customers/:id/anonymize` · `CRUD[LSU] /admin/data-requests`
+
+### 5. merchants (`/merchants`) — 23 endpoints
+
+Demo: `42-p-merchants.js`. Merchant list + detail tabs (orders, wallet, pricing, API). Groups and KYC live here.
+
+`CRUD[LSCU] /admin/clients` · `GET /admin/clients/:id/wallet` · `GET /admin/clients/:id/statement` · `POST /admin/clients/:id/wallet/adjust` · `PATCH /admin/clients/:id/credit-limit` · `GET /admin/clients/:id/api-keys` · `DELETE /admin/api-keys/:id` · `CRUD[LSCUD] /admin/client-groups` · `CRUD[LCUD] /admin/client-prices` · `CRUD[LS] /admin/kyc-submissions` · `POST /admin/kyc-submissions/:id/decide` · `GET /admin/reports/client-statement/:clientId`
+
+### 6. services (`/services`) — 24 endpoints
+
+Demo: `43-p-services.js`. Services, categories, pricing rules, price resolver, inventory codes (from the orders route group; managed per service).
+
+`CRUD[LSCUD] /admin/service-categories` · `CRUD[LSCUD] /admin/services` · `PUT /admin/services/:id/fields` · `PUT /admin/services/:id/options` · `PUT /admin/services/:id/group-prices` · `CRUD[LSCUD] /admin/pricing-rules` · `POST /admin/services/bulk-price/preview` · `POST /admin/services/bulk-price/apply` · `GET /admin/pricing/resolve` · `CRUD[L] /admin/inventory-codes` · `POST /admin/services/:id/inventory/import` · `POST /admin/inventory-codes/void`
+
+### 7. suppliers (`/suppliers`) — 14 endpoints
+
+Demo: `44-p-suppliers.js`. Master-detail page; reroute uses supplier-links; supplier report feeds the detail stats.
+
+`CRUD[LSCUD] /admin/suppliers` · `POST /admin/suppliers/:id/test` · `POST /admin/suppliers/:id/sync` · `GET /admin/suppliers/:id/services` · `POST /admin/suppliers/:id/import/preview` · `POST /admin/suppliers/:id/import` · `PUT /admin/services/:id/supplier-links` · `CRUD[LS] /admin/supplier-api-logs` · `GET /admin/reports/suppliers`
+
+### 8. finance (`/finance`) — 14 endpoints
+
+Demo: `45-p-finance.js`. Ledger, accounts, payments review, invoices and reports. Demo withdrawals tab has no admin API (see MISMATCHES).
+
+`CRUD[LS] /admin/ledger/transactions` · `GET /admin/ledger/accounts` · `POST /admin/ledger/reconcile` · `CRUD[LSC] /admin/invoices` · `CRUD[LS] /admin/payments` · `POST /admin/payments/:id/approve` · `POST /admin/payments/:id/reject` · `GET /admin/reports/profit` · `GET /admin/reports/wallet-exposure` · `GET /admin/reports/vat`
+
+### 9. refunds (`/refunds`) — 10 endpoints
+
+Demo: `53-p-refunds.js`, `12-state-b2c.js (refund/dispute mutations)`. Demo payments tab = storefront payments report.
+
+`CRUD[LS] /admin/refunds` · `POST /admin/refunds/:id/approve` · `POST /admin/refunds/:id/decline` · `POST /admin/refunds/:id/retry` · `CRUD[LS] /admin/disputes` · `POST /admin/disputes/:id/evidence` · `POST /admin/disputes/:id/accept` · `GET /admin/reports/payments`
+
+### 10. risk (`/risk`) — 11 endpoints
+
+Demo: `54-p-risk.js`, `12-state-b2c.js (risk mutations)`. Held queue, IMEI checks, blocklist, rules.
+
+`GET /admin/risk/queue` · `POST /admin/risk/orders/:id/approve` · `POST /admin/risk/orders/:id/refund` · `CRUD[LS] /admin/imei-checks` · `CRUD[LSCD] /admin/blocklist` · `GET /admin/risk/rules` · `PUT /admin/risk/rules`
+
+### 11. checkouts (`/checkouts`) — 3 endpoints
+
+Demo: `51-p-checkouts.js`. Recovery only for customers with marketing consent (map rule, MISMATCHES M1). Funnel: new panel.
+
+`GET /admin/checkouts/abandoned` · `POST /admin/checkouts/recover` · `GET /admin/reports/funnel`
+
+### 12. support (`/support`) — 10 endpoints
+
+Demo: `49-p-support.js`, `12-state-b2c.js (ticket mutations)`. Inbox + thread; reply templates as macros and a manage view.
+
+`CRUD[LSU] /admin/support-tickets` · `POST /admin/support-tickets/:id/reply` · `POST /admin/support-tickets/:id/note` · `CRUD[LSCUD] /admin/reply-templates`
+
+### 13. storefront (`/storefront`) — 22 endpoints
+
+Demo: `50-p-storefront.js`. Listings, landing pages, help, legal, TAC catalogue. The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES.
+
+`CRUD[LSCU] /admin/tac-catalog` · `CRUD[LSCU] /admin/service-listings` · `CRUD[LSCU] /admin/content-pages` · `POST /admin/content-pages/:id/publish` · `POST /admin/content-pages/generate` · `CRUD[LSCU] /admin/help-articles` · `CRUD[LSC] /admin/legal-documents` · `POST /admin/legal-documents/:id/publish`
+
+### 14. commissions (`/commissions`) — 13 endpoints
+
+Demo: `46-p-commissions.js`. Accruals, agents (assignments), plans.
+
+`CRUD[LSCUD] /admin/commission-plans` · `CRUD[LSCUD] /admin/commission-assignments` · `CRUD[LS] /admin/commission-accruals` · `POST /admin/commission-accruals/approve`
+
+### 15. settings (`/settings`) — 28 endpoints
+
+Demo: `55-p-settings.js`, `12-state-b2c.js (fx/gateway/policy/notif mutations)`. Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs.
+
+`GET /admin/settings` · `PATCH /admin/settings` · `CRUD[LSCUD] /admin/payment-gateways` · `CRUD[LSCU] /admin/tax-rates` · `CRUD[LSCU] /admin/currencies` · `POST /admin/currencies/refresh-fx` · `PATCH /admin/storefront/settings` · `CRUD[LSCUD] /admin/notification-templates` · `POST /admin/notification-templates/:id/preview` · `CRUD[LS] /admin/notifications` · `CRUD[LS] /admin/webhook-deliveries` · `POST /admin/webhook-deliveries/:id/retry`
+
+### 16. audit (`/audit`) — 2 endpoints
+
+Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
+
+`CRUD[LS] /admin/audit-logs`
 
 ## Blockers
 
@@ -24,7 +146,13 @@ Filled in Phase 1 from `docs/route-manifest.json`. Every admin endpoint belongs 
 
 - none
 
+## Open questions for the backend (not blocking)
+
+- Auth bodies and CSRF token source: assumptions in `docs/decisions/006-auth-and-access-control.md` (MISMATCHES M5–M7).
+- Exact shape of problem+json `errors[]` items (parser is tolerant, decision 007).
+
 ## Notes
 
 - Custom agents in `.claude/agents/` load only after a session restart. Until then the lead uses stand-ins with the same instructions pasted into each brief: implementer = `general-purpose` on Sonnet; reader = `Explore` on Haiku (no Agent/Edit/Write tools); reviewer = `Plan` on Opus (no Agent/Edit/Write tools). The `general-purpose` stand-in relies on its brief for "never spawn agents".
 - Serena is exposed as one REPL tool (`mcp__serena__serena_repl`), not as separate `find_symbol`-style tools; the agent definitions list that tool instead.
+- All development artifacts (code, comments, docs, commits) are in English (user rule); map descriptions were translated in `scripts/route-descriptions.en.mjs`.
