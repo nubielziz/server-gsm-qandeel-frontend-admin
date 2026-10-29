@@ -46,6 +46,7 @@
     "build": "tsc && refine build",
     "start": "refine start",
     "refine": "refine",
+    "routes:manifest": "node scripts/build-route-manifest.mjs",
     "codegen": "graphql-codegen"
   },
   "browserslist": {

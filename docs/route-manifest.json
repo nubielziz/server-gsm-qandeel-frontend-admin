@@ -1,0 +1,5322 @@
+{
+  "source": "reference/gsm-map/data/routes.mjs",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "counts": {
+    "rows": 139,
+    "endpoints": 239,
+    "byGroup": {
+      "auth": {
+        "rows": 22,
+        "endpoints": 33
+      },
+      "clients": {
+        "rows": 11,
+        "endpoints": 18
+      },
+      "catalog": {
+        "rows": 11,
+        "endpoints": 30
+      },
+      "orders": {
+        "rows": 16,
+        "endpoints": 17
+      },
+      "suppliers": {
+        "rows": 11,
+        "endpoints": 16
+      },
+      "billing": {
+        "rows": 7,
+        "endpoints": 15
+      },
+      "growth": {
+        "rows": 9,
+        "endpoints": 18
+      },
+      "ops": {
+        "rows": 7,
+        "endpoints": 13
+      },
+      "customers": {
+        "rows": 10,
+        "endpoints": 15
+      },
+      "storefront": {
+        "rows": 8,
+        "endpoints": 22
+      },
+      "refunds": {
+        "rows": 12,
+        "endpoints": 17
+      },
+      "support": {
+        "rows": 4,
+        "endpoints": 10
+      },
+      "risk": {
+        "rows": 7,
+        "endpoints": 11
+      },
+      "promo": {
+        "rows": 3,
+        "endpoints": 3
+      },
+      "system": {
+        "rows": 1,
+        "endpoints": 1
+      }
+    }
+  },
+  "groups": [
+    {
+      "id": "auth",
+      "name": "Sign-in, staff and security",
+      "nameAr": "الدخول والموظفين والأمان"
+    },
+    {
+      "id": "clients",
+      "name": "Merchants and wallets",
+      "nameAr": "التجار والمحافظ"
+    },
+    {
+      "id": "catalog",
+      "name": "Catalog and pricing",
+      "nameAr": "الكتالوج والتسعير"
+    },
+    {
+      "id": "orders",
+      "name": "Orders and inventory",
+      "nameAr": "الطلبات والمخزون"
+    },
+    {
+      "id": "suppliers",
+      "name": "Suppliers",
+      "nameAr": "الموردين"
+    },
+    {
+      "id": "billing",
+      "name": "Payments and verification",
+      "nameAr": "الدفع والتوثيق"
+    },
+    {
+      "id": "growth",
+      "name": "Commissions and reports",
+      "nameAr": "العمولات والتقارير"
+    },
+    {
+      "id": "ops",
+      "name": "Operations and notifications",
+      "nameAr": "التشغيل والإشعارات"
+    },
+    {
+      "id": "customers",
+      "name": "Storefront customers and accounts (B2C)",
+      "nameAr": "عملاء المتجر وحساباتهم (B2C)"
+    },
+    {
+      "id": "storefront",
+      "name": "Storefront and content",
+      "nameAr": "المتجر والمحتوى"
+    },
+    {
+      "id": "refunds",
+      "name": "Refunds, disputes and tax",
+      "nameAr": "الاسترجاع والنزاعات والضريبة"
+    },
+    {
+      "id": "support",
+      "name": "Support",
+      "nameAr": "الدعم"
+    },
+    {
+      "id": "risk",
+      "name": "Risk and compliance",
+      "nameAr": "المخاطر والامتثال"
+    },
+    {
+      "id": "promo",
+      "name": "Abandoned carts and sales funnel",
+      "nameAr": "السلات المتروكة وقمع المبيعات"
+    }
+  ],
+  "excluded": [
+    {
+      "key": "GET /openapi.json",
+      "reason": "REST v1 docs, not used by the admin console"
+    },
+    {
+      "key": "GET /docs",
+      "reason": "REST v1 docs, not used by the admin console"
+    }
+  ],
+  "endpoints": [
+    {
+      "key": "POST /admin/auth/login",
+      "method": "POST",
+      "path": "/admin/auth/login",
+      "group": "auth",
+      "op": "action",
+      "description": "Sign in with email and password; a TOTP step follows.",
+      "descriptionAr": "الإيميل وكلمة السر، وبعدها خطوة TOTP",
+      "access": "public",
+      "permission": null,
+      "authRaw": "عام",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/login"
+      }
+    },
+    {
+      "key": "POST /admin/auth/2fa",
+      "method": "POST",
+      "path": "/admin/auth/2fa",
+      "group": "auth",
+      "op": "action",
+      "description": "Complete the sign-in with a TOTP code.",
+      "descriptionAr": "إكمال الدخول بكود TOTP",
+      "access": "public",
+      "permission": null,
+      "authRaw": "عام",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/2fa"
+      }
+    },
+    {
+      "key": "POST /admin/auth/2fa/setup",
+      "method": "POST",
+      "path": "/admin/auth/2fa/setup",
+      "group": "auth",
+      "op": "action",
+      "description": "First sign-in: the TOTP secret with a QR code.",
+      "descriptionAr": "أول دخول: سر TOTP مع QR",
+      "access": "public",
+      "permission": null,
+      "authRaw": "عام",
+      "stage": 2,
+      "tables": [
+        "staff_users"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/2fa/setup"
+      }
+    },
+    {
+      "key": "POST /admin/auth/logout",
+      "method": "POST",
+      "path": "/admin/auth/logout",
+      "group": "auth",
+      "op": "action",
+      "description": "Sign out.",
+      "descriptionAr": "خروج",
+      "access": "session",
+      "permission": null,
+      "authRaw": "جلسة",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/logout"
+      }
+    },
+    {
+      "key": "GET /admin/auth/me",
+      "method": "GET",
+      "path": "/admin/auth/me",
+      "group": "auth",
+      "op": "action",
+      "description": "The signed-in staff member and their permissions, for Refine.",
+      "descriptionAr": "الموظف وصلاحياته لـ Refine",
+      "access": "session",
+      "permission": null,
+      "authRaw": "جلسة",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/auth/me"
+      }
+    },
+    {
+      "key": "GET /admin/staff",
+      "method": "GET",
+      "path": "/admin/staff",
+      "group": "auth",
+      "op": "list",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "descriptionAr": "الموظفين: إضافة بدعوة أو كلمة مؤقتة، والدور، وتعديل البيانات",
+      "access": "permission",
+      "permission": "staff:*",
+      "authRaw": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "GET /admin/staff/:id",
+      "method": "GET",
+      "path": "/admin/staff/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "descriptionAr": "الموظفين: إضافة بدعوة أو كلمة مؤقتة، والدور، وتعديل البيانات",
+      "access": "permission",
+      "permission": "staff:*",
+      "authRaw": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "POST /admin/staff",
+      "method": "POST",
+      "path": "/admin/staff",
+      "group": "auth",
+      "op": "create",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "descriptionAr": "الموظفين: إضافة بدعوة أو كلمة مؤقتة، والدور، وتعديل البيانات",
+      "access": "permission",
+      "permission": "staff:*",
+      "authRaw": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "PATCH /admin/staff/:id",
+      "method": "PATCH",
+      "path": "/admin/staff/:id",
+      "group": "auth",
+      "op": "update",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "descriptionAr": "الموظفين: إضافة بدعوة أو كلمة مؤقتة، والدور، وتعديل البيانات",
+      "access": "permission",
+      "permission": "staff:*",
+      "authRaw": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/password",
+      "method": "POST",
+      "path": "/admin/staff/:id/password",
+      "group": "auth",
+      "op": "action",
+      "description": "Send a link to set a new password, or set a temporary one; the current password is never readable and never enters the log.",
+      "descriptionAr": "رابط تعيين كلمة جديد أو كلمة مؤقتة، ولا تُقرأ الحالية ولا تدخل السجل",
+      "access": "permission",
+      "permission": "staff:update",
+      "authRaw": "staff:update",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "auth_tokens",
+        "sessions",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/password"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/sessions/revoke",
+      "method": "POST",
+      "path": "/admin/staff/:id/sessions/revoke",
+      "group": "auth",
+      "op": "action",
+      "description": "End all sessions of a staff member.",
+      "descriptionAr": "إنهاء كل جلسات موظف",
+      "access": "permission",
+      "permission": "staff:update",
+      "authRaw": "staff:update",
+      "stage": 2,
+      "tables": [
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/sessions/revoke"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/suspend",
+      "method": "POST",
+      "path": "/admin/staff/:id/suspend",
+      "group": "auth",
+      "op": "action",
+      "description": "Suspend a staff member with a reason, which ends their sessions; suspending yourself or the last Owner is rejected.",
+      "descriptionAr": "إيقاف موظف بسبب، فتنتهي جلساته. يُرفض إيقاف النفس أو المالك الأخير",
+      "access": "permission",
+      "permission": "staff:suspend",
+      "authRaw": "staff:suspend",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/suspend"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/reactivate",
+      "method": "POST",
+      "path": "/admin/staff/:id/reactivate",
+      "group": "auth",
+      "op": "action",
+      "description": "Reactivate a suspended staff member.",
+      "descriptionAr": "إعادة تفعيل موظف موقوف",
+      "access": "permission",
+      "permission": "staff:suspend",
+      "authRaw": "staff:suspend",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/reactivate"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/reset-2fa",
+      "method": "POST",
+      "path": "/admin/staff/:id/reset-2fa",
+      "group": "auth",
+      "op": "action",
+      "description": "Reset 2FA for a staff member.",
+      "descriptionAr": "إعادة ضبط 2FA لموظف",
+      "access": "permission",
+      "permission": "staff:update",
+      "authRaw": "staff:update",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/reset-2fa"
+      }
+    },
+    {
+      "key": "POST /admin/auth/password/set",
+      "method": "POST",
+      "path": "/admin/auth/password/set",
+      "group": "auth",
+      "op": "action",
+      "description": "An invited or recovering staff member chooses their own password with a one-time token.",
+      "descriptionAr": "الموظف المدعو أو المستعيد يختار كلمته برمز لمرة واحدة",
+      "access": "public",
+      "permission": null,
+      "authRaw": "عام",
+      "stage": 2,
+      "tables": [
+        "auth_tokens",
+        "staff_users"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/password/set"
+      }
+    },
+    {
+      "key": "GET /admin/ip-rules",
+      "method": "GET",
+      "path": "/admin/ip-rules",
+      "group": "auth",
+      "op": "list",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "descriptionAr": "عناوين السماح والحظر: النطاق، والجمهور، والسبب، والمدة",
+      "access": "permission",
+      "permission": "access:*",
+      "authRaw": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "GET /admin/ip-rules/:id",
+      "method": "GET",
+      "path": "/admin/ip-rules/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "descriptionAr": "عناوين السماح والحظر: النطاق، والجمهور، والسبب، والمدة",
+      "access": "permission",
+      "permission": "access:*",
+      "authRaw": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "POST /admin/ip-rules",
+      "method": "POST",
+      "path": "/admin/ip-rules",
+      "group": "auth",
+      "op": "create",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "descriptionAr": "عناوين السماح والحظر: النطاق، والجمهور، والسبب، والمدة",
+      "access": "permission",
+      "permission": "access:*",
+      "authRaw": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "DELETE /admin/ip-rules/:id",
+      "method": "DELETE",
+      "path": "/admin/ip-rules/:id",
+      "group": "auth",
+      "op": "delete",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "descriptionAr": "عناوين السماح والحظر: النطاق، والجمهور، والسبب، والمدة",
+      "access": "permission",
+      "permission": "access:*",
+      "authRaw": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "POST /admin/ip-rules/check",
+      "method": "POST",
+      "path": "/admin/ip-rules/check",
+      "group": "auth",
+      "op": "action",
+      "description": "Test an address before the change; it returns the decision and the matching rule.",
+      "descriptionAr": "اختبار عنوان قبل التغيير: يرجع القرار والقاعدة المطابقة",
+      "access": "permission",
+      "permission": "access:read",
+      "authRaw": "access:read",
+      "stage": 2,
+      "tables": [
+        "ip_rules"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/ip-rules/check"
+      }
+    },
+    {
+      "key": "PUT /admin/access/restriction",
+      "method": "PUT",
+      "path": "/admin/access/restriction",
+      "group": "auth",
+      "op": "action",
+      "description": "Turn the allow-list restriction on the admin panel on or off; turning it on is rejected if the address of the requester is outside the list.",
+      "descriptionAr": "تشغيل أو إيقاف تقييد لوحة الإدارة بقائمة السماح، ويُرفض التشغيل إن كان عنوان الطالب خارجها",
+      "access": "permission",
+      "permission": "access:update",
+      "authRaw": "access:update",
+      "stage": 2,
+      "tables": [
+        "settings",
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/access/restriction"
+      }
+    },
+    {
+      "key": "GET /admin/roles",
+      "method": "GET",
+      "path": "/admin/roles",
+      "group": "auth",
+      "op": "list",
+      "description": "Roles and their permissions.",
+      "descriptionAr": "الأدوار وصلاحياتها",
+      "access": "permission",
+      "permission": "roles:*",
+      "authRaw": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "GET /admin/roles/:id",
+      "method": "GET",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Roles and their permissions.",
+      "descriptionAr": "الأدوار وصلاحياتها",
+      "access": "permission",
+      "permission": "roles:*",
+      "authRaw": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "POST /admin/roles",
+      "method": "POST",
+      "path": "/admin/roles",
+      "group": "auth",
+      "op": "create",
+      "description": "Roles and their permissions.",
+      "descriptionAr": "الأدوار وصلاحياتها",
+      "access": "permission",
+      "permission": "roles:*",
+      "authRaw": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "PATCH /admin/roles/:id",
+      "method": "PATCH",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "update",
+      "description": "Roles and their permissions.",
+      "descriptionAr": "الأدوار وصلاحياتها",
+      "access": "permission",
+      "permission": "roles:*",
+      "authRaw": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "DELETE /admin/roles/:id",
+      "method": "DELETE",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "delete",
+      "description": "Roles and their permissions.",
+      "descriptionAr": "الأدوار وصلاحياتها",
+      "access": "permission",
+      "permission": "roles:*",
+      "authRaw": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "GET /admin/permissions",
+      "method": "GET",
+      "path": "/admin/permissions",
+      "group": "auth",
+      "op": "action",
+      "description": "All available permissions.",
+      "descriptionAr": "كل الصلاحيات المتاحة",
+      "access": "permission",
+      "permission": "roles:read",
+      "authRaw": "roles:read",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/permissions"
+      }
+    },
+    {
+      "key": "GET /admin/sessions",
+      "method": "GET",
+      "path": "/admin/sessions",
+      "group": "auth",
+      "op": "action",
+      "description": "Active sessions of staff members and merchants.",
+      "descriptionAr": "الجلسات الفعّالة للموظفين والتجار",
+      "access": "permission",
+      "permission": "sessions:read",
+      "authRaw": "sessions:read",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/sessions"
+      }
+    },
+    {
+      "key": "DELETE /admin/sessions/:id",
+      "method": "DELETE",
+      "path": "/admin/sessions/:id",
+      "group": "auth",
+      "op": "action",
+      "description": "End a session.",
+      "descriptionAr": "إنهاء جلسة",
+      "access": "permission",
+      "permission": "sessions:revoke",
+      "authRaw": "sessions:revoke",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "DELETE",
+        "ops": null,
+        "path": "/admin/sessions/:id"
+      }
+    },
+    {
+      "key": "GET /admin/audit-logs",
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "group": "auth",
+      "op": "list",
+      "description": "Audit log.",
+      "descriptionAr": "سجل التدقيق",
+      "access": "permission",
+      "permission": "audit:read",
+      "authRaw": "audit:read",
+      "stage": 2,
+      "tables": [
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/audit-logs"
+      }
+    },
+    {
+      "key": "GET /admin/audit-logs/:id",
+      "method": "GET",
+      "path": "/admin/audit-logs/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Audit log.",
+      "descriptionAr": "سجل التدقيق",
+      "access": "permission",
+      "permission": "audit:read",
+      "authRaw": "audit:read",
+      "stage": 2,
+      "tables": [
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/audit-logs"
+      }
+    },
+    {
+      "key": "GET /admin/settings",
+      "method": "GET",
+      "path": "/admin/settings",
+      "group": "auth",
+      "op": "action",
+      "description": "System settings.",
+      "descriptionAr": "إعدادات النظام",
+      "access": "permission",
+      "permission": "settings:read",
+      "authRaw": "settings:read",
+      "stage": 2,
+      "tables": [
+        "settings"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/settings"
+      }
+    },
+    {
+      "key": "PATCH /admin/settings",
+      "method": "PATCH",
+      "path": "/admin/settings",
+      "group": "auth",
+      "op": "action",
+      "description": "Edit the settings.",
+      "descriptionAr": "تعديل الإعدادات",
+      "access": "permission",
+      "permission": "settings:update",
+      "authRaw": "settings:update",
+      "stage": 2,
+      "tables": [
+        "settings",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/settings"
+      }
+    },
+    {
+      "key": "GET /admin/clients",
+      "method": "GET",
+      "path": "/admin/clients",
+      "group": "clients",
+      "op": "list",
+      "description": "Merchants: creation, group, status and blocking.",
+      "descriptionAr": "التجار: الإنشاء والفئة والحالة والحظر",
+      "access": "permission",
+      "permission": "clients:*",
+      "authRaw": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id",
+      "method": "GET",
+      "path": "/admin/clients/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Merchants: creation, group, status and blocking.",
+      "descriptionAr": "التجار: الإنشاء والفئة والحالة والحظر",
+      "access": "permission",
+      "permission": "clients:*",
+      "authRaw": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "POST /admin/clients",
+      "method": "POST",
+      "path": "/admin/clients",
+      "group": "clients",
+      "op": "create",
+      "description": "Merchants: creation, group, status and blocking.",
+      "descriptionAr": "التجار: الإنشاء والفئة والحالة والحظر",
+      "access": "permission",
+      "permission": "clients:*",
+      "authRaw": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "PATCH /admin/clients/:id",
+      "method": "PATCH",
+      "path": "/admin/clients/:id",
+      "group": "clients",
+      "op": "update",
+      "description": "Merchants: creation, group, status and blocking.",
+      "descriptionAr": "التجار: الإنشاء والفئة والحالة والحظر",
+      "access": "permission",
+      "permission": "clients:*",
+      "authRaw": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/wallet",
+      "method": "GET",
+      "path": "/admin/clients/:id/wallet",
+      "group": "clients",
+      "op": "action",
+      "description": "Merchant wallet: available balance, reserved balance and limit.",
+      "descriptionAr": "محفظة التاجر: المتاح والمحجوز والحد",
+      "access": "permission",
+      "permission": "wallet:read",
+      "authRaw": "wallet:read",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/wallet"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/statement",
+      "method": "GET",
+      "path": "/admin/clients/:id/statement",
+      "group": "clients",
+      "op": "action",
+      "description": "Merchant account statement.",
+      "descriptionAr": "كشف حساب التاجر",
+      "access": "permission",
+      "permission": "wallet:read",
+      "authRaw": "wallet:read",
+      "stage": 3,
+      "tables": [
+        "ledger_entries",
+        "ledger_transactions"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/statement"
+      }
+    },
+    {
+      "key": "POST /admin/clients/:id/wallet/adjust",
+      "method": "POST",
+      "path": "/admin/clients/:id/wallet/adjust",
+      "group": "clients",
+      "op": "action",
+      "description": "Manually add to or deduct from the wallet, with a reason.",
+      "descriptionAr": "إضافة أو خصم يدوي مع سبب",
+      "access": "permission",
+      "permission": "wallet:adjust",
+      "authRaw": "wallet:adjust",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/clients/:id/wallet/adjust"
+      }
+    },
+    {
+      "key": "PATCH /admin/clients/:id/credit-limit",
+      "method": "PATCH",
+      "path": "/admin/clients/:id/credit-limit",
+      "group": "clients",
+      "op": "action",
+      "description": "Credit limit (overdraft).",
+      "descriptionAr": "الحد الائتماني (overdraft)",
+      "access": "permission",
+      "permission": "wallet:credit_limit",
+      "authRaw": "wallet:credit_limit",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/clients/:id/credit-limit"
+      }
+    },
+    {
+      "key": "GET /admin/ledger/transactions",
+      "method": "GET",
+      "path": "/admin/ledger/transactions",
+      "group": "clients",
+      "op": "list",
+      "description": "Ledger entries with their lines.",
+      "descriptionAr": "القيود المحاسبية مع أسطرها",
+      "access": "permission",
+      "permission": "ledger:read",
+      "authRaw": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/ledger/transactions"
+      }
+    },
+    {
+      "key": "GET /admin/ledger/transactions/:id",
+      "method": "GET",
+      "path": "/admin/ledger/transactions/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Ledger entries with their lines.",
+      "descriptionAr": "القيود المحاسبية مع أسطرها",
+      "access": "permission",
+      "permission": "ledger:read",
+      "authRaw": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/ledger/transactions"
+      }
+    },
+    {
+      "key": "GET /admin/ledger/accounts",
+      "method": "GET",
+      "path": "/admin/ledger/accounts",
+      "group": "clients",
+      "op": "action",
+      "description": "Accounts and their balances.",
+      "descriptionAr": "الحسابات وأرصدتها",
+      "access": "permission",
+      "permission": "ledger:read",
+      "authRaw": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/ledger/accounts"
+      }
+    },
+    {
+      "key": "POST /admin/ledger/reconcile",
+      "method": "POST",
+      "path": "/admin/ledger/reconcile",
+      "group": "clients",
+      "op": "action",
+      "description": "Run the reconciliation now.",
+      "descriptionAr": "تشغيل المطابقة الآن",
+      "access": "permission",
+      "permission": "ledger:reconcile",
+      "authRaw": "ledger:reconcile",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/ledger/reconcile"
+      }
+    },
+    {
+      "key": "GET /admin/currencies",
+      "method": "GET",
+      "path": "/admin/currencies",
+      "group": "clients",
+      "op": "list",
+      "description": "Currencies and exchange rates.",
+      "descriptionAr": "العملات وأسعار الصرف",
+      "access": "permission",
+      "permission": "settings:update",
+      "authRaw": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "GET /admin/currencies/:id",
+      "method": "GET",
+      "path": "/admin/currencies/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Currencies and exchange rates.",
+      "descriptionAr": "العملات وأسعار الصرف",
+      "access": "permission",
+      "permission": "settings:update",
+      "authRaw": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "POST /admin/currencies",
+      "method": "POST",
+      "path": "/admin/currencies",
+      "group": "clients",
+      "op": "create",
+      "description": "Currencies and exchange rates.",
+      "descriptionAr": "العملات وأسعار الصرف",
+      "access": "permission",
+      "permission": "settings:update",
+      "authRaw": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "PATCH /admin/currencies/:id",
+      "method": "PATCH",
+      "path": "/admin/currencies/:id",
+      "group": "clients",
+      "op": "update",
+      "description": "Currencies and exchange rates.",
+      "descriptionAr": "العملات وأسعار الصرف",
+      "access": "permission",
+      "permission": "settings:update",
+      "authRaw": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/api-keys",
+      "method": "GET",
+      "path": "/admin/clients/:id/api-keys",
+      "group": "clients",
+      "op": "action",
+      "description": "API keys of a merchant.",
+      "descriptionAr": "مفاتيح API للتاجر",
+      "access": "permission",
+      "permission": "api_keys:read",
+      "authRaw": "api_keys:read",
+      "stage": 7,
+      "tables": [
+        "api_keys"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/api-keys"
+      }
+    },
+    {
+      "key": "DELETE /admin/api-keys/:id",
+      "method": "DELETE",
+      "path": "/admin/api-keys/:id",
+      "group": "clients",
+      "op": "action",
+      "description": "Revoke a merchant API key.",
+      "descriptionAr": "إلغاء مفتاح تاجر",
+      "access": "permission",
+      "permission": "api_keys:revoke",
+      "authRaw": "api_keys:revoke",
+      "stage": 7,
+      "tables": [
+        "api_keys",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "DELETE",
+        "ops": null,
+        "path": "/admin/api-keys/:id"
+      }
+    },
+    {
+      "key": "GET /admin/client-groups",
+      "method": "GET",
+      "path": "/admin/client-groups",
+      "group": "catalog",
+      "op": "list",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "descriptionAr": "الفئات: الخصم وحد الترقية وحد الإيداع",
+      "access": "permission",
+      "permission": "groups:*",
+      "authRaw": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "GET /admin/client-groups/:id",
+      "method": "GET",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "descriptionAr": "الفئات: الخصم وحد الترقية وحد الإيداع",
+      "access": "permission",
+      "permission": "groups:*",
+      "authRaw": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "POST /admin/client-groups",
+      "method": "POST",
+      "path": "/admin/client-groups",
+      "group": "catalog",
+      "op": "create",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "descriptionAr": "الفئات: الخصم وحد الترقية وحد الإيداع",
+      "access": "permission",
+      "permission": "groups:*",
+      "authRaw": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "PATCH /admin/client-groups/:id",
+      "method": "PATCH",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "descriptionAr": "الفئات: الخصم وحد الترقية وحد الإيداع",
+      "access": "permission",
+      "permission": "groups:*",
+      "authRaw": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "DELETE /admin/client-groups/:id",
+      "method": "DELETE",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "descriptionAr": "الفئات: الخصم وحد الترقية وحد الإيداع",
+      "access": "permission",
+      "permission": "groups:*",
+      "authRaw": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "GET /admin/service-categories",
+      "method": "GET",
+      "path": "/admin/service-categories",
+      "group": "catalog",
+      "op": "list",
+      "description": "Service categories and the merchant groups that can see them.",
+      "descriptionAr": "التصنيفات والفئات اللي بتشوفها",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "GET /admin/service-categories/:id",
+      "method": "GET",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Service categories and the merchant groups that can see them.",
+      "descriptionAr": "التصنيفات والفئات اللي بتشوفها",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "POST /admin/service-categories",
+      "method": "POST",
+      "path": "/admin/service-categories",
+      "group": "catalog",
+      "op": "create",
+      "description": "Service categories and the merchant groups that can see them.",
+      "descriptionAr": "التصنيفات والفئات اللي بتشوفها",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "PATCH /admin/service-categories/:id",
+      "method": "PATCH",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Service categories and the merchant groups that can see them.",
+      "descriptionAr": "التصنيفات والفئات اللي بتشوفها",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "DELETE /admin/service-categories/:id",
+      "method": "DELETE",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Service categories and the merchant groups that can see them.",
+      "descriptionAr": "التصنيفات والفئات اللي بتشوفها",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "GET /admin/services",
+      "method": "GET",
+      "path": "/admin/services",
+      "group": "catalog",
+      "op": "list",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "descriptionAr": "الخدمات: النوع والتنفيذ ووضع التسعير والقواعد",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "GET /admin/services/:id",
+      "method": "GET",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "descriptionAr": "الخدمات: النوع والتنفيذ ووضع التسعير والقواعد",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "POST /admin/services",
+      "method": "POST",
+      "path": "/admin/services",
+      "group": "catalog",
+      "op": "create",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "descriptionAr": "الخدمات: النوع والتنفيذ ووضع التسعير والقواعد",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "PATCH /admin/services/:id",
+      "method": "PATCH",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "descriptionAr": "الخدمات: النوع والتنفيذ ووضع التسعير والقواعد",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "DELETE /admin/services/:id",
+      "method": "DELETE",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "descriptionAr": "الخدمات: النوع والتنفيذ ووضع التسعير والقواعد",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/fields",
+      "method": "PUT",
+      "path": "/admin/services/:id/fields",
+      "group": "catalog",
+      "op": "action",
+      "description": "Custom fields of the service.",
+      "descriptionAr": "الحقول المخصصة للخدمة",
+      "access": "permission",
+      "permission": "catalog:update",
+      "authRaw": "catalog:update",
+      "stage": 4,
+      "tables": [
+        "service_fields"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/fields"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/options",
+      "method": "PUT",
+      "path": "/admin/services/:id/options",
+      "group": "catalog",
+      "op": "action",
+      "description": "Model, network and MEP option lists.",
+      "descriptionAr": "قوائم الموديل والشبكة و MEP",
+      "access": "permission",
+      "permission": "catalog:update",
+      "authRaw": "catalog:update",
+      "stage": 4,
+      "tables": [
+        "service_options"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/options"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/group-prices",
+      "method": "PUT",
+      "path": "/admin/services/:id/group-prices",
+      "group": "catalog",
+      "op": "action",
+      "description": "Service price for each merchant group.",
+      "descriptionAr": "سعر الخدمة لكل فئة",
+      "access": "permission",
+      "permission": "pricing:update",
+      "authRaw": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "service_group_prices"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/group-prices"
+      }
+    },
+    {
+      "key": "GET /admin/client-prices",
+      "method": "GET",
+      "path": "/admin/client-prices",
+      "group": "catalog",
+      "op": "list",
+      "description": "A special price for a merchant on a service.",
+      "descriptionAr": "سعر خاص لتاجر على خدمة",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "POST /admin/client-prices",
+      "method": "POST",
+      "path": "/admin/client-prices",
+      "group": "catalog",
+      "op": "create",
+      "description": "A special price for a merchant on a service.",
+      "descriptionAr": "سعر خاص لتاجر على خدمة",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "PATCH /admin/client-prices/:id",
+      "method": "PATCH",
+      "path": "/admin/client-prices/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "A special price for a merchant on a service.",
+      "descriptionAr": "سعر خاص لتاجر على خدمة",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "DELETE /admin/client-prices/:id",
+      "method": "DELETE",
+      "path": "/admin/client-prices/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "A special price for a merchant on a service.",
+      "descriptionAr": "سعر خاص لتاجر على خدمة",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "GET /admin/pricing-rules",
+      "method": "GET",
+      "path": "/admin/pricing-rules",
+      "group": "catalog",
+      "op": "list",
+      "description": "Margin and discount rules.",
+      "descriptionAr": "قواعد الهامش والخصم",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "GET /admin/pricing-rules/:id",
+      "method": "GET",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Margin and discount rules.",
+      "descriptionAr": "قواعد الهامش والخصم",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "POST /admin/pricing-rules",
+      "method": "POST",
+      "path": "/admin/pricing-rules",
+      "group": "catalog",
+      "op": "create",
+      "description": "Margin and discount rules.",
+      "descriptionAr": "قواعد الهامش والخصم",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "PATCH /admin/pricing-rules/:id",
+      "method": "PATCH",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Margin and discount rules.",
+      "descriptionAr": "قواعد الهامش والخصم",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "DELETE /admin/pricing-rules/:id",
+      "method": "DELETE",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Margin and discount rules.",
+      "descriptionAr": "قواعد الهامش والخصم",
+      "access": "permission",
+      "permission": "pricing:*",
+      "authRaw": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "POST /admin/services/bulk-price/preview",
+      "method": "POST",
+      "path": "/admin/services/bulk-price/preview",
+      "group": "catalog",
+      "op": "action",
+      "description": "Preview a bulk price change.",
+      "descriptionAr": "معاينة تعديل أسعار بالجملة",
+      "access": "permission",
+      "permission": "pricing:update",
+      "authRaw": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/bulk-price/preview"
+      }
+    },
+    {
+      "key": "POST /admin/services/bulk-price/apply",
+      "method": "POST",
+      "path": "/admin/services/bulk-price/apply",
+      "group": "catalog",
+      "op": "action",
+      "description": "Apply the bulk price change.",
+      "descriptionAr": "تطبيق التعديل",
+      "access": "permission",
+      "permission": "pricing:update",
+      "authRaw": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "services",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/bulk-price/apply"
+      }
+    },
+    {
+      "key": "GET /admin/pricing/resolve",
+      "method": "GET",
+      "path": "/admin/pricing/resolve",
+      "group": "catalog",
+      "op": "action",
+      "description": "The price of a service for a merchant, with the resolution trace.",
+      "descriptionAr": "سعر تاجر لخدمة مع الـ trace",
+      "access": "permission",
+      "permission": "pricing:read",
+      "authRaw": "pricing:read",
+      "stage": 4,
+      "tables": [
+        "pricing_rules",
+        "service_group_prices",
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/pricing/resolve"
+      }
+    },
+    {
+      "key": "GET /admin/orders",
+      "method": "GET",
+      "path": "/admin/orders",
+      "group": "orders",
+      "op": "list",
+      "description": "Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.",
+      "descriptionAr": "الطلبات وطوابيرها: pending و manual و needs_attention و verification و review؛ فلتر channel=b2b|b2c",
+      "access": "permission",
+      "permission": "orders:read",
+      "authRaw": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/orders"
+      }
+    },
+    {
+      "key": "GET /admin/orders/:id",
+      "method": "GET",
+      "path": "/admin/orders/:id",
+      "group": "orders",
+      "op": "show",
+      "description": "Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.",
+      "descriptionAr": "الطلبات وطوابيرها: pending و manual و needs_attention و verification و review؛ فلتر channel=b2b|b2c",
+      "access": "permission",
+      "permission": "orders:read",
+      "authRaw": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/orders"
+      }
+    },
+    {
+      "key": "GET /admin/orders/:id/events",
+      "method": "GET",
+      "path": "/admin/orders/:id/events",
+      "group": "orders",
+      "op": "action",
+      "description": "The full order timeline.",
+      "descriptionAr": "الـ timeline الكامل",
+      "access": "permission",
+      "permission": "orders:read",
+      "authRaw": "orders:read",
+      "stage": 5,
+      "tables": [
+        "order_events"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/orders/:id/events"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/accept",
+      "method": "POST",
+      "path": "/admin/orders/:id/accept",
+      "group": "orders",
+      "op": "action",
+      "description": "Accept a manual order and move it to processing.",
+      "descriptionAr": "قبول طلب يدوي وتحويله لـ processing",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/accept"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reply",
+      "method": "POST",
+      "path": "/admin/orders/:id/reply",
+      "group": "orders",
+      "op": "action",
+      "description": "Complete the order with its result.",
+      "descriptionAr": "إكمال الطلب بالنتيجة",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reply"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reject",
+      "method": "POST",
+      "path": "/admin/orders/:id/reject",
+      "group": "orders",
+      "op": "action",
+      "description": "Reject the order with a reason and refund it.",
+      "descriptionAr": "رفض مع سبب واسترجاع",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reject"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reopen",
+      "method": "POST",
+      "path": "/admin/orders/:id/reopen",
+      "group": "orders",
+      "op": "action",
+      "description": "Reopen a completed order back to processing.",
+      "descriptionAr": "إعادة فتح طلب مكتمل لـ processing",
+      "access": "permission",
+      "permission": "orders:reopen",
+      "authRaw": "orders:reopen",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reopen"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/refund",
+      "method": "POST",
+      "path": "/admin/orders/:id/refund",
+      "group": "orders",
+      "op": "action",
+      "description": "Refund a completed merchant order: reopen, then reject; storefront orders are refunded from /admin/refunds.",
+      "descriptionAr": "استرجاع طلب مكتمل: reopen ثم reject (طلبات التجار)؛ طلبات المتجر تُسترجع من /admin/refunds",
+      "access": "permission",
+      "permission": "orders:reopen",
+      "authRaw": "orders:reopen",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/refund"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/verification",
+      "method": "POST",
+      "path": "/admin/orders/:id/verification",
+      "group": "orders",
+      "op": "action",
+      "description": "Verification decision: accept or refund.",
+      "descriptionAr": "قرار التحقق: قبول أو استرجاع",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/verification"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/notes",
+      "method": "POST",
+      "path": "/admin/orders/:id/notes",
+      "group": "orders",
+      "op": "action",
+      "description": "Add an internal note.",
+      "descriptionAr": "ملاحظة داخلية",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/notes"
+      }
+    },
+    {
+      "key": "POST /admin/orders/bulk-reply/preview",
+      "method": "POST",
+      "path": "/admin/orders/bulk-reply/preview",
+      "group": "orders",
+      "op": "action",
+      "description": "Match IMEI and CODE lines to orders.",
+      "descriptionAr": "مطابقة أسطر IMEI و CODE مع الطلبات",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/bulk-reply/preview"
+      }
+    },
+    {
+      "key": "POST /admin/orders/bulk-reply/apply",
+      "method": "POST",
+      "path": "/admin/orders/bulk-reply/apply",
+      "group": "orders",
+      "op": "action",
+      "description": "Apply the matched replies.",
+      "descriptionAr": "تطبيق الردود المطابقة",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/bulk-reply/apply"
+      }
+    },
+    {
+      "key": "GET /admin/orders/export",
+      "method": "GET",
+      "path": "/admin/orders/export",
+      "group": "orders",
+      "op": "action",
+      "description": "Export a CSV file according to the filters.",
+      "descriptionAr": "تصدير CSV حسب الفلاتر",
+      "access": "permission",
+      "permission": "orders:read",
+      "authRaw": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/orders/export"
+      }
+    },
+    {
+      "key": "GET /admin/inventory-codes",
+      "method": "GET",
+      "path": "/admin/inventory-codes",
+      "group": "orders",
+      "op": "list",
+      "description": "Code inventory and the status of each code.",
+      "descriptionAr": "مخزون الأكواد وحالتها",
+      "access": "permission",
+      "permission": "inventory:read",
+      "authRaw": "inventory:read",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "L",
+        "path": "/admin/inventory-codes"
+      }
+    },
+    {
+      "key": "POST /admin/services/:id/inventory/import",
+      "method": "POST",
+      "path": "/admin/services/:id/inventory/import",
+      "group": "orders",
+      "op": "action",
+      "description": "Import codes with duplicate detection.",
+      "descriptionAr": "استيراد أكواد مع كشف التكرار",
+      "access": "permission",
+      "permission": "inventory:write",
+      "authRaw": "inventory:write",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/:id/inventory/import"
+      }
+    },
+    {
+      "key": "POST /admin/inventory-codes/void",
+      "method": "POST",
+      "path": "/admin/inventory-codes/void",
+      "group": "orders",
+      "op": "action",
+      "description": "Void unsold codes.",
+      "descriptionAr": "إلغاء أكواد غير مباعة",
+      "access": "permission",
+      "permission": "inventory:write",
+      "authRaw": "inventory:write",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/inventory-codes/void"
+      }
+    },
+    {
+      "key": "GET /admin/files/:id",
+      "method": "GET",
+      "path": "/admin/files/:id",
+      "group": "orders",
+      "op": "action",
+      "description": "Download a file through a signed link.",
+      "descriptionAr": "تحميل ملف برابط موقّع",
+      "access": "permission",
+      "permission": "files:read",
+      "authRaw": "files:read",
+      "stage": 5,
+      "tables": [
+        "files"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/files/:id"
+      }
+    },
+    {
+      "key": "GET /admin/suppliers",
+      "method": "GET",
+      "path": "/admin/suppliers",
+      "group": "suppliers",
+      "op": "list",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "descriptionAr": "الموردين: الـ driver والرابط والمفتاح (كتابة فقط) والحدود",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "authRaw": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "GET /admin/suppliers/:id",
+      "method": "GET",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "show",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "descriptionAr": "الموردين: الـ driver والرابط والمفتاح (كتابة فقط) والحدود",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "authRaw": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers",
+      "method": "POST",
+      "path": "/admin/suppliers",
+      "group": "suppliers",
+      "op": "create",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "descriptionAr": "الموردين: الـ driver والرابط والمفتاح (كتابة فقط) والحدود",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "authRaw": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "PATCH /admin/suppliers/:id",
+      "method": "PATCH",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "update",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "descriptionAr": "الموردين: الـ driver والرابط والمفتاح (كتابة فقط) والحدود",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "authRaw": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "DELETE /admin/suppliers/:id",
+      "method": "DELETE",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "delete",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "descriptionAr": "الموردين: الـ driver والرابط والمفتاح (كتابة فقط) والحدود",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "authRaw": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/test",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/test",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Test the connection through accountinfo.",
+      "descriptionAr": "اختبار الاتصال عبر accountinfo",
+      "access": "permission",
+      "permission": "suppliers:update",
+      "authRaw": "suppliers:update",
+      "stage": 6,
+      "tables": [
+        "suppliers",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/test"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/sync",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/sync",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Sync services and balance now.",
+      "descriptionAr": "مزامنة الخدمات والرصيد الآن",
+      "access": "permission",
+      "permission": "suppliers:update",
+      "authRaw": "suppliers:update",
+      "stage": 6,
+      "tables": [
+        "supplier_services",
+        "suppliers"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/sync"
+      }
+    },
+    {
+      "key": "GET /admin/suppliers/:id/services",
+      "method": "GET",
+      "path": "/admin/suppliers/:id/services",
+      "group": "suppliers",
+      "op": "action",
+      "description": "The supplier services after syncing.",
+      "descriptionAr": "خدمات المورد بعد المزامنة",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "authRaw": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_services"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/suppliers/:id/services"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/import/preview",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/import/preview",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Preview the import: new, matching and changed services, with the suggested price.",
+      "descriptionAr": "معاينة الاستيراد: جديد ومطابق ومتغيّر مع السعر المقترح",
+      "access": "permission",
+      "permission": "catalog:create",
+      "authRaw": "catalog:create",
+      "stage": 6,
+      "tables": [
+        "supplier_services",
+        "services"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/import/preview"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/import",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/import",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Import the selected items as services, fields and links.",
+      "descriptionAr": "استيراد المختار كخدمات وحقول وروابط",
+      "access": "permission",
+      "permission": "catalog:create",
+      "authRaw": "catalog:create",
+      "stage": 6,
+      "tables": [
+        "services",
+        "service_fields",
+        "service_supplier_links"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/import"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/supplier-links",
+      "method": "PUT",
+      "path": "/admin/services/:id/supplier-links",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Link the service to suppliers in priority order.",
+      "descriptionAr": "ربط الخدمة بالموردين بالأولوية",
+      "access": "permission",
+      "permission": "catalog:update",
+      "authRaw": "catalog:update",
+      "stage": 6,
+      "tables": [
+        "service_supplier_links"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/supplier-links"
+      }
+    },
+    {
+      "key": "GET /admin/supplier-api-logs",
+      "method": "GET",
+      "path": "/admin/supplier-api-logs",
+      "group": "suppliers",
+      "op": "list",
+      "description": "Log of supplier requests and responses.",
+      "descriptionAr": "سجل طلبات وردود الموردين",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "authRaw": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/supplier-api-logs"
+      }
+    },
+    {
+      "key": "GET /admin/supplier-api-logs/:id",
+      "method": "GET",
+      "path": "/admin/supplier-api-logs/:id",
+      "group": "suppliers",
+      "op": "show",
+      "description": "Log of supplier requests and responses.",
+      "descriptionAr": "سجل طلبات وردود الموردين",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "authRaw": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/supplier-api-logs"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/dispatch",
+      "method": "POST",
+      "path": "/admin/orders/:id/dispatch",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Manually send the order to the supplier (force send).",
+      "descriptionAr": "إرسال يدوي للمورد (force send)",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/dispatch"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/fetch",
+      "method": "POST",
+      "path": "/admin/orders/:id/fetch",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Fetch the result now (force get).",
+      "descriptionAr": "سحب النتيجة الآن (force get)",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/fetch"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/change-supplier",
+      "method": "POST",
+      "path": "/admin/orders/:id/change-supplier",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Change the supplier or reset the reference.",
+      "descriptionAr": "تغيير المورد أو تصفير الـ reference",
+      "access": "permission",
+      "permission": "orders:update",
+      "authRaw": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/change-supplier"
+      }
+    },
+    {
+      "key": "GET /admin/payment-gateways",
+      "method": "GET",
+      "path": "/admin/payment-gateways",
+      "group": "billing",
+      "op": "list",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "descriptionAr": "البوابات: الرسوم والحدود والفئات",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "authRaw": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "GET /admin/payment-gateways/:id",
+      "method": "GET",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "descriptionAr": "البوابات: الرسوم والحدود والفئات",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "authRaw": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "POST /admin/payment-gateways",
+      "method": "POST",
+      "path": "/admin/payment-gateways",
+      "group": "billing",
+      "op": "create",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "descriptionAr": "البوابات: الرسوم والحدود والفئات",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "authRaw": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "PATCH /admin/payment-gateways/:id",
+      "method": "PATCH",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "update",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "descriptionAr": "البوابات: الرسوم والحدود والفئات",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "authRaw": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "DELETE /admin/payment-gateways/:id",
+      "method": "DELETE",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "delete",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "descriptionAr": "البوابات: الرسوم والحدود والفئات",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "authRaw": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "GET /admin/invoices",
+      "method": "GET",
+      "path": "/admin/invoices",
+      "group": "billing",
+      "op": "list",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "descriptionAr": "الفواتير؛ الإنشاء = فاتورة يدوية لتاجر",
+      "access": "permission",
+      "permission": "invoices:*",
+      "authRaw": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "GET /admin/invoices/:id",
+      "method": "GET",
+      "path": "/admin/invoices/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "descriptionAr": "الفواتير؛ الإنشاء = فاتورة يدوية لتاجر",
+      "access": "permission",
+      "permission": "invoices:*",
+      "authRaw": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "POST /admin/invoices",
+      "method": "POST",
+      "path": "/admin/invoices",
+      "group": "billing",
+      "op": "create",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "descriptionAr": "الفواتير؛ الإنشاء = فاتورة يدوية لتاجر",
+      "access": "permission",
+      "permission": "invoices:*",
+      "authRaw": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "GET /admin/payments",
+      "method": "GET",
+      "path": "/admin/payments",
+      "group": "billing",
+      "op": "list",
+      "description": "Payments and the manual review queue.",
+      "descriptionAr": "الدفعات وطابور المراجعة اليدوية",
+      "access": "permission",
+      "permission": "payments:read",
+      "authRaw": "payments:read",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/payments"
+      }
+    },
+    {
+      "key": "GET /admin/payments/:id",
+      "method": "GET",
+      "path": "/admin/payments/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Payments and the manual review queue.",
+      "descriptionAr": "الدفعات وطابور المراجعة اليدوية",
+      "access": "permission",
+      "permission": "payments:read",
+      "authRaw": "payments:read",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/payments"
+      }
+    },
+    {
+      "key": "POST /admin/payments/:id/approve",
+      "method": "POST",
+      "path": "/admin/payments/:id/approve",
+      "group": "billing",
+      "op": "action",
+      "description": "Approve a manual payment and top up the wallet.",
+      "descriptionAr": "اعتماد دفعة يدوية وشحن المحفظة",
+      "access": "permission",
+      "permission": "payments:approve",
+      "authRaw": "payments:approve",
+      "stage": 8,
+      "tables": [
+        "payments",
+        "invoices",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/payments/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/payments/:id/reject",
+      "method": "POST",
+      "path": "/admin/payments/:id/reject",
+      "group": "billing",
+      "op": "action",
+      "description": "Reject a payment with a reason.",
+      "descriptionAr": "رفض دفعة مع سبب",
+      "access": "permission",
+      "permission": "payments:approve",
+      "authRaw": "payments:approve",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/payments/:id/reject"
+      }
+    },
+    {
+      "key": "GET /admin/kyc-submissions",
+      "method": "GET",
+      "path": "/admin/kyc-submissions",
+      "group": "billing",
+      "op": "list",
+      "description": "Verification (KYC) requests.",
+      "descriptionAr": "طلبات التوثيق",
+      "access": "permission",
+      "permission": "kyc:read",
+      "authRaw": "kyc:read",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/kyc-submissions"
+      }
+    },
+    {
+      "key": "GET /admin/kyc-submissions/:id",
+      "method": "GET",
+      "path": "/admin/kyc-submissions/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Verification (KYC) requests.",
+      "descriptionAr": "طلبات التوثيق",
+      "access": "permission",
+      "permission": "kyc:read",
+      "authRaw": "kyc:read",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/kyc-submissions"
+      }
+    },
+    {
+      "key": "POST /admin/kyc-submissions/:id/decide",
+      "method": "POST",
+      "path": "/admin/kyc-submissions/:id/decide",
+      "group": "billing",
+      "op": "action",
+      "description": "Approve or reject the verification.",
+      "descriptionAr": "قبول أو رفض التوثيق",
+      "access": "permission",
+      "permission": "kyc:decide",
+      "authRaw": "kyc:decide",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions",
+        "clients"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/kyc-submissions/:id/decide"
+      }
+    },
+    {
+      "key": "GET /admin/commission-plans",
+      "method": "GET",
+      "path": "/admin/commission-plans",
+      "group": "growth",
+      "op": "list",
+      "description": "Referral and rebate plans.",
+      "descriptionAr": "خطط الإحالة والـ rebate",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "GET /admin/commission-plans/:id",
+      "method": "GET",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Referral and rebate plans.",
+      "descriptionAr": "خطط الإحالة والـ rebate",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "POST /admin/commission-plans",
+      "method": "POST",
+      "path": "/admin/commission-plans",
+      "group": "growth",
+      "op": "create",
+      "description": "Referral and rebate plans.",
+      "descriptionAr": "خطط الإحالة والـ rebate",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "PATCH /admin/commission-plans/:id",
+      "method": "PATCH",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "update",
+      "description": "Referral and rebate plans.",
+      "descriptionAr": "خطط الإحالة والـ rebate",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "DELETE /admin/commission-plans/:id",
+      "method": "DELETE",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "delete",
+      "description": "Referral and rebate plans.",
+      "descriptionAr": "خطط الإحالة والـ rebate",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "GET /admin/commission-assignments",
+      "method": "GET",
+      "path": "/admin/commission-assignments",
+      "group": "growth",
+      "op": "list",
+      "description": "Assign plans to merchants.",
+      "descriptionAr": "ربط الخطط بالتجار",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "GET /admin/commission-assignments/:id",
+      "method": "GET",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Assign plans to merchants.",
+      "descriptionAr": "ربط الخطط بالتجار",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "POST /admin/commission-assignments",
+      "method": "POST",
+      "path": "/admin/commission-assignments",
+      "group": "growth",
+      "op": "create",
+      "description": "Assign plans to merchants.",
+      "descriptionAr": "ربط الخطط بالتجار",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "PATCH /admin/commission-assignments/:id",
+      "method": "PATCH",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "update",
+      "description": "Assign plans to merchants.",
+      "descriptionAr": "ربط الخطط بالتجار",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "DELETE /admin/commission-assignments/:id",
+      "method": "DELETE",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "delete",
+      "description": "Assign plans to merchants.",
+      "descriptionAr": "ربط الخطط بالتجار",
+      "access": "permission",
+      "permission": "commissions:*",
+      "authRaw": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "GET /admin/commission-accruals",
+      "method": "GET",
+      "path": "/admin/commission-accruals",
+      "group": "growth",
+      "op": "list",
+      "description": "Accrued commissions and their status.",
+      "descriptionAr": "العمولات المستحقة وحالتها",
+      "access": "permission",
+      "permission": "commissions:read",
+      "authRaw": "commissions:read",
+      "stage": 11,
+      "tables": [
+        "commission_accruals"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/commission-accruals"
+      }
+    },
+    {
+      "key": "GET /admin/commission-accruals/:id",
+      "method": "GET",
+      "path": "/admin/commission-accruals/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Accrued commissions and their status.",
+      "descriptionAr": "العمولات المستحقة وحالتها",
+      "access": "permission",
+      "permission": "commissions:read",
+      "authRaw": "commissions:read",
+      "stage": 11,
+      "tables": [
+        "commission_accruals"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/commission-accruals"
+      }
+    },
+    {
+      "key": "POST /admin/commission-accruals/approve",
+      "method": "POST",
+      "path": "/admin/commission-accruals/approve",
+      "group": "growth",
+      "op": "action",
+      "description": "Approve and pay out in bulk, with a ledger entry on the wallet.",
+      "descriptionAr": "اعتماد وصرف بالجملة بقيد على المحفظة",
+      "access": "permission",
+      "permission": "commissions:approve",
+      "authRaw": "commissions:approve",
+      "stage": 11,
+      "tables": [
+        "commission_accruals",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/commission-accruals/approve"
+      }
+    },
+    {
+      "key": "GET /admin/reports/profit",
+      "method": "GET",
+      "path": "/admin/reports/profit",
+      "group": "growth",
+      "op": "action",
+      "description": "Profit by day, service, supplier or merchant.",
+      "descriptionAr": "الربح حسب اليوم أو الخدمة أو المورد أو التاجر",
+      "access": "permission",
+      "permission": "reports:read",
+      "authRaw": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/profit"
+      }
+    },
+    {
+      "key": "GET /admin/reports/wallet-exposure",
+      "method": "GET",
+      "path": "/admin/reports/wallet-exposure",
+      "group": "growth",
+      "op": "action",
+      "description": "Balances, overdraft and reserved amounts.",
+      "descriptionAr": "الأرصدة والـ overdraft والمحجوز",
+      "access": "permission",
+      "permission": "reports:read",
+      "authRaw": "reports:read",
+      "stage": 11,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/wallet-exposure"
+      }
+    },
+    {
+      "key": "GET /admin/reports/suppliers",
+      "method": "GET",
+      "path": "/admin/reports/suppliers",
+      "group": "growth",
+      "op": "action",
+      "description": "Supplier spend, rejection rate and speed.",
+      "descriptionAr": "صرف الموردين ونسبة الرفض والسرعة",
+      "access": "permission",
+      "permission": "reports:read",
+      "authRaw": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "suppliers"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/suppliers"
+      }
+    },
+    {
+      "key": "GET /admin/reports/top-clients",
+      "method": "GET",
+      "path": "/admin/reports/top-clients",
+      "group": "growth",
+      "op": "action",
+      "description": "Top merchants by volume and by profit.",
+      "descriptionAr": "أكبر التجار حجماً وربحاً",
+      "access": "permission",
+      "permission": "reports:read",
+      "authRaw": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "clients"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/top-clients"
+      }
+    },
+    {
+      "key": "GET /admin/reports/client-statement/:clientId",
+      "method": "GET",
+      "path": "/admin/reports/client-statement/:clientId",
+      "group": "growth",
+      "op": "action",
+      "description": "Official account statement for a merchant.",
+      "descriptionAr": "كشف حساب رسمي لتاجر",
+      "access": "permission",
+      "permission": "reports:read",
+      "authRaw": "reports:read",
+      "stage": 11,
+      "tables": [
+        "ledger_entries",
+        "invoices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/client-statement/:clientId"
+      }
+    },
+    {
+      "key": "GET /admin/dashboard",
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "group": "ops",
+      "op": "action",
+      "description": "KPIs for today: sales, profit, queues and supplier balances; scope=all|b2b|b2c separates merchants from the storefront.",
+      "descriptionAr": "مؤشرات اليوم: المبيعات والربح والطوابير وأرصدة الموردين؛ scope=all|b2b|b2c لفصل التجار عن المتجر",
+      "access": "permission",
+      "permission": "dashboard:read",
+      "authRaw": "dashboard:read",
+      "stage": 9,
+      "tables": [
+        "orders",
+        "suppliers",
+        "payments"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/dashboard"
+      }
+    },
+    {
+      "key": "GET /admin/queues",
+      "method": "GET",
+      "path": "/admin/queues",
+      "group": "ops",
+      "op": "action",
+      "description": "Bull Board UI for monitoring the queues.",
+      "descriptionAr": "Bull Board لمراقبة الـ queues (واجهة)",
+      "access": "permission",
+      "permission": "queues:read",
+      "authRaw": "queues:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/queues"
+      }
+    },
+    {
+      "key": "GET /admin/webhook-deliveries",
+      "method": "GET",
+      "path": "/admin/webhook-deliveries",
+      "group": "ops",
+      "op": "list",
+      "description": "Log of merchant webhooks.",
+      "descriptionAr": "سجل webhooks التجار",
+      "access": "permission",
+      "permission": "webhooks:read",
+      "authRaw": "webhooks:read",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/webhook-deliveries"
+      }
+    },
+    {
+      "key": "GET /admin/webhook-deliveries/:id",
+      "method": "GET",
+      "path": "/admin/webhook-deliveries/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Log of merchant webhooks.",
+      "descriptionAr": "سجل webhooks التجار",
+      "access": "permission",
+      "permission": "webhooks:read",
+      "authRaw": "webhooks:read",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/webhook-deliveries"
+      }
+    },
+    {
+      "key": "POST /admin/webhook-deliveries/:id/retry",
+      "method": "POST",
+      "path": "/admin/webhook-deliveries/:id/retry",
+      "group": "ops",
+      "op": "action",
+      "description": "Resend the delivery.",
+      "descriptionAr": "إعادة إرسال",
+      "access": "permission",
+      "permission": "webhooks:update",
+      "authRaw": "webhooks:update",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/webhook-deliveries/:id/retry"
+      }
+    },
+    {
+      "key": "GET /admin/notification-templates",
+      "method": "GET",
+      "path": "/admin/notification-templates",
+      "group": "ops",
+      "op": "list",
+      "description": "Email and Telegram templates for each event.",
+      "descriptionAr": "قوالب الإيميل و Telegram لكل حدث",
+      "access": "permission",
+      "permission": "notifications:*",
+      "authRaw": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "GET /admin/notification-templates/:id",
+      "method": "GET",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Email and Telegram templates for each event.",
+      "descriptionAr": "قوالب الإيميل و Telegram لكل حدث",
+      "access": "permission",
+      "permission": "notifications:*",
+      "authRaw": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "POST /admin/notification-templates",
+      "method": "POST",
+      "path": "/admin/notification-templates",
+      "group": "ops",
+      "op": "create",
+      "description": "Email and Telegram templates for each event.",
+      "descriptionAr": "قوالب الإيميل و Telegram لكل حدث",
+      "access": "permission",
+      "permission": "notifications:*",
+      "authRaw": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "PATCH /admin/notification-templates/:id",
+      "method": "PATCH",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "update",
+      "description": "Email and Telegram templates for each event.",
+      "descriptionAr": "قوالب الإيميل و Telegram لكل حدث",
+      "access": "permission",
+      "permission": "notifications:*",
+      "authRaw": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "DELETE /admin/notification-templates/:id",
+      "method": "DELETE",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "delete",
+      "description": "Email and Telegram templates for each event.",
+      "descriptionAr": "قوالب الإيميل و Telegram لكل حدث",
+      "access": "permission",
+      "permission": "notifications:*",
+      "authRaw": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "POST /admin/notification-templates/:id/preview",
+      "method": "POST",
+      "path": "/admin/notification-templates/:id/preview",
+      "group": "ops",
+      "op": "action",
+      "description": "Preview the template with sample data.",
+      "descriptionAr": "معاينة القالب ببيانات تجريبية",
+      "access": "permission",
+      "permission": "notifications:read",
+      "authRaw": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/notification-templates/:id/preview"
+      }
+    },
+    {
+      "key": "GET /admin/notifications",
+      "method": "GET",
+      "path": "/admin/notifications",
+      "group": "ops",
+      "op": "list",
+      "description": "Log of sent notifications.",
+      "descriptionAr": "سجل الإشعارات المرسلة",
+      "access": "permission",
+      "permission": "notifications:read",
+      "authRaw": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notifications"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/notifications"
+      }
+    },
+    {
+      "key": "GET /admin/notifications/:id",
+      "method": "GET",
+      "path": "/admin/notifications/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Log of sent notifications.",
+      "descriptionAr": "سجل الإشعارات المرسلة",
+      "access": "permission",
+      "permission": "notifications:read",
+      "authRaw": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notifications"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/notifications"
+      }
+    },
+    {
+      "key": "GET /admin/customers",
+      "method": "GET",
+      "path": "/admin/customers",
+      "group": "customers",
+      "op": "list",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "descriptionAr": "عملاء المتجر: بحث وعرض الطلبات والمدفوعات؛ إنشاء عميل بحساب (دعوة برابط أو كلمة مؤقتة) وتعديل الاسم والإيميل والبلد والهاتف والملاحظات. تغيير الإيميل يُلغي التوثيق",
+      "access": "permission",
+      "permission": "customers:*",
+      "authRaw": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "GET /admin/customers/:id",
+      "method": "GET",
+      "path": "/admin/customers/:id",
+      "group": "customers",
+      "op": "show",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "descriptionAr": "عملاء المتجر: بحث وعرض الطلبات والمدفوعات؛ إنشاء عميل بحساب (دعوة برابط أو كلمة مؤقتة) وتعديل الاسم والإيميل والبلد والهاتف والملاحظات. تغيير الإيميل يُلغي التوثيق",
+      "access": "permission",
+      "permission": "customers:*",
+      "authRaw": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "POST /admin/customers",
+      "method": "POST",
+      "path": "/admin/customers",
+      "group": "customers",
+      "op": "create",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "descriptionAr": "عملاء المتجر: بحث وعرض الطلبات والمدفوعات؛ إنشاء عميل بحساب (دعوة برابط أو كلمة مؤقتة) وتعديل الاسم والإيميل والبلد والهاتف والملاحظات. تغيير الإيميل يُلغي التوثيق",
+      "access": "permission",
+      "permission": "customers:*",
+      "authRaw": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "PATCH /admin/customers/:id",
+      "method": "PATCH",
+      "path": "/admin/customers/:id",
+      "group": "customers",
+      "op": "update",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "descriptionAr": "عملاء المتجر: بحث وعرض الطلبات والمدفوعات؛ إنشاء عميل بحساب (دعوة برابط أو كلمة مؤقتة) وتعديل الاسم والإيميل والبلد والهاتف والملاحظات. تغيير الإيميل يُلغي التوثيق",
+      "access": "permission",
+      "permission": "customers:*",
+      "authRaw": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/account",
+      "method": "POST",
+      "path": "/admin/customers/:id/account",
+      "group": "customers",
+      "op": "action",
+      "description": "Create an account for a customer who bought as a guest: earlier orders are linked to the account and the customer receives a link to choose a password.",
+      "descriptionAr": "إنشاء حساب لعميل اشترى كضيف: تُربط طلباته السابقة بالحساب ويصله رابط لاختيار كلمة المرور",
+      "access": "permission",
+      "permission": "customers:update",
+      "authRaw": "customers:update",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/account"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/password",
+      "method": "POST",
+      "path": "/admin/customers/:id/password",
+      "group": "customers",
+      "op": "action",
+      "description": "Send a password-setting link, or set a temporary password that must be changed at first sign-in; the current password is never shown and never enters the audit log, and the sessions can optionally be ended.",
+      "descriptionAr": "إرسال رابط تعيين كلمة المرور، أو تعيين كلمة مؤقتة تُفرض تغييرها بأول دخول؛ الكلمة الحالية لا تُعرض ولا تدخل سجل التدقيق، ويُنهي الجلسات اختيارياً",
+      "access": "permission",
+      "permission": "customers:password",
+      "authRaw": "customers:password",
+      "stage": 14,
+      "tables": [
+        "customer_credentials",
+        "auth_tokens",
+        "sessions",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/password"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/sessions/revoke",
+      "method": "POST",
+      "path": "/admin/customers/:id/sessions/revoke",
+      "group": "customers",
+      "op": "action",
+      "description": "Sign the customer out of all devices: sets revoked_at on every active session.",
+      "descriptionAr": "تسجيل خروج العميل من كل الأجهزة: revoked_at على كل جلساته النشطة",
+      "access": "permission",
+      "permission": "customers:password",
+      "authRaw": "customers:password",
+      "stage": 14,
+      "tables": [
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/sessions/revoke"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/suspend",
+      "method": "POST",
+      "path": "/admin/customers/:id/suspend",
+      "group": "customers",
+      "op": "action",
+      "description": "Suspend the account with a reason: no sign-in and no new orders, orders in progress still complete, and sessions are ended; a temporary suspension adds nothing to the blocklist.",
+      "descriptionAr": "إيقاف الحساب مع السبب: لا دخول ولا طلبات جديدة، والطلبات الجارية تكتمل، وتُنهى الجلسات. إيقاف مؤقت لا يضيف شيئاً للقائمة السوداء",
+      "access": "permission",
+      "permission": "customers:suspend",
+      "authRaw": "customers:suspend",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/suspend"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/reactivate",
+      "method": "POST",
+      "path": "/admin/customers/:id/reactivate",
+      "group": "customers",
+      "op": "action",
+      "description": "Reactivate a suspended account; the customer signs in again.",
+      "descriptionAr": "إعادة تفعيل حساب موقوف؛ يسجّل العميل دخوله من جديد",
+      "access": "permission",
+      "permission": "customers:suspend",
+      "authRaw": "customers:suspend",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/reactivate"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/block",
+      "method": "POST",
+      "path": "/admin/customers/:id/block",
+      "group": "customers",
+      "op": "action",
+      "description": "Block a customer for fraud, or lift the block, with a reason; blocking adds the customer fingerprint to the blocklist (use suspend for a temporary stop).",
+      "descriptionAr": "حظر عميل لاحتيال أو فك الحظر مع السبب، ويضيف بصمته للقائمة السوداء (للإيقاف المؤقت استعمل suspend)",
+      "access": "permission",
+      "permission": "customers:block",
+      "authRaw": "customers:block",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "blocklist_entries",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/block"
+      }
+    },
+    {
+      "key": "GET /admin/customers/:id/export",
+      "method": "GET",
+      "path": "/admin/customers/:id/export",
+      "group": "customers",
+      "op": "action",
+      "description": "Export the customer data for a data-protection request.",
+      "descriptionAr": "تصدير بيانات العميل بطلب حماية البيانات",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "authRaw": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "orders",
+        "consent_records",
+        "data_requests"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/customers/:id/export"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/anonymize",
+      "method": "POST",
+      "path": "/admin/customers/:id/anonymize",
+      "group": "customers",
+      "op": "action",
+      "description": "Anonymize the name, email and IMEI while keeping payment records for accounting.",
+      "descriptionAr": "إخفاء الاسم والإيميل والـ IMEI مع إبقاء سجلات الدفع للمحاسبة",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "authRaw": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "data_requests",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/anonymize"
+      }
+    },
+    {
+      "key": "GET /admin/data-requests",
+      "method": "GET",
+      "path": "/admin/data-requests",
+      "group": "customers",
+      "op": "list",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "descriptionAr": "طلبات التصدير والحذف ومهلة تنفيذها",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "authRaw": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    },
+    {
+      "key": "GET /admin/data-requests/:id",
+      "method": "GET",
+      "path": "/admin/data-requests/:id",
+      "group": "customers",
+      "op": "show",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "descriptionAr": "طلبات التصدير والحذف ومهلة تنفيذها",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "authRaw": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    },
+    {
+      "key": "PATCH /admin/data-requests/:id",
+      "method": "PATCH",
+      "path": "/admin/data-requests/:id",
+      "group": "customers",
+      "op": "update",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "descriptionAr": "طلبات التصدير والحذف ومهلة تنفيذها",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "authRaw": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    },
+    {
+      "key": "GET /admin/tax-rates",
+      "method": "GET",
+      "path": "/admin/tax-rates",
+      "group": "refunds",
+      "op": "list",
+      "description": "Tax rates by country and their effective dates.",
+      "descriptionAr": "نسب الضريبة بالبلد وتاريخ سريانها",
+      "access": "permission",
+      "permission": "tax:*",
+      "authRaw": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "GET /admin/tax-rates/:id",
+      "method": "GET",
+      "path": "/admin/tax-rates/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Tax rates by country and their effective dates.",
+      "descriptionAr": "نسب الضريبة بالبلد وتاريخ سريانها",
+      "access": "permission",
+      "permission": "tax:*",
+      "authRaw": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "POST /admin/tax-rates",
+      "method": "POST",
+      "path": "/admin/tax-rates",
+      "group": "refunds",
+      "op": "create",
+      "description": "Tax rates by country and their effective dates.",
+      "descriptionAr": "نسب الضريبة بالبلد وتاريخ سريانها",
+      "access": "permission",
+      "permission": "tax:*",
+      "authRaw": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "PATCH /admin/tax-rates/:id",
+      "method": "PATCH",
+      "path": "/admin/tax-rates/:id",
+      "group": "refunds",
+      "op": "update",
+      "description": "Tax rates by country and their effective dates.",
+      "descriptionAr": "نسب الضريبة بالبلد وتاريخ سريانها",
+      "access": "permission",
+      "permission": "tax:*",
+      "authRaw": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "GET /admin/tac-catalog",
+      "method": "GET",
+      "path": "/admin/tac-catalog",
+      "group": "storefront",
+      "op": "list",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "descriptionAr": "جدول TAC: الماركة والموديل لكل بادئة IMEI",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "GET /admin/tac-catalog/:id",
+      "method": "GET",
+      "path": "/admin/tac-catalog/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "descriptionAr": "جدول TAC: الماركة والموديل لكل بادئة IMEI",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "POST /admin/tac-catalog",
+      "method": "POST",
+      "path": "/admin/tac-catalog",
+      "group": "storefront",
+      "op": "create",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "descriptionAr": "جدول TAC: الماركة والموديل لكل بادئة IMEI",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "PATCH /admin/tac-catalog/:id",
+      "method": "PATCH",
+      "path": "/admin/tac-catalog/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "descriptionAr": "جدول TAC: الماركة والموديل لكل بادئة IMEI",
+      "access": "permission",
+      "permission": "catalog:*",
+      "authRaw": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "POST /admin/currencies/refresh-fx",
+      "method": "POST",
+      "path": "/admin/currencies/refresh-fx",
+      "group": "refunds",
+      "op": "action",
+      "description": "Refresh the exchange rates shown to customers.",
+      "descriptionAr": "تحديث أسعار الصرف المعروضة للزبائن",
+      "access": "permission",
+      "permission": "currencies:update",
+      "authRaw": "currencies:update",
+      "stage": 14,
+      "tables": [
+        "currencies",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/currencies/refresh-fx"
+      }
+    },
+    {
+      "key": "GET /admin/service-listings",
+      "method": "GET",
+      "path": "/admin/service-listings",
+      "group": "storefront",
+      "op": "list",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "descriptionAr": "الخدمات المعروضة بالمتجر وسعر Retail لكل خدمة؛ منع البيع تحت الحد الأدنى",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "GET /admin/service-listings/:id",
+      "method": "GET",
+      "path": "/admin/service-listings/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "descriptionAr": "الخدمات المعروضة بالمتجر وسعر Retail لكل خدمة؛ منع البيع تحت الحد الأدنى",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "POST /admin/service-listings",
+      "method": "POST",
+      "path": "/admin/service-listings",
+      "group": "storefront",
+      "op": "create",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "descriptionAr": "الخدمات المعروضة بالمتجر وسعر Retail لكل خدمة؛ منع البيع تحت الحد الأدنى",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "PATCH /admin/service-listings/:id",
+      "method": "PATCH",
+      "path": "/admin/service-listings/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "descriptionAr": "الخدمات المعروضة بالمتجر وسعر Retail لكل خدمة؛ منع البيع تحت الحد الأدنى",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "GET /admin/content-pages",
+      "method": "GET",
+      "path": "/admin/content-pages",
+      "group": "storefront",
+      "op": "list",
+      "description": "Landing and content pages: draft, then publish.",
+      "descriptionAr": "صفحات الهبوط والمحتوى: مسودة ثم نشر",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "GET /admin/content-pages/:id",
+      "method": "GET",
+      "path": "/admin/content-pages/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Landing and content pages: draft, then publish.",
+      "descriptionAr": "صفحات الهبوط والمحتوى: مسودة ثم نشر",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages",
+      "method": "POST",
+      "path": "/admin/content-pages",
+      "group": "storefront",
+      "op": "create",
+      "description": "Landing and content pages: draft, then publish.",
+      "descriptionAr": "صفحات الهبوط والمحتوى: مسودة ثم نشر",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "PATCH /admin/content-pages/:id",
+      "method": "PATCH",
+      "path": "/admin/content-pages/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Landing and content pages: draft, then publish.",
+      "descriptionAr": "صفحات الهبوط والمحتوى: مسودة ثم نشر",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages/:id/publish",
+      "method": "POST",
+      "path": "/admin/content-pages/:id/publish",
+      "group": "storefront",
+      "op": "action",
+      "description": "Publish a page or hide it.",
+      "descriptionAr": "نشر صفحة أو إخفاؤها",
+      "access": "permission",
+      "permission": "storefront:publish",
+      "authRaw": "storefront:publish",
+      "stage": 15,
+      "tables": [
+        "content_pages",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/content-pages/:id/publish"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages/generate",
+      "method": "POST",
+      "path": "/admin/content-pages/generate",
+      "group": "storefront",
+      "op": "action",
+      "description": "Landing-page generator (brand x model x network): produces drafts for review only.",
+      "descriptionAr": "مولّد صفحات الهبوط (ماركة × موديل × شبكة): ينتج مسودات للمراجعة فقط",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 19,
+      "tables": [
+        "content_pages",
+        "service_listings",
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/content-pages/generate"
+      }
+    },
+    {
+      "key": "GET /admin/help-articles",
+      "method": "GET",
+      "path": "/admin/help-articles",
+      "group": "storefront",
+      "op": "list",
+      "description": "Help center articles.",
+      "descriptionAr": "مقالات مركز المساعدة",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "GET /admin/help-articles/:id",
+      "method": "GET",
+      "path": "/admin/help-articles/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Help center articles.",
+      "descriptionAr": "مقالات مركز المساعدة",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "POST /admin/help-articles",
+      "method": "POST",
+      "path": "/admin/help-articles",
+      "group": "storefront",
+      "op": "create",
+      "description": "Help center articles.",
+      "descriptionAr": "مقالات مركز المساعدة",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "PATCH /admin/help-articles/:id",
+      "method": "PATCH",
+      "path": "/admin/help-articles/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Help center articles.",
+      "descriptionAr": "مقالات مركز المساعدة",
+      "access": "permission",
+      "permission": "storefront:*",
+      "authRaw": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "GET /admin/legal-documents",
+      "method": "GET",
+      "path": "/admin/legal-documents",
+      "group": "storefront",
+      "op": "list",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "descriptionAr": "نسخ الشروط والخصوصية والاسترجاع",
+      "access": "permission",
+      "permission": "legal:*",
+      "authRaw": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "GET /admin/legal-documents/:id",
+      "method": "GET",
+      "path": "/admin/legal-documents/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "descriptionAr": "نسخ الشروط والخصوصية والاسترجاع",
+      "access": "permission",
+      "permission": "legal:*",
+      "authRaw": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "POST /admin/legal-documents",
+      "method": "POST",
+      "path": "/admin/legal-documents",
+      "group": "storefront",
+      "op": "create",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "descriptionAr": "نسخ الشروط والخصوصية والاسترجاع",
+      "access": "permission",
+      "permission": "legal:*",
+      "authRaw": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "POST /admin/legal-documents/:id/publish",
+      "method": "POST",
+      "path": "/admin/legal-documents/:id/publish",
+      "group": "storefront",
+      "op": "action",
+      "description": "Approve a new version; it appears in later consents.",
+      "descriptionAr": "اعتماد نسخة جديدة؛ تظهر بالموافقات اللاحقة",
+      "access": "permission",
+      "permission": "legal:publish",
+      "authRaw": "legal:publish",
+      "stage": 15,
+      "tables": [
+        "legal_documents",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/legal-documents/:id/publish"
+      }
+    },
+    {
+      "key": "GET /admin/refunds",
+      "method": "GET",
+      "path": "/admin/refunds",
+      "group": "refunds",
+      "op": "list",
+      "description": "Refund requests and their status.",
+      "descriptionAr": "طلبات الاسترجاع وحالتها",
+      "access": "permission",
+      "permission": "refunds:read",
+      "authRaw": "refunds:read",
+      "stage": 16,
+      "tables": [
+        "refunds"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/refunds"
+      }
+    },
+    {
+      "key": "GET /admin/refunds/:id",
+      "method": "GET",
+      "path": "/admin/refunds/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Refund requests and their status.",
+      "descriptionAr": "طلبات الاسترجاع وحالتها",
+      "access": "permission",
+      "permission": "refunds:read",
+      "authRaw": "refunds:read",
+      "stage": 16,
+      "tables": [
+        "refunds"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/refunds"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/approve",
+      "method": "POST",
+      "path": "/admin/refunds/:id/approve",
+      "group": "refunds",
+      "op": "action",
+      "description": "Approve a full or partial refund; the ledger entry is reversed according to whether the order was delivered.",
+      "descriptionAr": "موافقة على استرجاع كامل أو جزئي، ويعكس القيد حسب أن الطلب سُلِّم أم لا",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "authRaw": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "payments",
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/decline",
+      "method": "POST",
+      "path": "/admin/refunds/:id/decline",
+      "group": "refunds",
+      "op": "action",
+      "description": "Decline the refund with a reason that reaches the customer.",
+      "descriptionAr": "رفض الاسترجاع مع سبب يصل الزبون",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "authRaw": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/decline"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/retry",
+      "method": "POST",
+      "path": "/admin/refunds/:id/retry",
+      "group": "refunds",
+      "op": "action",
+      "description": "Retry a refund that failed at the gateway.",
+      "descriptionAr": "إعادة محاولة استرجاع فشل عند البوابة",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "authRaw": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "payments"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/retry"
+      }
+    },
+    {
+      "key": "GET /admin/disputes",
+      "method": "GET",
+      "path": "/admin/disputes",
+      "group": "refunds",
+      "op": "list",
+      "description": "Card disputes (chargebacks) and the evidence deadline.",
+      "descriptionAr": "نزاعات البطاقات (chargebacks) وموعد الأدلة",
+      "access": "permission",
+      "permission": "disputes:read",
+      "authRaw": "disputes:read",
+      "stage": 16,
+      "tables": [
+        "disputes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/disputes"
+      }
+    },
+    {
+      "key": "GET /admin/disputes/:id",
+      "method": "GET",
+      "path": "/admin/disputes/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Card disputes (chargebacks) and the evidence deadline.",
+      "descriptionAr": "نزاعات البطاقات (chargebacks) وموعد الأدلة",
+      "access": "permission",
+      "permission": "disputes:read",
+      "authRaw": "disputes:read",
+      "stage": 16,
+      "tables": [
+        "disputes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/disputes"
+      }
+    },
+    {
+      "key": "POST /admin/disputes/:id/evidence",
+      "method": "POST",
+      "path": "/admin/disputes/:id/evidence",
+      "group": "refunds",
+      "op": "action",
+      "description": "Submit evidence before the deadline: payment, delivery, order result and customer consents.",
+      "descriptionAr": "إرسال الأدلة قبل الموعد: الدفع والتسليم ونتيجة الطلب وموافقات الزبون",
+      "access": "permission",
+      "permission": "disputes:manage",
+      "authRaw": "disputes:manage",
+      "stage": 16,
+      "tables": [
+        "disputes",
+        "orders",
+        "order_events",
+        "consent_records",
+        "files"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/disputes/:id/evidence"
+      }
+    },
+    {
+      "key": "POST /admin/disputes/:id/accept",
+      "method": "POST",
+      "path": "/admin/disputes/:id/accept",
+      "group": "refunds",
+      "op": "action",
+      "description": "Accept the loss; the amount and the dispute fee are recorded in chargeback_loss.",
+      "descriptionAr": "قبول الخسارة ويسجَّل المبلغ ورسم النزاع في chargeback_loss",
+      "access": "permission",
+      "permission": "disputes:manage",
+      "authRaw": "disputes:manage",
+      "stage": 16,
+      "tables": [
+        "disputes",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/disputes/:id/accept"
+      }
+    },
+    {
+      "key": "GET /admin/reports/vat",
+      "method": "GET",
+      "path": "/admin/reports/vat",
+      "group": "refunds",
+      "op": "action",
+      "description": "VAT due by country and period, computed from ledger entries rather than invoices.",
+      "descriptionAr": "الضريبة المستحقة بالبلد والفترة من القيود لا من الفواتير",
+      "access": "permission",
+      "permission": "reports:finance",
+      "authRaw": "reports:finance",
+      "stage": 16,
+      "tables": [
+        "ledger_entries",
+        "tax_rates",
+        "invoices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/vat"
+      }
+    },
+    {
+      "key": "GET /admin/reports/payments",
+      "method": "GET",
+      "path": "/admin/reports/payments",
+      "group": "refunds",
+      "op": "action",
+      "description": "Storefront payments by method: fees, net amount and settlements.",
+      "descriptionAr": "مدفوعات المتجر حسب الطريقة: الرسوم والصافي والتسويات",
+      "access": "permission",
+      "permission": "reports:finance",
+      "authRaw": "reports:finance",
+      "stage": 16,
+      "tables": [
+        "payments",
+        "ledger_entries",
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/payments"
+      }
+    },
+    {
+      "key": "PATCH /admin/storefront/settings",
+      "method": "PATCH",
+      "path": "/admin/storefront/settings",
+      "group": "refunds",
+      "op": "action",
+      "description": "Storefront payment methods, policies (guest checkout, refund window) and customer email templates.",
+      "descriptionAr": "طرق الدفع بالمتجر والسياسات (ضيف، مهلة الاسترجاع) وقوالب إيميلات الزبون",
+      "access": "permission",
+      "permission": "settings:storefront",
+      "authRaw": "settings:storefront",
+      "stage": 16,
+      "tables": [
+        "settings",
+        "payment_gateways",
+        "notification_templates",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/storefront/settings"
+      }
+    },
+    {
+      "key": "GET /admin/support-tickets",
+      "method": "GET",
+      "path": "/admin/support-tickets",
+      "group": "support",
+      "op": "list",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "descriptionAr": "صندوق الدعم: الأولوية والإسناد والحالة ومؤقتات SLA",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "GET /admin/support-tickets/:id",
+      "method": "GET",
+      "path": "/admin/support-tickets/:id",
+      "group": "support",
+      "op": "show",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "descriptionAr": "صندوق الدعم: الأولوية والإسناد والحالة ومؤقتات SLA",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "PATCH /admin/support-tickets/:id",
+      "method": "PATCH",
+      "path": "/admin/support-tickets/:id",
+      "group": "support",
+      "op": "update",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "descriptionAr": "صندوق الدعم: الأولوية والإسناد والحالة ومؤقتات SLA",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "POST /admin/support-tickets/:id/reply",
+      "method": "POST",
+      "path": "/admin/support-tickets/:id/reply",
+      "group": "support",
+      "op": "action",
+      "description": "Reply to the customer by email or Telegram.",
+      "descriptionAr": "رد على الزبون بإيميل أو Telegram",
+      "access": "permission",
+      "permission": "support:reply",
+      "authRaw": "support:reply",
+      "stage": 17,
+      "tables": [
+        "ticket_messages",
+        "support_tickets",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/support-tickets/:id/reply"
+      }
+    },
+    {
+      "key": "POST /admin/support-tickets/:id/note",
+      "method": "POST",
+      "path": "/admin/support-tickets/:id/note",
+      "group": "support",
+      "op": "action",
+      "description": "Internal note that the customer does not see.",
+      "descriptionAr": "ملاحظة داخلية لا يراها الزبون",
+      "access": "permission",
+      "permission": "support:reply",
+      "authRaw": "support:reply",
+      "stage": 17,
+      "tables": [
+        "ticket_messages"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/support-tickets/:id/note"
+      }
+    },
+    {
+      "key": "GET /admin/reply-templates",
+      "method": "GET",
+      "path": "/admin/reply-templates",
+      "group": "support",
+      "op": "list",
+      "description": "Canned replies (macros) with order variables.",
+      "descriptionAr": "ردود جاهزة (macros) بمتغيرات الطلب",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "GET /admin/reply-templates/:id",
+      "method": "GET",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "show",
+      "description": "Canned replies (macros) with order variables.",
+      "descriptionAr": "ردود جاهزة (macros) بمتغيرات الطلب",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "POST /admin/reply-templates",
+      "method": "POST",
+      "path": "/admin/reply-templates",
+      "group": "support",
+      "op": "create",
+      "description": "Canned replies (macros) with order variables.",
+      "descriptionAr": "ردود جاهزة (macros) بمتغيرات الطلب",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "PATCH /admin/reply-templates/:id",
+      "method": "PATCH",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "update",
+      "description": "Canned replies (macros) with order variables.",
+      "descriptionAr": "ردود جاهزة (macros) بمتغيرات الطلب",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "DELETE /admin/reply-templates/:id",
+      "method": "DELETE",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "delete",
+      "description": "Canned replies (macros) with order variables.",
+      "descriptionAr": "ردود جاهزة (macros) بمتغيرات الطلب",
+      "access": "permission",
+      "permission": "support:*",
+      "authRaw": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "GET /admin/risk/queue",
+      "method": "GET",
+      "path": "/admin/risk/queue",
+      "group": "risk",
+      "op": "action",
+      "description": "Paid orders held by the rules, waiting for a staff decision.",
+      "descriptionAr": "طلبات مدفوعة أوقفتها القواعد بانتظار قرار موظف",
+      "access": "permission",
+      "permission": "risk:read",
+      "authRaw": "risk:read",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "risk_assessments"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/risk/queue"
+      }
+    },
+    {
+      "key": "POST /admin/risk/orders/:id/approve",
+      "method": "POST",
+      "path": "/admin/risk/orders/:id/approve",
+      "group": "risk",
+      "op": "action",
+      "description": "Approve; the order is sent to the supplier afterwards.",
+      "descriptionAr": "الموافقة؛ يُرسل الطلب للمورد بعدها",
+      "access": "permission",
+      "permission": "risk:decide",
+      "authRaw": "risk:decide",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "risk_assessments",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/risk/orders/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/risk/orders/:id/refund",
+      "method": "POST",
+      "path": "/admin/risk/orders/:id/refund",
+      "group": "risk",
+      "op": "action",
+      "description": "Refund the held order, optionally adding the customer or device to the blocklist.",
+      "descriptionAr": "استرجاع الطلب الموقوف، مع إضافة العميل أو الجهاز للقائمة السوداء اختيارياً",
+      "access": "permission",
+      "permission": "risk:decide",
+      "authRaw": "risk:decide",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "refunds",
+        "risk_assessments",
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/risk/orders/:id/refund"
+      }
+    },
+    {
+      "key": "GET /admin/imei-checks",
+      "method": "GET",
+      "path": "/admin/imei-checks",
+      "group": "risk",
+      "op": "list",
+      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
+      "descriptionAr": "سجل فحوص IMEI ونتائجها (يُمسح أو يُهشَّر بعد فترة الاحتفاظ)",
+      "access": "permission",
+      "permission": "risk:read",
+      "authRaw": "risk:read",
+      "stage": 18,
+      "tables": [
+        "imei_checks"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/imei-checks"
+      }
+    },
+    {
+      "key": "GET /admin/imei-checks/:id",
+      "method": "GET",
+      "path": "/admin/imei-checks/:id",
+      "group": "risk",
+      "op": "show",
+      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
+      "descriptionAr": "سجل فحوص IMEI ونتائجها (يُمسح أو يُهشَّر بعد فترة الاحتفاظ)",
+      "access": "permission",
+      "permission": "risk:read",
+      "authRaw": "risk:read",
+      "stage": 18,
+      "tables": [
+        "imei_checks"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/imei-checks"
+      }
+    },
+    {
+      "key": "GET /admin/blocklist",
+      "method": "GET",
+      "path": "/admin/blocklist",
+      "group": "risk",
+      "op": "list",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "descriptionAr": "القائمة السوداء: إيميل أو دومين أو IMEI أو بطاقة",
+      "access": "permission",
+      "permission": "risk:*",
+      "authRaw": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "GET /admin/blocklist/:id",
+      "method": "GET",
+      "path": "/admin/blocklist/:id",
+      "group": "risk",
+      "op": "show",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "descriptionAr": "القائمة السوداء: إيميل أو دومين أو IMEI أو بطاقة",
+      "access": "permission",
+      "permission": "risk:*",
+      "authRaw": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "POST /admin/blocklist",
+      "method": "POST",
+      "path": "/admin/blocklist",
+      "group": "risk",
+      "op": "create",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "descriptionAr": "القائمة السوداء: إيميل أو دومين أو IMEI أو بطاقة",
+      "access": "permission",
+      "permission": "risk:*",
+      "authRaw": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "DELETE /admin/blocklist/:id",
+      "method": "DELETE",
+      "path": "/admin/blocklist/:id",
+      "group": "risk",
+      "op": "delete",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "descriptionAr": "القائمة السوداء: إيميل أو دومين أو IMEI أو بطاقة",
+      "access": "permission",
+      "permission": "risk:*",
+      "authRaw": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "GET /admin/risk/rules",
+      "method": "GET",
+      "path": "/admin/risk/rules",
+      "group": "risk",
+      "op": "action",
+      "description": "Risk rules and their thresholds: when to hold for review and when to block.",
+      "descriptionAr": "قواعد الخطر وعتباتها: متى نوقف للمراجعة ومتى نمنع",
+      "access": "permission",
+      "permission": "risk:read",
+      "authRaw": "risk:read",
+      "stage": 18,
+      "tables": [
+        "settings"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/risk/rules"
+      }
+    },
+    {
+      "key": "PUT /admin/risk/rules",
+      "method": "PUT",
+      "path": "/admin/risk/rules",
+      "group": "risk",
+      "op": "action",
+      "description": "Update the rules; the review threshold must be lower than the block threshold.",
+      "descriptionAr": "تعديل القواعد؛ عتبة المراجعة أقل من عتبة المنع",
+      "access": "permission",
+      "permission": "risk:*",
+      "authRaw": "risk:*",
+      "stage": 18,
+      "tables": [
+        "settings",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/risk/rules"
+      }
+    },
+    {
+      "key": "GET /admin/checkouts/abandoned",
+      "method": "GET",
+      "path": "/admin/checkouts/abandoned",
+      "group": "promo",
+      "op": "action",
+      "description": "Abandoned carts, including who has marketing consent.",
+      "descriptionAr": "السلات المتروكة ومن عنده موافقة تسويق",
+      "access": "permission",
+      "permission": "growth:read",
+      "authRaw": "growth:read",
+      "stage": 19,
+      "tables": [
+        "checkout_sessions",
+        "consent_records"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/checkouts/abandoned"
+      }
+    },
+    {
+      "key": "POST /admin/checkouts/recover",
+      "method": "POST",
+      "path": "/admin/checkouts/recover",
+      "group": "promo",
+      "op": "action",
+      "description": "Send a recovery email once, only to customers with marketing consent.",
+      "descriptionAr": "إرسال إيميل استرجاع مرة واحدة لمن وافق على التسويق",
+      "access": "permission",
+      "permission": "growth:send",
+      "authRaw": "growth:send",
+      "stage": 19,
+      "tables": [
+        "checkout_sessions",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/checkouts/recover"
+      }
+    },
+    {
+      "key": "GET /admin/reports/funnel",
+      "method": "GET",
+      "path": "/admin/reports/funnel",
+      "group": "promo",
+      "op": "action",
+      "description": "Sales funnel: check, then payment started, then paid, then delivered.",
+      "descriptionAr": "قمع المبيعات: فحص ثم بدء دفع ثم مدفوع ثم مسلَّم",
+      "access": "permission",
+      "permission": "reports:growth",
+      "authRaw": "reports:growth",
+      "stage": 19,
+      "tables": [
+        "imei_checks",
+        "checkout_sessions",
+        "orders"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/funnel"
+      }
+    },
+    {
+      "key": "GET /health",
+      "method": "GET",
+      "path": "/health",
+      "group": null,
+      "op": "action",
+      "description": "Service health check: Postgres and Redis.",
+      "descriptionAr": "فحص الخدمة: Postgres و Redis",
+      "access": "public",
+      "permission": null,
+      "authRaw": "عام",
+      "stage": 0,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/health"
+      }
+    }
+  ]
+}
