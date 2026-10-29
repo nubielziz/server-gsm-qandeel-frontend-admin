@@ -2,6 +2,17 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
+## Resume here (handoff, 2026-10-30)
+
+Session paused at the user's request. Working tree clean; last commits: `5276a86` feat(orders), `d1a8826` fix(auth).
+
+1. **dashboard** (feature 3): brief ready in `docs/briefs/dashboard.md` (assumed `GET /admin/dashboard` DTO, attention items as typed facts, deep links, sidebar counts). Launch the implementer (`general-purpose` on Sonnet, background) with a short prompt that points to the brief file and repeats: no agents, no commits, reply ≤200 words, run all checks. Then checks → Opus review (`Plan` on Opus) → fixes → commit → this file.
+2. **customers** (feature 4): brief ready in `docs/briefs/customers.md`. MISMATCHES numbers continue after the dashboard's rows (the dashboard starts at M35).
+3. Then merchants, services, suppliers, finance, refunds, risk, checkouts, support, storefront, commissions, settings, audit (table below). Write each brief before launching; keep briefs in `docs/briefs/`.
+4. Reminders for later briefs: support must embed its ticket list in the customer page's Support tab (customers leaves an "Open in Support" link to `/support?customerId=<id>`); suppliers and merchants must replace the orders feature's private lookups (Tech debt); every page honours the "Deep links between pages" table in `docs/ARCHITECTURE.md` (added by the dashboard feature).
+5. Phase 4: `node scripts/check-route-coverage.mjs --strict` at 100% and `docs/ROUTE_COVERAGE.md` regenerated; all checks green; confirm no MSW or seed code in `dist`; `README.md` (rename `README.MD`): run against the real server with env (`VITE_DEV_PROXY_TARGET=http://localhost:3000` for the NestJS backend), the mock layer (`VITE_API_MOCKS=true`), how to add a feature, the coverage check; final report to the user in Arabic, at most 10 lines.
+6. Talking to the user: short Jordanian Arabic with English technical terms. Every development artifact (code, comments, docs, commits) stays in English.
+
 ## Phases
 
 | Phase | Status | Commit | Agents used |
@@ -21,7 +32,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 0 | foundation | shell | auth, system | 7 | 7 | done | 5/6 | Phase 2 commit |
 | 1 | access | `/access` | auth | 13 | 23 | done | 2/6 | feat(access) |
 | 2 | orders | `/orders` | orders, suppliers | 16 | 17 | done | 2/6 (implementer, reviewer; 2 blocking fixed by lead) | feat(orders) |
-| 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | todo | 0/6 | – |
+| 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | next (brief ready) | 0/6 (one launch stopped at the user's request before any change) | – |
 | 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
 | 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | todo | 0/6 | – |
 | 6 | services | `/services` | catalog, orders | 12 | 24 | todo | 0/6 | – |
