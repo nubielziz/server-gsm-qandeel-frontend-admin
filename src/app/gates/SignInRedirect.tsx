@@ -13,7 +13,9 @@ export function SignInRedirect() {
   const { data } = useIsAuthenticated();
   const { pathname, search } = useLocation();
   const wanted = `${pathname}${search}`;
-  // The root and the home page need no memory: they are where a plain sign-in ends anyway.
-  const destination = wanted === '/' || wanted === AUTH_PATHS.home ? undefined : safeDestination(wanted);
+  // No memory after a deliberate sign-out (`logout`, set by useSignOut): the next person lands on their own start
+  // page. The root and the home page need none either: they are where a plain sign-in ends anyway.
+  const remember = !data?.logout && wanted !== '/' && wanted !== AUTH_PATHS.home;
+  const destination = remember ? safeDestination(wanted) : undefined;
   return <Navigate to={withDestination(data?.redirectTo ?? AUTH_PATHS.login, destination)} replace />;
 }
