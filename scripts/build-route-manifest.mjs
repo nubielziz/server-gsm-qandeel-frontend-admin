@@ -12,8 +12,20 @@ const OUT_DIR = join(import.meta.dirname, '..', 'docs');
 
 // Fixed by the API design: a change in the map must be reviewed here before the manifest is rebuilt.
 const EXPECTED_ROWS = {
-  auth: 22, clients: 11, catalog: 11, orders: 16, suppliers: 11, billing: 7, growth: 9,
-  ops: 7, customers: 10, refunds: 12, storefront: 8, support: 4, risk: 7, promo: 3,
+  auth: 22,
+  clients: 11,
+  catalog: 11,
+  orders: 16,
+  suppliers: 11,
+  billing: 7,
+  growth: 9,
+  ops: 7,
+  customers: 10,
+  refunds: 12,
+  storefront: 8,
+  support: 4,
+  risk: 7,
+  promo: 3,
 };
 const EXPECTED_ADMIN_ENDPOINTS = 238;
 
@@ -23,7 +35,8 @@ const SYSTEM_EXCLUDE = ['GET /openapi.json', 'GET /docs'];
 const EXCLUDE_REASON = 'REST v1 docs, not used by the admin console';
 
 const RULES = {
-  pagination: 'Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header',
+  pagination:
+    'Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header',
   errors: 'application/problem+json {type,title,status,code,detail,errors[]}',
   crud: 'L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op "action"',
 };
@@ -57,8 +70,10 @@ function selectRows() {
     const key = rowKey(row);
     if (row.s === 'admin') rows.push(row);
     else if (row.s === 'system' && SYSTEM_KEEP.includes(key)) rows.push(row);
-    else if (row.s === 'system' && SYSTEM_EXCLUDE.includes(key)) excluded.push({ key, reason: EXCLUDE_REASON });
-    else if (row.s === 'system') throw new Error(`system route "${key}" is not classified: add it to SYSTEM_KEEP or SYSTEM_EXCLUDE`);
+    else if (row.s === 'system' && SYSTEM_EXCLUDE.includes(key))
+      excluded.push({ key, reason: EXCLUDE_REASON });
+    else if (row.s === 'system')
+      throw new Error(`system route "${key}" is not classified: add it to SYSTEM_KEEP or SYSTEM_EXCLUDE`);
   }
   return { rows, excluded };
 }
@@ -230,7 +245,9 @@ function toMarkdown({ rules, counts, groups: adminGroups, excluded, endpoints })
   const table = (list) => [
     '| Method | Path | Op | Permission | Description |',
     '| --- | --- | --- | --- | --- |',
-    ...list.map((e) => `| \`${e.method}\` | \`${e.path}\` | ${e.op} | ${access(e)} | ${cell(e.description)} |`),
+    ...list.map(
+      (e) => `| \`${e.method}\` | \`${e.path}\` | ${e.op} | ${access(e)} | ${cell(e.description)} |`,
+    ),
     '',
   ];
 
@@ -267,7 +284,9 @@ function main() {
   const { rows, excluded } = selectRows();
   const manifest = buildManifest(rows, excluded);
   printSummary(manifest.counts);
-  console.log(`English layer: ${Object.keys(descriptions).length} descriptions, ${Object.keys(groupNames).length} group names`);
+  console.log(
+    `English layer: ${Object.keys(descriptions).length} descriptions, ${Object.keys(groupNames).length} group names`,
+  );
 
   const problems = findProblems(manifest, rows);
   if (problems.length) {

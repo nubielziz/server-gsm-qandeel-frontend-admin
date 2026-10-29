@@ -1,67 +1,67 @@
 {
-  "name": "frontend-admin",
+  "name": "gsm-admin-console",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "dependencies": {
-    "@refinedev/cli": "^2.16.48",
-    "@refinedev/core": "^5.0.8",
-    "@refinedev/devtools": "^2.0.1",
-    "@refinedev/kbar": "^2.0.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router": "^7.0.2",
-    "@refinedev/nestjs-query": "^2.0.0",
-    "graphql-tag": "^2.12.6",
-    "graphql-ws": "^5.9.1",
-    "@tailwindcss/vite": "^4.1.8",
-    "tailwindcss": "^4.1.8",
-    "@refinedev/react-hook-form": "^5.0.0",
-    "@refinedev/react-router": "^2.0.0",
-    "@refinedev/react-table": "^6.0.0",
-    "@tanstack/react-table": "^8.2.6"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.25.0",
-    "@types/node": "^20",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
-    "@vitejs/plugin-react": "^4.4.1",
-    "eslint": "^9.25.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
-    "globals": "^16.0.0",
-    "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5",
-    "typescript": "^5.8.3",
-    "@graphql-codegen/cli": "^5.0.0",
-    "@graphql-codegen/typescript": "^4.0.1",
-    "@graphql-codegen/typescript-operations": "^4.0.1",
-    "@graphql-codegen/import-types-preset": "^3.0.0"
+  "description": "GSM Supply admin console: a Refine port of the gsm-admin demo against the /admin API map.",
+  "engines": {
+    "node": ">=22.12"
   },
   "scripts": {
-    "dev": "refine dev",
-    "build": "tsc && refine build",
-    "start": "refine start",
-    "refine": "refine",
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "format": "prettier --write . && eslint . --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "routes:manifest": "node scripts/build-route-manifest.mjs",
-    "codegen": "graphql-codegen"
+    "gen:types": "node scripts/gen-entity-types.mjs",
+    "seed:extract": "node scripts/extract-demo-seed.mjs",
+    "routes:coverage": "node scripts/check-route-coverage.mjs"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
+  "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
+    "@refinedev/core": "^5.0.12",
+    "@refinedev/react-hook-form": "^5.0.4",
+    "@refinedev/react-router": "^2.0.4",
+    "@tanstack/react-query": "^5.105.0",
+    "react": "^19.1.10",
+    "react-dom": "^19.1.10",
+    "react-hook-form": "^7.91.0",
+    "react-router": "^7.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^16.4.0",
+    "jsdom": "^26.1.0",
+    "msw": "^2.15.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^7.3.7",
+    "vitest": "^4.1.12"
+  },
+  "msw": {
+    "workerDirectory": [
+      "src/mocks/worker"
     ]
-  },
-  "refine": {
-    "projectId": "RWcRfY-aPAvo7-Y7MZxA"
   }
 }

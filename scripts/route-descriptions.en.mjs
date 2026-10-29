@@ -24,16 +24,22 @@ export const descriptions = {
   'POST /admin/auth/2fa/setup': 'First sign-in: the TOTP secret with a QR code.',
   'POST /admin/auth/logout': 'Sign out.',
   'GET /admin/auth/me': 'The signed-in staff member and their permissions, for Refine.',
-  'CRUD /admin/staff': 'Staff members: add by invitation or temporary password, set the role, and edit details.',
-  'POST /admin/staff/:id/password': 'Send a link to set a new password, or set a temporary one; the current password is never readable and never enters the log.',
+  'CRUD /admin/staff':
+    'Staff members: add by invitation or temporary password, set the role, and edit details.',
+  'POST /admin/staff/:id/password':
+    'Send a link to set a new password, or set a temporary one; the current password is never readable and never enters the log.',
   'POST /admin/staff/:id/sessions/revoke': 'End all sessions of a staff member.',
-  'POST /admin/staff/:id/suspend': 'Suspend a staff member with a reason, which ends their sessions; suspending yourself or the last Owner is rejected.',
+  'POST /admin/staff/:id/suspend':
+    'Suspend a staff member with a reason, which ends their sessions; suspending yourself or the last Owner is rejected.',
   'POST /admin/staff/:id/reactivate': 'Reactivate a suspended staff member.',
   'POST /admin/staff/:id/reset-2fa': 'Reset 2FA for a staff member.',
-  'POST /admin/auth/password/set': 'An invited or recovering staff member chooses their own password with a one-time token.',
+  'POST /admin/auth/password/set':
+    'An invited or recovering staff member chooses their own password with a one-time token.',
   'CRUD /admin/ip-rules': 'Allowed and blocked addresses: range, audience, reason and duration.',
-  'POST /admin/ip-rules/check': 'Test an address before the change; it returns the decision and the matching rule.',
-  'PUT /admin/access/restriction': 'Turn the allow-list restriction on the admin panel on or off; turning it on is rejected if the address of the requester is outside the list.',
+  'POST /admin/ip-rules/check':
+    'Test an address before the change; it returns the decision and the matching rule.',
+  'PUT /admin/access/restriction':
+    'Turn the allow-list restriction on the admin panel on or off; turning it on is rejected if the address of the requester is outside the list.',
   'CRUD /admin/roles': 'Roles and their permissions.',
   'GET /admin/permissions': 'All available permissions.',
   'GET /admin/sessions': 'Active sessions of staff members and merchants.',
@@ -63,13 +69,15 @@ export const descriptions = {
   'POST /admin/services/bulk-price/preview': 'Preview a bulk price change.',
   'POST /admin/services/bulk-price/apply': 'Apply the bulk price change.',
   'GET /admin/pricing/resolve': 'The price of a service for a merchant, with the resolution trace.',
-  'CRUD /admin/orders': 'Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.',
+  'CRUD /admin/orders':
+    'Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.',
   'GET /admin/orders/:id/events': 'The full order timeline.',
   'POST /admin/orders/:id/accept': 'Accept a manual order and move it to processing.',
   'POST /admin/orders/:id/reply': 'Complete the order with its result.',
   'POST /admin/orders/:id/reject': 'Reject the order with a reason and refund it.',
   'POST /admin/orders/:id/reopen': 'Reopen a completed order back to processing.',
-  'POST /admin/orders/:id/refund': 'Refund a completed merchant order: reopen, then reject; storefront orders are refunded from /admin/refunds.',
+  'POST /admin/orders/:id/refund':
+    'Refund a completed merchant order: reopen, then reject; storefront orders are refunded from /admin/refunds.',
   'POST /admin/orders/:id/verification': 'Verification decision: accept or refund.',
   'POST /admin/orders/:id/notes': 'Add an internal note.',
   'POST /admin/orders/bulk-reply/preview': 'Match IMEI and CODE lines to orders.',
@@ -83,7 +91,8 @@ export const descriptions = {
   'POST /admin/suppliers/:id/test': 'Test the connection through accountinfo.',
   'POST /admin/suppliers/:id/sync': 'Sync services and balance now.',
   'GET /admin/suppliers/:id/services': 'The supplier services after syncing.',
-  'POST /admin/suppliers/:id/import/preview': 'Preview the import: new, matching and changed services, with the suggested price.',
+  'POST /admin/suppliers/:id/import/preview':
+    'Preview the import: new, matching and changed services, with the suggested price.',
   'POST /admin/suppliers/:id/import': 'Import the selected items as services, fields and links.',
   'PUT /admin/services/:id/supplier-links': 'Link the service to suppliers in priority order.',
   'CRUD /admin/supplier-api-logs': 'Log of supplier requests and responses.',
@@ -100,57 +109,75 @@ export const descriptions = {
   'CRUD /admin/commission-plans': 'Referral and rebate plans.',
   'CRUD /admin/commission-assignments': 'Assign plans to merchants.',
   'CRUD /admin/commission-accruals': 'Accrued commissions and their status.',
-  'POST /admin/commission-accruals/approve': 'Approve and pay out in bulk, with a ledger entry on the wallet.',
+  'POST /admin/commission-accruals/approve':
+    'Approve and pay out in bulk, with a ledger entry on the wallet.',
   'GET /admin/reports/profit': 'Profit by day, service, supplier or merchant.',
   'GET /admin/reports/wallet-exposure': 'Balances, overdraft and reserved amounts.',
   'GET /admin/reports/suppliers': 'Supplier spend, rejection rate and speed.',
   'GET /admin/reports/top-clients': 'Top merchants by volume and by profit.',
   'GET /admin/reports/client-statement/:clientId': 'Official account statement for a merchant.',
-  'GET /admin/dashboard': 'KPIs for today: sales, profit, queues and supplier balances; scope=all|b2b|b2c separates merchants from the storefront.',
+  'GET /admin/dashboard':
+    'KPIs for today: sales, profit, queues and supplier balances; scope=all|b2b|b2c separates merchants from the storefront.',
   'GET /admin/queues': 'Bull Board UI for monitoring the queues.',
   'CRUD /admin/webhook-deliveries': 'Log of merchant webhooks.',
   'POST /admin/webhook-deliveries/:id/retry': 'Resend the delivery.',
   'CRUD /admin/notification-templates': 'Email and Telegram templates for each event.',
   'POST /admin/notification-templates/:id/preview': 'Preview the template with sample data.',
   'CRUD /admin/notifications': 'Log of sent notifications.',
-  'CRUD /admin/customers': 'Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.',
-  'POST /admin/customers/:id/account': 'Create an account for a customer who bought as a guest: earlier orders are linked to the account and the customer receives a link to choose a password.',
-  'POST /admin/customers/:id/password': 'Send a password-setting link, or set a temporary password that must be changed at first sign-in; the current password is never shown and never enters the audit log, and the sessions can optionally be ended.',
-  'POST /admin/customers/:id/sessions/revoke': 'Sign the customer out of all devices: sets revoked_at on every active session.',
-  'POST /admin/customers/:id/suspend': 'Suspend the account with a reason: no sign-in and no new orders, orders in progress still complete, and sessions are ended; a temporary suspension adds nothing to the blocklist.',
+  'CRUD /admin/customers':
+    'Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.',
+  'POST /admin/customers/:id/account':
+    'Create an account for a customer who bought as a guest: earlier orders are linked to the account and the customer receives a link to choose a password.',
+  'POST /admin/customers/:id/password':
+    'Send a password-setting link, or set a temporary password that must be changed at first sign-in; the current password is never shown and never enters the audit log, and the sessions can optionally be ended.',
+  'POST /admin/customers/:id/sessions/revoke':
+    'Sign the customer out of all devices: sets revoked_at on every active session.',
+  'POST /admin/customers/:id/suspend':
+    'Suspend the account with a reason: no sign-in and no new orders, orders in progress still complete, and sessions are ended; a temporary suspension adds nothing to the blocklist.',
   'POST /admin/customers/:id/reactivate': 'Reactivate a suspended account; the customer signs in again.',
-  'POST /admin/customers/:id/block': 'Block a customer for fraud, or lift the block, with a reason; blocking adds the customer fingerprint to the blocklist (use suspend for a temporary stop).',
+  'POST /admin/customers/:id/block':
+    'Block a customer for fraud, or lift the block, with a reason; blocking adds the customer fingerprint to the blocklist (use suspend for a temporary stop).',
   'GET /admin/customers/:id/export': 'Export the customer data for a data-protection request.',
-  'POST /admin/customers/:id/anonymize': 'Anonymize the name, email and IMEI while keeping payment records for accounting.',
+  'POST /admin/customers/:id/anonymize':
+    'Anonymize the name, email and IMEI while keeping payment records for accounting.',
   'CRUD /admin/data-requests': 'Data export and deletion requests and the deadline to fulfil them.',
   'CRUD /admin/tax-rates': 'Tax rates by country and their effective dates.',
   'CRUD /admin/tac-catalog': 'TAC table: brand and model for each IMEI prefix.',
   'POST /admin/currencies/refresh-fx': 'Refresh the exchange rates shown to customers.',
-  'CRUD /admin/service-listings': 'Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.',
+  'CRUD /admin/service-listings':
+    'Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.',
   'CRUD /admin/content-pages': 'Landing and content pages: draft, then publish.',
   'POST /admin/content-pages/:id/publish': 'Publish a page or hide it.',
-  'POST /admin/content-pages/generate': 'Landing-page generator (brand x model x network): produces drafts for review only.',
+  'POST /admin/content-pages/generate':
+    'Landing-page generator (brand x model x network): produces drafts for review only.',
   'CRUD /admin/help-articles': 'Help center articles.',
   'CRUD /admin/legal-documents': 'Versions of the terms, privacy policy and refund policy.',
   'POST /admin/legal-documents/:id/publish': 'Approve a new version; it appears in later consents.',
   'CRUD /admin/refunds': 'Refund requests and their status.',
-  'POST /admin/refunds/:id/approve': 'Approve a full or partial refund; the ledger entry is reversed according to whether the order was delivered.',
+  'POST /admin/refunds/:id/approve':
+    'Approve a full or partial refund; the ledger entry is reversed according to whether the order was delivered.',
   'POST /admin/refunds/:id/decline': 'Decline the refund with a reason that reaches the customer.',
   'POST /admin/refunds/:id/retry': 'Retry a refund that failed at the gateway.',
   'CRUD /admin/disputes': 'Card disputes (chargebacks) and the evidence deadline.',
-  'POST /admin/disputes/:id/evidence': 'Submit evidence before the deadline: payment, delivery, order result and customer consents.',
-  'POST /admin/disputes/:id/accept': 'Accept the loss; the amount and the dispute fee are recorded in chargeback_loss.',
-  'GET /admin/reports/vat': 'VAT due by country and period, computed from ledger entries rather than invoices.',
+  'POST /admin/disputes/:id/evidence':
+    'Submit evidence before the deadline: payment, delivery, order result and customer consents.',
+  'POST /admin/disputes/:id/accept':
+    'Accept the loss; the amount and the dispute fee are recorded in chargeback_loss.',
+  'GET /admin/reports/vat':
+    'VAT due by country and period, computed from ledger entries rather than invoices.',
   'GET /admin/reports/payments': 'Storefront payments by method: fees, net amount and settlements.',
-  'PATCH /admin/storefront/settings': 'Storefront payment methods, policies (guest checkout, refund window) and customer email templates.',
+  'PATCH /admin/storefront/settings':
+    'Storefront payment methods, policies (guest checkout, refund window) and customer email templates.',
   'CRUD /admin/support-tickets': 'Support inbox: priority, assignment, status and SLA timers.',
   'POST /admin/support-tickets/:id/reply': 'Reply to the customer by email or Telegram.',
   'POST /admin/support-tickets/:id/note': 'Internal note that the customer does not see.',
   'CRUD /admin/reply-templates': 'Canned replies (macros) with order variables.',
   'GET /admin/risk/queue': 'Paid orders held by the rules, waiting for a staff decision.',
   'POST /admin/risk/orders/:id/approve': 'Approve; the order is sent to the supplier afterwards.',
-  'POST /admin/risk/orders/:id/refund': 'Refund the held order, optionally adding the customer or device to the blocklist.',
-  'CRUD /admin/imei-checks': 'Log of IMEI checks and their results (erased or hashed after the retention period).',
+  'POST /admin/risk/orders/:id/refund':
+    'Refund the held order, optionally adding the customer or device to the blocklist.',
+  'CRUD /admin/imei-checks':
+    'Log of IMEI checks and their results (erased or hashed after the retention period).',
   'CRUD /admin/blocklist': 'Blocklist: email, domain, IMEI or card.',
   'GET /admin/risk/rules': 'Risk rules and their thresholds: when to hold for review and when to block.',
   'PUT /admin/risk/rules': 'Update the rules; the review threshold must be lower than the block threshold.',

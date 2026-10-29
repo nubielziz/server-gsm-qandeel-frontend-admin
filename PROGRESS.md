@@ -8,8 +8,8 @@ Single source of truth for status. The lead updates it after every step. Read it
 |---|---|---|---|
 | 0 Recon and setup | done | `9c6d484` (baseline `479694f`) | 1 (implementer: route manifest script, + 1 follow-up message) |
 | 1 Architecture | done | see git log | 0 (Opus lead only) |
-| 2 Foundation | todo | – | 0/6 |
-| 3 Feature loop | todo | – | per feature below |
+| 2 Foundation | done | see git log | 5/6 (implementers: A data layer, B UI kit, C shell + sign-in; review round 1: 3 blocking fixed by lead; round 2: 1 blocking fixed by lead) |
+| 3 Feature loop | in progress | – | per feature below |
 | 4 Final verification | todo | – | 0 |
 
 ## Feature plan (build order)
@@ -18,7 +18,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 
 | # | Feature | Page | Route groups | Rows | Endpoints | Status | Agents | Commit |
 |---|---|---|---|---|---|---|---|---|
-| 0 | foundation | shell | auth, system | 7 | 7 | todo | 0/6 | – |
+| 0 | foundation | shell | auth, system | 7 | 7 | done | 5/6 | Phase 2 commit |
 | 1 | access | `/access` | auth | 13 | 23 | todo | 0/6 | – |
 | 2 | orders | `/orders` | orders, suppliers | 16 | 17 | todo | 0/6 | – |
 | 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | todo | 0/6 | – |
@@ -144,7 +144,10 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 
 ## Tech debt
 
-- none
+- foundation: a 401 in the middle of a session signs out to `/login` without `?to=` (the user lands on the start page after signing in again).
+- foundation: a signed-in staff member who opens an invite/reset link (`/set-password?token=…`) is redirected into the console instead of being told to sign out first.
+- foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
+- foundation: `LoginPage` / `SetPasswordPage` keep their small form handlers in the page instead of a form component.
 
 ## Open questions for the backend (not blocking)
 
@@ -152,6 +155,8 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - Exact shape of problem+json `errors[]` items (parser is tolerant, decision 007).
 
 ## Notes
+
+- Demo tokens: `input.css` only has a build placeholder for the colour tokens; the exact values were read from the built demo in headless Chromium (CSS custom properties only, the file text was not read) and copied into `src/styles/index.css`.
 
 - Custom agents in `.claude/agents/` load only after a session restart. Until then the lead uses stand-ins with the same instructions pasted into each brief: implementer = `general-purpose` on Sonnet; reader = `Explore` on Haiku (no Agent/Edit/Write tools); reviewer = `Plan` on Opus (no Agent/Edit/Write tools). The `general-purpose` stand-in relies on its brief for "never spawn agents".
 - Serena is exposed as one REPL tool (`mcp__serena__serena_repl`), not as separate `find_symbol`-style tools; the agent definitions list that tool instead.

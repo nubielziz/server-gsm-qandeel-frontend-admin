@@ -1,0 +1,75 @@
+// Tests for the route table: every page resource has a route, and the sign-in area forgets the last session's data.
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { MemoryRouter } from 'react-router';
+import { describe, expect, it } from 'vitest';
+import { renderApp, mockMe, setupMockApi } from '@/test/renderApp';
+import { AppProviders } from './App';
+import { resources, toPageResource, type PageResource } from './resources';
+import { AppRoutes } from './routes';
+
+setupMockApi();
+
+const PAGES = resources.map(toPageResource).filter((page): page is PageResource => page !== undefined);
+
+describe('routes', () => {
+  it.each(PAGES.map((page) => [page.meta.label, page.path] as const))(
+    'opens %s at %s',
+    async (label, path) => {
+      mockMe({ permissions: ['*'] });
+      const app = renderApp(path);
+      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
+      expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
+      expect(app.location()).toBe(path);
+    },
+  );
+
+  it.each(PAGES.filter((page) => page.detailPath).map((page) => [page.meta.label, page.name] as const))(
+    'opens the %s detail view',
+    async (label, name) => {
+      mockMe({ permissions: ['*'] });
+      renderApp(`/${name}/42`);
+      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
+      expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
+    },
+  );
+});
+
+describe('sign-in area', () => {
+  // Hands the query client to the test, so it can seed and read the cache the way a previous session would have.
+  function ClientProbe({ onClient }: { onClient: (client: QueryClient) => void }) {
+    const client = useQueryClient();
+    useState(() => onClient(client));
+    return null;
+  }
+
+  it('drops what the last session loaded, including the staff member’s identity, but keeps the sign-in check', async () => {
+    let client: QueryClient | undefined;
+    render(
+      <MemoryRouter initialEntries={['/login']}>
+        <AppProviders>
+          <ClientProbe
+            onClient={(found) => {
+              client = found;
+              found.setQueryData(['data', 'orders', 'list'], [{ id: 1 }]);
+              found.setQueryData(['access', 'audit', 'list'], { can: true });
+              found.setQueryData(['api', 'system', 'health'], { status: 'ok' });
+              found.setQueryData(['auth', 'identity'], { name: 'Previous Operator' });
+              found.setQueryData(['auth', 'permissions'], ['*']);
+            }}
+          />
+          <AppRoutes />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(client?.getQueryData(['data', 'orders', 'list'])).toBeUndefined();
+    expect(client?.getQueryData(['access', 'audit', 'list'])).toBeUndefined();
+    expect(client?.getQueryData(['api', 'system', 'health'])).toBeUndefined();
+    expect(client?.getQueryData(['auth', 'identity'])).toBeUndefined();
+    expect(client?.getQueryData(['auth', 'permissions'])).toBeUndefined();
+    // The answer to "am I signed in?" is what the sign-in area is showing, so it stays.
+    expect(client?.getQueryData(['auth', 'check'])).toMatchObject({ authenticated: false });
+  });
+});

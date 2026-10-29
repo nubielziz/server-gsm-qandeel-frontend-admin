@@ -1,0 +1,12 @@
+reference
+dist
+coverage
+node_modules
+docs
+package-lock.json
+**/*.md
+src/lib/api/schema.gen.ts
+src/mocks/seed/*.json
+src/mocks/worker
+.serena
+.claude

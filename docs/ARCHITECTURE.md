@@ -23,13 +23,15 @@ src/
     types/                 DTOs for this feature (built from schema.gen.ts rows, narrowed: enums, joins)
     hooks/                 data + action hooks used by components
     components/            presentational pieces (≤ ~200 lines each)
-    pages/                 route-level components; they only compose
-    index.ts               public surface: what other features and app/ may import
+    pages/                 route-level components; they only compose. pages/index.ts is a separate entry that
+                           app/routes.tsx loads lazily (one chunk per feature); index.ts never re-exports pages
+    index.ts               public surface: what other features and app/ may import (api, hooks, types, shared
+                           components, the data-registry entries, palette sources)
   mocks/                   dev-only MSW layer (handlers per feature, seed from the demo). Deletable. Never in prod.
   styles/                  index.css (tokens + component classes from the demo's input.css)
 ```
 
-Rules: features import other features only through `@/features/<name>` (their `index.ts`), never deep paths. `components/ui` and `lib/*` never import from `features/*`. Path alias `@/` = `src/`.
+Rules: features import other features only through `@/features/<name>` (their `index.ts`), never deep paths; inside a feature, files import each other by relative path. Only `app/routes.tsx` may import `@/features/<name>/pages`. `components/ui` and `lib/*` never import from `features/*` or `app/*`. Nothing but `src/main.tsx` and tests imports `src/mocks` or `msw`. Path alias `@/` = `src/`. All of this is enforced by ESLint.
 
 ## 2. Data flow
 
@@ -42,6 +44,7 @@ component → feature hook → feature api function → lib/api client (fetch) �
 - **Feature api functions**: one exported function per endpoint, typed request/response, JSDoc with what + why + `@route METHOD /path` (exact manifest path, `:id` placeholders kept). Example: `suspendStaff(id, body)` → `POST /admin/staff/:id/suspend`.
 - **CRUD resources**: the `dataProvider` does not build URLs itself. It converts Refine params (pagination, sorters, filters) into a `ListQuery` (simple-rest: `_start`, `_end`, `_sort`, `_order`, field filters, `q`) and dispatches to the feature function registered for that resource in `features/<name>/api/resources.ts` (e.g. `staff: { list: listStaff, show: getStaff, create: createStaff, update: updateStaff }`). So Refine hooks and our typed functions share one code path, and every call is tagged.
 - **Non-CRUD endpoints** (actions, reports, previews): feature hooks wrap the typed function with `useApiQuery` / `useApiMutation` (TanStack Query, same client Refine uses). A mutation declares what it invalidates (`invalidates: [{ resource: "staff", id }]`) and its success toast; errors go through the shared error handling.
+- **Query client**: one per app mount (`app/queryClient.ts`), shared by Refine and `lib/query`. Refine's `['auth', 'check']` query never refetches on its own (a refetch would swap the shell for its loading screen); an expired session surfaces as a 401 on the next call, which signs the user out.
 - **Server state** lives only in the query cache. No client-state library. UI preferences (theme, density) live in a small React context persisted to `localStorage`. Page state worth a deep link (tab, filters, page) lives in URL search params.
 
 ## 3. Auth and access
@@ -66,9 +69,9 @@ component → feature hook → feature api function → lib/api client (fetch) �
 3. `api/`: one function per endpoint with the JSDoc + `@route` tag; `api/resources.ts` registers CRUD resources.
 4. `hooks/`: list/detail/action hooks (`useTable`/`useOne`/`useForm` for CRUD, `useApiQuery`/`useApiMutation` otherwise).
 5. `components/` then `pages/`: port every screen, tab, filter, dialog, drawer, empty/loading/error state and client UX guard of the demo page, with the kit from `components/ui`.
-6. Register: page resource + routes in `app/resources.ts` / `app/routes.tsx`; export the public surface from `index.ts`.
+6. Register: the data-registry entries in `app/resources.ts` (`mergeRegistries(...)`), the page in `PAGES` / `DETAIL_PAGES` of `app/routes.tsx` with `lazyPage(() => import('@/features/<name>/pages'), 'XPage')`, palette sources in `app/palette/paletteSources.ts` (with their `permission`); export the public surface from `index.ts`.
 7. Mocks: `mocks/handlers/<feature>.ts` (+ seed mapping) so the page works with `VITE_API_MOCKS=true`.
-8. Tests for non-trivial pure logic (mappers, guards, query builders). Then `npm run typecheck && npm run lint && npm run build && npm test`.
+8. Tests for non-trivial pure logic (mappers, guards, query builders) and the main actions (`src/test/renderApp.ts` renders the whole app against the mock API: `setupMockApi`, `mockMe`, `renderApp`). Then `npm run typecheck && npm run lint && npm run build && npm test` and `node scripts/check-route-coverage.mjs --feature <name>`.
 
 ## 6. Naming
 
