@@ -20,7 +20,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 |---|---|---|---|---|---|---|---|---|
 | 0 | foundation | shell | auth, system | 7 | 7 | done | 5/6 | Phase 2 commit |
 | 1 | access | `/access` | auth | 13 | 23 | done | 2/6 | feat(access) |
-| 2 | orders | `/orders` | orders, suppliers | 16 | 17 | todo | 0/6 | – |
+| 2 | orders | `/orders` | orders, suppliers | 16 | 17 | done | 2/6 (implementer, reviewer; 2 blocking fixed by lead) | feat(orders) |
 | 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | todo | 0/6 | – |
 | 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
 | 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | todo | 0/6 | – |
@@ -138,6 +138,10 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 
 `CRUD[LS] /admin/audit-logs`
 
+## Fixes outside the feature loop
+
+- `d1a8826` fix(auth): sign-out answered the session check itself (flaky `/login?to=…` race seen under load).
+
 ## Blockers
 
 - none
@@ -148,12 +152,15 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - foundation: a signed-in staff member who opens an invite/reset link (`/set-password?token=…`) is redirected into the console instead of being told to sign out first.
 - foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
 - foundation: `LoginPage` / `SetPasswordPage` keep their small form handlers in the page instead of a form component.
+- orders: the filter and reroute menus read `GET /admin/suppliers` and `GET /admin/clients` through private lookups (`src/features/orders/api/lookups.ts`, no `@route` tag, first 200 rows). Replace them with the suppliers and merchants features' functions when those are built.
+- orders: Reroute is two calls (change-supplier, then dispatch). When the second fails, the order has moved but was not sent; the summary says so, but the pair is not atomic.
 - access: editing your own account or role does not refresh `me` at once (name and permission hints update within the 60 s `me` cache or at the next sign-in); clearing `meCache` from a feature needs a small auth API.
 
 ## Open questions for the backend (not blocking)
 
 - Auth bodies and CSRF token source: assumptions in `docs/decisions/006-auth-and-access-control.md` (MISMATCHES M5–M7).
 - Exact shape of problem+json `errors[]` items (parser is tolerant, decision 007).
+- Orders: could `POST /admin/orders/:id/change-supplier` take `dispatch: true`, so a reroute is one atomic call? Could the list sort by SLA urgency (the demo's default order)? Order DTO, event and action bodies are assumed (MISMATCHES M20–M34).
 
 ## Notes
 

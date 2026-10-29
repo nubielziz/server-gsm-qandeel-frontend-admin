@@ -21,6 +21,7 @@ import { resources, toPageResource, type PageResource } from './resources';
  */
 const PAGES: Partial<Record<string, ComponentType>> = {
   access: lazyPage(() => import('@/features/access/pages'), 'AccessPage'),
+  orders: lazyPage(() => import('@/features/orders/pages'), 'OrdersPage'),
 };
 
 /** The same for detail views (`/merchants/:id`, `/customers/:id`): `merchants: lazyPage(…, 'MerchantPage')`. */

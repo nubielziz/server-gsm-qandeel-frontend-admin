@@ -68,6 +68,8 @@ export type { ErrorLike } from './errorText';
 // Tables
 export * from './DataTable';
 export * from './Pager';
+export { usePageClamp } from './usePageClamp';
+export type { PageClampArgs } from './usePageClamp';
 export { useRowSelection } from './useRowSelection';
 export type { RowSelection } from './useRowSelection';
 export type {

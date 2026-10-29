@@ -25,9 +25,10 @@ export function AppCommandPalette({ open, onClose, sources = paletteSources }: A
   const { isDark, toggleTheme } = usePreferences();
   const [query, setQuery] = useState('');
 
+  const go = useCallback((path: string) => void navigate(path), [navigate]);
   const fixed = useMemo(
-    () => buildPaletteItems({ pages: pages ?? [], go: (path) => void navigate(path), isDark, toggleTheme }),
-    [pages, navigate, isDark, toggleTheme],
+    () => buildPaletteItems({ pages: pages ?? [], go, isDark, toggleTheme }),
+    [pages, go, isDark, toggleTheme],
   );
   // Only search what the staff member may read: a source they lack the permission for would only answer 403.
   const { data: staff } = useMe();
@@ -39,7 +40,7 @@ export function AppCommandPalette({ open, onClose, sources = paletteSources }: A
       ),
     [sources, staff],
   );
-  const remote = useRemotePaletteItems(query, permittedSources);
+  const remote = useRemotePaletteItems(query, permittedSources, go);
   const items = useMemo(() => [...filterFixedItems(fixed, query), ...remote], [fixed, query, remote]);
 
   // The kit forgets the typed text on every opening, so the app does too. Resetting on open (not only in `close`)

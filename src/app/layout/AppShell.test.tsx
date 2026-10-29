@@ -192,14 +192,18 @@ describe('breadcrumb and tab title', () => {
 
 describe('keyboard shortcuts in the shell', () => {
   it('"g" then "o" opens the orders page', async () => {
+    // The orders page is built: it loads as a lazy chunk and calls the API, so it needs a session and some patience.
+    await signInAs();
     mockMe({ permissions: ['*'] });
     const user = userEvent.setup();
     const app = renderApp('/dashboard');
     await primaryNav();
     await user.keyboard('go');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Orders' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(app.location()).toBe('/orders');
-  });
+  }, 20_000);
 
   it('does not jump to a page the staff member may not open', async () => {
     mockMe({ permissions: ['dashboard:read'] });
@@ -405,6 +409,7 @@ describe('mobile menu', () => {
   });
 
   it('closes when a link is followed or the scrim is pressed', async () => {
+    await signInAs();
     mockMe({ permissions: ['*'] });
     const user = userEvent.setup();
     renderApp('/dashboard');
@@ -414,7 +419,7 @@ describe('mobile menu', () => {
     await user.click(button);
     await user.click(within(document.getElementById('sidebar')!).getByRole('link', { name: 'Orders' }));
     expect(button).toHaveAttribute('aria-expanded', 'false');
-    await screen.findByRole('heading', { level: 1, name: 'Orders' });
+    await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 });
 
     await user.click(button);
     await user.click(document.getElementById('scrim')!);
@@ -423,9 +428,10 @@ describe('mobile menu', () => {
     await user.click(button);
     await user.click(screen.getByRole('button', { name: 'Close menu' }));
     expect(button).toHaveAttribute('aria-expanded', 'false');
-  });
+  }, 20_000);
 
   it('closes when the page changes some other way, like a shortcut', async () => {
+    await signInAs();
     mockMe({ permissions: ['*'] });
     const user = userEvent.setup();
     renderApp('/dashboard');
@@ -435,13 +441,14 @@ describe('mobile menu', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
 
     await user.keyboard('go');
-    await screen.findByRole('heading', { level: 1, name: 'Orders' });
+    await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 });
     expect(button).toHaveAttribute('aria-expanded', 'false');
-  });
+  }, 20_000);
 });
 
 describe('focus and scrolling', () => {
   it('moves focus to <main> and scrolls to the top after a page change', async () => {
+    await signInAs();
     mockMe({ permissions: ['*'] });
     const scrollTo = vi.spyOn(window, 'scrollTo');
     const user = userEvent.setup();
@@ -451,10 +458,10 @@ describe('focus and scrolling', () => {
     expect(scrollTo).not.toHaveBeenCalled();
 
     await user.click((await primaryNav()).getByRole('link', { name: 'Orders' }));
-    await screen.findByRole('heading', { level: 1, name: 'Orders' });
+    await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 });
     expect(screen.getByRole('main')).toHaveFocus();
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
-  });
+  }, 20_000);
 
   it('has a skip link that moves focus to <main> without touching the address', async () => {
     mockMe({ permissions: ['*'] });

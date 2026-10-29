@@ -130,7 +130,7 @@ describe('useRemotePaletteItems', () => {
     await wait(SEARCH_DEBOUNCE_MS - 1);
     expect(search).not.toHaveBeenCalled();
     await wait(1);
-    expect(search).toHaveBeenCalledExactlyOnceWith('ord', expect.any(AbortSignal));
+    expect(search).toHaveBeenCalledExactlyOnceWith('ord', expect.any(AbortSignal), expect.any(Function));
     expect(result.current.map((item) => item.id)).toEqual(['o1']);
   });
 

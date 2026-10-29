@@ -3,6 +3,8 @@
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
 import { accessResources } from '@/features/access';
+import { financeResources } from '@/features/finance';
+import { ordersResources } from '@/features/orders';
 import { mergeRegistries } from '@/lib/api';
 
 /** Sidebar sections, in the order the demo shows them. */
@@ -83,7 +85,11 @@ export const resources: ResourceProps[] = [
  * Which API function serves each CRUD resource for Refine's data hooks (decision 005).
  * Every feature exports a registry from its `api/resources.ts`; list them here as they are built.
  */
-export const dataRegistry = mergeRegistries(accessResources /* features add their registries here */);
+export const dataRegistry = mergeRegistries(
+  accessResources,
+  ordersResources,
+  financeResources /* features add their registries here */,
+);
 
 /** A resource that is a console page, with its `meta` checked. Resources without page meta give undefined. */
 export type PageResource = {

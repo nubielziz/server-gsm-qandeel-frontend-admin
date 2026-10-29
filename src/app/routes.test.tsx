@@ -15,7 +15,7 @@ const PAGES = resources.map(toPageResource).filter((page): page is PageResource 
 
 // Pages whose feature is built show their own heading (it can differ from the sidebar label) instead of the placeholder.
 // Add a page here when its feature lands.
-const BUILT: Record<string, string> = { access: 'Admins and access' };
+const BUILT: Record<string, string> = { access: 'Admins and access', orders: 'Orders' };
 
 describe('routes', () => {
   it.each(PAGES.filter((page) => !(page.name in BUILT)).map((page) => [page.meta.label, page.path] as const))(
