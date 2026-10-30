@@ -1,5 +1,5 @@
-// Types for the system settings routes (`/admin/settings`). The map describes the `settings` table as key and value
-// pairs and gives no bodies, so the settings feature starts with the one key the access page needs and grows later.
+// Types for the settings feature: the system settings (`/admin/settings`, key and value pairs; the map gives no bodies) and,
+// re-exported below, the types of each tab (payment methods, tax and currency, policies, emails, logs).
 import type { JsonValue } from '@/lib/api';
 
 /** Every setting by its key. Values are JSON; a key that was never set is simply missing. */
@@ -18,3 +18,10 @@ export type Settings = SettingsValues & {
 
 /** Body of `PATCH /admin/settings`: only the keys that change (assumed contract). */
 export type UpdateSettingsBody = Partial<Settings>;
+
+export * from './currencies';
+export * from './gateways';
+export * from './notifications';
+export * from './storefront';
+export * from './tax';
+export * from './webhooks';

@@ -33,7 +33,13 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       'lock',
       ['staff:read', 'access:read', 'roles:read', 'sessions:read'],
     ],
-    ['settings', 'Settings', 'System', 'sliders', 'settings:read'],
+    [
+      'settings',
+      'Settings',
+      'System',
+      'sliders',
+      ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read', 'webhooks:read'],
+    ],
     ['audit', 'Audit log', 'System', 'history', 'audit:read'],
   ];
 

@@ -513,14 +513,14 @@ describe('account menu', () => {
     await user.type(await screen.findByLabelText('Authentication code'), '123456');
     await user.click(screen.getByRole('button', { name: 'Verify' }));
 
-    // Omar is in Finance: no audit log, no admin page, no settings, no support.
+    // Omar is in Finance: no audit log, no admin page, no support. (Settings opens for him through its Payment methods
+    // tab: payments:gateways is one of that page's any-of permissions.)
     const nav = await primaryNav();
     await screen.findByRole('button', { name: 'Account menu for Omar T.' });
     const links = nav.getAllByRole('link').map(labelOf);
     expect(links).toContain('Finance');
     expect(links).not.toContain('Audit log');
     expect(links).not.toContain('Admins & access');
-    expect(links).not.toContain('Settings');
     expect(links).not.toContain('Support');
     expect(screen.queryByRole('button', { name: 'Account menu for Rami K.' })).not.toBeInTheDocument();
   });

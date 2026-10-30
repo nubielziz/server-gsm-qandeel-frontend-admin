@@ -307,3 +307,51 @@ The mock (`mocks/`) plays the server: it keeps the demo's 0.5 to 15 rate limit a
 5. Plans: the values of `kind`, `basis` and `period`; what `percent` is ("3.0000" for 3%?) and its allowed range; the shape of `tiers` (a minimum payout, brackets?); whether a fixed amount instead of a rate is possible.
 6. Assignments: values of `scope`; can a merchant have more than one plan; does `DELETE` end the assignment (set `ends_at`) or remove the row; is it refused while accruals are ready? Could the row carry per-agent figures (referred count, 30-day revenue, ready and approved amounts) for the Agents tab?
 7. Does approving credit the wallet and post the journal in one transaction, and does it also change the merchant's wallet figures the merchants page shows?
+
+## settings
+
+The map gives routes, permissions and tables but no bodies (MISMATCHES M10). Each item is marked "Assumed contract" in the JSDoc of its
+function or type (`api/*.ts`, `types/*.ts`).
+
+- `GET /admin/payment-gateways[/:id]`: `PaymentGatewayRow` with `audience` `b2c | b2b | both`; may carry `secretHint` (never a secret) and
+  `volume30d`. `POST` body: `code`, `driver`, `name`, `audience`, `feePercent`, `feeFixed`, `minAmount`, `maxAmount`, `allowedGroupIds`,
+  `supportsRefunds`, `supports3ds`, `isManual`, `instructions`, `holdHours`, `isActive`, optional write-only `secret`. `PATCH` takes any of
+  them (the switch sends `{ isActive }`; `secret` replaces the stored one). A zero minimum or maximum means no limit. `DELETE` answers 204,
+  or 409 for a gateway that took payments.
+- `GET /admin/tax-rates[/:id]`: `TaxRateRow`, several rows per country. `POST` body: `country`, `region`, `ratePercent`, `taxType`
+  (`vat`, `gst`, `sales_tax`, `none`), `appliesTo`, `validFrom`, `validTo`, `label`, `ossScheme`. `PATCH` takes any of them.
+- `GET /admin/currencies[/:id]`: `CurrencyRow`, optionally `isStale`. `POST` body: `code`, `name`, `rateToBase`, `markupPercent`,
+  `charmRounding`, `isStorefront`, `decimals`. `PATCH` takes any of them (the switch sends `{ isStorefront }`).
+- `POST /admin/currencies/refresh-fx`: no body; answer `{ refreshed?: [{ code, rateToBase, rateUpdatedAt }], failed?: [{ code, message }], source? }`.
+- `GET /admin/settings`: one flat object. Policy keys: `guestCheckout`, `require3ds`, `withdrawalWaiver`, `autoRefundFailed`,
+  `imeiPrecheck` (booleans); `refundHoursBeforeDispatch`, `abandonedMinutes`, `imeiRetentionDays` (whole numbers). `PATCH
+  /admin/storefront/settings`: body is those keys (only the ones that change); answer the policy keys after the change; a field error
+  names the key.
+- `GET /admin/notification-templates[/:id]`: `NotificationTemplateRow` with `channel` `email | telegram`, `audience` `customer | merchant |
+  staff`; filters `audience`, `channel`; may carry `sentLast30Days`. `POST` body: `event`, `channel`, `audience`, `locale`, `subject`,
+  `body`, `isActive`; a second template for the same event, channel, audience and language is a 422 on `event`. `PATCH` takes any of them.
+- `POST /admin/notification-templates/:id/preview`: body `{ subject?, body? }` (empty: preview the saved text); answer `{ subject, body,
+  format?: 'text' | 'html', from?, note? }`. Without `format` the console guesses from the markup.
+- `GET /admin/notifications[/:id]`: rows with `event` (key), `channel`, `status`, `recipient` (masked), `sentAt`, `createdAt`; the detail
+  adds `payload` and `error`. Filters `status`, `channel`.
+- `GET /admin/webhook-deliveries[/:id]`: rows with the joins `endpoint { id, url }` and `client { id, name }`; the detail adds
+  `responseBody` and `error`. Filters `status`; `q` searches merchant, event and address.
+- `POST /admin/webhook-deliveries/:id/retry`: no body; answer the delivery after queuing; 409 `DELIVERY_SUCCEEDED` for one that worked.
+
+### Questions for the backend
+
+1. `GET /admin/settings`: are the policy keys named as in "Assumed contracts" (`guestCheckout`, `require3ds`, `withdrawalWaiver`,
+   `autoRefundFailed`, `imeiPrecheck`, `refundHoursBeforeDispatch`, `abandonedMinutes`, `imeiRetentionDays`)? Does the answer carry the
+   other keys (as `{ key: value }`) so the System tab can show them?
+2. `PATCH /admin/storefront/settings`: is the body a flat set of policy keys? The map says it also changes payment methods and email
+   templates; should the console send those through it (and with which body), or through their own CRUD routes as it does now?
+3. Gateways: are `audience` values `b2c | b2b | both`? Is a zero limit "no limit"? What does `holdHours` hold (the time a manual payment
+   waits)? Can the server send `secretHint` and `volume30d`? Is `code` fixed after creation?
+4. Currencies: is `rateToBase` units of the currency per dollar? Will the list carry `isStale`? Is `settings:update` really the
+   permission to read the list? What does `refresh-fx` answer (updated, failed, source), and can it refresh one currency?
+5. Templates: what are the event keys (the console asks before turning off `order.received`, `order.completed`, `order.failed`)? Does the
+   preview take `subject` and `body` to preview unsaved text, and does it say `format`? Are templates ever HTML?
+6. Notification log: is `recipient` sent already masked? Which `status` values exist? Is `event` the event key rather than an id?
+7. Webhook deliveries: are `endpoint` and `client` joined into each row? Which `status` values exist? Does the detail carry the merchant's
+   `responseBody` and a network `error`? Does a retry make a new attempt at once, and is it rate limited?
+8. Tax rates: should two rates for one country be refused when their dates overlap? Which `taxType` values exist?
