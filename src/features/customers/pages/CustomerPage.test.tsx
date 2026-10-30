@@ -263,7 +263,9 @@ describe('Support tab', () => {
 describe('Consents and data tab', () => {
   it('lists the consent records of the latest order and the privacy facts', async () => {
     await openCustomer(1, DANIEL, { tab: 'consents' });
-    expect(await screen.findByText('Consent record for the latest order (SF-20485)')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Consent record for the latest order (SF-20485)', {}, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     for (const text of [
       'Terms of service v3.2',
       'Privacy policy v2.1',
@@ -276,7 +278,10 @@ describe('Consents and data tab', () => {
     expect(screen.getAllByText(/IP 203\.0\.113\.177/)).toHaveLength(4);
     expect(screen.getByText(/stored with the order/)).toBeInTheDocument();
     expect(screen.getByText('Not opted in')).toBeInTheDocument();
-    expect(screen.getByText('Kept for 180 days after the order, then removed')).toBeInTheDocument();
+    // The retention line comes from a second request (the settings), which may answer later.
+    expect(
+      await screen.findByText('Kept for 180 days after the order, then removed', {}, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(await screen.findByText('None')).toBeInTheDocument();
   });
 

@@ -74,6 +74,8 @@ describe('sidebar', () => {
     expect(nav.getAllByRole('link').map(labelOf)).toEqual([
       'Merchants',
       'Services & pricing',
+      // catalog:* opens Storefront too (its TAC catalogue tab; the page takes any of three permissions).
+      'Storefront',
       'Admins & access',
     ]);
   });

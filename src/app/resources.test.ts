@@ -15,7 +15,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
     ['services', 'Services & pricing', 'Catalog', 'tag', ['catalog:read', 'pricing:read', 'inventory:read']],
     ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
-    ['storefront', 'Storefront', 'Catalog', 'store', 'storefront:read'],
+    ['storefront', 'Storefront', 'Catalog', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
     [
       'finance',
       'Finance',

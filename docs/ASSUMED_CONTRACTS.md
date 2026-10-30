@@ -355,3 +355,27 @@ function or type (`api/*.ts`, `types/*.ts`).
 7. Webhook deliveries: are `endpoint` and `client` joined into each row? Which `status` values exist? Does the detail carry the merchant's
    `responseBody` and a network `error`? Does a retry make a new attempt at once, and is it rate limited?
 8. Tax rates: should two rates for one country be refused when their dates overlap? Which `taxType` values exist?
+
+## storefront
+
+All marked "Assumed contract" in the JSDoc of `api/*.ts` and `types/*.ts`.
+
+- **Listings** (`/admin/service-listings`): a row is the generated row (`id`, `serviceId`, `locale`, `slug`, `publicTitle`, `isListed`, `isFeatured`) plus `service { id, name, code, basePrice, cost }`, `retailPrice` (or `null`), `floorPrice`, `marginPct`, `orders30d`, `revenue30d`, `locked`, `lockedReason`. Filters `q` (title, slug, service name or code), `isListed`, `locked`; sorts `publicTitle`, `isListed`. `POST` body `{ serviceId, locale, publicTitle, slug? }` (no slug: the server makes one). `PATCH` body any of `{ isListed, retailPrice }`; a price under the floor and a locked or disabled service are refused, with `errors[]` on `retailPrice` for the price.
+- **Content pages** (`/admin/content-pages`): `kind` is `carrier`, `model`, `tool`, `brand`, `country` (landing) or `static`, `blog`; `status` is `draft`, `published` or `noindex`; rows carry `bodyMd` and, for landing pages, `visits30d` and `orders30d` (else `null`). The `kind` filter may repeat. Filters `q`, `kind`, `status`, `locale`; sorts `title`, `status`, `updatedAt`. `POST` body `{ kind, title, locale, slug?, bodyMd, seoTitle?, seoDescription? }` (created as a draft). `PATCH` takes `title`, `slug`, `locale`, `bodyMd`, `seoTitle`, `seoDescription`, never `kind` or `status`. `publish` body `{ published: boolean }`, answer the page. `generate` body `{ brands, models, networks }` (string lists), answer `{ created: ContentPage[], skipped: number }`.
+- **Help articles** (`/admin/help-articles`): rows carry `answerMd`, `helpfulYes`, `helpfulNo`, `isPublished`, `sort`. Filters `q` (question, topic), `isPublished`; sorts `sort`, `question`, `category`, `isPublished`. `POST` body `{ category, question, answerMd, locale, isPublished? }`; the publish button is `PATCH { isPublished }`.
+- **Legal documents** (`/admin/legal-documents`): `type` is `terms`, `privacy`, `refund` or `cookies`; rows carry `bodyMd`, `isCurrent`, `effectiveFrom` (`null` for a version not yet published), `requiresReacceptance` and `acceptedCount` (or `null`). The list answers every version (the console reads up to 200). `POST` body `{ type, locale, version, bodyMd, requiresReacceptance }` makes a version that is not in force; `publish` has no body and answers the published version.
+- **TAC catalogue** (`/admin/tac-catalog`): filters `q` (prefix, brand, model, marketing name); sorts `tac`, `brand`, `model`, `releaseYear`. `POST` body `{ tac, brand, model, marketingName?, releaseYear? }`; `PATCH` any of them. `model` is the model code and `marketingName` the name customers know.
+- **Languages** are `en` and `ar` (the demo's `EN, AR`); the forms offer those two.
+- **Server messages**: a refusal names its field in `errors[]` (`retailPrice`, `serviceId`, `slug`, `version`, `tac`, `title`, `answerMd`…); anything else shows in the dialog's error slot or a toast.
+
+### Questions for the backend
+
+1. Where does the listing's retail price live? Does `PATCH /admin/service-listings/:id` take `retailPrice`, for which languages, and do list rows join `service`, `retailPrice`, `floorPrice`, `marginPct`, `orders30d`, `revenue30d`, `locked` and `lockedReason`?
+2. Do the list rows of content pages, help articles and legal documents carry the bodies (`bodyMd`, `answerMd`)? The editors start from the row; if not, they need a call to `GET /:id` first.
+3. What are the real values of `content_pages.kind` and `status`? Is there a `noindex` status, and what sets it, since the publish route only publishes or hides? Is the publish body `{ published: boolean }`?
+4. Generator: what is the body, does an empty list mean "all", is there a limit on drafts per run, how are titles and slugs made, and which permission does the action need (the slice says `storefront:*` on an action row)?
+5. Legal: are the `type` words `terms`, `privacy`, `refund`, `cookies`? Is `requiresReacceptance` applied by the publish? Is there a second-approval rule, and which code does it refuse with? Can the list join `acceptedCount` from `consent_records`?
+6. Help articles have no publish route: should the toggle need `storefront:publish` instead of `storefront:update`?
+7. TAC: can `tac` be edited after creation? Which `source` values exist? Are `marketingName` and `releaseYear` optional, and what does the server send for an unknown year?
+8. Can the API send a page's public address (`path` or `url`), so the table can offer "Open the page" again?
+9. When a slug is left empty on create, does the server make it from the title (listings, pages)?
