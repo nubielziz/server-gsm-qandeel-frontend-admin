@@ -242,3 +242,22 @@ The map gives no bodies (M10). Each is in one function's JSDoc marked "Assumed c
 5. Payments: the `status` values of a manual deposit, the `note` field's meaning, whether `approve` returns the payment with the wallet, and whether `approve` needs an idempotency key.
 6. Invoices: the `kind` and `status` words; there is no description column in `invoices`, so where does a manual invoice's text go? Does a manual invoice get VAT, and can it carry a due date?
 7. Reports: the parameter names and the time zone of `from`/`to`; how many rows the wallet exposure caps at; whether VAT rows are split by month.
+
+## checkouts
+
+The map gives routes, permissions and tables, not bodies (M10). Marked "Assumed contract" in the JSDoc of `api/` and `types/index.ts`.
+
+- `GET /admin/checkouts/abandoned`: simple-rest list (`_start`, `_end`, `_sort`, `_order`, `q`, total in `x-total-count`). Filter `canRecover=true`. Sort fields `createdAt`, `grossAmount`, `recoveryEmailedAt`. Row `AbandonedCheckout`: `id`, `email` (masked), `grossAmount` (4-decimal USD string), `fxRate`, `currencyCode`, `serviceName`, `status`, `utm` (object, `utm.source` shown), `createdAt`, `recoveryEmailedAt | null`, `orderId | null`, `marketingConsent`, `canRecover`.
+- `POST /admin/checkouts/recover`: body `{ ids: number[] }`; answer `{ sent: number, skipped: [{ id, reason }] }`. Known reason codes: `no_marketing_consent`, `already_emailed`, `already_paid`, `not_found`; any other code is shown with underscores as spaces. 422 with a message on `ids` for an empty list. The console sends only ticked rows with `canRecover`.
+- `GET /admin/reports/funnel?days=7|30|90` (default 30): answer `{ days, imeiChecks, paymentStarted, paid, delivered }`, all integers.
+- The "recovered" word: a row with `recoveryEmailedAt` and `orderId` set.
+
+### Questions for the backend
+
+1. List: is `GET /admin/checkouts/abandoned` a simple-rest list with `x-total-count`, does `q` match the full address (the rows come masked), and are `serviceName`, `currencyCode` and `utm` joined?
+2. What exactly makes `marketingConsent` true (the latest `consent_records` row with purpose marketing is a grant)? What if consent is withdrawn after the email went out?
+3. What exactly is `canRecover`: consent, no email sent, not paid, and past the automatic-reminder delay? Is there a maximum age (an expired basket link)?
+4. Recover: is `{ ids }` right, what are the skip reason codes, is there a maximum number of ids per call or a rate limit, and does the send write an audit entry (the demo logs "sent recovery emails")?
+5. Does the automatic reminder (after the `abandonedMinutes` policy) follow the same consent rule and set `recoveryEmailedAt`? Is "recovered" a payment within 3 days of the email (the demo's tooltip)?
+6. Funnel: which periods are allowed, are the counts people or events, is it storefront-only, and should it replace the dashboard's `storefront` block (M39)?
+7. Do you want a `summary` on the list (left at checkout, not reminded, recovered, revenue recovered) so the demo's figures strip can come back (M136)?
