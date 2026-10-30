@@ -100,12 +100,19 @@ export default tseslint.config(
       'src/main.tsx',
       'src/**/*.test.{ts,tsx}',
       'src/test/**/*.{ts,tsx}',
+      'src/features/*/test/**/*.{ts,tsx}',
     ],
     rules: { 'no-restricted-globals': 'off', 'no-restricted-properties': 'off' },
   },
   {
     // ...and these may load the mock layer and MSW (feature folders still go through feature indexes).
-    files: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}', 'src/mocks/**/*.{ts,tsx}'],
+    files: [
+      'src/main.tsx',
+      'src/**/*.test.{ts,tsx}',
+      'src/test/**/*.{ts,tsx}',
+      'src/features/*/test/**/*.{ts,tsx}',
+      'src/mocks/**/*.{ts,tsx}',
+    ],
     rules: { 'no-restricted-imports': ['error', { paths: bannedHttpLibs, patterns: [deepFeatureImport] }] },
   },
   {

@@ -7,7 +7,7 @@ import type { Me } from '@/features/auth';
 import { apiPost, forgetCsrfToken } from '@/lib/api';
 import { resetMockState } from '@/mocks/handlers';
 import { mockServer } from '@/mocks/node';
-import { DEMO_CODE, DEMO_PASSWORD } from '@/mocks/session';
+import { DEMO_CODE, DEMO_PASSWORD, startSignedInSession } from '@/mocks/session';
 
 export const API = 'http://api.test';
 export const OWNER = 'rami@gsm-supply.example';
@@ -33,8 +33,13 @@ export async function signInAs(email = OWNER): Promise<void> {
   await apiPost('/admin/auth/2fa', { code: DEMO_CODE });
 }
 
-/** Answers `GET /admin/auth/me` with this staff member, whatever the mock session says. */
+/**
+ * Answers `GET /admin/auth/me` with this staff member, whatever the mock session says. It also starts a signed-in mock
+ * session (the seeded owner), so the shell's own data calls (the sidebar counts) are answered rather than refused with
+ * a 401 that would sign the test user out. The mock server does not check permissions: `me` is what the UI sees.
+ */
 export function mockMe(overrides: Partial<Me>): void {
+  startSignedInSession();
   const me: Me = {
     id: 99,
     email: 'tester@gsm-supply.example',

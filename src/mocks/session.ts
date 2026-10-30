@@ -72,6 +72,16 @@ export function resetSession(): void {
   setCsrfCookie(undefined);
 }
 
+/**
+ * Starts a fully signed-in session for a seeded staff member without the sign-in calls, as if they had signed in
+ * earlier (tests that set `me` directly use it, so the shell's own data calls are answered instead of refused).
+ */
+export function startSignedInSession(staffId = 1): void {
+  const csrf = newToken();
+  writeSession({ staffId, stage: 'signed-in', csrf });
+  setCsrfCookie(csrf);
+}
+
 function newToken(): string {
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
