@@ -1,13 +1,13 @@
 // Query keys of the merchant reads that are not Refine resources (decision 005: they start with `['api', <feature>]`), and what
 // a change to a merchant makes stale. React Query matches the keys as prefixes.
 import type { QueryKey } from '@tanstack/react-query';
-import { DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
+import { DASHBOARD_KEY, type InvalidateTarget, MERCHANT_WALLET_KEY } from '@/lib/query';
 
 /** The numbers on the tabs (one call each, `_start=0&_end=1`). */
 export const MERCHANT_COUNTS_KEY = ['api', 'merchants', 'counts'] as const;
 
 /** The wallet figures of each merchant. */
-export const WALLET_KEY = ['api', 'merchants', 'wallet'] as const;
+export const WALLET_KEY = MERCHANT_WALLET_KEY;
 
 /** The statement rows of each merchant (every page and sort). */
 export const STATEMENT_KEY = ['api', 'merchants', 'statement'] as const;

@@ -1,11 +1,16 @@
-// Types for the ledger routes (`/admin/ledger/transactions`): a journal entry and its lines. The finance page extends
-// this later; the order drawer already uses it for the money trail. The map gives no bodies (MISMATCHES M10), so every
-// shape below is an assumed contract, built from the generated rows in `src/lib/api/schema.gen.ts`.
+// Types of the ledger routes (`/admin/ledger/transactions`): a journal entry and its lines (the order drawer's money trail
+// uses them too); the other routes keep theirs next to this file. The map gives no bodies (MISMATCHES M10), so every shape
+// is an assumed contract, built from the generated rows in `src/lib/api/schema.gen.ts`.
 import type { Id } from '@/lib/api';
 import type { LedgerAccountRow, LedgerEntryRow, LedgerTransactionRow } from '@/lib/api/schema.gen';
 
-/** What a journal entry is about (`ref_type`): an order, an invoice, a refund or a dispute. */
-export type LedgerRefType = 'order' | 'invoice' | 'refund' | 'dispute';
+/**
+ * What a journal entry is about (`ref_type`): an order, a deposit, an invoice, a refund, a dispute, a commission
+ * accrual, a supplier top-up or the system itself (an opening balance, a gateway settlement). The console only reads it
+ * to filter (an order's money trail, a deposit's entries) and to link back to the record.
+ */
+export type LedgerRefType =
+  'order' | 'payment' | 'invoice' | 'refund' | 'dispute' | 'accrual' | 'supplier' | 'system';
 
 /** Who owns a ledger account. Platform accounts (revenue, VAT payable…) have no owner. */
 export type LedgerOwnerType = 'client' | 'supplier' | 'customer';
@@ -41,9 +46,16 @@ export type LedgerTransaction = Pick<LedgerTransactionRow, 'id' | 'kind' | 'memo
 
 /** The filters `GET /admin/ledger/transactions` understands besides paging and sorting (assumed contract). */
 export type LedgerTransactionFilters = {
-  /** With `refId`: only the entries about that record (an order's money trail). */
+  /** With `refId`: only the entries about that record (an order's money trail, a deposit's entries). */
   refType?: LedgerRefType;
   refId?: Id;
   /** One entry kind such as `order_settle`. */
   kind?: string;
+  /** Only the entries with a line on an account of this kind (`bank`), from the trial balance's Entries button. */
+  accountKind?: string;
 };
+
+export * from './accounts';
+export * from './invoices';
+export * from './payments';
+export * from './reports';

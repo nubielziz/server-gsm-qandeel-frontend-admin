@@ -6,3 +6,9 @@
  * the next minute's refresh.
  */
 export const DASHBOARD_KEY = ['api', 'dashboard'] as const;
+
+/**
+ * A merchant's wallet figures (the merchants feature reads them). An action that moves money into or out of a wallet
+ * elsewhere (a deposit approved on the Finance page) invalidates this key.
+ */
+export const MERCHANT_WALLET_KEY = ['api', 'merchants', 'wallet'] as const;

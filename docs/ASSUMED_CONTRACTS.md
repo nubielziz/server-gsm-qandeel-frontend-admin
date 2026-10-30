@@ -217,3 +217,28 @@ All of these are marked "Assumed contract" in the JSDoc of `api/` and typed in `
 6. Does accepting a loss block the customer (the demo says it does; the map's tables do not include customers)?
 7. Default order of disputes: the demo sorts by evidence deadline, soonest first, which puts old closed disputes (past deadlines) before the open ones once there are many. Can the server list `needs_response` first when asked for `_sort=evidenceDueAt&_order=asc`?
 8. Is `fee` per dispute (the demo always has $15)? Is `fx` the rate the order was priced with?
+
+## finance
+
+The map gives no bodies (M10). Each is in one function's JSDoc marked "Assumed contract"; the types are in `types/`.
+
+- `GET /admin/ledger/transactions`: extra filters `kind`, `accountKind` (an entry with a line on an account of that kind) and `q`. `LedgerRefType` now also has `payment`, `accrual`, `supplier`, `system` (the demo seed uses them).
+- `GET /admin/ledger/accounts` returns the trial balance: `{ currency, rows: [{ kind, balance, accounts }], totalDebit, totalCredit }`, one row per account kind, `balance` signed (positive is a debit), `accounts` the number of ledger accounts of that kind (one wallet account per merchant).
+- `POST /admin/ledger/reconcile`, no body, returns `{ ranAt, accountsChecked, entriesChecked, differences: [{ accountId, kind, ownerName, stored, expected, difference }] }`; an empty list means all matched.
+- `GET /admin/payments`: filters `purpose` (`topup`, `order`), `status` (`pending`, `approved`, `rejected`), `q`; sort `createdAt`, `id`, `amount`, `status`. Row = `PaymentRow` plus `netAmount`, `client { id, name, group, walletBalance }`, `gateway { id, name }`, `reviewedBy { id, name }`, `reviewedAt`, `note` (a hint to the reviewer while pending, the reason once rejected), nullable `invoiceId` and `receiptFileId`. `methodType` is `bank`, `card`, `usdt` or `wise`.
+- `GET /admin/payments/:id`: same row. `POST /admin/payments/:id/approve`: no body, returns the updated payment. `POST /admin/payments/:id/reject`: `{ reason }`, returns the updated payment.
+- `GET /admin/invoices`: filters `status`, `kind`, `q` (number or merchant name); sort `createdAt`, `total`, `status`. Row = `InvoiceRow` plus `currency` (code), `client { id, name }` or `customer { id, name, email }`, nullable `orderId` and `pdfFileId`, `description`. `POST /admin/invoices`: `{ clientId, amount, description }` (amount a 4-decimal string), returns the invoice; the server adds tax and numbers it.
+- `GET /admin/reports/profit?groupBy=day|service|supplier|client&from=YYYY-MM-DD&to=YYYY-MM-DD` returns `{ groupBy, from, to, currency, rows: [{ key, label, orders, revenue, cost, profit }], totals }`; for `day` the `key` is the date.
+- `GET /admin/reports/wallet-exposure` returns `{ currency, totals: { clients, balance, reserved, overdraftLimit, overdraftUsed, inOverdraft }, rows: [{ clientId, name, balance, reserved, overdraftLimit, overdraftUsed }] }`, largest wallets first.
+- `GET /admin/reports/vat?from=&to=` returns `{ from, to, currency, rows: [{ country, period (YYYY-MM), rate (percent), orders, taxable, vat }], totals: { orders, taxable, vat } }`.
+- The console writes the dates of the presets (last 7, 30, 90 days; this or last month or quarter) in the browser's time zone.
+
+### Questions for the backend
+
+1. Is there a ledger export (CSV) route, with its own permission and an audit entry? Without it the console has no export (M125).
+2. `GET /admin/ledger/accounts`: does it return one line per account kind (as assumed) or one per account? Which currency do the totals use?
+3. Ledger list: which fields does `q` search (journal number, memo, merchant name, reference)? Is there an `accountKind` filter? What `ref_type` do deposits carry (`payment` here)?
+4. Reconciliation: does it only report, or also correct? Can it run long (should the answer be a job)? Does it also check that every entry sums to zero?
+5. Payments: the `status` values of a manual deposit, the `note` field's meaning, whether `approve` returns the payment with the wallet, and whether `approve` needs an idempotency key.
+6. Invoices: the `kind` and `status` words; there is no description column in `invoices`, so where does a manual invoice's text go? Does a manual invoice get VAT, and can it carry a due date?
+7. Reports: the parameter names and the time zone of `from`/`to`; how many rows the wallet exposure caps at; whether VAT rows are split by month.
