@@ -67,3 +67,18 @@ export function dur(ms: number): string {
   if (s < 86400) return `${(s / 3600).toFixed(1).replace(/\.0$/, '')}${nbsp}h`;
   return `${(s / 86400).toFixed(1).replace(/\.0$/, '')}${nbsp}d`;
 }
+
+/**
+ * "<1m", "45m", "2h 5m", "3d 4h": a duration in its two largest units, with non-breaking spaces (the demo's
+ * `ageText`, used for SLA ages, time left on a rule, the oldest order in a queue).
+ */
+export function ageText(ms: number): string {
+  const nbsp = '\u00a0';
+  const minutes = Math.max(0, Math.round(ms / 60_000));
+  if (minutes < 1) return '<1m';
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h${minutes % 60 ? `${nbsp}${minutes % 60}m` : ''}`;
+  const days = Math.floor(hours / 24);
+  return `${days}d${hours % 24 ? `${nbsp}${hours % 24}h` : ''}`;
+}

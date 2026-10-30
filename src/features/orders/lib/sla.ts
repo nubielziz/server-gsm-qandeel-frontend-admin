@@ -1,6 +1,7 @@
 // SLA, age and "Late by" as the table and the drawer show them. Ports slaMs, ageMs and isBreach of 11-state.js, ageText of
 // 20-ui.js and the numbers of slaCell in 41-p-orders.js. This is display maths from `createdAt` and the service's
 // `slaMinutes`: it only draws a bar and a word. Whether an order counts as past SLA is the server's call (`pastSla` filter).
+import { ageText } from '@/lib/format';
 import type { Order } from '../types';
 import { displayStatus, isOpen } from './status';
 
@@ -25,17 +26,8 @@ export function ageMs(
   return Math.max(0, Date.parse(order.completedAt) - created);
 }
 
-/** "<1m", "45m", "2h 5m", "3d 4h": the two largest units, with non-breaking spaces (the demo's `ageText`). */
-export function ageText(ms: number): string {
-  const nbsp = ' ';
-  const minutes = Math.max(0, Math.round(ms / MINUTE));
-  if (minutes < 1) return '<1m';
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h${minutes % 60 ? `${nbsp}${minutes % 60}m` : ''}`;
-  const days = Math.floor(hours / 24);
-  return `${days}d${hours % 24 ? `${nbsp}${hours % 24}h` : ''}`;
-}
+/** The demo's `ageText`, now shared (`@/lib/format`); re-exported so this module's users keep working. */
+export { ageText };
 
 /** What the SLA column draws for one order. */
 export type SlaView =

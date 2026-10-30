@@ -1,5 +1,6 @@
 // Labels, durations and small helpers for IP rules. Ports IP_SCOPE, IP_SCOPE_TAG, IP_DURATIONS, durText and ipLive of
 // 14-state-access.js, ALLOW_DURATIONS and BLOCK_SCOPE_OPTS of 56-p-access.js, and the "Lasts" text IP_LEFT.
+import { ageText } from '@/lib/format';
 import type { IpRule, IpRuleKind, IpScope } from '../types';
 import { timeValue, type SortValues } from './sort';
 
@@ -77,17 +78,8 @@ export function liveRules(rules: readonly IpRule[], kind: IpRuleKind, now: numbe
   return rules.filter((rule) => rule.kind === kind && isLive(rule, now));
 }
 
-/** "5m", "2h 3m", "3d 4h": how long is left, in the two largest units (the demo's ageText). */
-export function ageText(ms: number): string {
-  const gap = ' ';
-  const minutes = Math.max(0, Math.round(ms / 60_000));
-  if (minutes < 1) return '<1m';
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h${minutes % 60 ? `${gap}${minutes % 60}m` : ''}`;
-  const days = Math.floor(hours / 24);
-  return `${days}d${hours % 24 ? `${gap}${hours % 24}h` : ''}`;
-}
+/** The demo's `ageText`, now shared (`@/lib/format`); re-exported so this module's users keep working. */
+export { ageText };
 
 /** The "Lasts" cell: "in 2d 3h" for a temporary rule, null for one that lasts until it is removed. */
 export function leftText(rule: Pick<IpRule, 'expiresAt'>, now: number = Date.now()): string | null {

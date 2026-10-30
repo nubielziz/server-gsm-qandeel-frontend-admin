@@ -5,6 +5,7 @@ import b2cDataSource from '../../../reference/gsm-admin/src/js/09-b2c-data.js?ra
 import b2cUiSource from '../../../reference/gsm-admin/src/js/13-b2c-ui.js?raw';
 import utilSource from '../../../reference/gsm-admin/src/js/00-util.js?raw';
 import {
+  ageText,
   ago,
   compact,
   dayKey,
@@ -225,4 +226,15 @@ describe('text', () => {
       expect(luhn(base)).toBe(demo.luhn(base));
     },
   );
+});
+
+describe('ageText', () => {
+  it('writes the two largest units with non-breaking spaces', () => {
+    expect(ageText(20_000)).toBe('<1m');
+    expect(ageText(45 * 60_000)).toBe('45m');
+    expect(ageText(125 * 60_000)).toBe('2h 5m');
+    expect(ageText(120 * 60_000)).toBe('2h');
+    expect(ageText((3 * 24 + 4) * 3_600_000)).toBe('3d 4h');
+    expect(ageText(-5)).toBe('<1m');
+  });
 });
