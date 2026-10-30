@@ -1,0 +1,444 @@
+{
+  "feature": "storefront",
+  "page": "/storefront",
+  "demo": [
+    "50-p-storefront.js"
+  ],
+  "folders": [
+    "src/features/storefront"
+  ],
+  "notes": "Listings, landing pages, help, legal, TAC catalogue. The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/tac-catalog",
+      "method": "GET",
+      "path": "/admin/tac-catalog",
+      "group": "storefront",
+      "op": "list",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "GET /admin/tac-catalog/:id",
+      "method": "GET",
+      "path": "/admin/tac-catalog/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "POST /admin/tac-catalog",
+      "method": "POST",
+      "path": "/admin/tac-catalog",
+      "group": "storefront",
+      "op": "create",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "PATCH /admin/tac-catalog/:id",
+      "method": "PATCH",
+      "path": "/admin/tac-catalog/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "TAC table: brand and model for each IMEI prefix.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 14,
+      "tables": [
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tac-catalog"
+      }
+    },
+    {
+      "key": "GET /admin/service-listings",
+      "method": "GET",
+      "path": "/admin/service-listings",
+      "group": "storefront",
+      "op": "list",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "GET /admin/service-listings/:id",
+      "method": "GET",
+      "path": "/admin/service-listings/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "POST /admin/service-listings",
+      "method": "POST",
+      "path": "/admin/service-listings",
+      "group": "storefront",
+      "op": "create",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "PATCH /admin/service-listings/:id",
+      "method": "PATCH",
+      "path": "/admin/service-listings/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Services listed in the storefront and the retail price of each service; selling below the minimum price is blocked.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "service_listings",
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/service-listings"
+      }
+    },
+    {
+      "key": "GET /admin/content-pages",
+      "method": "GET",
+      "path": "/admin/content-pages",
+      "group": "storefront",
+      "op": "list",
+      "description": "Landing and content pages: draft, then publish.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "GET /admin/content-pages/:id",
+      "method": "GET",
+      "path": "/admin/content-pages/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Landing and content pages: draft, then publish.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages",
+      "method": "POST",
+      "path": "/admin/content-pages",
+      "group": "storefront",
+      "op": "create",
+      "description": "Landing and content pages: draft, then publish.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "PATCH /admin/content-pages/:id",
+      "method": "PATCH",
+      "path": "/admin/content-pages/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Landing and content pages: draft, then publish.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "content_pages"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/content-pages"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages/:id/publish",
+      "method": "POST",
+      "path": "/admin/content-pages/:id/publish",
+      "group": "storefront",
+      "op": "action",
+      "description": "Publish a page or hide it.",
+      "access": "permission",
+      "permission": "storefront:publish",
+      "stage": 15,
+      "tables": [
+        "content_pages",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/content-pages/:id/publish"
+      }
+    },
+    {
+      "key": "POST /admin/content-pages/generate",
+      "method": "POST",
+      "path": "/admin/content-pages/generate",
+      "group": "storefront",
+      "op": "action",
+      "description": "Landing-page generator (brand x model x network): produces drafts for review only.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 19,
+      "tables": [
+        "content_pages",
+        "service_listings",
+        "tac_catalog"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/content-pages/generate"
+      }
+    },
+    {
+      "key": "GET /admin/help-articles",
+      "method": "GET",
+      "path": "/admin/help-articles",
+      "group": "storefront",
+      "op": "list",
+      "description": "Help center articles.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "GET /admin/help-articles/:id",
+      "method": "GET",
+      "path": "/admin/help-articles/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Help center articles.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "POST /admin/help-articles",
+      "method": "POST",
+      "path": "/admin/help-articles",
+      "group": "storefront",
+      "op": "create",
+      "description": "Help center articles.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "PATCH /admin/help-articles/:id",
+      "method": "PATCH",
+      "path": "/admin/help-articles/:id",
+      "group": "storefront",
+      "op": "update",
+      "description": "Help center articles.",
+      "access": "permission",
+      "permission": "storefront:*",
+      "stage": 15,
+      "tables": [
+        "help_articles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/help-articles"
+      }
+    },
+    {
+      "key": "GET /admin/legal-documents",
+      "method": "GET",
+      "path": "/admin/legal-documents",
+      "group": "storefront",
+      "op": "list",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "access": "permission",
+      "permission": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "GET /admin/legal-documents/:id",
+      "method": "GET",
+      "path": "/admin/legal-documents/:id",
+      "group": "storefront",
+      "op": "show",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "access": "permission",
+      "permission": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "POST /admin/legal-documents",
+      "method": "POST",
+      "path": "/admin/legal-documents",
+      "group": "storefront",
+      "op": "create",
+      "description": "Versions of the terms, privacy policy and refund policy.",
+      "access": "permission",
+      "permission": "legal:*",
+      "stage": 15,
+      "tables": [
+        "legal_documents"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/legal-documents"
+      }
+    },
+    {
+      "key": "POST /admin/legal-documents/:id/publish",
+      "method": "POST",
+      "path": "/admin/legal-documents/:id/publish",
+      "group": "storefront",
+      "op": "action",
+      "description": "Approve a new version; it appears in later consents.",
+      "access": "permission",
+      "permission": "legal:publish",
+      "stage": 15,
+      "tables": [
+        "legal_documents",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/legal-documents/:id/publish"
+      }
+    }
+  ]
+}

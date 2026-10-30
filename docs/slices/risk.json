@@ -1,0 +1,235 @@
+{
+  "feature": "risk",
+  "page": "/risk",
+  "demo": [
+    "54-p-risk.js",
+    "12-state-b2c.js (risk mutations)"
+  ],
+  "folders": [
+    "src/features/risk"
+  ],
+  "notes": "Held queue, IMEI checks, blocklist, rules.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/risk/queue",
+      "method": "GET",
+      "path": "/admin/risk/queue",
+      "group": "risk",
+      "op": "action",
+      "description": "Paid orders held by the rules, waiting for a staff decision.",
+      "access": "permission",
+      "permission": "risk:read",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "risk_assessments"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/risk/queue"
+      }
+    },
+    {
+      "key": "POST /admin/risk/orders/:id/approve",
+      "method": "POST",
+      "path": "/admin/risk/orders/:id/approve",
+      "group": "risk",
+      "op": "action",
+      "description": "Approve; the order is sent to the supplier afterwards.",
+      "access": "permission",
+      "permission": "risk:decide",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "risk_assessments",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/risk/orders/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/risk/orders/:id/refund",
+      "method": "POST",
+      "path": "/admin/risk/orders/:id/refund",
+      "group": "risk",
+      "op": "action",
+      "description": "Refund the held order, optionally adding the customer or device to the blocklist.",
+      "access": "permission",
+      "permission": "risk:decide",
+      "stage": 18,
+      "tables": [
+        "orders",
+        "refunds",
+        "risk_assessments",
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/risk/orders/:id/refund"
+      }
+    },
+    {
+      "key": "GET /admin/imei-checks",
+      "method": "GET",
+      "path": "/admin/imei-checks",
+      "group": "risk",
+      "op": "list",
+      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
+      "access": "permission",
+      "permission": "risk:read",
+      "stage": 18,
+      "tables": [
+        "imei_checks"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/imei-checks"
+      }
+    },
+    {
+      "key": "GET /admin/imei-checks/:id",
+      "method": "GET",
+      "path": "/admin/imei-checks/:id",
+      "group": "risk",
+      "op": "show",
+      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
+      "access": "permission",
+      "permission": "risk:read",
+      "stage": 18,
+      "tables": [
+        "imei_checks"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/imei-checks"
+      }
+    },
+    {
+      "key": "GET /admin/blocklist",
+      "method": "GET",
+      "path": "/admin/blocklist",
+      "group": "risk",
+      "op": "list",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "access": "permission",
+      "permission": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "GET /admin/blocklist/:id",
+      "method": "GET",
+      "path": "/admin/blocklist/:id",
+      "group": "risk",
+      "op": "show",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "access": "permission",
+      "permission": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "POST /admin/blocklist",
+      "method": "POST",
+      "path": "/admin/blocklist",
+      "group": "risk",
+      "op": "create",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "access": "permission",
+      "permission": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "DELETE /admin/blocklist/:id",
+      "method": "DELETE",
+      "path": "/admin/blocklist/:id",
+      "group": "risk",
+      "op": "delete",
+      "description": "Blocklist: email, domain, IMEI or card.",
+      "access": "permission",
+      "permission": "risk:*",
+      "stage": 18,
+      "tables": [
+        "blocklist_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/blocklist"
+      }
+    },
+    {
+      "key": "GET /admin/risk/rules",
+      "method": "GET",
+      "path": "/admin/risk/rules",
+      "group": "risk",
+      "op": "action",
+      "description": "Risk rules and their thresholds: when to hold for review and when to block.",
+      "access": "permission",
+      "permission": "risk:read",
+      "stage": 18,
+      "tables": [
+        "settings"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/risk/rules"
+      }
+    },
+    {
+      "key": "PUT /admin/risk/rules",
+      "method": "PUT",
+      "path": "/admin/risk/rules",
+      "group": "risk",
+      "op": "action",
+      "description": "Update the rules; the review threshold must be lower than the block threshold.",
+      "access": "permission",
+      "permission": "risk:*",
+      "stage": 18,
+      "tables": [
+        "settings",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/risk/rules"
+      }
+    }
+  ]
+}

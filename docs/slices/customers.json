@@ -1,0 +1,343 @@
+{
+  "feature": "customers",
+  "page": "/customers",
+  "demo": [
+    "48-p-customers.js",
+    "12-state-b2c.js (customer mutations)"
+  ],
+  "folders": [
+    "src/features/customers"
+  ],
+  "notes": "Block IP from a customer reuses createIpRule from features/access. Data requests: new tab.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/customers",
+      "method": "GET",
+      "path": "/admin/customers",
+      "group": "customers",
+      "op": "list",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "access": "permission",
+      "permission": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "GET /admin/customers/:id",
+      "method": "GET",
+      "path": "/admin/customers/:id",
+      "group": "customers",
+      "op": "show",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "access": "permission",
+      "permission": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "POST /admin/customers",
+      "method": "POST",
+      "path": "/admin/customers",
+      "group": "customers",
+      "op": "create",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "access": "permission",
+      "permission": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "PATCH /admin/customers/:id",
+      "method": "PATCH",
+      "path": "/admin/customers/:id",
+      "group": "customers",
+      "op": "update",
+      "description": "Storefront customers: search and view orders and payments; create a customer with an account (invitation link or temporary password); edit name, email, country, phone and notes; changing the email cancels the verification.",
+      "access": "permission",
+      "permission": "customers:*",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "orders",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/customers"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/account",
+      "method": "POST",
+      "path": "/admin/customers/:id/account",
+      "group": "customers",
+      "op": "action",
+      "description": "Create an account for a customer who bought as a guest: earlier orders are linked to the account and the customer receives a link to choose a password.",
+      "access": "permission",
+      "permission": "customers:update",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "customer_credentials",
+        "auth_tokens",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/account"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/password",
+      "method": "POST",
+      "path": "/admin/customers/:id/password",
+      "group": "customers",
+      "op": "action",
+      "description": "Send a password-setting link, or set a temporary password that must be changed at first sign-in; the current password is never shown and never enters the audit log, and the sessions can optionally be ended.",
+      "access": "permission",
+      "permission": "customers:password",
+      "stage": 14,
+      "tables": [
+        "customer_credentials",
+        "auth_tokens",
+        "sessions",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/password"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/sessions/revoke",
+      "method": "POST",
+      "path": "/admin/customers/:id/sessions/revoke",
+      "group": "customers",
+      "op": "action",
+      "description": "Sign the customer out of all devices: sets revoked_at on every active session.",
+      "access": "permission",
+      "permission": "customers:password",
+      "stage": 14,
+      "tables": [
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/sessions/revoke"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/suspend",
+      "method": "POST",
+      "path": "/admin/customers/:id/suspend",
+      "group": "customers",
+      "op": "action",
+      "description": "Suspend the account with a reason: no sign-in and no new orders, orders in progress still complete, and sessions are ended; a temporary suspension adds nothing to the blocklist.",
+      "access": "permission",
+      "permission": "customers:suspend",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/suspend"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/reactivate",
+      "method": "POST",
+      "path": "/admin/customers/:id/reactivate",
+      "group": "customers",
+      "op": "action",
+      "description": "Reactivate a suspended account; the customer signs in again.",
+      "access": "permission",
+      "permission": "customers:suspend",
+      "stage": 14,
+      "tables": [
+        "customers",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/reactivate"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/block",
+      "method": "POST",
+      "path": "/admin/customers/:id/block",
+      "group": "customers",
+      "op": "action",
+      "description": "Block a customer for fraud, or lift the block, with a reason; blocking adds the customer fingerprint to the blocklist (use suspend for a temporary stop).",
+      "access": "permission",
+      "permission": "customers:block",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "blocklist_entries",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/block"
+      }
+    },
+    {
+      "key": "GET /admin/customers/:id/export",
+      "method": "GET",
+      "path": "/admin/customers/:id/export",
+      "group": "customers",
+      "op": "action",
+      "description": "Export the customer data for a data-protection request.",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "orders",
+        "consent_records",
+        "data_requests"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/customers/:id/export"
+      }
+    },
+    {
+      "key": "POST /admin/customers/:id/anonymize",
+      "method": "POST",
+      "path": "/admin/customers/:id/anonymize",
+      "group": "customers",
+      "op": "action",
+      "description": "Anonymize the name, email and IMEI while keeping payment records for accounting.",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "customers",
+        "data_requests",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/customers/:id/anonymize"
+      }
+    },
+    {
+      "key": "GET /admin/data-requests",
+      "method": "GET",
+      "path": "/admin/data-requests",
+      "group": "customers",
+      "op": "list",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    },
+    {
+      "key": "GET /admin/data-requests/:id",
+      "method": "GET",
+      "path": "/admin/data-requests/:id",
+      "group": "customers",
+      "op": "show",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    },
+    {
+      "key": "PATCH /admin/data-requests/:id",
+      "method": "PATCH",
+      "path": "/admin/data-requests/:id",
+      "group": "customers",
+      "op": "update",
+      "description": "Data export and deletion requests and the deadline to fulfil them.",
+      "access": "permission",
+      "permission": "customers:privacy",
+      "stage": 18,
+      "tables": [
+        "data_requests"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/data-requests"
+      }
+    }
+  ]
+}

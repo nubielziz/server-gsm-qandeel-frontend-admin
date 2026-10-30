@@ -1,0 +1,292 @@
+{
+  "feature": "finance",
+  "page": "/finance",
+  "demo": [
+    "45-p-finance.js"
+  ],
+  "folders": [
+    "src/features/finance"
+  ],
+  "notes": "Ledger, accounts, payments review, invoices and reports. Demo withdrawals tab has no admin API (see MISMATCHES).",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/ledger/transactions",
+      "method": "GET",
+      "path": "/admin/ledger/transactions",
+      "group": "clients",
+      "op": "list",
+      "description": "Ledger entries with their lines.",
+      "access": "permission",
+      "permission": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/ledger/transactions"
+      }
+    },
+    {
+      "key": "GET /admin/ledger/transactions/:id",
+      "method": "GET",
+      "path": "/admin/ledger/transactions/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Ledger entries with their lines.",
+      "access": "permission",
+      "permission": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/ledger/transactions"
+      }
+    },
+    {
+      "key": "GET /admin/ledger/accounts",
+      "method": "GET",
+      "path": "/admin/ledger/accounts",
+      "group": "clients",
+      "op": "action",
+      "description": "Accounts and their balances.",
+      "access": "permission",
+      "permission": "ledger:read",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/ledger/accounts"
+      }
+    },
+    {
+      "key": "POST /admin/ledger/reconcile",
+      "method": "POST",
+      "path": "/admin/ledger/reconcile",
+      "group": "clients",
+      "op": "action",
+      "description": "Run the reconciliation now.",
+      "access": "permission",
+      "permission": "ledger:reconcile",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/ledger/reconcile"
+      }
+    },
+    {
+      "key": "GET /admin/invoices",
+      "method": "GET",
+      "path": "/admin/invoices",
+      "group": "billing",
+      "op": "list",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "access": "permission",
+      "permission": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "GET /admin/invoices/:id",
+      "method": "GET",
+      "path": "/admin/invoices/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "access": "permission",
+      "permission": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "POST /admin/invoices",
+      "method": "POST",
+      "path": "/admin/invoices",
+      "group": "billing",
+      "op": "create",
+      "description": "Invoices; creating one issues a manual invoice for a merchant.",
+      "access": "permission",
+      "permission": "invoices:*",
+      "stage": 8,
+      "tables": [
+        "invoices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSC",
+        "path": "/admin/invoices"
+      }
+    },
+    {
+      "key": "GET /admin/payments",
+      "method": "GET",
+      "path": "/admin/payments",
+      "group": "billing",
+      "op": "list",
+      "description": "Payments and the manual review queue.",
+      "access": "permission",
+      "permission": "payments:read",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/payments"
+      }
+    },
+    {
+      "key": "GET /admin/payments/:id",
+      "method": "GET",
+      "path": "/admin/payments/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Payments and the manual review queue.",
+      "access": "permission",
+      "permission": "payments:read",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/payments"
+      }
+    },
+    {
+      "key": "POST /admin/payments/:id/approve",
+      "method": "POST",
+      "path": "/admin/payments/:id/approve",
+      "group": "billing",
+      "op": "action",
+      "description": "Approve a manual payment and top up the wallet.",
+      "access": "permission",
+      "permission": "payments:approve",
+      "stage": 8,
+      "tables": [
+        "payments",
+        "invoices",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/payments/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/payments/:id/reject",
+      "method": "POST",
+      "path": "/admin/payments/:id/reject",
+      "group": "billing",
+      "op": "action",
+      "description": "Reject a payment with a reason.",
+      "access": "permission",
+      "permission": "payments:approve",
+      "stage": 8,
+      "tables": [
+        "payments"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/payments/:id/reject"
+      }
+    },
+    {
+      "key": "GET /admin/reports/profit",
+      "method": "GET",
+      "path": "/admin/reports/profit",
+      "group": "growth",
+      "op": "action",
+      "description": "Profit by day, service, supplier or merchant.",
+      "access": "permission",
+      "permission": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/profit"
+      }
+    },
+    {
+      "key": "GET /admin/reports/wallet-exposure",
+      "method": "GET",
+      "path": "/admin/reports/wallet-exposure",
+      "group": "growth",
+      "op": "action",
+      "description": "Balances, overdraft and reserved amounts.",
+      "access": "permission",
+      "permission": "reports:read",
+      "stage": 11,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/wallet-exposure"
+      }
+    },
+    {
+      "key": "GET /admin/reports/vat",
+      "method": "GET",
+      "path": "/admin/reports/vat",
+      "group": "refunds",
+      "op": "action",
+      "description": "VAT due by country and period, computed from ledger entries rather than invoices.",
+      "access": "permission",
+      "permission": "reports:finance",
+      "stage": 16,
+      "tables": [
+        "ledger_entries",
+        "tax_rates",
+        "invoices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/vat"
+      }
+    }
+  ]
+}

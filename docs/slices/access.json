@@ -1,0 +1,483 @@
+{
+  "feature": "access",
+  "page": "/access",
+  "demo": [
+    "56-p-access.js",
+    "14-state-access.js"
+  ],
+  "folders": [
+    "src/features/access"
+  ],
+  "notes": "Admins, IP allow/block, roles (demo ROLE_MATRIX is a UI reference only), active sessions (new tab, no demo screen).",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/staff",
+      "method": "GET",
+      "path": "/admin/staff",
+      "group": "auth",
+      "op": "list",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "access": "permission",
+      "permission": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "GET /admin/staff/:id",
+      "method": "GET",
+      "path": "/admin/staff/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "access": "permission",
+      "permission": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "POST /admin/staff",
+      "method": "POST",
+      "path": "/admin/staff",
+      "group": "auth",
+      "op": "create",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "access": "permission",
+      "permission": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "PATCH /admin/staff/:id",
+      "method": "PATCH",
+      "path": "/admin/staff/:id",
+      "group": "auth",
+      "op": "update",
+      "description": "Staff members: add by invitation or temporary password, set the role, and edit details.",
+      "access": "permission",
+      "permission": "staff:*",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles",
+        "auth_tokens",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/staff"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/password",
+      "method": "POST",
+      "path": "/admin/staff/:id/password",
+      "group": "auth",
+      "op": "action",
+      "description": "Send a link to set a new password, or set a temporary one; the current password is never readable and never enters the log.",
+      "access": "permission",
+      "permission": "staff:update",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "auth_tokens",
+        "sessions",
+        "notifications",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/password"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/sessions/revoke",
+      "method": "POST",
+      "path": "/admin/staff/:id/sessions/revoke",
+      "group": "auth",
+      "op": "action",
+      "description": "End all sessions of a staff member.",
+      "access": "permission",
+      "permission": "staff:update",
+      "stage": 2,
+      "tables": [
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/sessions/revoke"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/suspend",
+      "method": "POST",
+      "path": "/admin/staff/:id/suspend",
+      "group": "auth",
+      "op": "action",
+      "description": "Suspend a staff member with a reason, which ends their sessions; suspending yourself or the last Owner is rejected.",
+      "access": "permission",
+      "permission": "staff:suspend",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "sessions",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/suspend"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/reactivate",
+      "method": "POST",
+      "path": "/admin/staff/:id/reactivate",
+      "group": "auth",
+      "op": "action",
+      "description": "Reactivate a suspended staff member.",
+      "access": "permission",
+      "permission": "staff:suspend",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/reactivate"
+      }
+    },
+    {
+      "key": "POST /admin/staff/:id/reset-2fa",
+      "method": "POST",
+      "path": "/admin/staff/:id/reset-2fa",
+      "group": "auth",
+      "op": "action",
+      "description": "Reset 2FA for a staff member.",
+      "access": "permission",
+      "permission": "staff:update",
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/staff/:id/reset-2fa"
+      }
+    },
+    {
+      "key": "GET /admin/ip-rules",
+      "method": "GET",
+      "path": "/admin/ip-rules",
+      "group": "auth",
+      "op": "list",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "access": "permission",
+      "permission": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "GET /admin/ip-rules/:id",
+      "method": "GET",
+      "path": "/admin/ip-rules/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "access": "permission",
+      "permission": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "POST /admin/ip-rules",
+      "method": "POST",
+      "path": "/admin/ip-rules",
+      "group": "auth",
+      "op": "create",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "access": "permission",
+      "permission": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "DELETE /admin/ip-rules/:id",
+      "method": "DELETE",
+      "path": "/admin/ip-rules/:id",
+      "group": "auth",
+      "op": "delete",
+      "description": "Allowed and blocked addresses: range, audience, reason and duration.",
+      "access": "permission",
+      "permission": "access:*",
+      "stage": 2,
+      "tables": [
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCD",
+        "path": "/admin/ip-rules"
+      }
+    },
+    {
+      "key": "POST /admin/ip-rules/check",
+      "method": "POST",
+      "path": "/admin/ip-rules/check",
+      "group": "auth",
+      "op": "action",
+      "description": "Test an address before the change; it returns the decision and the matching rule.",
+      "access": "permission",
+      "permission": "access:read",
+      "stage": 2,
+      "tables": [
+        "ip_rules"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/ip-rules/check"
+      }
+    },
+    {
+      "key": "PUT /admin/access/restriction",
+      "method": "PUT",
+      "path": "/admin/access/restriction",
+      "group": "auth",
+      "op": "action",
+      "description": "Turn the allow-list restriction on the admin panel on or off; turning it on is rejected if the address of the requester is outside the list.",
+      "access": "permission",
+      "permission": "access:update",
+      "stage": 2,
+      "tables": [
+        "settings",
+        "ip_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/access/restriction"
+      }
+    },
+    {
+      "key": "GET /admin/roles",
+      "method": "GET",
+      "path": "/admin/roles",
+      "group": "auth",
+      "op": "list",
+      "description": "Roles and their permissions.",
+      "access": "permission",
+      "permission": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "GET /admin/roles/:id",
+      "method": "GET",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Roles and their permissions.",
+      "access": "permission",
+      "permission": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "POST /admin/roles",
+      "method": "POST",
+      "path": "/admin/roles",
+      "group": "auth",
+      "op": "create",
+      "description": "Roles and their permissions.",
+      "access": "permission",
+      "permission": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "PATCH /admin/roles/:id",
+      "method": "PATCH",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "update",
+      "description": "Roles and their permissions.",
+      "access": "permission",
+      "permission": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "DELETE /admin/roles/:id",
+      "method": "DELETE",
+      "path": "/admin/roles/:id",
+      "group": "auth",
+      "op": "delete",
+      "description": "Roles and their permissions.",
+      "access": "permission",
+      "permission": "roles:*",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/roles"
+      }
+    },
+    {
+      "key": "GET /admin/permissions",
+      "method": "GET",
+      "path": "/admin/permissions",
+      "group": "auth",
+      "op": "action",
+      "description": "All available permissions.",
+      "access": "permission",
+      "permission": "roles:read",
+      "stage": 2,
+      "tables": [
+        "roles"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/permissions"
+      }
+    },
+    {
+      "key": "GET /admin/sessions",
+      "method": "GET",
+      "path": "/admin/sessions",
+      "group": "auth",
+      "op": "action",
+      "description": "Active sessions of staff members and merchants.",
+      "access": "permission",
+      "permission": "sessions:read",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/sessions"
+      }
+    },
+    {
+      "key": "DELETE /admin/sessions/:id",
+      "method": "DELETE",
+      "path": "/admin/sessions/:id",
+      "group": "auth",
+      "op": "action",
+      "description": "End a session.",
+      "access": "permission",
+      "permission": "sessions:revoke",
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "DELETE",
+        "ops": null,
+        "path": "/admin/sessions/:id"
+      }
+    }
+  ]
+}

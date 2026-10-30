@@ -1,0 +1,163 @@
+{
+  "feature": "foundation",
+  "page": null,
+  "demo": [
+    "00-util.js",
+    "13-b2c-ui.js",
+    "20-ui.js",
+    "30-charts.js",
+    "90-app.js",
+    "input.css",
+    "tailwind.config.cjs"
+  ],
+  "folders": [
+    "src/app",
+    "src/lib",
+    "src/components",
+    "src/features/auth",
+    "src/mocks",
+    "src/styles"
+  ],
+  "notes": "Shell, UI kit, fetch client, providers, sign-in screens (no demo screen: built in the demo's style), API health in the sidebar footer, mock layer.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "POST /admin/auth/login",
+      "method": "POST",
+      "path": "/admin/auth/login",
+      "group": "auth",
+      "op": "action",
+      "description": "Sign in with email and password; a TOTP step follows.",
+      "access": "public",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/login"
+      }
+    },
+    {
+      "key": "POST /admin/auth/2fa",
+      "method": "POST",
+      "path": "/admin/auth/2fa",
+      "group": "auth",
+      "op": "action",
+      "description": "Complete the sign-in with a TOTP code.",
+      "access": "public",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/2fa"
+      }
+    },
+    {
+      "key": "POST /admin/auth/2fa/setup",
+      "method": "POST",
+      "path": "/admin/auth/2fa/setup",
+      "group": "auth",
+      "op": "action",
+      "description": "First sign-in: the TOTP secret with a QR code.",
+      "access": "public",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "staff_users"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/2fa/setup"
+      }
+    },
+    {
+      "key": "POST /admin/auth/logout",
+      "method": "POST",
+      "path": "/admin/auth/logout",
+      "group": "auth",
+      "op": "action",
+      "description": "Sign out.",
+      "access": "session",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "sessions"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/logout"
+      }
+    },
+    {
+      "key": "GET /admin/auth/me",
+      "method": "GET",
+      "path": "/admin/auth/me",
+      "group": "auth",
+      "op": "action",
+      "description": "The signed-in staff member and their permissions, for Refine.",
+      "access": "session",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "staff_users",
+        "roles"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/auth/me"
+      }
+    },
+    {
+      "key": "POST /admin/auth/password/set",
+      "method": "POST",
+      "path": "/admin/auth/password/set",
+      "group": "auth",
+      "op": "action",
+      "description": "An invited or recovering staff member chooses their own password with a one-time token.",
+      "access": "public",
+      "permission": null,
+      "stage": 2,
+      "tables": [
+        "auth_tokens",
+        "staff_users"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/auth/password/set"
+      }
+    },
+    {
+      "key": "GET /health",
+      "method": "GET",
+      "path": "/health",
+      "group": null,
+      "op": "action",
+      "description": "Service health check: Postgres and Redis.",
+      "access": "public",
+      "permission": null,
+      "stage": 0,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/health"
+      }
+    }
+  ]
+}

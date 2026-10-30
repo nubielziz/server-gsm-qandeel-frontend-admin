@@ -1,0 +1,79 @@
+{
+  "feature": "checkouts",
+  "page": "/checkouts",
+  "demo": [
+    "51-p-checkouts.js"
+  ],
+  "folders": [
+    "src/features/checkouts"
+  ],
+  "notes": "Recovery only for customers with marketing consent (map rule, MISMATCHES M1). Funnel: new panel.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/checkouts/abandoned",
+      "method": "GET",
+      "path": "/admin/checkouts/abandoned",
+      "group": "promo",
+      "op": "action",
+      "description": "Abandoned carts, including who has marketing consent.",
+      "access": "permission",
+      "permission": "growth:read",
+      "stage": 19,
+      "tables": [
+        "checkout_sessions",
+        "consent_records"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/checkouts/abandoned"
+      }
+    },
+    {
+      "key": "POST /admin/checkouts/recover",
+      "method": "POST",
+      "path": "/admin/checkouts/recover",
+      "group": "promo",
+      "op": "action",
+      "description": "Send a recovery email once, only to customers with marketing consent.",
+      "access": "permission",
+      "permission": "growth:send",
+      "stage": 19,
+      "tables": [
+        "checkout_sessions",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/checkouts/recover"
+      }
+    },
+    {
+      "key": "GET /admin/reports/funnel",
+      "method": "GET",
+      "path": "/admin/reports/funnel",
+      "group": "promo",
+      "op": "action",
+      "description": "Sales funnel: check, then payment started, then paid, then delivered.",
+      "access": "permission",
+      "permission": "reports:growth",
+      "stage": 19,
+      "tables": [
+        "imei_checks",
+        "checkout_sessions",
+        "orders"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/funnel"
+      }
+    }
+  ]
+}

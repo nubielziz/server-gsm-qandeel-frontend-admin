@@ -64,14 +64,41 @@ component → feature hook → feature api function → lib/api client (fetch) �
 
 ## 5. How a feature is built
 
-1. Read the brief (demo functions to port, manifest routes, acceptance criteria). Look up demo code with Serena, function by function.
+1. Read the brief (`docs/briefs/<name>.md`: demo functions to port, assumed contracts, acceptance criteria) and the feature's route slice (`docs/slices/<name>.json`, from `npm run routes:slices`). Look up demo code with Serena, function by function.
 2. `types/`: DTOs from `schema.gen.ts` rows (`Pick`/`Omit` + narrowed enums + joined fields the screen needs).
 3. `api/`: one function per endpoint with the JSDoc + `@route` tag; `api/resources.ts` registers CRUD resources.
 4. `hooks/`: list/detail/action hooks (`useTable`/`useOne`/`useForm` for CRUD, `useApiQuery`/`useApiMutation` otherwise).
 5. `components/` then `pages/`: port every screen, tab, filter, dialog, drawer, empty/loading/error state and client UX guard of the demo page, with the kit from `components/ui`.
-6. Register: the data-registry entries in `app/resources.ts` (`mergeRegistries(...)`), the page in `PAGES` / `DETAIL_PAGES` of `app/routes.tsx` with `lazyPage(() => import('@/features/<name>/pages'), 'XPage')`, palette sources in `app/palette/paletteSources.ts` (with their `permission`); export the public surface from `index.ts`.
-7. Mocks: `mocks/handlers/<feature>.ts` (+ seed mapping) so the page works with `VITE_API_MOCKS=true`.
-8. Tests for non-trivial pure logic (mappers, guards, query builders) and the main actions (`src/test/renderApp.ts` renders the whole app against the mock API: `setupMockApi`, `mockMe`, `renderApp`). Then `npm run typecheck && npm run lint && npm run build && npm test` and `node scripts/check-route-coverage.mjs --feature <name>`.
+6. Register through `manifest.ts` (export `manifest: FeatureManifest`, type in `src/app/featureManifest.ts`): the page (`name`, `heading`, `list`/`detail` loaders written as `() => import('./pages').then((m) => m.XPage)`, optional any-of `permission`), the data `registry`, `palette` sources, and `useNavCounts` (dashboard only). `src/app/features.ts` finds every manifest; no shared file is edited. Export the public surface other features may use from `index.ts`.
+7. Mocks inside the feature: `mocks/index.ts` exports `mocks: FeatureMocks` (`handlers`, `reset`; type in `src/mocks/featureMocks.ts`), with stores and seed mapping next to it. `src/mocks/handlers/index.ts` finds them. Mock files may import `msw`, `@/mocks/*` helpers (`guard`, `latency`, `problem`, `crudHandlers`, `Collection`, `loadDemoState`) and other features' `mocks`; feature code never imports its own mocks (lint). Features built before this rule (access, orders, finance ledger, settings) keep their mocks in `src/mocks`.
+8. Tests next to the code, test helpers inside the feature folder (`src/test/renderApp.ts` renders the whole app against the mock API: `setupMockApi`, `mockMe`, `renderApp`, `signInAs`). Then `npm run typecheck && npm run lint && npm run build && npm test` and `node scripts/check-route-coverage.mjs --feature <name>` (read-only in this mode).
+
+### 5.1 Building features in parallel
+
+- Each feature is built in its own git worktree on `feat/<name>` (`npm run feature:worktree -- add <name>`, at `../worktrees/<name>`, sharing `node_modules` by symlink). The implementer edits only `src/features/<name>/**`.
+- Shared files (`src/app`, `src/lib`, `src/components/ui`, `src/mocks`, `src/test`, `package.json`, the lockfile, `docs/`, `PROGRESS.md`, other features) are the lead's. An implementer that needs a change there lists it under SHARED-NEEDS in `src/features/<name>/HANDOFF.md` and works around it locally; the lead adds it at merge time.
+- `HANDOFF.md` also carries the feature's mismatch rows (numbered `<NAME>-1`, `<NAME>-2`…), assumed contracts, deep links it uses and open backend questions. The lead moves them into `docs/` (MISMATCHES numbers in merge order) and deletes the file in the squash commit.
+- Merge order is finish order: Opus review (max 2 rounds), `git merge --squash feat/<name>`, typecheck + build at once, one conventional commit, then `npm run feature:worktree -- remove <name>`.
+
+### 5.2 Deep links between pages
+
+Pages link to each other by address. Each page honours these parameters (pages not built yet must add them when they are):
+
+| Address | Opens |
+|---|---|
+| `/orders?tab=…&type=…&channel=b2b\|b2c&pastSla=true&supplierId=…&clientId=…&q=…` | the Orders list with those filters (`ordersListPath` in `@/features/orders`) |
+| `/orders?order=<id>` (on any page that mounts `OrderDrawerHost`) | that order's drawer (`orderPath`) |
+| `/suppliers?supplier=<id>` | Suppliers with that supplier selected |
+| `/services?belowFloor=true` | Services priced below cost plus minimum profit |
+| `/finance?tab=payments` | Finance on the pending deposits |
+| `/merchants?tab=pending`, `/merchants/<id>` | merchants waiting for approval; one merchant |
+| `/customers/<id>` (`?tab=orders\|account\|support\|consents\|risk`) | one customer |
+| `/commissions` | commissions (accruals ready to approve first) |
+| `/risk` (`?tab=queue`) | the held-orders queue |
+| `/refunds?tab=disputes`, `/refunds?tab=refunds&status=requested\|failed` | disputes; refunds by status |
+| `/support?filter=late`, `/support?customerId=<id>` | late tickets; one customer's tickets |
+| `/settings?tab=tax` | tax and exchange rates |
+| `/access?tab=…` | an Admins and access tab |
 
 ## 6. Naming
 

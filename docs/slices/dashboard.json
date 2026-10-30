@@ -1,0 +1,76 @@
+{
+  "feature": "dashboard",
+  "page": "/dashboard",
+  "demo": [
+    "40-p-dashboard.js"
+  ],
+  "folders": [
+    "src/features/dashboard"
+  ],
+  "notes": "GET /admin/queues is the Bull Board UI: exposed as a link, not fetched.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/dashboard",
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "group": "ops",
+      "op": "action",
+      "description": "KPIs for today: sales, profit, queues and supplier balances; scope=all|b2b|b2c separates merchants from the storefront.",
+      "access": "permission",
+      "permission": "dashboard:read",
+      "stage": 9,
+      "tables": [
+        "orders",
+        "suppliers",
+        "payments"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/dashboard"
+      }
+    },
+    {
+      "key": "GET /admin/queues",
+      "method": "GET",
+      "path": "/admin/queues",
+      "group": "ops",
+      "op": "action",
+      "description": "Bull Board UI for monitoring the queues.",
+      "access": "permission",
+      "permission": "queues:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/queues"
+      }
+    },
+    {
+      "key": "GET /admin/reports/top-clients",
+      "method": "GET",
+      "path": "/admin/reports/top-clients",
+      "group": "growth",
+      "op": "action",
+      "description": "Top merchants by volume and by profit.",
+      "access": "permission",
+      "permission": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "clients"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/top-clients"
+      }
+    }
+  ]
+}

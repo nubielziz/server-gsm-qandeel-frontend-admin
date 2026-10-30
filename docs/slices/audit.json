@@ -1,0 +1,56 @@
+{
+  "feature": "audit",
+  "page": "/audit",
+  "demo": [
+    "47-p-audit.js"
+  ],
+  "folders": [
+    "src/features/audit"
+  ],
+  "notes": "Audit log with filters and expandable before/after.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/audit-logs",
+      "method": "GET",
+      "path": "/admin/audit-logs",
+      "group": "auth",
+      "op": "list",
+      "description": "Audit log.",
+      "access": "permission",
+      "permission": "audit:read",
+      "stage": 2,
+      "tables": [
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/audit-logs"
+      }
+    },
+    {
+      "key": "GET /admin/audit-logs/:id",
+      "method": "GET",
+      "path": "/admin/audit-logs/:id",
+      "group": "auth",
+      "op": "show",
+      "description": "Audit log.",
+      "access": "permission",
+      "permission": "audit:read",
+      "stage": 2,
+      "tables": [
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/audit-logs"
+      }
+    }
+  ]
+}

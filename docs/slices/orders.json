@@ -1,0 +1,354 @@
+{
+  "feature": "orders",
+  "page": "/orders",
+  "demo": [
+    "41-p-orders.js",
+    "11-state.js (order selectors/mutations)"
+  ],
+  "folders": [
+    "src/features/orders"
+  ],
+  "notes": "Queue, filters, bulk actions, order drawer. Dispatch/fetch/change-supplier come from the suppliers route group but are order-drawer actions.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/orders",
+      "method": "GET",
+      "path": "/admin/orders",
+      "group": "orders",
+      "op": "list",
+      "description": "Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.",
+      "access": "permission",
+      "permission": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/orders"
+      }
+    },
+    {
+      "key": "GET /admin/orders/:id",
+      "method": "GET",
+      "path": "/admin/orders/:id",
+      "group": "orders",
+      "op": "show",
+      "description": "Orders and their queues (pending, manual, needs_attention, verification, review); filter by channel=b2b|b2c.",
+      "access": "permission",
+      "permission": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/orders"
+      }
+    },
+    {
+      "key": "GET /admin/orders/:id/events",
+      "method": "GET",
+      "path": "/admin/orders/:id/events",
+      "group": "orders",
+      "op": "action",
+      "description": "The full order timeline.",
+      "access": "permission",
+      "permission": "orders:read",
+      "stage": 5,
+      "tables": [
+        "order_events"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/orders/:id/events"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/accept",
+      "method": "POST",
+      "path": "/admin/orders/:id/accept",
+      "group": "orders",
+      "op": "action",
+      "description": "Accept a manual order and move it to processing.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/accept"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reply",
+      "method": "POST",
+      "path": "/admin/orders/:id/reply",
+      "group": "orders",
+      "op": "action",
+      "description": "Complete the order with its result.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reply"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reject",
+      "method": "POST",
+      "path": "/admin/orders/:id/reject",
+      "group": "orders",
+      "op": "action",
+      "description": "Reject the order with a reason and refund it.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "order_events",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reject"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/reopen",
+      "method": "POST",
+      "path": "/admin/orders/:id/reopen",
+      "group": "orders",
+      "op": "action",
+      "description": "Reopen a completed order back to processing.",
+      "access": "permission",
+      "permission": "orders:reopen",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/reopen"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/refund",
+      "method": "POST",
+      "path": "/admin/orders/:id/refund",
+      "group": "orders",
+      "op": "action",
+      "description": "Refund a completed merchant order: reopen, then reject; storefront orders are refunded from /admin/refunds.",
+      "access": "permission",
+      "permission": "orders:reopen",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/refund"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/verification",
+      "method": "POST",
+      "path": "/admin/orders/:id/verification",
+      "group": "orders",
+      "op": "action",
+      "description": "Verification decision: accept or refund.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/verification"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/notes",
+      "method": "POST",
+      "path": "/admin/orders/:id/notes",
+      "group": "orders",
+      "op": "action",
+      "description": "Add an internal note.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/notes"
+      }
+    },
+    {
+      "key": "POST /admin/orders/bulk-reply/preview",
+      "method": "POST",
+      "path": "/admin/orders/bulk-reply/preview",
+      "group": "orders",
+      "op": "action",
+      "description": "Match IMEI and CODE lines to orders.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/bulk-reply/preview"
+      }
+    },
+    {
+      "key": "POST /admin/orders/bulk-reply/apply",
+      "method": "POST",
+      "path": "/admin/orders/bulk-reply/apply",
+      "group": "orders",
+      "op": "action",
+      "description": "Apply the matched replies.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 5,
+      "tables": [
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/bulk-reply/apply"
+      }
+    },
+    {
+      "key": "GET /admin/orders/export",
+      "method": "GET",
+      "path": "/admin/orders/export",
+      "group": "orders",
+      "op": "action",
+      "description": "Export a CSV file according to the filters.",
+      "access": "permission",
+      "permission": "orders:read",
+      "stage": 5,
+      "tables": [
+        "orders"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/orders/export"
+      }
+    },
+    {
+      "key": "GET /admin/files/:id",
+      "method": "GET",
+      "path": "/admin/files/:id",
+      "group": "orders",
+      "op": "action",
+      "description": "Download a file through a signed link.",
+      "access": "permission",
+      "permission": "files:read",
+      "stage": 5,
+      "tables": [
+        "files"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/files/:id"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/dispatch",
+      "method": "POST",
+      "path": "/admin/orders/:id/dispatch",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Manually send the order to the supplier (force send).",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/dispatch"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/fetch",
+      "method": "POST",
+      "path": "/admin/orders/:id/fetch",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Fetch the result now (force get).",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/fetch"
+      }
+    },
+    {
+      "key": "POST /admin/orders/:id/change-supplier",
+      "method": "POST",
+      "path": "/admin/orders/:id/change-supplier",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Change the supplier or reset the reference.",
+      "access": "permission",
+      "permission": "orders:update",
+      "stage": 6,
+      "tables": [
+        "orders",
+        "order_events"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/orders/:id/change-supplier"
+      }
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+{
+  "feature": "services",
+  "page": "/services",
+  "demo": [
+    "43-p-services.js"
+  ],
+  "folders": [
+    "src/features/services"
+  ],
+  "notes": "Services, categories, pricing rules, price resolver, inventory codes (from the orders route group; managed per service).",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/service-categories",
+      "method": "GET",
+      "path": "/admin/service-categories",
+      "group": "catalog",
+      "op": "list",
+      "description": "Service categories and the merchant groups that can see them.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "GET /admin/service-categories/:id",
+      "method": "GET",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Service categories and the merchant groups that can see them.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "POST /admin/service-categories",
+      "method": "POST",
+      "path": "/admin/service-categories",
+      "group": "catalog",
+      "op": "create",
+      "description": "Service categories and the merchant groups that can see them.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "PATCH /admin/service-categories/:id",
+      "method": "PATCH",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Service categories and the merchant groups that can see them.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "DELETE /admin/service-categories/:id",
+      "method": "DELETE",
+      "path": "/admin/service-categories/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Service categories and the merchant groups that can see them.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "service_categories"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/service-categories"
+      }
+    },
+    {
+      "key": "GET /admin/services",
+      "method": "GET",
+      "path": "/admin/services",
+      "group": "catalog",
+      "op": "list",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "GET /admin/services/:id",
+      "method": "GET",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "POST /admin/services",
+      "method": "POST",
+      "path": "/admin/services",
+      "group": "catalog",
+      "op": "create",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "PATCH /admin/services/:id",
+      "method": "PATCH",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "DELETE /admin/services/:id",
+      "method": "DELETE",
+      "path": "/admin/services/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Services: type, execution, pricing mode and rules.",
+      "access": "permission",
+      "permission": "catalog:*",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/services"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/fields",
+      "method": "PUT",
+      "path": "/admin/services/:id/fields",
+      "group": "catalog",
+      "op": "action",
+      "description": "Custom fields of the service.",
+      "access": "permission",
+      "permission": "catalog:update",
+      "stage": 4,
+      "tables": [
+        "service_fields"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/fields"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/options",
+      "method": "PUT",
+      "path": "/admin/services/:id/options",
+      "group": "catalog",
+      "op": "action",
+      "description": "Model, network and MEP option lists.",
+      "access": "permission",
+      "permission": "catalog:update",
+      "stage": 4,
+      "tables": [
+        "service_options"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/options"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/group-prices",
+      "method": "PUT",
+      "path": "/admin/services/:id/group-prices",
+      "group": "catalog",
+      "op": "action",
+      "description": "Service price for each merchant group.",
+      "access": "permission",
+      "permission": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "service_group_prices"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/group-prices"
+      }
+    },
+    {
+      "key": "GET /admin/pricing-rules",
+      "method": "GET",
+      "path": "/admin/pricing-rules",
+      "group": "catalog",
+      "op": "list",
+      "description": "Margin and discount rules.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "GET /admin/pricing-rules/:id",
+      "method": "GET",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Margin and discount rules.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "POST /admin/pricing-rules",
+      "method": "POST",
+      "path": "/admin/pricing-rules",
+      "group": "catalog",
+      "op": "create",
+      "description": "Margin and discount rules.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "PATCH /admin/pricing-rules/:id",
+      "method": "PATCH",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Margin and discount rules.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "DELETE /admin/pricing-rules/:id",
+      "method": "DELETE",
+      "path": "/admin/pricing-rules/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Margin and discount rules.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "pricing_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/pricing-rules"
+      }
+    },
+    {
+      "key": "POST /admin/services/bulk-price/preview",
+      "method": "POST",
+      "path": "/admin/services/bulk-price/preview",
+      "group": "catalog",
+      "op": "action",
+      "description": "Preview a bulk price change.",
+      "access": "permission",
+      "permission": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "services"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/bulk-price/preview"
+      }
+    },
+    {
+      "key": "POST /admin/services/bulk-price/apply",
+      "method": "POST",
+      "path": "/admin/services/bulk-price/apply",
+      "group": "catalog",
+      "op": "action",
+      "description": "Apply the bulk price change.",
+      "access": "permission",
+      "permission": "pricing:update",
+      "stage": 4,
+      "tables": [
+        "services",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/bulk-price/apply"
+      }
+    },
+    {
+      "key": "GET /admin/pricing/resolve",
+      "method": "GET",
+      "path": "/admin/pricing/resolve",
+      "group": "catalog",
+      "op": "action",
+      "description": "The price of a service for a merchant, with the resolution trace.",
+      "access": "permission",
+      "permission": "pricing:read",
+      "stage": 4,
+      "tables": [
+        "pricing_rules",
+        "service_group_prices",
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/pricing/resolve"
+      }
+    },
+    {
+      "key": "GET /admin/inventory-codes",
+      "method": "GET",
+      "path": "/admin/inventory-codes",
+      "group": "orders",
+      "op": "list",
+      "description": "Code inventory and the status of each code.",
+      "access": "permission",
+      "permission": "inventory:read",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "L",
+        "path": "/admin/inventory-codes"
+      }
+    },
+    {
+      "key": "POST /admin/services/:id/inventory/import",
+      "method": "POST",
+      "path": "/admin/services/:id/inventory/import",
+      "group": "orders",
+      "op": "action",
+      "description": "Import codes with duplicate detection.",
+      "access": "permission",
+      "permission": "inventory:write",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/services/:id/inventory/import"
+      }
+    },
+    {
+      "key": "POST /admin/inventory-codes/void",
+      "method": "POST",
+      "path": "/admin/inventory-codes/void",
+      "group": "orders",
+      "op": "action",
+      "description": "Void unsold codes.",
+      "access": "permission",
+      "permission": "inventory:write",
+      "stage": 5,
+      "tables": [
+        "inventory_codes"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/inventory-codes/void"
+      }
+    }
+  ]
+}

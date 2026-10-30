@@ -13,7 +13,7 @@ export interface PageRouteProps {
   page: PageResource;
   /** `list` for the page itself, `show` for its detail view (both need the page's read permission). */
   action: 'list' | 'show';
-  /** The feature's page (usually a `lazyPage`); without one the "being ported" placeholder shows. */
+  /** The feature's page (lazy, from its manifest); without one the "being ported" placeholder shows. */
   Page?: ComponentType;
 }
 

@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { renderApp, mockMe, setupMockApi, signInAs } from '@/test/renderApp';
 import { AppProviders } from './App';
+import { featureManifests } from './features';
 import { resources, toPageResource, type PageResource } from './resources';
 import { AppRoutes } from './routes';
 
@@ -13,9 +14,12 @@ setupMockApi();
 
 const PAGES = resources.map(toPageResource).filter((page): page is PageResource => page !== undefined);
 
-// Pages whose feature is built show their own heading (it can differ from the sidebar label) instead of the placeholder.
-// Add a page here when its feature lands.
-const BUILT: Record<string, string> = { access: 'Admins and access', orders: 'Orders' };
+// Pages whose feature is built (their manifest declares the page) show their own heading instead of the placeholder.
+const BUILT: Record<string, string> = Object.fromEntries(
+  featureManifests.flatMap(({ page }) => (page ? [[page.name, page.heading]] : [])),
+);
+// Detail views a feature has built are tested by that feature; the others must still show the placeholder.
+const BUILT_DETAIL = new Set(featureManifests.flatMap(({ page }) => (page?.detail ? [page.name] : [])));
 
 describe('routes', () => {
   it.each(PAGES.filter((page) => !(page.name in BUILT)).map((page) => [page.meta.label, page.path] as const))(
@@ -48,15 +52,16 @@ describe('routes', () => {
     20_000,
   );
 
-  it.each(PAGES.filter((page) => page.detailPath).map((page) => [page.meta.label, page.name] as const))(
-    'opens the %s detail view',
-    async (label, name) => {
-      mockMe({ permissions: ['*'] });
-      renderApp(`/${name}/42`);
-      expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
-      expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
-    },
-  );
+  it.each(
+    PAGES.filter((page) => page.detailPath && !BUILT_DETAIL.has(page.name)).map(
+      (page) => [page.meta.label, page.name] as const,
+    ),
+  )('opens the %s detail view', async (label, name) => {
+    mockMe({ permissions: ['*'] });
+    renderApp(`/${name}/42`);
+    expect(await screen.findByRole('heading', { level: 1, name: label })).toBeInTheDocument();
+    expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
+  });
 });
 
 describe('sign-in area', () => {

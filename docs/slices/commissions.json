@@ -1,0 +1,266 @@
+{
+  "feature": "commissions",
+  "page": "/commissions",
+  "demo": [
+    "46-p-commissions.js"
+  ],
+  "folders": [
+    "src/features/commissions"
+  ],
+  "notes": "Accruals, agents (assignments), plans.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/commission-plans",
+      "method": "GET",
+      "path": "/admin/commission-plans",
+      "group": "growth",
+      "op": "list",
+      "description": "Referral and rebate plans.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "GET /admin/commission-plans/:id",
+      "method": "GET",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Referral and rebate plans.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "POST /admin/commission-plans",
+      "method": "POST",
+      "path": "/admin/commission-plans",
+      "group": "growth",
+      "op": "create",
+      "description": "Referral and rebate plans.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "PATCH /admin/commission-plans/:id",
+      "method": "PATCH",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "update",
+      "description": "Referral and rebate plans.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "DELETE /admin/commission-plans/:id",
+      "method": "DELETE",
+      "path": "/admin/commission-plans/:id",
+      "group": "growth",
+      "op": "delete",
+      "description": "Referral and rebate plans.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_plans"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-plans"
+      }
+    },
+    {
+      "key": "GET /admin/commission-assignments",
+      "method": "GET",
+      "path": "/admin/commission-assignments",
+      "group": "growth",
+      "op": "list",
+      "description": "Assign plans to merchants.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "GET /admin/commission-assignments/:id",
+      "method": "GET",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Assign plans to merchants.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "POST /admin/commission-assignments",
+      "method": "POST",
+      "path": "/admin/commission-assignments",
+      "group": "growth",
+      "op": "create",
+      "description": "Assign plans to merchants.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "PATCH /admin/commission-assignments/:id",
+      "method": "PATCH",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "update",
+      "description": "Assign plans to merchants.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "DELETE /admin/commission-assignments/:id",
+      "method": "DELETE",
+      "path": "/admin/commission-assignments/:id",
+      "group": "growth",
+      "op": "delete",
+      "description": "Assign plans to merchants.",
+      "access": "permission",
+      "permission": "commissions:*",
+      "stage": 11,
+      "tables": [
+        "commission_assignments"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/commission-assignments"
+      }
+    },
+    {
+      "key": "GET /admin/commission-accruals",
+      "method": "GET",
+      "path": "/admin/commission-accruals",
+      "group": "growth",
+      "op": "list",
+      "description": "Accrued commissions and their status.",
+      "access": "permission",
+      "permission": "commissions:read",
+      "stage": 11,
+      "tables": [
+        "commission_accruals"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/commission-accruals"
+      }
+    },
+    {
+      "key": "GET /admin/commission-accruals/:id",
+      "method": "GET",
+      "path": "/admin/commission-accruals/:id",
+      "group": "growth",
+      "op": "show",
+      "description": "Accrued commissions and their status.",
+      "access": "permission",
+      "permission": "commissions:read",
+      "stage": 11,
+      "tables": [
+        "commission_accruals"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/commission-accruals"
+      }
+    },
+    {
+      "key": "POST /admin/commission-accruals/approve",
+      "method": "POST",
+      "path": "/admin/commission-accruals/approve",
+      "group": "growth",
+      "op": "action",
+      "description": "Approve and pay out in bulk, with a ledger entry on the wallet.",
+      "access": "permission",
+      "permission": "commissions:approve",
+      "stage": 11,
+      "tables": [
+        "commission_accruals",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/commission-accruals/approve"
+      }
+    }
+  ]
+}

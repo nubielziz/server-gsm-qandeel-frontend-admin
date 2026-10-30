@@ -19,7 +19,9 @@
     "routes:manifest": "node scripts/build-route-manifest.mjs",
     "gen:types": "node scripts/gen-entity-types.mjs",
     "seed:extract": "node scripts/extract-demo-seed.mjs",
-    "routes:coverage": "node scripts/check-route-coverage.mjs"
+    "routes:coverage": "node scripts/check-route-coverage.mjs",
+    "routes:slices": "node scripts/build-route-slices.mjs",
+    "feature:worktree": "node scripts/feature-worktree.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

@@ -1,10 +1,11 @@
 // Public surface of the access feature: the `/admin/staff`, `/admin/ip-rules`, `/admin/roles`, `/admin/permissions`,
 // `/admin/sessions` and `/admin/access/restriction` API functions, their types, the hooks, the data-provider registry
-// and the IP helpers. "Block IP" and the "Blocked" chip are exported too, for the customers page. The page itself is
-// not re-exported here: it loads lazily from `./pages`.
+// and the IP helpers. "Block IP", the "Blocked" chip and the show-once temporary password dialog are exported too, for
+// the customers page. The page itself is not re-exported here: it loads lazily from `./pages`.
 export * from './api';
 export * from './components/BlockIpDialog';
 export * from './components/IpVerdictChip';
+export * from './components/RevealPasswordDialog';
 export * from './hooks/useAccessGrants';
 export * from './hooks/useIpCheck';
 export * from './hooks/useIpRuleMutations';

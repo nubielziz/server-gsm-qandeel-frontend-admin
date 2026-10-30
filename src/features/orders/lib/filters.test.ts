@@ -6,6 +6,7 @@ import {
   hasActiveFilters,
   NEWEST_FIRST,
   normalizeSearch,
+  ordersListPath,
   parseOrderFilters,
   parsePage,
   parseSort,
@@ -185,5 +186,16 @@ describe('to the API', () => {
       q: 'abc',
       filters: { queue: 'pending' },
     });
+  });
+});
+
+describe('ordersListPath', () => {
+  it('writes only the filters that differ from the defaults', () => {
+    expect(ordersListPath({})).toBe('/orders');
+    expect(ordersListPath({ tab: 'open' })).toBe('/orders');
+    expect(ordersListPath({ tab: 'review' })).toBe('/orders?tab=review');
+    expect(ordersListPath({ type: 'imei', channel: 'b2c', pastSla: true })).toBe(
+      '/orders?type=imei&channel=b2c&pastSla=true',
+    );
   });
 });

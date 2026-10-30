@@ -13,21 +13,22 @@ Port of the static demo `reference/gsm-admin` to a Refine app, typed against the
 - Serena = `mcp__serena__serena_repl` (object `s`; get a session id from `mcp__serena__initial_instructions`).
 - Order: `s.lsp.get_symbols_overview` → `s.lsp.find_symbol` (body only for the symbol you need) → `s.lsp.find_referencing_symbols` → `s.fs.search_for_pattern` → `Read` with a line range as last resort.
 - Edit existing code with `s.edit.replace_symbol_body` / `insert_after_symbol` / `insert_before_symbol` / `replace_content`. New files: `Write`.
+- In a feature worktree, Serena still points at the main checkout: use it only to read (reference code, shared code); edit worktree files with Read/Edit/Write.
 - Serena memories hold only short stable facts; status lives only in `PROGRESS.md`.
 
 ## Agents (hard limits)
-- Default: the lead does the work. Roles: `implementer` (Sonnet) codes, `reader` (Haiku) looks up, `reviewer` (Opus) reviews. Tech decisions: Opus only.
-- Depth 1 (subagents never spawn agents). At most 3 running at once, only on disjoint folders; parallel agents never run git.
-- Per feature: max 6 agent calls (≤2 implementer, ≤3 reader, 1 reviewer, +1 re-review only after blocking issues). Track `agents used: n/6` in PROGRESS.md.
-- Never re-spawn the same task twice; second failure → `BLOCKED: reason` in PROGRESS.md, move on. No polling or sleep loops.
-- Review max 2 rounds per feature. Subagent replies ≤ 200 words. Briefs are self-contained and say "do not spawn agents, do not commit".
-- Same action/error 3 times, or 2 failed attempts → write the blocker in PROGRESS.md and continue elsewhere.
+- Roles: `implementer` (Sonnet) codes, `reader` (Haiku) looks up, `reviewer` (Opus) reviews. Tech decisions: Opus only (the lead).
+- Depth 1 (subagents never spawn agents). At most 8 agents at once: ≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers. ≤ 10 agent calls per feature, ≤ 120 for the whole job; counters in PROGRESS.md. Never raise these. On rate-limit errors drop to 3 at once; no tight retry loops.
+- Parallel features (docs/ARCHITECTURE.md §5.1): each implementer works in its own worktree on `feat/<name>`, only inside `src/features/<name>/`; shared changes go to `HANDOFF.md` under SHARED-NEEDS. Agents never run git commands that change state; only the lead merges (squash) and commits.
+- Rolling pool: start the next ready feature when an implementer slot frees; if 3 finished features wait for review, start none.
+- Never re-spawn the same task (after BLOCKED: one retry with a more specific brief). No polling or sleep loops. Review max 2 rounds. Subagent replies ≤ 200 words. Briefs are self-contained and say "do not spawn agents, do not commit".
+- Same action/error 3 times, or 2 failed attempts → write the blocker (BLOCKED) in PROGRESS.md, free the slot, continue elsewhere.
 
 ## Code rules
 - Refine + React + TypeScript strict. **All HTTP through native `fetch` via `src/lib/api`** (no axios/ky). Base URL from env.
-- Layout: `src/app` (providers, routes, resources, shell) · `src/lib/api` (client, ApiError, problem+json) · `src/lib/format` · `src/components/ui` (shared kit) · `src/features/<name>/{api,components,hooks,types}/` + `index.ts` · `src/mocks` (dev mock layer, deletable, never in prod builds).
+- Layout: `src/app` (providers, routes, resources, shell) · `src/lib/api` (client, ApiError, problem+json) · `src/lib/format` · `src/components/ui` (shared kit) · `src/features/<name>/{api,components,hooks,types,mocks}/` + `index.ts` + `manifest.ts` (how the app finds the feature) · `src/mocks` (dev mock layer, deletable, never in prod builds).
 - Components ≤ ~200 lines; pages only compose. Components never call the API: `features/*/api` → hooks → components.
-- No demo data outside `src/mocks`. Keep the demo's look (tokens from `reference/gsm-admin/tailwind.config.cjs` + `input.css`).
+- No demo data outside the mock layer (`src/mocks`, `src/features/*/mocks`). Keep the demo's look (tokens from `reference/gsm-admin/tailwind.config.cjs` + `input.css`).
 - Server is the authority (ledger, risk, validation, permissions). Client guards are UX hints; always show the server's error.
 - One exported function per endpoint, typed request/response, JSDoc with what + why + `@route METHOD /path` (exact manifest path).
 

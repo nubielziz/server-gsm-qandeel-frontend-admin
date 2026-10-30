@@ -92,26 +92,11 @@ export default tseslint.config(
     },
   },
   {
-    // The route table is the one place that may load a feature's pages entry, lazily (one chunk per feature).
-    files: ['src/app/routes.tsx'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: bannedHttpLibs,
-          patterns: [
-            { ...deepFeatureImport, group: ['@/features/*/*', '!@/features/*/pages'] },
-            ...mockImports,
-          ],
-        },
-      ],
-    },
-  },
-  {
     // The fetch client, the mock layer and tests are allowed to touch fetch.
     files: [
       'src/lib/api/**/*.{ts,tsx}',
       'src/mocks/**/*.{ts,tsx}',
+      'src/features/*/mocks/**/*.{ts,tsx}',
       'src/main.tsx',
       'src/**/*.test.{ts,tsx}',
       'src/test/**/*.{ts,tsx}',
@@ -122,6 +107,20 @@ export default tseslint.config(
     // ...and these may load the mock layer and MSW (feature folders still go through feature indexes).
     files: ['src/main.tsx', 'src/**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}', 'src/mocks/**/*.{ts,tsx}'],
     rules: { 'no-restricted-imports': ['error', { paths: bannedHttpLibs, patterns: [deepFeatureImport] }] },
+  },
+  {
+    // A feature's own dev mocks (`src/features/<name>/mocks`) are part of the mock layer: they may use MSW, the shared
+    // mock helpers and other features' mocks (the only deep feature import allowed). Only src/mocks loads them.
+    files: ['src/features/*/mocks/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: bannedHttpLibs,
+          patterns: [{ ...deepFeatureImport, group: ['@/features/*/*', '!@/features/*/mocks'] }],
+        },
+      ],
+    },
   },
   {
     files: ['**/*.{js,mjs}'],

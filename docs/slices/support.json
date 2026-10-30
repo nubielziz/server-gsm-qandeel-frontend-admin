@@ -1,0 +1,214 @@
+{
+  "feature": "support",
+  "page": "/support",
+  "demo": [
+    "49-p-support.js",
+    "12-state-b2c.js (ticket mutations)"
+  ],
+  "folders": [
+    "src/features/support"
+  ],
+  "notes": "Inbox + thread; reply templates as macros and a manage view.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/support-tickets",
+      "method": "GET",
+      "path": "/admin/support-tickets",
+      "group": "support",
+      "op": "list",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "GET /admin/support-tickets/:id",
+      "method": "GET",
+      "path": "/admin/support-tickets/:id",
+      "group": "support",
+      "op": "show",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "PATCH /admin/support-tickets/:id",
+      "method": "PATCH",
+      "path": "/admin/support-tickets/:id",
+      "group": "support",
+      "op": "update",
+      "description": "Support inbox: priority, assignment, status and SLA timers.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "support_tickets",
+        "orders"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSU",
+        "path": "/admin/support-tickets"
+      }
+    },
+    {
+      "key": "POST /admin/support-tickets/:id/reply",
+      "method": "POST",
+      "path": "/admin/support-tickets/:id/reply",
+      "group": "support",
+      "op": "action",
+      "description": "Reply to the customer by email or Telegram.",
+      "access": "permission",
+      "permission": "support:reply",
+      "stage": 17,
+      "tables": [
+        "ticket_messages",
+        "support_tickets",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/support-tickets/:id/reply"
+      }
+    },
+    {
+      "key": "POST /admin/support-tickets/:id/note",
+      "method": "POST",
+      "path": "/admin/support-tickets/:id/note",
+      "group": "support",
+      "op": "action",
+      "description": "Internal note that the customer does not see.",
+      "access": "permission",
+      "permission": "support:reply",
+      "stage": 17,
+      "tables": [
+        "ticket_messages"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/support-tickets/:id/note"
+      }
+    },
+    {
+      "key": "GET /admin/reply-templates",
+      "method": "GET",
+      "path": "/admin/reply-templates",
+      "group": "support",
+      "op": "list",
+      "description": "Canned replies (macros) with order variables.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "GET /admin/reply-templates/:id",
+      "method": "GET",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "show",
+      "description": "Canned replies (macros) with order variables.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "POST /admin/reply-templates",
+      "method": "POST",
+      "path": "/admin/reply-templates",
+      "group": "support",
+      "op": "create",
+      "description": "Canned replies (macros) with order variables.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "PATCH /admin/reply-templates/:id",
+      "method": "PATCH",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "update",
+      "description": "Canned replies (macros) with order variables.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    },
+    {
+      "key": "DELETE /admin/reply-templates/:id",
+      "method": "DELETE",
+      "path": "/admin/reply-templates/:id",
+      "group": "support",
+      "op": "delete",
+      "description": "Canned replies (macros) with order variables.",
+      "access": "permission",
+      "permission": "support:*",
+      "stage": 17,
+      "tables": [
+        "reply_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/reply-templates"
+      }
+    }
+  ]
+}

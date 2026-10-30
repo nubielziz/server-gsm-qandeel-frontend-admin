@@ -1,0 +1,221 @@
+{
+  "feature": "refunds",
+  "page": "/refunds",
+  "demo": [
+    "53-p-refunds.js",
+    "12-state-b2c.js (refund/dispute mutations)"
+  ],
+  "folders": [
+    "src/features/refunds"
+  ],
+  "notes": "Demo payments tab = storefront payments report.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/refunds",
+      "method": "GET",
+      "path": "/admin/refunds",
+      "group": "refunds",
+      "op": "list",
+      "description": "Refund requests and their status.",
+      "access": "permission",
+      "permission": "refunds:read",
+      "stage": 16,
+      "tables": [
+        "refunds"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/refunds"
+      }
+    },
+    {
+      "key": "GET /admin/refunds/:id",
+      "method": "GET",
+      "path": "/admin/refunds/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Refund requests and their status.",
+      "access": "permission",
+      "permission": "refunds:read",
+      "stage": 16,
+      "tables": [
+        "refunds"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/refunds"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/approve",
+      "method": "POST",
+      "path": "/admin/refunds/:id/approve",
+      "group": "refunds",
+      "op": "action",
+      "description": "Approve a full or partial refund; the ledger entry is reversed according to whether the order was delivered.",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "payments",
+        "orders",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/approve"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/decline",
+      "method": "POST",
+      "path": "/admin/refunds/:id/decline",
+      "group": "refunds",
+      "op": "action",
+      "description": "Decline the refund with a reason that reaches the customer.",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "notifications"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/decline"
+      }
+    },
+    {
+      "key": "POST /admin/refunds/:id/retry",
+      "method": "POST",
+      "path": "/admin/refunds/:id/retry",
+      "group": "refunds",
+      "op": "action",
+      "description": "Retry a refund that failed at the gateway.",
+      "access": "permission",
+      "permission": "refunds:approve",
+      "stage": 16,
+      "tables": [
+        "refunds",
+        "payments"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/refunds/:id/retry"
+      }
+    },
+    {
+      "key": "GET /admin/disputes",
+      "method": "GET",
+      "path": "/admin/disputes",
+      "group": "refunds",
+      "op": "list",
+      "description": "Card disputes (chargebacks) and the evidence deadline.",
+      "access": "permission",
+      "permission": "disputes:read",
+      "stage": 16,
+      "tables": [
+        "disputes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/disputes"
+      }
+    },
+    {
+      "key": "GET /admin/disputes/:id",
+      "method": "GET",
+      "path": "/admin/disputes/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Card disputes (chargebacks) and the evidence deadline.",
+      "access": "permission",
+      "permission": "disputes:read",
+      "stage": 16,
+      "tables": [
+        "disputes"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/disputes"
+      }
+    },
+    {
+      "key": "POST /admin/disputes/:id/evidence",
+      "method": "POST",
+      "path": "/admin/disputes/:id/evidence",
+      "group": "refunds",
+      "op": "action",
+      "description": "Submit evidence before the deadline: payment, delivery, order result and customer consents.",
+      "access": "permission",
+      "permission": "disputes:manage",
+      "stage": 16,
+      "tables": [
+        "disputes",
+        "orders",
+        "order_events",
+        "consent_records",
+        "files"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/disputes/:id/evidence"
+      }
+    },
+    {
+      "key": "POST /admin/disputes/:id/accept",
+      "method": "POST",
+      "path": "/admin/disputes/:id/accept",
+      "group": "refunds",
+      "op": "action",
+      "description": "Accept the loss; the amount and the dispute fee are recorded in chargeback_loss.",
+      "access": "permission",
+      "permission": "disputes:manage",
+      "stage": 16,
+      "tables": [
+        "disputes",
+        "ledger_entries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/disputes/:id/accept"
+      }
+    },
+    {
+      "key": "GET /admin/reports/payments",
+      "method": "GET",
+      "path": "/admin/reports/payments",
+      "group": "refunds",
+      "op": "action",
+      "description": "Storefront payments by method: fees, net amount and settlements.",
+      "access": "permission",
+      "permission": "reports:finance",
+      "stage": 16,
+      "tables": [
+        "payments",
+        "ledger_entries",
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/payments"
+      }
+    }
+  ]
+}

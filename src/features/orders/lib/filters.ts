@@ -175,3 +175,12 @@ export function toListQuery(list: OrderListFilters, extra: Omit<ListQuery, 'filt
   const { q, ...rest } = list;
   return { ...extra, ...(q ? { q } : {}), filters: rest as NonNullable<ListQuery['filters']> };
 }
+
+/**
+ * The address of the Orders page with some filters set (`{ tab: 'review' }`, `{ type: 'imei', channel: 'b2c' }`), for
+ * links from other pages such as the dashboard. Defaults are left out, as on the page itself.
+ */
+export function ordersListPath(patch: Partial<OrderFilters>): string {
+  const query = writeOrderFilters(new URLSearchParams(), patch).toString();
+  return query ? `/orders?${query}` : '/orders';
+}

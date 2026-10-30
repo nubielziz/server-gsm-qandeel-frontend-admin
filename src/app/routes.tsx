@@ -1,6 +1,6 @@
 // The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate.
 import { Authenticated } from '@refinedev/core';
-import type { ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
 import { Outlet, Route, Routes } from 'react-router';
 import { AUTH_PATHS, LoginPage, SetPasswordPage, SetupTwoFactorPage, TwoFactorPage } from '@/features/auth';
 import { AppLoading } from './gates/AppLoading';
@@ -9,23 +9,27 @@ import { PageRoute } from './gates/PageRoute';
 import { PublicArea } from './gates/PublicArea';
 import { RedirectWhenSignedIn } from './gates/RedirectWhenSignedIn';
 import { SignInRedirect } from './gates/SignInRedirect';
+import type { PageLoader } from './featureManifest';
+import { featureManifests } from './features';
 import { AppShell } from './layout/AppShell';
-import { lazyPage } from './lazyPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { resources, toPageResource, type PageResource } from './resources';
 
-/**
- * Real pages by resource name. A page missing here shows the "being ported" placeholder, so a feature replaces its
- * placeholder by adding its lazily loaded page here (see `lazyPage`):
- *   `orders: lazyPage(() => import('@/features/orders/pages'), 'OrdersPage')`
- */
-const PAGES: Partial<Record<string, ComponentType>> = {
-  access: lazyPage(() => import('@/features/access/pages'), 'AccessPage'),
-  orders: lazyPage(() => import('@/features/orders/pages'), 'OrdersPage'),
-};
+// A manifest's page loader as a lazy component, so the page's chunk loads on the first visit only.
+const lazyLoaded = (load: PageLoader) => lazy(async () => ({ default: await load() }));
 
-/** The same for detail views (`/merchants/:id`, `/customers/:id`): `merchants: lazyPage(…, 'MerchantPage')`. */
-const DETAIL_PAGES: Partial<Record<string, ComponentType>> = {};
+/**
+ * Real pages by resource name, from the feature manifests. A page missing here shows the "being ported" placeholder;
+ * a feature replaces it by declaring `page.list` (and `page.detail`) in its `manifest.ts`.
+ */
+const PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
+  featureManifests.flatMap(({ page }) => (page ? [[page.name, lazyLoaded(page.list)]] : [])),
+);
+
+/** The same for detail views (`/merchants/:id`, `/customers/:id`). */
+const DETAIL_PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
+  featureManifests.flatMap(({ page }) => (page?.detail ? [[page.name, lazyLoaded(page.detail)]] : [])),
+);
 
 const PAGE_RESOURCES = resources
   .map(toPageResource)

@@ -1,5 +1,6 @@
 // Route coverage check: compares docs/route-manifest.json with the `@route METHOD /path` tags in src/features/**/api.
-// Writes docs/ROUTE_COVERAGE.md. Usage: node scripts/check-route-coverage.mjs [--feature <id>] [--strict]
+// Writes docs/ROUTE_COVERAGE.md, except with --feature (a feature worktree only checks itself and leaves docs/ alone).
+// Usage: node scripts/check-route-coverage.mjs [--feature <id>] [--strict]
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -111,7 +112,7 @@ const lines = [
   ...all.map((e) => `| ${e.status} | \`${e.key}\` | ${e.owner} | ${e.where} |`),
   '',
 ];
-fs.writeFileSync(path.join(root, 'docs/ROUTE_COVERAGE.md'), lines.join('\n'));
+if (!onlyFeature) fs.writeFileSync(path.join(root, 'docs/ROUTE_COVERAGE.md'), lines.join('\n'));
 
 // Console summary for the requested scope.
 const missing = scope.filter((e) => e.status === 'missing');

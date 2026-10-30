@@ -1,0 +1,556 @@
+{
+  "feature": "settings",
+  "page": "/settings",
+  "demo": [
+    "55-p-settings.js",
+    "12-state-b2c.js (fx/gateway/policy/notif mutations)"
+  ],
+  "folders": [
+    "src/features/settings"
+  ],
+  "notes": "Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/settings",
+      "method": "GET",
+      "path": "/admin/settings",
+      "group": "auth",
+      "op": "action",
+      "description": "System settings.",
+      "access": "permission",
+      "permission": "settings:read",
+      "stage": 2,
+      "tables": [
+        "settings"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/settings"
+      }
+    },
+    {
+      "key": "PATCH /admin/settings",
+      "method": "PATCH",
+      "path": "/admin/settings",
+      "group": "auth",
+      "op": "action",
+      "description": "Edit the settings.",
+      "access": "permission",
+      "permission": "settings:update",
+      "stage": 2,
+      "tables": [
+        "settings",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/settings"
+      }
+    },
+    {
+      "key": "GET /admin/payment-gateways",
+      "method": "GET",
+      "path": "/admin/payment-gateways",
+      "group": "billing",
+      "op": "list",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "GET /admin/payment-gateways/:id",
+      "method": "GET",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "POST /admin/payment-gateways",
+      "method": "POST",
+      "path": "/admin/payment-gateways",
+      "group": "billing",
+      "op": "create",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "PATCH /admin/payment-gateways/:id",
+      "method": "PATCH",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "update",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "DELETE /admin/payment-gateways/:id",
+      "method": "DELETE",
+      "path": "/admin/payment-gateways/:id",
+      "group": "billing",
+      "op": "delete",
+      "description": "Payment gateways: fees, limits and merchant groups.",
+      "access": "permission",
+      "permission": "payments:gateways",
+      "stage": 8,
+      "tables": [
+        "payment_gateways"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/payment-gateways"
+      }
+    },
+    {
+      "key": "GET /admin/tax-rates",
+      "method": "GET",
+      "path": "/admin/tax-rates",
+      "group": "refunds",
+      "op": "list",
+      "description": "Tax rates by country and their effective dates.",
+      "access": "permission",
+      "permission": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "GET /admin/tax-rates/:id",
+      "method": "GET",
+      "path": "/admin/tax-rates/:id",
+      "group": "refunds",
+      "op": "show",
+      "description": "Tax rates by country and their effective dates.",
+      "access": "permission",
+      "permission": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "POST /admin/tax-rates",
+      "method": "POST",
+      "path": "/admin/tax-rates",
+      "group": "refunds",
+      "op": "create",
+      "description": "Tax rates by country and their effective dates.",
+      "access": "permission",
+      "permission": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "PATCH /admin/tax-rates/:id",
+      "method": "PATCH",
+      "path": "/admin/tax-rates/:id",
+      "group": "refunds",
+      "op": "update",
+      "description": "Tax rates by country and their effective dates.",
+      "access": "permission",
+      "permission": "tax:*",
+      "stage": 14,
+      "tables": [
+        "tax_rates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/tax-rates"
+      }
+    },
+    {
+      "key": "GET /admin/currencies",
+      "method": "GET",
+      "path": "/admin/currencies",
+      "group": "clients",
+      "op": "list",
+      "description": "Currencies and exchange rates.",
+      "access": "permission",
+      "permission": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "GET /admin/currencies/:id",
+      "method": "GET",
+      "path": "/admin/currencies/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Currencies and exchange rates.",
+      "access": "permission",
+      "permission": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "POST /admin/currencies",
+      "method": "POST",
+      "path": "/admin/currencies",
+      "group": "clients",
+      "op": "create",
+      "description": "Currencies and exchange rates.",
+      "access": "permission",
+      "permission": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "PATCH /admin/currencies/:id",
+      "method": "PATCH",
+      "path": "/admin/currencies/:id",
+      "group": "clients",
+      "op": "update",
+      "description": "Currencies and exchange rates.",
+      "access": "permission",
+      "permission": "settings:update",
+      "stage": 3,
+      "tables": [
+        "currencies"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/currencies"
+      }
+    },
+    {
+      "key": "POST /admin/currencies/refresh-fx",
+      "method": "POST",
+      "path": "/admin/currencies/refresh-fx",
+      "group": "refunds",
+      "op": "action",
+      "description": "Refresh the exchange rates shown to customers.",
+      "access": "permission",
+      "permission": "currencies:update",
+      "stage": 14,
+      "tables": [
+        "currencies",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/currencies/refresh-fx"
+      }
+    },
+    {
+      "key": "PATCH /admin/storefront/settings",
+      "method": "PATCH",
+      "path": "/admin/storefront/settings",
+      "group": "refunds",
+      "op": "action",
+      "description": "Storefront payment methods, policies (guest checkout, refund window) and customer email templates.",
+      "access": "permission",
+      "permission": "settings:storefront",
+      "stage": 16,
+      "tables": [
+        "settings",
+        "payment_gateways",
+        "notification_templates",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/storefront/settings"
+      }
+    },
+    {
+      "key": "GET /admin/notification-templates",
+      "method": "GET",
+      "path": "/admin/notification-templates",
+      "group": "ops",
+      "op": "list",
+      "description": "Email and Telegram templates for each event.",
+      "access": "permission",
+      "permission": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "GET /admin/notification-templates/:id",
+      "method": "GET",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Email and Telegram templates for each event.",
+      "access": "permission",
+      "permission": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "POST /admin/notification-templates",
+      "method": "POST",
+      "path": "/admin/notification-templates",
+      "group": "ops",
+      "op": "create",
+      "description": "Email and Telegram templates for each event.",
+      "access": "permission",
+      "permission": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "PATCH /admin/notification-templates/:id",
+      "method": "PATCH",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "update",
+      "description": "Email and Telegram templates for each event.",
+      "access": "permission",
+      "permission": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "DELETE /admin/notification-templates/:id",
+      "method": "DELETE",
+      "path": "/admin/notification-templates/:id",
+      "group": "ops",
+      "op": "delete",
+      "description": "Email and Telegram templates for each event.",
+      "access": "permission",
+      "permission": "notifications:*",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/notification-templates"
+      }
+    },
+    {
+      "key": "POST /admin/notification-templates/:id/preview",
+      "method": "POST",
+      "path": "/admin/notification-templates/:id/preview",
+      "group": "ops",
+      "op": "action",
+      "description": "Preview the template with sample data.",
+      "access": "permission",
+      "permission": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notification_templates"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/notification-templates/:id/preview"
+      }
+    },
+    {
+      "key": "GET /admin/notifications",
+      "method": "GET",
+      "path": "/admin/notifications",
+      "group": "ops",
+      "op": "list",
+      "description": "Log of sent notifications.",
+      "access": "permission",
+      "permission": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notifications"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/notifications"
+      }
+    },
+    {
+      "key": "GET /admin/notifications/:id",
+      "method": "GET",
+      "path": "/admin/notifications/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Log of sent notifications.",
+      "access": "permission",
+      "permission": "notifications:read",
+      "stage": 12,
+      "tables": [
+        "notifications"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/notifications"
+      }
+    },
+    {
+      "key": "GET /admin/webhook-deliveries",
+      "method": "GET",
+      "path": "/admin/webhook-deliveries",
+      "group": "ops",
+      "op": "list",
+      "description": "Log of merchant webhooks.",
+      "access": "permission",
+      "permission": "webhooks:read",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/webhook-deliveries"
+      }
+    },
+    {
+      "key": "GET /admin/webhook-deliveries/:id",
+      "method": "GET",
+      "path": "/admin/webhook-deliveries/:id",
+      "group": "ops",
+      "op": "show",
+      "description": "Log of merchant webhooks.",
+      "access": "permission",
+      "permission": "webhooks:read",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/webhook-deliveries"
+      }
+    },
+    {
+      "key": "POST /admin/webhook-deliveries/:id/retry",
+      "method": "POST",
+      "path": "/admin/webhook-deliveries/:id/retry",
+      "group": "ops",
+      "op": "action",
+      "description": "Resend the delivery.",
+      "access": "permission",
+      "permission": "webhooks:update",
+      "stage": 7,
+      "tables": [
+        "webhook_deliveries"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/webhook-deliveries/:id/retry"
+      }
+    }
+  ]
+}

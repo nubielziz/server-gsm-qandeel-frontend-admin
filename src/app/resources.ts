@@ -2,10 +2,8 @@
 // access checks need, plus the registry that serves Refine's data hooks.
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
-import { accessResources } from '@/features/access';
-import { financeResources } from '@/features/finance';
-import { ordersResources } from '@/features/orders';
 import { mergeRegistries } from '@/lib/api';
+import { featureForPage, featureManifests } from './features';
 
 /** Sidebar sections, in the order the demo shows them. */
 export const NAV_GROUPS = ['Operations', 'Catalog', 'Money', 'System'] as const;
@@ -23,8 +21,15 @@ export type PageMeta = {
 };
 
 // One page resource. `detail` adds the `/<id>/:id` route of the pages that have a detail view (merchants, customers).
+// A built feature may replace the page permission from its manifest (any-of lists for pages with per-tab permissions).
 function page(name: string, meta: PageMeta, detail = false): ResourceProps {
-  return { name, list: `/${name}`, ...(detail ? { show: `/${name}/:id` } : {}), meta };
+  const permission = featureForPage(name)?.page?.permission ?? meta.permission;
+  return {
+    name,
+    list: `/${name}`,
+    ...(detail ? { show: `/${name}/:id` } : {}),
+    meta: { ...meta, permission },
+  };
 }
 
 /** Page resources: the ids, labels, groups and icons are the demo's; permissions follow the map. */
@@ -70,25 +75,18 @@ export const resources: ResourceProps[] = [
     permission: 'commissions:read',
   }),
   page('refunds', { label: 'Refunds & disputes', group: 'Money', icon: 'undo', permission: 'refunds:read' }),
-  // Any tab's read permission opens the page; each tab then shows only what the role may read (MISMATCHES M19).
-  page('access', {
-    label: 'Admins & access',
-    group: 'System',
-    icon: 'lock',
-    permission: ['staff:read', 'access:read', 'roles:read', 'sessions:read'],
-  }),
+  // The access feature's manifest widens this to any tab's read permission (MISMATCHES M19).
+  page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),
   page('settings', { label: 'Settings', group: 'System', icon: 'sliders', permission: 'settings:read' }),
   page('audit', { label: 'Audit log', group: 'System', icon: 'history', permission: 'audit:read' }),
 ];
 
 /**
- * Which API function serves each CRUD resource for Refine's data hooks (decision 005).
- * Every feature exports a registry from its `api/resources.ts`; list them here as they are built.
+ * Which API function serves each CRUD resource for Refine's data hooks (decision 005): the registries of every
+ * feature manifest, merged.
  */
 export const dataRegistry = mergeRegistries(
-  accessResources,
-  ordersResources,
-  financeResources /* features add their registries here */,
+  ...featureManifests.flatMap((manifest) => (manifest.registry ? [manifest.registry] : [])),
 );
 
 /** A resource that is a console page, with its `meta` checked. Resources without page meta give undefined. */

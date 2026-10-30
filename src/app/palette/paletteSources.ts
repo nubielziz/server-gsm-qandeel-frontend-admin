@@ -1,7 +1,7 @@
 // Where features plug search results into the command palette (the entity search of paletteItems() in 90-app.js).
 
 import type { PaletteItem } from '@/components/ui';
-import { ordersPaletteSource } from '@/features/orders';
+import { featureManifests } from '../features';
 
 /**
  * One searchable kind of record. `search` asks the server for matches of the typed text; it should pass `signal` to
@@ -19,10 +19,12 @@ export interface PaletteSource {
 }
 
 /**
- * The sources the palette searches while the user types. A feature that has a search endpoint exports a source from
- * its `index.ts` and adds it here (orders, merchants, customers, tickets, services); the palette code needs no change.
+ * The sources the palette searches while the user types: every `palette` entry of the feature manifests (orders,
+ * merchants, customers, tickets, services). A feature with a search endpoint lists its source there.
  */
-export const paletteSources: readonly PaletteSource[] = [ordersPaletteSource];
+export const paletteSources: readonly PaletteSource[] = featureManifests.flatMap(
+  (manifest) => manifest.palette ?? [],
+);
 
 /** Typed text shorter than this searches only the pages and actions (the demo started at two characters). */
 export const MIN_SEARCH_LENGTH = 2;

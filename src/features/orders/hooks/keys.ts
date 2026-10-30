@@ -1,7 +1,7 @@
 // Query keys of the order reads that are not Refine resources (decision 005: they start with `['api', <feature>]`), and
 // what an order action makes stale. React Query matches the keys as prefixes.
 import type { QueryKey } from '@tanstack/react-query';
-import type { InvalidateTarget } from '@/lib/query';
+import { DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
 
 /** The timeline of each order. */
 export const ORDER_EVENTS_KEY = ['api', 'orders', 'events'] as const;
@@ -15,8 +15,16 @@ export const ORDER_LEDGER_KEY = ['api', 'orders', 'ledger'] as const;
 /** Names for the filter menus and the reroute menu. */
 export const ORDER_LOOKUP_KEY = ['api', 'orders', 'lookups'] as const;
 
-/** The reads an order action makes stale besides Refine's own: the timeline, the counts and the ledger entries. */
-export const ORDER_STALE_KEYS: QueryKey[] = [ORDER_EVENTS_KEY, ORDER_COUNTS_KEY, ORDER_LEDGER_KEY];
+/**
+ * The reads an order action makes stale besides Refine's own: the timeline, the counts, the ledger entries, and the
+ * dashboard with the sidebar counts.
+ */
+export const ORDER_STALE_KEYS: QueryKey[] = [
+  ORDER_EVENTS_KEY,
+  ORDER_COUNTS_KEY,
+  ORDER_LEDGER_KEY,
+  DASHBOARD_KEY,
+];
 
 /**
  * The Refine targets of changed orders: every list, and each order's own record (Refine refreshes a single record only

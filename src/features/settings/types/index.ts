@@ -12,6 +12,8 @@ export type SettingsValues = { [key: string]: JsonValue | undefined };
  */
 export type Settings = SettingsValues & {
   adminAllowlistOnly?: boolean;
+  /** Days an order's IMEI is kept before it is removed (assumed key; the customers page shows it). */
+  imeiRetentionDays?: number;
 };
 
 /** Body of `PATCH /admin/settings`: only the keys that change (assumed contract). */

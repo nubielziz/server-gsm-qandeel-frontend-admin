@@ -1,0 +1,290 @@
+{
+  "feature": "suppliers",
+  "page": "/suppliers",
+  "demo": [
+    "44-p-suppliers.js"
+  ],
+  "folders": [
+    "src/features/suppliers"
+  ],
+  "notes": "Master-detail page; reroute uses supplier-links; supplier report feeds the detail stats.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/suppliers",
+      "method": "GET",
+      "path": "/admin/suppliers",
+      "group": "suppliers",
+      "op": "list",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "GET /admin/suppliers/:id",
+      "method": "GET",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "show",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers",
+      "method": "POST",
+      "path": "/admin/suppliers",
+      "group": "suppliers",
+      "op": "create",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "PATCH /admin/suppliers/:id",
+      "method": "PATCH",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "update",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "DELETE /admin/suppliers/:id",
+      "method": "DELETE",
+      "path": "/admin/suppliers/:id",
+      "group": "suppliers",
+      "op": "delete",
+      "description": "Suppliers: driver, URL, key (write-only) and limits.",
+      "access": "permission",
+      "permission": "suppliers:*",
+      "stage": 6,
+      "tables": [
+        "suppliers"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/suppliers"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/test",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/test",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Test the connection through accountinfo.",
+      "access": "permission",
+      "permission": "suppliers:update",
+      "stage": 6,
+      "tables": [
+        "suppliers",
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/test"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/sync",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/sync",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Sync services and balance now.",
+      "access": "permission",
+      "permission": "suppliers:update",
+      "stage": 6,
+      "tables": [
+        "supplier_services",
+        "suppliers"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/sync"
+      }
+    },
+    {
+      "key": "GET /admin/suppliers/:id/services",
+      "method": "GET",
+      "path": "/admin/suppliers/:id/services",
+      "group": "suppliers",
+      "op": "action",
+      "description": "The supplier services after syncing.",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_services"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/suppliers/:id/services"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/import/preview",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/import/preview",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Preview the import: new, matching and changed services, with the suggested price.",
+      "access": "permission",
+      "permission": "catalog:create",
+      "stage": 6,
+      "tables": [
+        "supplier_services",
+        "services"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/import/preview"
+      }
+    },
+    {
+      "key": "POST /admin/suppliers/:id/import",
+      "method": "POST",
+      "path": "/admin/suppliers/:id/import",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Import the selected items as services, fields and links.",
+      "access": "permission",
+      "permission": "catalog:create",
+      "stage": 6,
+      "tables": [
+        "services",
+        "service_fields",
+        "service_supplier_links"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/suppliers/:id/import"
+      }
+    },
+    {
+      "key": "PUT /admin/services/:id/supplier-links",
+      "method": "PUT",
+      "path": "/admin/services/:id/supplier-links",
+      "group": "suppliers",
+      "op": "action",
+      "description": "Link the service to suppliers in priority order.",
+      "access": "permission",
+      "permission": "catalog:update",
+      "stage": 6,
+      "tables": [
+        "service_supplier_links"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/services/:id/supplier-links"
+      }
+    },
+    {
+      "key": "GET /admin/supplier-api-logs",
+      "method": "GET",
+      "path": "/admin/supplier-api-logs",
+      "group": "suppliers",
+      "op": "list",
+      "description": "Log of supplier requests and responses.",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/supplier-api-logs"
+      }
+    },
+    {
+      "key": "GET /admin/supplier-api-logs/:id",
+      "method": "GET",
+      "path": "/admin/supplier-api-logs/:id",
+      "group": "suppliers",
+      "op": "show",
+      "description": "Log of supplier requests and responses.",
+      "access": "permission",
+      "permission": "suppliers:read",
+      "stage": 6,
+      "tables": [
+        "supplier_api_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/supplier-api-logs"
+      }
+    },
+    {
+      "key": "GET /admin/reports/suppliers",
+      "method": "GET",
+      "path": "/admin/reports/suppliers",
+      "group": "growth",
+      "op": "action",
+      "description": "Supplier spend, rejection rate and speed.",
+      "access": "permission",
+      "permission": "reports:read",
+      "stage": 11,
+      "tables": [
+        "orders",
+        "suppliers"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/suppliers"
+      }
+    }
+  ]
+}

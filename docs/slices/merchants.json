@@ -1,0 +1,461 @@
+{
+  "feature": "merchants",
+  "page": "/merchants",
+  "demo": [
+    "42-p-merchants.js"
+  ],
+  "folders": [
+    "src/features/merchants"
+  ],
+  "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups and KYC live here.",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/clients",
+      "method": "GET",
+      "path": "/admin/clients",
+      "group": "clients",
+      "op": "list",
+      "description": "Merchants: creation, group, status and blocking.",
+      "access": "permission",
+      "permission": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id",
+      "method": "GET",
+      "path": "/admin/clients/:id",
+      "group": "clients",
+      "op": "show",
+      "description": "Merchants: creation, group, status and blocking.",
+      "access": "permission",
+      "permission": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "POST /admin/clients",
+      "method": "POST",
+      "path": "/admin/clients",
+      "group": "clients",
+      "op": "create",
+      "description": "Merchants: creation, group, status and blocking.",
+      "access": "permission",
+      "permission": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "PATCH /admin/clients/:id",
+      "method": "PATCH",
+      "path": "/admin/clients/:id",
+      "group": "clients",
+      "op": "update",
+      "description": "Merchants: creation, group, status and blocking.",
+      "access": "permission",
+      "permission": "clients:*",
+      "stage": 2,
+      "tables": [
+        "clients"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/clients"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/wallet",
+      "method": "GET",
+      "path": "/admin/clients/:id/wallet",
+      "group": "clients",
+      "op": "action",
+      "description": "Merchant wallet: available balance, reserved balance and limit.",
+      "access": "permission",
+      "permission": "wallet:read",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/wallet"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/statement",
+      "method": "GET",
+      "path": "/admin/clients/:id/statement",
+      "group": "clients",
+      "op": "action",
+      "description": "Merchant account statement.",
+      "access": "permission",
+      "permission": "wallet:read",
+      "stage": 3,
+      "tables": [
+        "ledger_entries",
+        "ledger_transactions"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/statement"
+      }
+    },
+    {
+      "key": "POST /admin/clients/:id/wallet/adjust",
+      "method": "POST",
+      "path": "/admin/clients/:id/wallet/adjust",
+      "group": "clients",
+      "op": "action",
+      "description": "Manually add to or deduct from the wallet, with a reason.",
+      "access": "permission",
+      "permission": "wallet:adjust",
+      "stage": 3,
+      "tables": [
+        "ledger_transactions",
+        "ledger_entries",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/clients/:id/wallet/adjust"
+      }
+    },
+    {
+      "key": "PATCH /admin/clients/:id/credit-limit",
+      "method": "PATCH",
+      "path": "/admin/clients/:id/credit-limit",
+      "group": "clients",
+      "op": "action",
+      "description": "Credit limit (overdraft).",
+      "access": "permission",
+      "permission": "wallet:credit_limit",
+      "stage": 3,
+      "tables": [
+        "ledger_accounts"
+      ],
+      "origin": {
+        "method": "PATCH",
+        "ops": null,
+        "path": "/admin/clients/:id/credit-limit"
+      }
+    },
+    {
+      "key": "GET /admin/clients/:id/api-keys",
+      "method": "GET",
+      "path": "/admin/clients/:id/api-keys",
+      "group": "clients",
+      "op": "action",
+      "description": "API keys of a merchant.",
+      "access": "permission",
+      "permission": "api_keys:read",
+      "stage": 7,
+      "tables": [
+        "api_keys"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/clients/:id/api-keys"
+      }
+    },
+    {
+      "key": "DELETE /admin/api-keys/:id",
+      "method": "DELETE",
+      "path": "/admin/api-keys/:id",
+      "group": "clients",
+      "op": "action",
+      "description": "Revoke a merchant API key.",
+      "access": "permission",
+      "permission": "api_keys:revoke",
+      "stage": 7,
+      "tables": [
+        "api_keys",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "DELETE",
+        "ops": null,
+        "path": "/admin/api-keys/:id"
+      }
+    },
+    {
+      "key": "GET /admin/client-groups",
+      "method": "GET",
+      "path": "/admin/client-groups",
+      "group": "catalog",
+      "op": "list",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "access": "permission",
+      "permission": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "GET /admin/client-groups/:id",
+      "method": "GET",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "show",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "access": "permission",
+      "permission": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "POST /admin/client-groups",
+      "method": "POST",
+      "path": "/admin/client-groups",
+      "group": "catalog",
+      "op": "create",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "access": "permission",
+      "permission": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "PATCH /admin/client-groups/:id",
+      "method": "PATCH",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "access": "permission",
+      "permission": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "DELETE /admin/client-groups/:id",
+      "method": "DELETE",
+      "path": "/admin/client-groups/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "Merchant groups: discount, upgrade threshold and deposit limit.",
+      "access": "permission",
+      "permission": "groups:*",
+      "stage": 4,
+      "tables": [
+        "client_groups"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/client-groups"
+      }
+    },
+    {
+      "key": "GET /admin/client-prices",
+      "method": "GET",
+      "path": "/admin/client-prices",
+      "group": "catalog",
+      "op": "list",
+      "description": "A special price for a merchant on a service.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "POST /admin/client-prices",
+      "method": "POST",
+      "path": "/admin/client-prices",
+      "group": "catalog",
+      "op": "create",
+      "description": "A special price for a merchant on a service.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "PATCH /admin/client-prices/:id",
+      "method": "PATCH",
+      "path": "/admin/client-prices/:id",
+      "group": "catalog",
+      "op": "update",
+      "description": "A special price for a merchant on a service.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "DELETE /admin/client-prices/:id",
+      "method": "DELETE",
+      "path": "/admin/client-prices/:id",
+      "group": "catalog",
+      "op": "delete",
+      "description": "A special price for a merchant on a service.",
+      "access": "permission",
+      "permission": "pricing:*",
+      "stage": 4,
+      "tables": [
+        "service_client_prices"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LCUD",
+        "path": "/admin/client-prices"
+      }
+    },
+    {
+      "key": "GET /admin/kyc-submissions",
+      "method": "GET",
+      "path": "/admin/kyc-submissions",
+      "group": "billing",
+      "op": "list",
+      "description": "Verification (KYC) requests.",
+      "access": "permission",
+      "permission": "kyc:read",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/kyc-submissions"
+      }
+    },
+    {
+      "key": "GET /admin/kyc-submissions/:id",
+      "method": "GET",
+      "path": "/admin/kyc-submissions/:id",
+      "group": "billing",
+      "op": "show",
+      "description": "Verification (KYC) requests.",
+      "access": "permission",
+      "permission": "kyc:read",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/kyc-submissions"
+      }
+    },
+    {
+      "key": "POST /admin/kyc-submissions/:id/decide",
+      "method": "POST",
+      "path": "/admin/kyc-submissions/:id/decide",
+      "group": "billing",
+      "op": "action",
+      "description": "Approve or reject the verification.",
+      "access": "permission",
+      "permission": "kyc:decide",
+      "stage": 8,
+      "tables": [
+        "kyc_submissions",
+        "clients"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/kyc-submissions/:id/decide"
+      }
+    },
+    {
+      "key": "GET /admin/reports/client-statement/:clientId",
+      "method": "GET",
+      "path": "/admin/reports/client-statement/:clientId",
+      "group": "growth",
+      "op": "action",
+      "description": "Official account statement for a merchant.",
+      "access": "permission",
+      "permission": "reports:read",
+      "stage": 11,
+      "tables": [
+        "ledger_entries",
+        "invoices"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/client-statement/:clientId"
+      }
+    }
+  ]
+}
