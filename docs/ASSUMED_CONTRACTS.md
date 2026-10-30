@@ -170,3 +170,23 @@ All are marked "Assumed contract" in the JSDoc of the function that carries them
 8. Inventory: the masked field name, the status values, whether import takes `codes` or raw text, and whether `reserved` codes may be voided.
 9. Is the Floor policy text true (minimum profit defaults to 6% of cost, at least $0.02)? It is the demo's copy, kept as it is.
 10. Does `GET /admin/client-groups` need `groups:read`, and does a group price for the Retail group belong in this PUT or on the storefront page?
+
+## risk
+
+All bodies are assumed (M10); each is marked "Assumed contract" in the JSDoc of its function in `api/`.
+
+- `GET /admin/risk/queue` answers `{ held: HeldOrder[], stats?: { decided30d, approved30d, refunded30d, heldShare }, recent?: DecidedOrder[] }`. A `HeldOrder` has `orderId`, `paidAt`, `score`, `service`, `supplier`, `imei`, `device`, `capturedAmount` (USD with VAT), `currency`, `fxRate`, `paymentMethod` (`card`, `wallet`, `crypto`), `signals` (strings) and `customer` (`id`, `name`, `email`, `country` code, `riskLevel` `low|medium|high`, `history: { earlierOrders, refunds, disputes }`). `heldShare` is a percent number.
+- `POST /admin/risk/orders/:id/approve`: no body; the answer is not used. `POST .../refund`: `{ reason?, blockEmail?, blockDevice? }`; the answer is not used. A decision on an order that is no longer held answers `409`; the console shows the server’s message.
+- `GET /admin/imei-checks` (`/:id`): rows with `id`, `imei` (digits, or a hash or mask after retention), `brand`, `model`, `checkType` (`blacklist|basic|icloud|sim_lock`), `status` (`clean|blacklisted|locked|unknown`), `source` (`pre_order|storefront_free`), `country`, `ip`, `cost`, `price`, `cachedUntil`, `createdAt`, `orderId`, `customer`, `supplier`, `result` (free-form object). Filters `checkType`, `status`, `source`, `q` (IMEI, brand, model); sort `model`, `checkType`, `status`, `createdAt`.
+- `GET /admin/blocklist` (`/:id`): rows with `id`, `kind`, `display`, `reason`, `expiresAt`, `source` (`manual|auto|chargeback`), `createdBy` (`{ id, name }` or null for the system), `createdAt`. Filter `kind`; sort `kind`, `display`, `createdAt`. `POST` body `{ kind: email|domain|imei|card, value, reason }` (an IMEI as 15 digits), answer the new entry (201). `DELETE` answers 204.
+- `GET` and `PUT /admin/risk/rules`: `{ rules: [{ id, on, value, label?, hint?, unit? }] }`; `PUT` takes `{ rules: [{ id, on, value }] }` (the whole set) and answers the saved rules. A field message is keyed by rule id (`reviewThreshold`), by path (`rules.reviewThreshold.value`) or by index (`rules.1.value`).
+
+### Questions for the backend
+
+1. What does `GET /admin/risk/queue` send: only the held orders, or also the 30-day figures and the latest decisions (`stats`, `recent`)? Are signals plain strings or `{ label, points }`?
+2. `POST .../refund`: are `reason`, `blockEmail` and `blockDevice` the right body? Does blocking the email also set the customer to `blocked`? Is "device" the order's IMEI or a device fingerprint?
+3. Rules: which ids and which units? Does `PUT` replace the whole set (then two editors can overwrite each other; is there a version or `If-Match`)? Which field name carries the "review below block" message?
+4. Blocklist: does `POST` take `value` (and derive `display`) or `display`? Which code answers a duplicate? Can the console set `expiresAt`? Can system entries (chargebacks) be removed?
+5. IMEI checks: what does `imei` look like after the retention period (hash, mask, null)? Can the list send the 30-day figures (conversion to an order, lookup cost) in a header or a summary route? Which sort fields and filters are supported?
+6. Permissions: are blocklist create and delete `risk:create` and `risk:delete`, and does the rules `PUT` need the literal `risk:*`?
+7. Does approve or refund return the updated order?
