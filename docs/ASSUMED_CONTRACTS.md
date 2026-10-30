@@ -101,3 +101,44 @@ The map gives routes, permissions and tables, not bodies (M10). Every function b
 - `GET /admin/reports/suppliers`: the period parameter and the row fields.
 - Reroute: could `change-supplier` take `dispatch: true`, so a reroute is one call (the same question as for the orders feature)?
 - Delete: which code and text come with the refusal when orders or services still use the supplier?
+
+## customers
+
+All are marked "Assumed contract" in the JSDoc of the function or type, and live in `types/index.ts`.
+
+- `Customer` (list row): the `CustomerRow` columns with `riskLevel` `low|medium|high`, `status` `active|suspended|blocked|anonymized`,
+  `suspendedReason` and `suspendedBy` nullable, plus `ordersCount`, `lastOrderAt` and an optional `currencyCode`. `createdBy` is null
+  for a customer who came on their own and a staff id for one the team added.
+- `GET /admin/customers/:id`: `Customer` plus `stats { orders, spent, lastOrderAt, refunds, tickets, disputes }`, `account`
+  (`emailVerified`, `mustChangePassword`, `passwordChangedAt`, `resetSentAt`, `activeSessions`, `lastIp`; null for a guest),
+  `latestConsents { orderId, records[{ purpose, document, at, ip }] }` (null without orders) and `risk { highestScore, signals[{ text, orderId }] }`.
+  `document` is the legal document with its version, ready to show (`Terms of service v3.2`), or null.
+- `GET /admin/customers` filters: `q` (name, email), `country`, `status` (repeat the key), `riskLevel` (repeat the key; the
+  Flagged tab sends `medium` and `high`) and `hasAccount` (not in the brief; the header sentence needs it). Sorts: `name`, `country`,
+  `hasAccount`, `ordersCount`, `totalSpent`, `lastOrderAt`, `riskLevel`, `status`.
+- Bodies: create `{ name, email, country, locale, phone?, password: { mode } }` answers 201 with the customer and
+  `temporaryPassword?`; `PATCH` sends only changed fields (`name`, `email`, `country`, `locale`, `phone`, `internalNotes`);
+  account `{ mode }` and password `{ mode, revokeSessions }` answer `{ temporaryPassword? }` (shown once, `gcTime: 0`);
+  suspend `{ reason, note? }`; block `{ blocked: true, reason }` or `{ blocked: false }`; the three give no answer the console reads;
+  anonymize answers 204; export is a JSON file named by `Content-Disposition`, else `customer-<id>.json`.
+- Errors: `EMAIL_TAKEN` (409) on create and edit goes under the email field; `errors[]` entries name the form's fields
+  (`password.mode` is read as the Password choice). Every other problem shows in the dialog that sent the call.
+- `DataRequest`: the `DataRequestRow` columns with `kind` `export|erasure`, `status` `open|in_progress|completed|rejected`,
+  `handledBy` and `fileId` nullable, plus `customerName`. List filters `status` (repeat the key; the tab asks for `open` and `in_progress` unless the menu says otherwise), `kind`,
+  `customerId`; sorts `requestedAt`, `dueAt`, `status` (the tab starts on `dueAt`, ascending). `PATCH` `{ status: 'in_progress'|'completed'|'rejected', note? }` answers the request.
+- Exporting a customer's data or anonymising them closes their open request of that kind (M74). Anonymising also cuts
+  the IMEIs and replaces the buyer on the customer's orders, so the console refreshes the orders after it.
+- The command palette asks `GET /admin/customers` for the first four matches of `q` with no sort.
+
+### Questions for the backend
+
+1. Is the middle risk level `medium` (assumed) or `med`? Does sorting by `riskLevel` follow low, medium, high rather than the alphabet?
+2. Where does a guest's last address come from? A guest has no session, so the console reads the latest consent record's address.
+3. Does `POST /admin/customers/:id/block` with `{ blocked: false }` need a reason (the map says "with a reason")? What does it answer?
+4. Do `GET /admin/customers/:id/export` and `POST /admin/customers/:id/anonymize` close the customer's open data request, and with which status?
+5. What are the data-request statuses and allowed moves, and is the `note` of the `PATCH` kept (audit log)?
+6. Is `totalSpent` the gross amount (VAT included) of the orders that were not rejected, as the demo's spend? Does `ordersCount` count every order?
+7. Is `suspendedReason` stored as the reason and the note joined, or do they need two columns?
+8. Which countries does the storefront accept, and is there a route the console can read them from?
+9. Does `GET /admin/customers` support the `hasAccount` filter, and `GET /admin/data-requests` the `customerId` and repeated `status` filters?
+10. May an anonymised customer's old email be used for a new customer?

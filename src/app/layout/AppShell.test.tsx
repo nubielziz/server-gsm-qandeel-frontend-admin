@@ -93,7 +93,8 @@ describe('start page', () => {
   it('sends a role without the dashboard to the first page it may open', async () => {
     mockMe({ permissions: ['support:*', 'customers:read'] });
     const app = renderApp('/');
-    await screen.findByRole('heading', { level: 1, name: 'Customers' });
+    // Customers is a lazy chunk now (mockMe starts the mock session its data calls need).
+    await screen.findByRole('heading', { level: 1, name: 'Customers' }, { timeout: 10_000 });
     expect(app.location()).toBe('/customers');
   });
 
