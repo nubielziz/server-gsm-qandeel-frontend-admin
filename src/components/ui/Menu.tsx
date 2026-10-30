@@ -12,6 +12,11 @@ export interface MenuAction {
   hint?: string;
   danger?: boolean;
   disabled?: boolean;
+  /**
+   * Why the item cannot be used, such as the missing permission. Shown as a tooltip and read by screen readers; set it
+   * with `disabled` so a staff member knows what is missing instead of guessing.
+   */
+  title?: string;
   /** Defined (true or false) turns the row into a radio item; true also draws a check mark. */
   checked?: boolean;
   run?: () => void;
@@ -97,14 +102,17 @@ export function Menu({ anchor, open, onClose, align, items, width, label }: Menu
             role={radio ? 'menuitemradio' : 'menuitem'}
             aria-checked={radio ? item.checked : undefined}
             disabled={item.disabled}
+            title={item.title}
+            // A disabled item keeps pointer events so its tooltip (the reason) still shows; clicks do nothing.
             className={cx(
-              'menu-item disabled:opacity-45 disabled:pointer-events-none',
+              'menu-item disabled:opacity-45 disabled:cursor-not-allowed',
               item.danger && 'text-crit-fg',
             )}
             onClick={() => select(item)}
           >
             {item.icon && <Icon name={item.icon} className="ic-sm" />}
             <span className="min-w-0 flex-1 truncate">{item.label}</span>
+            {item.title && <span className="sr-only">{`, ${item.title}`}</span>}
             {item.checked && <Icon name="check" className="ic-sm" />}
             {item.hint && <Kbd>{item.hint}</Kbd>}
           </button>
