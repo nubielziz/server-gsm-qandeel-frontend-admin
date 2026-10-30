@@ -2,15 +2,6 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
-## Resume here (usage limit hit, 2026-10-30)
-
-Merged so far: foundation, access, orders, dashboard (`61869e9`), merchants (`da5b39a`); coverage 77/239. All agents were stopped. Worktrees in `../worktrees/` keep their state (none of their open work is committed to `feat/refine-admin`):
-- **customers** (`feat/customers`, reviewed work committed on the branch as `wip`): the round-1 fix round was stopped half way; its edits are uncommitted in the worktree. To do: export confirmation dialog (blocking), invalidate orders after anonymise, palette sort vs contract, fallback badges, data-requests default sort `dueAt` asc + status filter. Check what is done (`git -C ../worktrees/customers status`), finish (lead or one implementer call), then merge.
-- **services** (`feat/services`, `wip` committed): fix round stopped half way, edits uncommitted. To do: field errors lost in 5 dialogs (blocking), `gcTime: 0` on inventory import, invalidate categories, lookup failure notes, ticks rule vs SERVICES-10, chips mismatch row, drop the `/admin/client-groups` mock and loosen group-id checks (then read groups from the merchants mock store at merge), shared `ageText`. At merge: `resources.test` row → any-of array.
-- **suppliers** (not committed on its branch): review round 1 done: 2 blocking for the lead or a fix call: `gcTime: 0` on create/update (API key), log drawer `placeholderData: undefined`; non-blocking: refresh catalogue after sync, refresh moved orders after reroute, no client-side 24 h average, link picker search, URL check via `new URL()`, use shared `useDebouncedCommit`/`ageText`/menu `title`. At merge: drop the `/admin/suppliers` lookup mock and switch orders to `listSuppliers`.
-- **finance**, **refunds**, **risk**: implementers stopped early (finance had only started); check each worktree, then relaunch an implementer with the same brief (counts as their second implementer call).
-- Not started: checkouts, support, storefront, commissions, settings, audit (briefs ready).
-
 ## Resume here
 
 Parallel phase (user rules of 2026-10-30, CLAUDE.md "Agents"): features are built in their own worktrees (`npm run feature:worktree -- add <name>`), reviewed by Opus, squash-merged in finish order. Each brief lives in `docs/briefs/<name>.md`, each route slice in `docs/slices/<name>.json`. The "Pool" table below says what runs; the feature table says what is merged.
@@ -34,19 +25,19 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | finance | 1 (implementer) |
 | refunds | 1 (implementer) |
 | risk | 1 (implementer) |
-| **Total** | **27 / 120** (incl. the suppliers review) |
+| resumed after limits | 5 (customers fix, services fix, finance, refunds, risk) + services round-2 review, checkouts, support |
+| later | finance, risk, refunds, checkouts reviews; storefront, commissions, settings, audit implementers |
+| **Total** | **45 / 120** |
 
 ## Pool
 
 | Feature | Worktree / branch | Status | Calls (impl / review) |
 |---|---|---|---|
-| customers | `../worktrees/customers` · `feat/customers` | review round 1: 1 blocking (export confirm) → implementer fixing | 2 / 1 |
-| merchants | `../worktrees/merchants` · `feat/merchants` | in review (round 1; 2 shared tests to update at merge) | 1 / 1 |
-| services | `../worktrees/services` · `feat/services` | review round 1: 1 blocking (field errors lost in 5 dialogs) → implementer fixing | 2 / 1 |
-| suppliers | `../worktrees/suppliers` · `feat/suppliers` | in review (round 1) | 1 / 1 |
-| finance | `../worktrees/finance` · `feat/finance` | implementing | 1 / 0 |
-| refunds | `../worktrees/refunds` · `feat/refunds` | implementing | 1 / 0 |
-| risk | `../worktrees/risk` · `feat/risk` | implementing | 1 / 0 |
+| support | `../worktrees/support` · `feat/support` | implementing | 1 / 0 |
+| storefront | `../worktrees/storefront` · `feat/storefront` | implementing | 1 / 0 |
+| commissions | `../worktrees/commissions` · `feat/commissions` | implementing | 1 / 0 |
+| settings | `../worktrees/settings` · `feat/settings` | implementing | 1 / 0 |
+| audit | `../worktrees/audit` · `feat/audit` | implementing | 1 / 0 |
 
 ## Phases
 
@@ -68,14 +59,14 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 1 | access | `/access` | auth | 13 | 23 | done | 2/6 | feat(access) |
 | 2 | orders | `/orders` | orders, suppliers | 16 | 17 | done | 2/6 (implementer, reviewer; 2 blocking fixed by lead) | feat(orders) |
 | 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | done | 3 (1 stopped launch, implementer, reviewer: 1 blocking fixed by lead) | feat(dashboard) |
-| 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
-| 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | todo | 0/6 | – |
-| 6 | services | `/services` | catalog, orders | 12 | 24 | todo | 0/6 | – |
-| 7 | suppliers | `/suppliers` | suppliers, growth | 9 | 14 | todo | 0/6 | – |
-| 8 | finance | `/finance` | clients, billing, growth, refunds | 10 | 14 | todo | 0/6 | – |
-| 9 | refunds | `/refunds` | refunds | 8 | 10 | todo | 0/6 | – |
-| 10 | risk | `/risk` | risk | 7 | 11 | todo | 0/6 | – |
-| 11 | checkouts | `/checkouts` | promo | 3 | 3 | todo | 0/6 | – |
+| 4 | customers | `/customers` | customers | 10 | 15 | done | see pool history | `00d9c96` |
+| 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | done | see pool history | `da5b39a` |
+| 6 | services | `/services` | catalog, orders | 12 | 24 | done | see pool history | `f793aaa` |
+| 7 | suppliers | `/suppliers` | suppliers, growth | 9 | 14 | done | see pool history | `335e527` |
+| 8 | finance | `/finance` | clients, billing, growth, refunds | 10 | 14 | done | see pool history | `0cd4793` |
+| 9 | refunds | `/refunds` | refunds | 8 | 10 | done | see pool history | `24b4ff0` |
+| 10 | risk | `/risk` | risk | 7 | 11 | done | see pool history | `242a708` |
+| 11 | checkouts | `/checkouts` | promo | 3 | 3 | done | see pool history | `55f3e12` |
 | 12 | support | `/support` | support | 4 | 10 | todo | 0/6 | – |
 | 13 | storefront | `/storefront` | storefront | 8 | 22 | todo | 0/6 | – |
 | 14 | commissions | `/commissions` | growth | 4 | 13 | todo | 0/6 | – |
@@ -200,6 +191,8 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
 - foundation: `LoginPage` / `SetPasswordPage` keep their small form handlers in the page instead of a form component.
 - orders: the filter and reroute menus read `GET /admin/suppliers` and `GET /admin/clients` through private lookups (`src/features/orders/api/lookups.ts`, no `@route` tag, first 200 rows). Replace them with the suppliers and merchants features' functions when those are built.
+- finance: the shared ledger mock (`src/mocks/handlers/ledger.ts`) answers before the finance mocks, so the dev Ledger tab's account filter and merchant search find nothing in the mock.
+- tests: a few page tests (supplier reroute, customer consents) can time out under a fully loaded machine; they pass on their own.
 - orders: Reroute is two calls (change-supplier, then dispatch). When the second fails, the order has moved but was not sent; the summary says so, but the pair is not atomic.
 - access: editing your own account or role does not refresh `me` at once (name and permission hints update within the 60 s `me` cache or at the next sign-in); clearing `meCache` from a feature needs a small auth API.
 
