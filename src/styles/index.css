@@ -45,6 +45,14 @@
   --s2: 235 104 52;
   --s3: 27 175 122;
   --s4: 237 161 0;
+  /* Sign-in wave artwork only (docs/login-design.md): the accent and the chart hues, plus how the silk is lit. */
+  --wave-1: 28 92 171;
+  --wave-2: 42 120 214;
+  --wave-3: 27 175 122;
+  --wave-4: 237 161 0;
+  --wave-5: 235 104 52;
+  --wave-ambient: 0.62;
+  --wave-sheen: 0.55;
 }
 
 :root[data-theme='dark'] {
@@ -81,6 +89,13 @@
   --s2: 217 89 38;
   --s3: 25 158 112;
   --s4: 201 133 0;
+  --wave-1: 18 58 112;
+  --wave-2: 40 104 190;
+  --wave-3: 21 128 92;
+  --wave-4: 176 118 0;
+  --wave-5: 186 74 30;
+  --wave-ambient: 0.38;
+  --wave-sheen: 0.32;
 }
 
 /* Same dark values again for "system" mode: CSS has no way to share one block between a selector and a media query. */
@@ -119,6 +134,13 @@
     --s2: 217 89 38;
     --s3: 25 158 112;
     --s4: 201 133 0;
+    --wave-1: 18 58 112;
+    --wave-2: 40 104 190;
+    --wave-3: 21 128 92;
+    --wave-4: 176 118 0;
+    --wave-5: 186 74 30;
+    --wave-ambient: 0.38;
+    --wave-sheen: 0.32;
   }
 }
 

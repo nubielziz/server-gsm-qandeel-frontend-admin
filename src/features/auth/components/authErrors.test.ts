@@ -1,7 +1,13 @@
-// Tests for describeAuthError: sign-in errors turned into the text the screens show.
+// Tests for describeAuthError and describeSignInFailure: sign-in errors turned into the text the screens show.
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/lib/api';
-import { blockedKindOf, describeAuthError, mapSetPasswordError, splitFieldError } from './authErrors';
+import {
+  blockedKindOf,
+  describeAuthError,
+  describeSignInFailure,
+  mapSetPasswordError,
+  splitFieldError,
+} from './authErrors';
 
 describe('describeAuthError', () => {
   it("shows the server's title, detail and request ID", () => {
@@ -138,5 +144,55 @@ describe('blockedKindOf', () => {
     expect(blockedKindOf(new ApiError({ status: 401, code: 'UNAUTHORIZED' }))).toBeUndefined();
     expect(blockedKindOf(new ApiError({ status: 403, code: 'FORBIDDEN' }))).toBeUndefined();
     expect(blockedKindOf(new Error('offline'))).toBeUndefined();
+  });
+});
+
+describe('describeSignInFailure', () => {
+  it('gives a wrong pair the same generic words and a next step, whatever the server wrote', () => {
+    const error = new ApiError({
+      status: 401,
+      code: 'UNAUTHORIZED',
+      title: 'No such user',
+      detail: 'There is no account for this email.',
+      requestId: 'req-2',
+    });
+    expect(describeSignInFailure(error)).toEqual({
+      title: 'Email or password is incorrect',
+      detail: 'Check both and try again, or ask an Owner to send you a reset link.',
+      requestId: 'req-2',
+    });
+  });
+
+  it('names the reason and the wait of a rate limit', () => {
+    const error = new ApiError({
+      status: 429,
+      code: 'RATE_LIMITED',
+      title: 'Too many requests',
+      retryAfter: 30,
+    });
+    expect(describeSignInFailure(error)).toMatchObject({
+      title: 'Too many sign-in attempts',
+      detail: 'Sign-in is paused for now. Try again in 30 seconds.',
+    });
+    const long = new ApiError({ status: 429, title: 'Too many requests', retryAfter: 300 });
+    expect(describeSignInFailure(long).detail).toBe('Sign-in is paused for now. Try again in 5 minutes.');
+    const unknown = new ApiError({ status: 429, title: 'Too many requests' });
+    expect(describeSignInFailure(unknown).detail).toBe(
+      'Sign-in is paused for now. Try again in a few minutes.',
+    );
+  });
+
+  it("keeps the server's words for any other failure", () => {
+    const error = new ApiError({
+      status: 503,
+      code: 'UNAVAILABLE',
+      title: 'Maintenance',
+      detail: 'Back at 14:00.',
+    });
+    expect(describeSignInFailure(error)).toEqual({
+      title: 'Maintenance',
+      detail: 'Back at 14:00.',
+      requestId: undefined,
+    });
   });
 });

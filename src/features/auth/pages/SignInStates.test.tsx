@@ -13,12 +13,13 @@ setupMockApi();
 
 const SUSPENDED = {
   title: 'This account is suspended',
-  body: 'An owner can reactivate it from Admins and access.',
+  body: 'You cannot sign in with it until it is reactivated.',
+  nextStep: 'Ask an Owner to reactivate it from Admins and access.',
 };
 const BLOCKED_IP = {
   title: 'Sign-in is not allowed from this network',
   body: 'Your IP address is not on the allowed list for this console.',
-  nextStep: 'Ask an owner to add it, or sign in from an approved network.',
+  nextStep: 'Ask an Owner to add it, or sign in from an approved network.',
 };
 
 async function signInWithPassword(user: ReturnType<typeof userEvent.setup>) {
@@ -32,6 +33,7 @@ describe('blocked-access screens from the address', () => {
     renderApp('/login?reason=suspended');
     expect(await screen.findByRole('heading', { level: 1, name: SUSPENDED.title })).toBeInTheDocument();
     expect(screen.getByText(SUSPENDED.body)).toBeInTheDocument();
+    expect(screen.getByText(SUSPENDED.nextStep)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Use another account' })).toHaveAttribute('href', '/login');
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
@@ -104,7 +106,7 @@ describe('blocked-access screens from the sign-in call', () => {
     await user.type(await screen.findByLabelText('Email'), OWNER);
     await user.type(screen.getByLabelText('Password'), 'not-the-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('The email or password is not correct.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Email or password is incorrect');
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
   });
 });
@@ -150,16 +152,15 @@ describe('Show and Hide password on the sign-in form', () => {
     expect(password).toHaveAttribute('autocomplete', 'current-password');
     await user.type(password, 'a-long-secret');
 
-    const show = screen.getByRole('button', { name: 'Show Password' });
-    expect(show).toHaveAttribute('aria-pressed', 'false');
+    const show = screen.getByRole('button', { name: 'Show password' });
+    expect(show).toHaveAttribute('type', 'button');
     expect(show).toHaveAttribute('aria-controls', password.id);
     await user.click(show);
 
     expect(password).toHaveAttribute('type', 'text');
     expect(password).toHaveValue('a-long-secret');
     expect(password).toHaveAttribute('autocomplete', 'current-password');
-    const hide = screen.getByRole('button', { name: 'Hide Password' });
-    expect(hide).toHaveAttribute('aria-pressed', 'true');
+    const hide = screen.getByRole('button', { name: 'Hide password' });
     expect(screen.queryByText('Enter your email.')).not.toBeInTheDocument();
 
     await user.click(hide);

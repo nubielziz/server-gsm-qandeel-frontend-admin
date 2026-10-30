@@ -72,10 +72,14 @@ describe('sign-in flow', () => {
     await user.type(screen.getByLabelText('Password'), 'not-the-password');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
+    // Generic words with a next step, whatever the server wrote; the request id stays for support.
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Sign-in failed');
-    expect(alert).toHaveTextContent('The email or password is not correct.');
+    expect(alert).toHaveTextContent('Email or password is incorrect');
+    expect(alert).toHaveTextContent('Check both and try again, or ask an Owner to send you a reset link.');
     expect(alert).toHaveTextContent('mock-req-');
+    // The email stays, only the password is cleared.
+    expect(screen.getByLabelText('Email')).toHaveValue(OWNER);
+    expect(screen.getByLabelText('Password')).toHaveValue('');
     // No "ApiError" toast, no sign-out redirect that would drop ?to=.
     expect(screen.queryByText('ApiError')).not.toBeInTheDocument();
     expect(app.location()).toBe('/login?to=%2Fsupport');
@@ -89,6 +93,28 @@ describe('sign-in flow', () => {
     expect(await screen.findByText('Enter your email.')).toBeInTheDocument();
     expect(screen.getByText('Enter your password.')).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toHaveFocus();
+    // The live summary names both fields for screen readers.
+    expect(screen.getByRole('alert')).toHaveTextContent('2 fields need attention: Email, Password.');
+  });
+
+  it('clears a field error as soon as the value is fixed, and shows new ones only on leaving the field', async () => {
+    const user = userEvent.setup();
+    renderApp('/login');
+    await user.click(await screen.findByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByText('Enter your email.')).toBeInTheDocument();
+
+    // Typing a fix clears the message at once (no blur needed), so the button never moves under the pointer.
+    await user.type(screen.getByLabelText('Email'), 'rami@gsm-supply.example');
+    expect(screen.queryByText('Enter your email.')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByText('Enter your password.')).toBeInTheDocument();
+
+    // A new mistake is not flagged while typing, only when the field is left.
+    await user.clear(screen.getByLabelText('Email'));
+    await user.type(screen.getByLabelText('Email'), 'rami');
+    expect(screen.queryByText('Enter an email address such as name@company.com.')).not.toBeInTheDocument();
+    await user.tab();
+    expect(await screen.findByText('Enter an email address such as name@company.com.')).toBeInTheDocument();
   });
 
   it('tells a rate-limited user how long to wait', async () => {
@@ -103,7 +129,7 @@ describe('sign-in flow', () => {
     renderApp('/login');
     await signInWithPassword(user);
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Too many requests');
+    expect(alert).toHaveTextContent('Too many sign-in attempts');
     expect(alert).toHaveTextContent('Try again in 30 seconds.');
   });
 

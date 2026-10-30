@@ -1,25 +1,34 @@
-// AuthStatusScreen: a sign-in screen with no form, only an answer: a title, what it means, the next step and one way
-// out. Used when sign-in is blocked (account suspended, address not allowed), in the same layout as the form screens.
+// AuthStatusScreen: a calm status card in the sign-in shell, for a refusal that retyping cannot fix (a suspended
+// account, an address that is not allowed, a dead set-password link): what is the matter, one next step, one action.
 import type { ReactNode } from 'react';
-import { AuthLayout } from './AuthLayout';
+import { Icon, type IconName } from '@/components/ui';
+import { AuthShell } from './AuthShell';
 
 export interface AuthStatusScreenProps {
   title: string;
+  /** The symbol above the heading, so the card reads as a status at a glance. */
+  icon: IconName;
   /** What is the matter, in one sentence. */
   body: ReactNode;
-  /** What the person can do about it, when the body does not already say. */
+  /** What the person can do about it. */
   nextStep?: ReactNode;
-  /** Support reference the server gave for the failure, shown quietly under the action. */
+  /** Support reference the server gave for the refusal, shown quietly under the action. */
   requestId?: string;
-  /** The way out, usually a link back to the sign-in form. */
+  /** The way out, usually a link back to the sign-in form (styled with authButtonClass). */
   action?: ReactNode;
 }
 
-export function AuthStatusScreen({ title, body, nextStep, requestId, action }: AuthStatusScreenProps) {
+/** Takes the focus to its heading on arrival: it replaces a form, so a screen reader should start at the news. */
+export function AuthStatusScreen({ title, icon, body, nextStep, requestId, action }: AuthStatusScreenProps) {
   return (
-    <AuthLayout
+    <AuthShell
       title={title}
       focusTitle
+      icon={
+        <span className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-warn-bg text-warn-fg">
+          <Icon name={icon} />
+        </span>
+      }
       intro={
         <>
           <p>{body}</p>
@@ -29,10 +38,10 @@ export function AuthStatusScreen({ title, body, nextStep, requestId, action }: A
     >
       {action}
       {requestId && (
-        <p className="text-xs text-ink3">
-          Request <span className="mono">{requestId}</span>
+        <p className="mt-4 text-xs text-ink3">
+          Request <span className="font-mono">{requestId}</span>
         </p>
       )}
-    </AuthLayout>
+    </AuthShell>
   );
 }

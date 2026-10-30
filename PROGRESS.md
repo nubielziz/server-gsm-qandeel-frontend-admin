@@ -5,7 +5,7 @@ Single source of truth for status. The lead updates it after every step. Read it
 ## Status (2026-10-30)
 
 **Done.** All 17 features are merged on `feat/refine-admin`, route coverage is 239/239 (`--strict` passes), and
-`npm run typecheck && npm run lint && npm run build && npm test` are green (285 test files, 3,004 tests). The production
+`npm run typecheck && npm run lint && npm run build && npm test` are green (293 test files, 3,047 tests). The production
 bundle contains no MSW or seed code. Every demo/map disagreement is in `docs/MISMATCHES.md` (M1–M195); every assumed
 body and the backend questions are in `docs/ASSUMED_CONTRACTS.md`. No worktrees or feature branches remain.
 
@@ -175,6 +175,9 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 ## Fixes outside the feature loop
 
 - `d1a8826` fix(auth): sign-out answered the session check itself (flaky `/login?to=…` race seen under load).
+- feat(auth): sign-in screens rebuilt as one card over a silk wave drawn on a canvas (`src/features/auth/wave`),
+  light and dark; design, contrast figures and leftovers in `docs/login-design.md`. The set-password form moved into
+  `SetPasswordForm`. Auth logic, the auth provider, API functions and routes are unchanged.
 - refactor(app): features register through `manifest.ts` (pages, registry, palette, nav counts) and keep their mocks in `src/features/<name>/mocks`; route slices, read-only `--feature` coverage, worktree script; shared pre-work for the next features (`DASHBOARD_KEY`, `ordersListPath`, `useCanOpenPage`, `RevealPasswordDialog` export, `imeiRetentionDays` setting).
 
 ## Blockers
@@ -186,7 +189,6 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - foundation: a 401 in the middle of a session signs out to `/login` without `?to=` (the user lands on the start page after signing in again).
 - foundation: a signed-in staff member who opens an invite/reset link (`/set-password?token=…`) is redirected into the console instead of being told to sign out first.
 - foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
-- foundation: `LoginPage` / `SetPasswordPage` keep their small form handlers in the page instead of a form component.
 - orders: the filter and reroute menus read `GET /admin/suppliers` and `GET /admin/clients` through private lookups (`src/features/orders/api/lookups.ts`, no `@route` tag, first 200 rows). Replace them with the suppliers and merchants features' functions when those are built.
 - finance: the shared ledger mock (`src/mocks/handlers/ledger.ts`) answers before the finance mocks, so the dev Ledger tab's account filter and merchant search find nothing in the mock.
 - tests: a few page tests (supplier reroute, customer consents) can time out under a fully loaded machine; they pass on their own.

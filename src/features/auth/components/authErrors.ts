@@ -1,6 +1,6 @@
 // Turns a failed sign-in call into the text the sign-in screens show, and sorts a set-password failure into the
-// place on screen where it belongs. The server's words are shown as they are (ARCHITECTURE §4); only the wait time of
-// a rate limit is composed here.
+// place on screen where it belongs. The server's words are shown as they are (ARCHITECTURE §4), except on the
+// email-and-password step, where a wrong pair gets fixed generic words and a rate limit names its reason and wait.
 import { ERROR_CODES, isApiError } from '@/lib/api';
 import { errorToast } from '@/lib/query';
 import type { LoginReason } from '../paths';
@@ -19,6 +19,38 @@ export function describeAuthError(error: unknown): AuthErrorInfo {
     };
   }
   return { title: 'Something went wrong', detail: error instanceof Error ? error.message : undefined };
+}
+
+/** "30 seconds" or "5 minutes", from a Retry-After value in seconds. */
+function waitText(seconds: number): string {
+  if (seconds < 120) return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  return `${Math.ceil(seconds / 60)} minutes`;
+}
+
+/**
+ * The failure of the email-and-password step. A wrong pair gets the same words whatever the server says, so the
+ * screen never hints which of the two was wrong, plus the next step. A rate limit names the reason and the wait.
+ * Anything else keeps the server's words.
+ */
+export function describeSignInFailure(error: unknown): AuthErrorInfo {
+  if (isApiError(error)) {
+    if (error.status === 401 || error.code === ERROR_CODES.UNAUTHORIZED) {
+      return {
+        title: 'Email or password is incorrect',
+        detail: 'Check both and try again, or ask an Owner to send you a reset link.',
+        requestId: error.requestId,
+      };
+    }
+    if (error.status === 429 || error.code === ERROR_CODES.RATE_LIMITED) {
+      const wait = error.retryAfter === undefined ? 'a few minutes' : waitText(error.retryAfter);
+      return {
+        title: 'Too many sign-in attempts',
+        detail: `Sign-in is paused for now. Try again in ${wait}.`,
+        requestId: error.requestId,
+      };
+    }
+  }
+  return describeAuthError(error);
 }
 
 /** The two refusals that get a screen of their own instead of a banner (the same names as `?reason=`). */

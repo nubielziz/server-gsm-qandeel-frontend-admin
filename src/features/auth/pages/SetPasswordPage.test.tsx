@@ -39,7 +39,7 @@ describe('set-password screen', () => {
     expect(password).toHaveAttribute('autocomplete', 'new-password');
     expect(confirm).toHaveAttribute('autocomplete', 'new-password');
 
-    await user.click(screen.getByRole('button', { name: 'Show New password' }));
+    await user.click(screen.getByRole('button', { name: 'Show new password' }));
     expect(password).toHaveAttribute('type', 'text');
     expect(password).toHaveAttribute('autocomplete', 'new-password');
     expect(confirm).toHaveAttribute('type', 'password');
@@ -47,14 +47,16 @@ describe('set-password screen', () => {
     expect(screen.queryByText('Enter a new password.')).not.toBeInTheDocument();
   });
 
-  it('shows a dead link as a page message and takes the form away', async () => {
+  it('shows a dead link as a status card that takes the form away', async () => {
     const user = userEvent.setup();
     renderApp('/set-password?token=expired');
     await fillAndSubmit(user, STRONG);
 
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Link no longer valid');
-    expect(alert).toHaveTextContent('This link has expired or was already used.');
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Link no longer valid' });
+    expect(heading).toHaveFocus();
+    expect(
+      screen.getByText('This link has expired or was already used. Ask an owner for a new one.'),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText('New password')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Back to sign in' })).toHaveAttribute('href', '/login');
   });
@@ -73,8 +75,9 @@ describe('set-password screen', () => {
     expect(await screen.findByText('This password is on a list of common passwords.')).toBeInTheDocument();
     expect(field).toHaveAttribute('aria-invalid', 'true');
     expect(field).toHaveFocus();
-    // Nothing else changed: no banner, the form is still there for another try.
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Nothing else changed: no banner (the live summary only names the field), the form is still there.
+    expect(screen.getByRole('alert')).toHaveTextContent('New password needs attention.');
+    expect(screen.queryByText('Password too weak')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Set password' })).toBeInTheDocument();
   });
 

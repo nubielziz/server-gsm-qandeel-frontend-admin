@@ -1,14 +1,15 @@
 // LoginPage: step 1 of sign-in (`/login`). No demo screen exists (MISMATCHES M5). It picks what to show: the form with a
-// note above it, or, for a suspended account or a blocked address (`?reason=` or the server's answer), a screen of its own.
+// note above it, or, for a suspended account or a blocked address (`?reason=` or the server's answer), a status card.
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { AuthLayout } from '../components/AuthLayout';
+import { AuthShell } from '../components/AuthShell';
 import { parseLoginReason } from '../components/loginReason';
 import { SignInBlocked } from '../components/SignInBlocked';
 import { SignInForm, type Refusal } from '../components/SignInForm';
 import { SignInNotes } from '../components/SignInNotes';
 import { useDestination } from '../hooks/useDestination';
 
+/** The sign-in card, or the refusal's status card. */
 export function LoginPage() {
   const [params] = useSearchParams();
   const reason = parseLoginReason(params.get('reason'));
@@ -28,13 +29,9 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout
-      title="Sign in"
-      intro="Staff accounts only. A two-step code follows."
-      footer="Forgot your password? Ask an owner to send you a reset link."
-    >
+    <AuthShell title="Sign in" intro="Staff accounts only. A two-step code follows.">
       <SignInNotes reason={reason} to={to} />
       <SignInForm onBlocked={setRefusal} />
-    </AuthLayout>
+    </AuthShell>
   );
 }

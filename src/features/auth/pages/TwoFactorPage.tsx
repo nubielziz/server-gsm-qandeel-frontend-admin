@@ -1,26 +1,19 @@
 // TwoFactorPage: step 2 of sign-in, the 6-digit authenticator code (`/login/2fa`). No demo screen exists (MISMATCHES M5).
-import { Link } from 'react-router';
-import { AuthLayout } from '../components/AuthLayout';
+import { AuthShell } from '../components/AuthShell';
+import { BackToSignIn } from '../components/BackToSignIn';
 import { CodeForm } from '../components/CodeForm';
-import { withDestination } from '../destination';
 import { useCodeStep } from '../hooks/useCodeStep';
-import { useDestination } from '../hooks/useDestination';
-import { AUTH_PATHS } from '../paths';
 
+/** The code form and one way back, to the sign-in form. */
 export function TwoFactorPage() {
   const { verify, isPending } = useCodeStep();
-  const { to } = useDestination();
   return (
-    <AuthLayout
+    <AuthShell
       title="Two-step verification"
-      intro="Open your authenticator app and enter the code for GSM Supply."
-      footer={
-        <Link className="link" to={withDestination(AUTH_PATHS.login, to)}>
-          Back to sign in
-        </Link>
-      }
+      intro="Enter the 6-digit code from your authenticator app."
+      footer={<BackToSignIn />}
     >
       <CodeForm verify={verify} isPending={isPending} submitLabel="Verify" />
-    </AuthLayout>
+    </AuthShell>
   );
 }
