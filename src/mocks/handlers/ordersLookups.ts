@@ -1,7 +1,7 @@
-// Mock of the two lookups the order list's menus read: the suppliers and the merchants by name. The suppliers and merchants
-// features will serve these routes with their full rows; until then the orders feature's lookups are answered here.
+// Mock of the supplier lookup the order list's menus read. The suppliers feature will serve this route with its full rows;
+// until then it is answered here. (`/admin/clients` is the merchants feature's own mock.)
 import type { HttpHandler } from 'msw';
-import { clientOptions, supplierOptions } from '../orders';
+import { supplierOptions } from '../orders';
 import { readHandlers } from './accessShared';
 
 export const orderLookupHandlers: HttpHandler[] = [
@@ -10,11 +10,5 @@ export const orderLookupHandlers: HttpHandler[] = [
     what: 'supplier',
     searchFields: ['name'],
     source: async () => ({ rows: await supplierOptions(), toDto: (row) => row }),
-  }),
-  ...readHandlers({
-    base: '/admin/clients',
-    what: 'merchant',
-    searchFields: ['name'],
-    source: async () => ({ rows: await clientOptions(), toDto: (row) => row }),
   }),
 ];

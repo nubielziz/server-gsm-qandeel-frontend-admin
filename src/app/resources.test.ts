@@ -7,7 +7,8 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
   [
     ['dashboard', 'Dashboard', 'Operations', 'dashboard', 'dashboard:read'],
     ['orders', 'Orders', 'Operations', 'orders', 'orders:read'],
-    ['merchants', 'Merchants', 'Operations', 'users', 'clients:read'],
+    // Any tab's read permission opens Merchants (the merchants manifest; MISMATCHES, merchants rows).
+    ['merchants', 'Merchants', 'Operations', 'users', ['clients:read', 'groups:read', 'kyc:read']],
     ['customers', 'Customers', 'Operations', 'user', 'customers:read'],
     ['support', 'Support', 'Operations', 'life', 'support:read'],
     ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],

@@ -331,13 +331,6 @@ export async function supplierOptions(): Promise<SupplierOption[]> {
   }));
 }
 
-export async function clientOptions(): Promise<{ id: number; name: string }[]> {
-  const state = await loadDemoState();
-  return demoRows<DemoNamed & { status: string }>(state, 'merchants')
-    .filter((merchant) => merchant.status !== 'pending')
-    .map((merchant) => ({ id: demoNumericId(merchant.id), name: merchant.name }));
-}
-
 /** Drops the store so the next use re-seeds it (tests). */
 export function resetOrderStore(): void {
   store = undefined;

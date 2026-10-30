@@ -135,7 +135,9 @@ describe('page gate and unknown addresses', () => {
   it('opens the detail view of a merchant with the merchants permission', async () => {
     mockMe({ permissions: ['clients:read'] });
     renderApp('/merchants/12');
-    expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
+    // The merchant page (a lazy chunk) shows its own heading: the merchant's name or "Merchant not found".
+    expect(await screen.findByRole('heading', { level: 1 }, { timeout: 10_000 })).toBeInTheDocument();
+    expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
   });
 
   it('refuses the detail view of a customer without the customers permission', async () => {

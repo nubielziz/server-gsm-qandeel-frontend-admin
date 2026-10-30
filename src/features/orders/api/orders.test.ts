@@ -8,7 +8,7 @@ import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { toListQuery } from '../lib/filters';
 import { ORDER_TABS, tabFilters } from '../lib/status';
-import { listClientOptions, listSupplierOptions } from './lookups';
+import { listSupplierOptions } from './lookups';
 import {
   acceptOrder,
   addOrderNote,
@@ -323,14 +323,9 @@ describe('export and files', () => {
 });
 
 describe('lookups', () => {
-  it('reads the suppliers with their health and the merchants by name', async () => {
+  it('reads the suppliers with their health (merchant names come from the merchants feature)', async () => {
     const suppliers = await listSupplierOptions();
     expect(suppliers.data.map((supplier) => supplier.name)).toContain('Nordic GSM');
     expect(suppliers.data.find((supplier) => supplier.name === 'Rapid IMEI')?.status).toBe('degraded');
-    const clients = await listClientOptions();
-    expect(clients.data.find((client) => client.id === 13)?.name).toBe('Muscat Mobile Clinic');
-    expect(clients.data.map((client) => client.name)).toEqual(
-      [...clients.data.map((client) => client.name)].sort(),
-    );
   });
 });

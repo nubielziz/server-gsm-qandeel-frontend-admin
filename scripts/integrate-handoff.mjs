@@ -58,10 +58,34 @@ const block = [
 ].join('\n');
 fs.writeFileSync(contractsPath, `${existing.trimEnd()}\n${block}`);
 
+// Comments in the feature's code that cite its rows (`FEATURE-3`) now cite the shared numbers (`MISMATCHES M47`).
+function walk(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walk(full);
+    return /\.(ts|tsx)$/.test(entry.name) ? [full] : [];
+  });
+}
+let touched = 0;
+for (const file of walk(path.join(root, 'src/features', name))) {
+  const text = fs.readFileSync(file, 'utf8');
+  const updated = text.replace(
+    new RegExp(`(MISMATCHES )?\\b${prefix}-(\\d+)\\b`, 'g'),
+    (whole, _cited, number) => {
+      const target = renumber.get(`${prefix}-${number}`);
+      return target ? `MISMATCHES ${target}` : whole;
+    },
+  );
+  if (updated !== text) {
+    fs.writeFileSync(file, updated);
+    touched += 1;
+  }
+}
+
 fs.unlinkSync(handoffPath);
 const mapped = [...renumber].map(([from, to]) => `${from}→${to}`).join(', ');
 console.log(
-  `${name}: ${rows.length} mismatch rows (${mapped || 'none'}); contracts and questions moved; HANDOFF.md deleted`,
+  `${name}: ${rows.length} mismatch rows (${mapped || 'none'}); ${touched} code files renumbered; contracts and questions moved; HANDOFF.md deleted`,
 );
 for (const title of ['SHARED-NEEDS', 'Deep links']) {
   const body = section(title);
