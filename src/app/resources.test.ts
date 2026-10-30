@@ -13,7 +13,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['support', 'Support', 'Operations', 'life', 'support:read'],
     ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
     ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
-    ['services', 'Services & pricing', 'Catalog', 'tag', 'catalog:read'],
+    ['services', 'Services & pricing', 'Catalog', 'tag', ['catalog:read', 'pricing:read', 'inventory:read']],
     ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
     ['storefront', 'Storefront', 'Catalog', 'store', 'storefront:read'],
     ['finance', 'Finance', 'Money', 'wallet', 'ledger:read'],

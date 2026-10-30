@@ -142,3 +142,31 @@ All are marked "Assumed contract" in the JSDoc of the function or type, and live
 8. Which countries does the storefront accept, and is there a route the console can read them from?
 9. Does `GET /admin/customers` support the `hasAccount` filter, and `GET /admin/data-requests` the `customerId` and repeated `status` filters?
 10. May an anonymised customer's old email be used for a new customer?
+
+## services
+
+All are marked "Assumed contract" in the JSDoc of the function that carries them.
+
+- `GET /admin/services` rows: see M91 and 2. Filters `q` (name, code, category), `type`, `status` (`active` / `disabled`), `belowFloor`, `categoryId`; sorts on `name`, `type`, `cost`, `basePrice`.
+- `GET /admin/services/:id` embeds `fields`, `options` (`{ list: 'model' | 'network' | 'mep', value, label, supplierValue }`) and `groupPrices` (`{ groupId, price }`); no other route reads them.
+- `POST /admin/services` `{ name, code, categoryId, type, slaMinutes, basePrice }`; `PATCH` any of those plus `minProfit`, `status`, `executionMode`; both answer the service with the figures worked out. A price under the floor is refused with a 422 field error on `basePrice` (the demo refused it too). A code that is taken is a 409 with a field error on `code`. `DELETE` answers 204, or 409 with the reason.
+- `PUT /admin/services/:id/fields` `{ fields: [{ key, label, fieldType: 'text' | 'number' | 'select' | 'textarea', required, options, regex, supplierKey }] }`; `/options` `{ options }`; `/group-prices` `{ prices: [{ groupId, price }] }`. Each replaces the whole list and answers the saved list.
+- `service-categories`: rows `{ id, name, type, allowedGroupIds, sort, isActive, serviceCount? }`; bodies are those fields; delete is 409 while services use the category.
+- `pricing-rules`: rows `{ id, scope: 'global' | 'category' | 'service', targetId, target, groupId, group, kind: 'margin' | 'discount' | 'promo', percent, fixed, rounding: 'none' | 'nearest_0.05' | 'nearest_0.10' | 'ends_99', minProfit, priority, isActive, startsAt, endsAt }`. Blank amounts are sent as `"0.0000"`, blank dates as `null`.
+- Bulk price: body `{ categoryId \| serviceIds, change: { type: 'percent' \| 'fixed', value } }` with `value` a signed decimal text (`"5"`, `"-0.25"`); preview answers `{ lines: [{ serviceId, name, code, oldPrice, newPrice, floorPrice, belowFloor }], belowFloor }`; apply answers `{ updated, belowFloor }`.
+- `GET /admin/pricing/resolve?serviceId&clientId` answers `{ price, rawPrice, floor, clamped, source: 'client' \| 'group' \| 'base', cost, minProfit, margin, marginPct, steps, otherGroups? }`; a step is `{ id, label, state: 'win' \| 'apply' \| 'skip' \| 'none', value, after, note }`.
+- `GET /admin/inventory-codes` rows `{ id, maskedCode, service: { id, name }, status: 'available' \| 'reserved' \| 'sold' \| 'void', orderId, batchRef, createdAt }`, filters `serviceId`, `status`. Import `{ codes: string[], batchRef? }` answers `{ imported, duplicates, rejected, batchRef? }`. Void `{ ids }` answers `{ voided, skipped }` (the console only sends codes it shows as `available`).
+- Lookups: `/admin/client-groups` rows `{ id, name, kind, discountPercent, merchantCount? }`; `/admin/clients` rows `{ id, name, status?, group? }`.
+
+### Questions for the backend
+
+1. Which route returns a service's custom fields, option lists and group prices? We assume `GET /admin/services/:id` embeds them.
+2. Does a service carry `code`, `slaMinutes`, `minProfit`, `floorPrice`, `marginPct`, `belowFloor`, `costChangedFrom` and the supplier names? Is `executionMode` the `fulfillment` column?
+3. Does `belowFloor=true` mean active and disabled services both? (The header count adds `status=active`.)
+4. Is a price under the floor refused on save (422), or saved with orders charged the floor? And what does bulk apply do with a price that would fall under it?
+5. `allowedGroupIds` empty: visible to every group? Is there really no parent category?
+6. Pricing rules: the kinds, whether percent and fixed are signed, the rounding values, the dates (`starts_at` / `ends_at` are not in the table) and what priority decides.
+7. The resolve answer: the step shape (fractions for category and discount), `otherGroups`, and where `cost` and `minProfit` of the floor row come from.
+8. Inventory: the masked field name, the status values, whether import takes `codes` or raw text, and whether `reserved` codes may be voided.
+9. Is the Floor policy text true (minimum profit defaults to 6% of cost, at least $0.02)? It is the demo's copy, kept as it is.
+10. Does `GET /admin/client-groups` need `groups:read`, and does a group price for the Retail group belong in this PUT or on the storefront page?
