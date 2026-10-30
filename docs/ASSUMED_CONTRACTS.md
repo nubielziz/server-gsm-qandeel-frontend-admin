@@ -284,3 +284,26 @@ Every one is marked "Assumed contract" in the JSDoc of `api/*.ts` and typed in `
 5. Template variables: is `{{name}}` / `{{order}}` / `{{eta}}` the syntax, and does the server also render them on send? Which `locale` values exist (the console offers `en` and `ar`)? What is `shortcut` for: should typing `/refund` in the composer expand the template?
 6. `GET /admin/staff` needs `staff:read`; should a support agent be able to read a short staff list (names only) to assign tickets without it?
 7. Is there an event stream for new customer messages? The console asks again every 30 seconds (inbox, open thread, figures).
+
+## commissions
+
+All bodies and answers are assumed (M10); each function says so in its JSDoc.
+
+- `GET /admin/commission-plans`, `/:id`: rows are the generated plan columns with `kind` of `referral` or `rebate`; `percent` is a percent string ("3.0000" is 3%); `tiers` is a free JSON object.
+- `POST /admin/commission-plans`: `{ name, kind, percent, basis, period, tiers, isActive }`, answer the plan. `PATCH`: any of those fields, answer the plan. `DELETE`: no body, 204; 409 for a plan that agents are assigned to.
+- `GET /admin/commission-assignments`, `/:id`: rows are the generated columns plus the joins `beneficiary { id, name, country? }` and `plan { id, name, percent }`.
+- `POST /admin/commission-assignments`: `{ beneficiaryId, planId }`, the server sets `scope` and `startsAt`; answer the assignment. `PATCH`: `{ planId }`. `DELETE`: ends the assignment, 204.
+- `GET /admin/commission-accruals`, `/:id`: rows are the generated columns plus `ledgerTxId` that is null until paid, and the joins `beneficiary { id, name }` and `merchant { id, name }` (the referred merchant). Filters: `status` (`accrued`, `approved`), `beneficiaryId`, `createdAt_gte`. Sort: `createdAt`, `basisAmount`, `percent`, `amount`, `status`. A status the console does not know is shown as sent.
+- `POST /admin/commission-accruals/approve`: `{ ids }`, answer `{ approved, total, skipped: [{ id, reason }] }`.
+
+The mock (`mocks/`) plays the server: it keeps the demo's 0.5 to 15 rate limit and refuses a plan that has agents, a merchant that already has a plan (409 `ALREADY_ASSIGNED`) and ids that do not exist. Approving marks the accruals approved, sets `ledgerTxId` and posts one `commission` journal per agent into the mock ledger (`ledgerStore`, `refType: 'accrual'`, as the demo's seed journals have). It does not move the merchants mock's wallet balance (that store belongs to the merchants feature).
+
+### Questions for the backend
+
+1. Approve: is the body `{ ids }` and the answer `{ approved, total, skipped: [{ id, reason }] }`? Does it skip an accrual that is not ready, or fail the whole request? Does it enforce the 7-day wait ("Normally approved after 7 days to cover refunds. You can approve earlier.") or only warn?
+2. Accrual list: does it join `beneficiary` and the referred `merchant`? Which filters and sort fields does it accept (`status`, `beneficiaryId`, `createdAt_gte`)? Are there statuses besides `accrued` and `approved` (reversed, void)?
+3. Is there a summary read (for example `GET /admin/commission-accruals/summary`) with the ready amount and agent count, the approved and earned amounts over a period, and commission as a share of the referred revenue? The strip shows dashes for these until there is one, because the console adds no money itself.
+4. Is there an approval date? The strip's "Approved, 30 days" would be exact with `approvedAt` on the row (today it counts accruals earned in 30 days that are approved).
+5. Plans: the values of `kind`, `basis` and `period`; what `percent` is ("3.0000" for 3%?) and its allowed range; the shape of `tiers` (a minimum payout, brackets?); whether a fixed amount instead of a rate is possible.
+6. Assignments: values of `scope`; can a merchant have more than one plan; does `DELETE` end the assignment (set `ends_at`) or remove the row; is it refused while accruals are ready? Could the row carry per-agent figures (referred count, 30-day revenue, ready and approved amounts) for the Agents tab?
+7. Does approving credit the wallet and post the journal in one transaction, and does it also change the merchant's wallet figures the merchants page shows?
