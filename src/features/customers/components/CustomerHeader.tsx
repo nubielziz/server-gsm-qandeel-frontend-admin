@@ -1,6 +1,6 @@
 // CustomerHeader: the customer's name with the status and risk badges, the sub-line (email, country, since when) and the
 // actions: Edit details, Suspend… / Reactivate, Block… / Unblock. Ports the `head` of pageCustomer in 48-p-customers.js,
-// without its Email button (CUSTOMERS-3). A removed (anonymised) customer has no actions.
+// without its Email button (MISMATCHES M84). A removed (anonymised) customer has no actions.
 import { Button, Icon, PageHeader } from '@/components/ui';
 import type { CustomerGrants } from '../hooks/useCustomerGrants';
 import { countryName } from '../lib/countries';

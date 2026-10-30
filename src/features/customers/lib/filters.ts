@@ -1,6 +1,6 @@
 // The list's tab, filters, page and sort as URL search parameters, and how they become API filters. Ports the `ui.customers`
 // state (resetB2CUi in 12-state-b2c.js) and custRows of 48-p-customers.js: the demo filtered an in-memory array, the console
-// asks the server (CUSTOMERS-5). Nothing here decides which customers match; it only writes and reads the question.
+// asks the server (MISMATCHES M86). Nothing here decides which customers match; it only writes and reads the question.
 import type { CrudFilters } from '@refinedev/core';
 import type { SortState } from '@/components/ui';
 import type { FilterValue, ListQuery } from '@/lib/api';

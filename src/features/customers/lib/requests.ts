@@ -4,7 +4,7 @@ import type { BadgeTone, IconName } from '@/components/ui';
 import type { DataRequest, DataRequestKind, DataRequestStatus } from '../types';
 import { rawLabel } from './status';
 
-/** The number as shown: the API id with the demo's prefix (CUSTOMERS-9). */
+/** The number as shown: the API id with the demo's prefix (MISMATCHES M90). */
 export function requestNumber(id: number): string {
   return `DSR-${id}`;
 }

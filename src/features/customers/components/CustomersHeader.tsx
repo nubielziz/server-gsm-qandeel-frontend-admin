@@ -1,5 +1,5 @@
 // CustomersHeader: the page title with the sentence about how many people bought, and the Add customer button. Ports the `head`
-// of pageCustomers in 48-p-customers.js, without its Export CSV button (CUSTOMERS-2).
+// of pageCustomers in 48-p-customers.js, without its Export CSV button (MISMATCHES M83).
 import { Button, Icon, PageHeader } from '@/components/ui';
 import { num } from '@/lib/format';
 import type { CustomerGrants } from '../hooks/useCustomerGrants';

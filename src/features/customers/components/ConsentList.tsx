@@ -1,6 +1,6 @@
 // ConsentList: the consent records stored with the customer's latest order (terms, privacy, refund policy, the withdrawal
 // waiver, marketing), each with the time and the address it came from. Ports the left column of the Consents tab in
-// pageCustomer (48-p-customers.js); the demo worked the rows out from the order, the server sends them (CUSTOMERS-7).
+// pageCustomer (48-p-customers.js); the demo worked the rows out from the order, the server sends them (MISMATCHES M88).
 import { Icon } from '@/components/ui';
 import { orderLabel } from '@/features/orders';
 import { fmtDate } from '@/lib/format';

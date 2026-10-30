@@ -9,7 +9,7 @@ import type { CustomerRow, DataRequestRow } from '@/lib/api/schema.gen';
 /** Where a customer stands: active, paused by a person (suspended), stopped for fraud (blocked) or erased (anonymized). */
 export type CustomerStatus = 'active' | 'suspended' | 'blocked' | 'anonymized';
 
-/** How risky the account looks. The demo says `med`; the API word is `medium` (CUSTOMERS-1). */
+/** How risky the account looks. The demo says `med`; the API word is `medium` (MISMATCHES M82). */
 export type RiskLevel = 'low' | 'medium' | 'high';
 
 /**

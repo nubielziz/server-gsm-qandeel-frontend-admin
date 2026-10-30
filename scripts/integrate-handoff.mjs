@@ -27,9 +27,10 @@ let next = Math.max(...[...mismatches.matchAll(/^\| M(\d+) \|/gm)].map((m) => Nu
 const prefix = name.toUpperCase();
 const rows = section('Mismatches')
   .split('\n')
-  .filter((line) => new RegExp(`^\\| ${prefix}-\\d+ \\|`).test(line));
+  .filter((line) => new RegExp(`^\\|\\s*${prefix}-\\d+\\s+\\|`).test(line));
 const renumber = new Map();
-for (const row of rows) renumber.set(new RegExp(`^\\| (${prefix}-\\d+) \\|`).exec(row)[1], `M${next++}`);
+for (const row of rows)
+  renumber.set(new RegExp(`^\\|\\s*(${prefix}-\\d+)\\s+\\|`).exec(row)[1], `M${next++}`);
 const rewrite = (text) =>
   text.replace(new RegExp(`\\b${prefix}-(\\d+)\\b`, 'g'), (whole) => renumber.get(whole) ?? whole);
 
