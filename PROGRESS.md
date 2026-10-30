@@ -2,13 +2,15 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
-## Resume here
+## Status (2026-10-30)
 
-Parallel phase (user rules of 2026-10-30, CLAUDE.md "Agents"): features are built in their own worktrees (`npm run feature:worktree -- add <name>`), reviewed by Opus, squash-merged in finish order. Each brief lives in `docs/briefs/<name>.md`, each route slice in `docs/slices/<name>.json`. The "Pool" table below says what runs; the feature table says what is merged.
+**Done.** All 17 features are merged on `feat/refine-admin`, route coverage is 239/239 (`--strict` passes), and
+`npm run typecheck && npm run lint && npm run build && npm test` are green (285 test files, 3,004 tests). The production
+bundle contains no MSW or seed code. Every demo/map disagreement is in `docs/MISMATCHES.md` (M1–M195); every assumed
+body and the backend questions are in `docs/ASSUMED_CONTRACTS.md`. No worktrees or feature branches remain.
 
-Reminders for briefs: support embeds its ticket list in the customer page's Support tab (customers leaves an "Open in Support" link to `/support?customerId=<id>`; lead or support does it after both merge); suppliers and merchants replace the orders feature's private lookups (Tech debt); every page honours the deep links of `docs/ARCHITECTURE.md` §5.2.
-
-Phase 4: `node scripts/check-route-coverage.mjs --strict` at 100% and `docs/ROUTE_COVERAGE.md` regenerated; all checks green; no MSW or seed code in `dist`; `README.md` (rename `README.MD`): real server via env (`VITE_DEV_PROXY_TARGET=http://localhost:3000` for the NestJS backend), mock layer (`VITE_API_MOCKS=true`), how to add a feature (manifest, worktree), the coverage check; final report to the user in Arabic, at most 10 lines. Talk to the user in short Jordanian Arabic with English technical terms; every artifact stays in English.
+Next steps belong to the backend team: confirm or correct `docs/ASSUMED_CONTRACTS.md`, then adjust `types/` and `api/`
+of the affected features (the mocks follow the same shapes).
 
 ## Agent budget
 
@@ -27,17 +29,12 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | risk | 1 (implementer) |
 | resumed after limits | 5 (customers fix, services fix, finance, refunds, risk) + services round-2 review, checkouts, support |
 | later | finance, risk, refunds, checkouts reviews; storefront, commissions, settings, audit implementers |
-| **Total** | **45 / 120** |
+| final reviews and merges | support, commissions (+1 fix round), storefront, settings, audit |
+| **Total** | **57 / 120** |
 
 ## Pool
 
-| Feature | Worktree / branch | Status | Calls (impl / review) |
-|---|---|---|---|
-| support | `../worktrees/support` · `feat/support` | implementing | 1 / 0 |
-| storefront | `../worktrees/storefront` · `feat/storefront` | implementing | 1 / 0 |
-| commissions | `../worktrees/commissions` · `feat/commissions` | implementing | 1 / 0 |
-| settings | `../worktrees/settings` · `feat/settings` | implementing | 1 / 0 |
-| audit | `../worktrees/audit` · `feat/audit` | implementing | 1 / 0 |
+Empty: every feature is merged.
 
 ## Phases
 
@@ -46,8 +43,8 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | 0 Recon and setup | done | `9c6d484` (baseline `479694f`) | 1 (implementer: route manifest script, + 1 follow-up message) |
 | 1 Architecture | done | see git log | 0 (Opus lead only) |
 | 2 Foundation | done | see git log | 5/6 (implementers: A data layer, B UI kit, C shell + sign-in; review round 1: 3 blocking fixed by lead; round 2: 1 blocking fixed by lead) |
-| 3 Feature loop | in progress | – | per feature below |
-| 4 Final verification | todo | – | 0 |
+| 3 Feature loop | done | one `feat(<name>)` commit per feature | per feature below |
+| 4 Final verification | done | README, ROUTE_COVERAGE 239/239, all checks green | 0 |
 
 ## Feature plan (build order)
 
@@ -67,11 +64,11 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 9 | refunds | `/refunds` | refunds | 8 | 10 | done | see pool history | `24b4ff0` |
 | 10 | risk | `/risk` | risk | 7 | 11 | done | see pool history | `242a708` |
 | 11 | checkouts | `/checkouts` | promo | 3 | 3 | done | see pool history | `55f3e12` |
-| 12 | support | `/support` | support | 4 | 10 | todo | 0/6 | – |
-| 13 | storefront | `/storefront` | storefront | 8 | 22 | todo | 0/6 | – |
-| 14 | commissions | `/commissions` | growth | 4 | 13 | todo | 0/6 | – |
-| 15 | settings | `/settings` | auth, billing, refunds, clients, ops | 12 | 28 | todo | 0/6 | – |
-| 16 | audit | `/audit` | auth | 1 | 2 | todo | 0/6 | – |
+| 12 | support | `/support` | support | 4 | 10 | done | see pool history | `926a808` |
+| 13 | storefront | `/storefront` | storefront | 8 | 22 | done | see pool history | `229651a` |
+| 14 | commissions | `/commissions` | growth | 4 | 13 | done | see pool history | `b0b268a` |
+| 15 | settings | `/settings` | auth, billing, refunds, clients, ops | 12 | 28 | done | see pool history | `bc4febf` |
+| 16 | audit | `/audit` | auth | 1 | 2 | done | see pool history | `44e0a22` |
 
 ### 0. foundation (Phase 2) — 7 endpoints
 
