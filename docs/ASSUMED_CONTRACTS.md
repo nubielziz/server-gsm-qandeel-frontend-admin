@@ -261,3 +261,26 @@ The map gives routes, permissions and tables, not bodies (M10). Marked "Assumed 
 5. Does the automatic reminder (after the `abandonedMinutes` policy) follow the same consent rule and set `recoveryEmailedAt`? Is "recovered" a payment within 3 days of the email (the demo's tooltip)?
 6. Funnel: which periods are allowed, are the counts people or events, is it storefront-only, and should it replace the dashboard's `storefront` block (M39)?
 7. Do you want a `summary` on the list (left at checkout, not reminded, recovered, revenue recovered) so the demo's figures strip can come back (M136)?
+
+## support
+
+Every one is marked "Assumed contract" in the JSDoc of `api/*.ts` and typed in `types/index.ts` (MISMATCHES M10).
+
+- `GET /admin/support-tickets` (list): rows are the `support_tickets` columns with the words narrowed (`status` new / open / pending / resolved, `priority` high / normal / low, `channel` email / web / chat / telegram, `category` as the demo's `TICKET_CATS`, `requesterType` customer / client) plus joined `requester { name, email }`, `assignee { id, name }`, `orderId` (null when none) and the timers `lastPublicAt`, `slaDueAt`, `late`. Filters: `status` (repeated key), `late`, `assigneeId`, `requesterType`, `requesterId`, `q` (number, subject, requester name). Sort fields: `late`, `updatedAt`. The figures are `_start=0&_end=1` calls read from `x-total-count`.
+- `GET /admin/support-tickets/:id`: the list row plus `messages[]` (oldest first: `id`, `authorType` customer / client / staff / system, `authorId`, `authorName`, `body`, `isInternal`, `fileIds`, `createdAt`) and `replyChannels` (`email`, `telegram`). The map has no messages route, so the thread rides on the show answer. 404 for an unknown id.
+- `PATCH /admin/support-tickets/:id`: body `{ priority?, assigneeId? (null clears), status? }` where `status` is `resolved` (Resolve) or `open` (Reopen); answer the updated row. Resolving writes an internal "Marked resolved by …" message and sends the satisfaction survey (server side).
+- `POST /admin/support-tickets/:id/reply`: body `{ body, channel? }`, answer 201 with the new message. A new or open ticket becomes `pending`, the first public reply sets `firstResponseAt`, an unassigned ticket goes to the sender. 409 `TICKET_RESOLVED` for a resolved ticket; 422 with `errors[{ field: 'body' }]` for empty text.
+- `POST /admin/support-tickets/:id/note`: body `{ body }`, answer 201 with the new internal message; the status stays.
+- `GET /admin/reply-templates`: rows `{ id, title, category, locale, body, shortcut, createdBy, createdAt, updatedAt }`, `body` raw with `{{name}}`, `{{order}}`, `{{eta}}`. The console loads up to 200 sorted by `title`.
+- `POST /admin/reply-templates` `{ title, category, locale, body, shortcut }` (201), `PATCH` with the changed fields only, `DELETE` (204). Refusals: 422 with a message per field (the mock refuses a shortcut that does not start with `/`), 409 `SHORTCUT_TAKEN` (shown under the Shortcut field).
+- Permissions: page `support:read`; priority, assignee, Resolve / Reopen need `support:update`; reply and note need `support:reply`; templates need `support:create`, `support:update`, `support:delete` (M7).
+
+### Questions for the backend
+
+1. Do list rows join `requester { name, email }` and `assignee { id, name }`, and do they carry `late`, `slaDueAt` and `lastPublicAt`? Is `late=true` an accepted filter and `late` a sort field? Without them the Overdue filter and the sort cannot be server-side.
+2. Does `GET /admin/support-tickets/:id` embed the messages (there is no messages route in the map)? Which channels does `replyChannels` list, and does `POST …/reply` take `channel`?
+3. Stats for the strip: median first reply and the satisfaction average (needs a stats route or a header on the list). Until then the strip shows open, past reply target and resolved.
+4. What does `PATCH` accept for `status` (we send `resolved` and `open`)? Does resolving write the "Marked resolved by …" note and send the survey itself?
+5. Template variables: is `{{name}}` / `{{order}}` / `{{eta}}` the syntax, and does the server also render them on send? Which `locale` values exist (the console offers `en` and `ar`)? What is `shortcut` for: should typing `/refund` in the composer expand the template?
+6. `GET /admin/staff` needs `staff:read`; should a support agent be able to read a short staff list (names only) to assign tickets without it?
+7. Is there an event stream for new customer messages? The console asks again every 30 seconds (inbox, open thread, figures).

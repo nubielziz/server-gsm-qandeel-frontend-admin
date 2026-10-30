@@ -309,7 +309,8 @@ describe('command palette', () => {
     await user.keyboard('{Control>}k{/Control}');
     await user.type(await screen.findByRole('combobox'), 'refund requests');
     await user.keyboard('{Enter}');
-    await screen.findByRole('heading', { level: 1, name: 'Refunds & disputes' });
+    // Refunds is a lazy chunk now.
+    await screen.findByRole('heading', { level: 1, name: 'Refunds & disputes' }, { timeout: 10_000 });
     expect(app.location()).toBe('/refunds?tab=refunds&status=requested');
   });
 });
