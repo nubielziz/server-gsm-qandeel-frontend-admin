@@ -49,10 +49,14 @@ desktop (≥ 768px)                                         phone (< 768px)
   folds the cloth where it turns edge-on; each strand is shaded like fabric (light from the top left, a soft sheen and
   a narrow glint where the cloth faces the light, a different colour on its back after a fold). Thin fibre lines on top
   give the silk grain; a faint rim keeps the edges crisp on paper.
-- Drawn on a `<canvas>` after first paint, in a lazily loaded chunk (`WaveCanvas`, 6.45 kB, 3.1 kB gzipped), one sheet
-  per frame; the form never waits for it. If the chunk cannot load, or the browser has no 2D canvas, the page simply
-  has no artwork. No WebGL, no library, so no decision record is needed. It is static; it fades in once (200ms, none
-  with reduced motion).
+- Drawn on a `<canvas>` after first paint, in a lazily loaded chunk (`WaveCanvas`, 15.9 kB, 6.8 kB gzipped); the form
+  never waits for it. If the chunk cannot load, or the browser has no 2D canvas, the page simply has no artwork. It
+  fades in once (200ms, none with reduced motion).
+- Motion (asked for after the first version): with WebGL on a GPU the cloth moves slowly. The folds flow down each
+  ribbon (one loop every 44–70 s, about 12–20 px a second on a laptop screen), the curves sway and the width
+  breathes; the front sheet moves a little faster than the back one. Up to 30 frames a second, paused in background
+  tabs. Reduced motion, software rendering (no GPU) or no WebGL: the still composition, drawn once (WebGL, or the 2D
+  painter where WebGL is missing). Why WebGL and what it costs: `docs/decisions/017-sign-in-wave-webgl.md`.
 - Phones: the same sheets are framed into a band across the top, `clamp(240px, 68vw, 330px)` tall (about a third of a
   common phone screen). Its height follows the width only, so the on-screen keyboard never redraws it; its lower edge
   fades out, and the frame is shifted right so the wordmark stays on plain paper.
@@ -144,6 +148,8 @@ Tap targets on phones are 44px: inputs, buttons, the Show button, the copy-key b
 - The spinner keeps turning with reduced motion: with `aria-busy` it is the only loading cue.
 - "Forgot your password?" sits on the password label's row, as asked, so it is a tab stop between the two fields.
 - The mock API never rate-limits, so the rate-limit message is covered by tests, not by screenshots.
+- Headless browsers render WebGL in software, where the silk stays still by design; the motion was checked there with
+  a test-only override that lets software rendering pass for a GPU.
 
 ## Skills
 - Frontend Design (Anthropic): used at the concept step.

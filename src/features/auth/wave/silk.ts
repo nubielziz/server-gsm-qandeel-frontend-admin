@@ -1,6 +1,7 @@
 // Silk ribbons for the sign-in background (docs/login-design.md): each sheet is a band of thin strands that twists
 // along a curved centre line and is shaded like cloth. Pure drawing code: it needs only a 2D context, and the same
-// seed always draws the same picture.
+// seed always draws the same picture. The WebGL painter (silkGl.ts) runs the same model on the GPU, so the shading
+// constants below are shared with it.
 
 export type Rgb = readonly [number, number, number];
 export type Point = readonly [number, number];
@@ -59,12 +60,13 @@ export interface SheetGeometry {
 
 const TAU = Math.PI * 2;
 /** How far strands slide along the flow as the cloth turns: it gives each fold depth instead of a flat pinch. */
-const SHEAR = 0.42;
+export const SHEAR = 0.42;
 /** The cross-section is gently curved, so the light changes across the width: soft interiors, defined edges. */
-const BOW = 0.6;
+export const BOW = 0.6;
 /** Strand segments drawn as one gradient stroke: fewer draw calls, colour still changes smoothly. */
 const RUN = 6;
-const WARM_WHITE: Rgb = [255, 247, 232];
+/** Colour of the sheen: a warm white, so highlights read as light on silk rather than as paint. */
+export const WARM_WHITE: Rgb = [255, 247, 232];
 
 function normalize(x: number, y: number, z: number): [number, number, number] {
   const length = Math.hypot(x, y, z);
@@ -72,8 +74,8 @@ function normalize(x: number, y: number, z: number): [number, number, number] {
 }
 
 // Light from the top left, slightly in front; the half vector between it and the viewer drives the sheen.
-const LIGHT = normalize(-0.42, -0.62, 0.66);
-const HALF = normalize(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
+export const LIGHT = normalize(-0.42, -0.62, 0.66);
+export const HALF = normalize(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
 
 /** A small seeded random generator (mulberry32), so the fibre pattern is the same on every visit. */
 export function seededRandom(seed: number): () => number {

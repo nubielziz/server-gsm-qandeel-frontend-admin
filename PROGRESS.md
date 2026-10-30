@@ -5,7 +5,7 @@ Single source of truth for status. The lead updates it after every step. Read it
 ## Status (2026-10-30)
 
 **Done.** All 17 features are merged on `feat/refine-admin`, route coverage is 239/239 (`--strict` passes), and
-`npm run typecheck && npm run lint && npm run build && npm test` are green (293 test files, 3,047 tests). The production
+`npm run typecheck && npm run lint && npm run build && npm test` are green (295 test files, 3,058 tests). The production
 bundle contains no MSW or seed code. Every demo/map disagreement is in `docs/MISMATCHES.md` (M1–M195); every assumed
 body and the backend questions are in `docs/ASSUMED_CONTRACTS.md`. No worktrees or feature branches remain.
 
@@ -178,6 +178,8 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 - feat(auth): sign-in screens rebuilt as one card over a silk wave drawn on a canvas (`src/features/auth/wave`),
   light and dark; design, contrast figures and leftovers in `docs/login-design.md`. The set-password form moved into
   `SetPasswordForm`. Auth logic, the auth provider, API functions and routes are unchanged.
+- feat(auth): the sign-in silk moves: the same model drawn with WebGL, folds flowing slowly, still with reduced motion
+  or without a GPU (decision 017).
 - refactor(app): features register through `manifest.ts` (pages, registry, palette, nav counts) and keep their mocks in `src/features/<name>/mocks`; route slices, read-only `--feature` coverage, worktree script; shared pre-work for the next features (`DASHBOARD_KEY`, `ordersListPath`, `useCanOpenPage`, `RevealPasswordDialog` export, `imeiRetentionDays` setting).
 
 ## Blockers
