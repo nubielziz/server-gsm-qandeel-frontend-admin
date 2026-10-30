@@ -2,6 +2,15 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
+## Resume here (usage limit hit, 2026-10-30)
+
+Merged so far: foundation, access, orders, dashboard (`61869e9`), merchants (`da5b39a`); coverage 77/239. All agents were stopped. Worktrees in `../worktrees/` keep their state (none of their open work is committed to `feat/refine-admin`):
+- **customers** (`feat/customers`, reviewed work committed on the branch as `wip`): the round-1 fix round was stopped half way; its edits are uncommitted in the worktree. To do: export confirmation dialog (blocking), invalidate orders after anonymise, palette sort vs contract, fallback badges, data-requests default sort `dueAt` asc + status filter. Check what is done (`git -C ../worktrees/customers status`), finish (lead or one implementer call), then merge.
+- **services** (`feat/services`, `wip` committed): fix round stopped half way, edits uncommitted. To do: field errors lost in 5 dialogs (blocking), `gcTime: 0` on inventory import, invalidate categories, lookup failure notes, ticks rule vs SERVICES-10, chips mismatch row, drop the `/admin/client-groups` mock and loosen group-id checks (then read groups from the merchants mock store at merge), shared `ageText`. At merge: `resources.test` row → any-of array.
+- **suppliers** (not committed on its branch): review round 1 done: 2 blocking for the lead or a fix call: `gcTime: 0` on create/update (API key), log drawer `placeholderData: undefined`; non-blocking: refresh catalogue after sync, refresh moved orders after reroute, no client-side 24 h average, link picker search, URL check via `new URL()`, use shared `useDebouncedCommit`/`ageText`/menu `title`. At merge: drop the `/admin/suppliers` lookup mock and switch orders to `listSuppliers`.
+- **finance**, **refunds**, **risk**: implementers stopped early (finance had only started); check each worktree, then relaunch an implementer with the same brief (counts as their second implementer call).
+- Not started: checkouts, support, storefront, commissions, settings, audit (briefs ready).
+
 ## Resume here
 
 Parallel phase (user rules of 2026-10-30, CLAUDE.md "Agents"): features are built in their own worktrees (`npm run feature:worktree -- add <name>`), reviewed by Opus, squash-merged in finish order. Each brief lives in `docs/briefs/<name>.md`, each route slice in `docs/slices/<name>.json`. The "Pool" table below says what runs; the feature table says what is merged.
@@ -18,23 +27,23 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 |---|---|
 | Before the parallel phase | 11 (setup 1, foundation 5, access 2, orders 2, dashboard 1 stopped before any change) |
 | dashboard | 2 (implementer, reviewer) |
-| customers | 2 (implementer, reviewer) |
-| merchants | 1 (implementer) |
-| services | 2 (implementer, reviewer) |
-| suppliers | 1 (implementer) |
+| customers | 3 (implementer, reviewer, fix round by the same implementer) |
+| merchants | 2 (implementer, reviewer) |
+| services | 3 (implementer, reviewer, fix round by the same implementer) |
+| suppliers | 2 (implementer, reviewer) |
 | finance | 1 (implementer) |
 | refunds | 1 (implementer) |
 | risk | 1 (implementer) |
-| **Total** | **22 / 120** |
+| **Total** | **27 / 120** (incl. the suppliers review) |
 
 ## Pool
 
 | Feature | Worktree / branch | Status | Calls (impl / review) |
 |---|---|---|---|
-| customers | `../worktrees/customers` · `feat/customers` | in review (round 1) | 1 / 1 |
-| merchants | `../worktrees/merchants` · `feat/merchants` | waiting for review (2 shared tests to update at merge) | 1 / 0 |
-| services | `../worktrees/services` · `feat/services` | in review (round 1; resources.test row to update at merge) | 1 / 1 |
-| suppliers | `../worktrees/suppliers` · `feat/suppliers` | waiting for review | 1 / 0 |
+| customers | `../worktrees/customers` · `feat/customers` | review round 1: 1 blocking (export confirm) → implementer fixing | 2 / 1 |
+| merchants | `../worktrees/merchants` · `feat/merchants` | in review (round 1; 2 shared tests to update at merge) | 1 / 1 |
+| services | `../worktrees/services` · `feat/services` | review round 1: 1 blocking (field errors lost in 5 dialogs) → implementer fixing | 2 / 1 |
+| suppliers | `../worktrees/suppliers` · `feat/suppliers` | in review (round 1) | 1 / 1 |
 | finance | `../worktrees/finance` · `feat/finance` | implementing | 1 / 0 |
 | refunds | `../worktrees/refunds` · `feat/refunds` | implementing | 1 / 0 |
 | risk | `../worktrees/risk` · `feat/risk` | implementing | 1 / 0 |
