@@ -28,7 +28,10 @@ describe('sign-in flow', () => {
     await user.type(code, DEMO_CODE);
     await user.click(screen.getByRole('button', { name: 'Verify' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    // The dashboard is a lazy chunk: its first load in a busy test run can take more than a second.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(app.location()).toBe('/dashboard');
     expect(await screen.findByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
   });
@@ -55,7 +58,10 @@ describe('sign-in flow', () => {
     expect(app.location()).toBe('/login/2fa');
     await user.click(screen.getByRole('button', { name: 'Verify' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    // The dashboard is a lazy chunk: its first load in a busy test run can take more than a second.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(app.location()).toBe('/dashboard');
   });
 
@@ -131,7 +137,10 @@ describe('sign-in flow', () => {
     await user.clear(code);
     await user.type(code, DEMO_CODE);
     await user.click(screen.getByRole('button', { name: 'Verify' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    // The dashboard is a lazy chunk: its first load in a busy test run can take more than a second.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
   });
 
   it('accepts a pasted code with spaces and checks its length', async () => {
@@ -165,7 +174,10 @@ describe('sign-in flow', () => {
 
     await user.type(screen.getByLabelText('Authentication code'), DEMO_CODE);
     await user.click(screen.getByRole('button', { name: 'Verify and continue' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    // The dashboard is a lazy chunk: its first load in a busy test run can take more than a second.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
   });
 
   it('shows an error with Retry when the setup cannot be started', async () => {

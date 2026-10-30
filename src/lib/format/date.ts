@@ -73,6 +73,8 @@ export function dur(ms: number): string {
  * `ageText`, used for SLA ages, time left on a rule, the oldest order in a queue).
  */
 export function ageText(ms: number): string {
+  // A date the server sent in a shape we cannot read must not print "NaNd".
+  if (!Number.isFinite(ms)) return '';
   const nbsp = '\u00a0';
   const minutes = Math.max(0, Math.round(ms / 60_000));
   if (minutes < 1) return '<1m';

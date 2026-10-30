@@ -37,17 +37,21 @@ async function primaryNav() {
   return within(await screen.findByRole('navigation', { name: 'Primary' }));
 }
 
+// A sidebar link's page label: its text without the count chip and the screen-reader count text ("Orders48" → "Orders").
+// Labels have no digits, so everything from the first digit on is the count.
+const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
+
 describe('sidebar', () => {
   it('lists the 16 pages of the demo in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual(OWNER_PAGES);
+    expect(nav.getAllByRole('link').map(labelOf)).toEqual(OWNER_PAGES);
     ['Operations', 'Catalog', 'Money', 'System'].forEach((group) =>
       expect(nav.getByText(group)).toBeInTheDocument(),
     );
-    expect(nav.getByRole('link', { name: 'Orders' })).toHaveAttribute('aria-current', 'page');
-    expect(nav.getByRole('link', { name: 'Orders' })).toHaveAttribute('href', '/orders');
+    expect(nav.getByRole('link', { name: /^Orders/ })).toHaveAttribute('aria-current', 'page');
+    expect(nav.getByRole('link', { name: /^Orders/ })).toHaveAttribute('href', '/orders');
     expect(nav.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   });
 
@@ -55,11 +59,7 @@ describe('sidebar', () => {
     mockMe({ permissions: ['dashboard:read', 'orders:read', 'ledger:*'] });
     renderApp('/dashboard');
     const nav = await primaryNav();
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual([
-      'Dashboard',
-      'Orders',
-      'Finance',
-    ]);
+    expect(nav.getAllByRole('link').map(labelOf)).toEqual(['Dashboard', 'Orders', 'Finance']);
     expect(nav.getByText('Operations')).toBeInTheDocument();
     expect(nav.getByText('Money')).toBeInTheDocument();
     expect(nav.queryByText('Catalog')).not.toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('sidebar', () => {
     mockMe({ permissions: ['clients:read', 'catalog:*', 'staff:read'] });
     renderApp('/merchants');
     const nav = await primaryNav();
-    expect(nav.getAllByRole('link').map((link) => link.textContent)).toEqual([
+    expect(nav.getAllByRole('link').map(labelOf)).toEqual([
       'Merchants',
       'Services & pricing',
       'Admins & access',
@@ -108,7 +108,9 @@ describe('page gate and unknown addresses', () => {
   it('sends `/` to the dashboard', async () => {
     mockMe({ permissions: ['*'] });
     const app = renderApp('/');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dashboard' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(app.location()).toBe('/dashboard');
   });
 
@@ -417,7 +419,7 @@ describe('mobile menu', () => {
     const button = screen.getByRole('button', { name: 'Open menu' });
 
     await user.click(button);
-    await user.click(within(document.getElementById('sidebar')!).getByRole('link', { name: 'Orders' }));
+    await user.click(within(document.getElementById('sidebar')!).getByRole('link', { name: /^Orders/ }));
     expect(button).toHaveAttribute('aria-expanded', 'false');
     await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 });
 
@@ -457,7 +459,7 @@ describe('focus and scrolling', () => {
     expect(screen.getByRole('main')).not.toHaveFocus();
     expect(scrollTo).not.toHaveBeenCalled();
 
-    await user.click((await primaryNav()).getByRole('link', { name: 'Orders' }));
+    await user.click((await primaryNav()).getByRole('link', { name: /^Orders/ }));
     await screen.findByRole('heading', { level: 1, name: 'Orders' }, { timeout: 10_000 });
     expect(screen.getByRole('main')).toHaveFocus();
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
@@ -507,7 +509,7 @@ describe('account menu', () => {
     // Omar is in Finance: no audit log, no admin page, no settings, no support.
     const nav = await primaryNav();
     await screen.findByRole('button', { name: 'Account menu for Omar T.' });
-    const links = nav.getAllByRole('link').map((link) => link.textContent);
+    const links = nav.getAllByRole('link').map(labelOf);
     expect(links).toContain('Finance');
     expect(links).not.toContain('Audit log');
     expect(links).not.toContain('Admins & access');

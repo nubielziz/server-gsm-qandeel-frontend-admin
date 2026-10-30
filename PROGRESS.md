@@ -17,13 +17,27 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | Used | Calls |
 |---|---|
 | Before the parallel phase | 11 (setup 1, foundation 5, access 2, orders 2, dashboard 1 stopped before any change) |
-| **Total** | **11 / 120** |
+| dashboard | 2 (implementer, reviewer) |
+| customers | 2 (implementer, reviewer) |
+| merchants | 1 (implementer) |
+| services | 2 (implementer, reviewer) |
+| suppliers | 1 (implementer) |
+| finance | 1 (implementer) |
+| refunds | 1 (implementer) |
+| risk | 1 (implementer) |
+| **Total** | **22 / 120** |
 
 ## Pool
 
 | Feature | Worktree / branch | Status | Calls (impl / review) |
 |---|---|---|---|
-| – | – | – | – |
+| customers | `../worktrees/customers` · `feat/customers` | in review (round 1) | 1 / 1 |
+| merchants | `../worktrees/merchants` · `feat/merchants` | waiting for review (2 shared tests to update at merge) | 1 / 0 |
+| services | `../worktrees/services` · `feat/services` | in review (round 1; resources.test row to update at merge) | 1 / 1 |
+| suppliers | `../worktrees/suppliers` · `feat/suppliers` | waiting for review | 1 / 0 |
+| finance | `../worktrees/finance` · `feat/finance` | implementing | 1 / 0 |
+| refunds | `../worktrees/refunds` · `feat/refunds` | implementing | 1 / 0 |
+| risk | `../worktrees/risk` · `feat/risk` | implementing | 1 / 0 |
 
 ## Phases
 
@@ -44,7 +58,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 0 | foundation | shell | auth, system | 7 | 7 | done | 5/6 | Phase 2 commit |
 | 1 | access | `/access` | auth | 13 | 23 | done | 2/6 | feat(access) |
 | 2 | orders | `/orders` | orders, suppliers | 16 | 17 | done | 2/6 (implementer, reviewer; 2 blocking fixed by lead) | feat(orders) |
-| 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | next (brief ready) | 0/6 (one launch stopped at the user's request before any change) | – |
+| 3 | dashboard | `/dashboard` | ops, growth | 3 | 3 | done | 3 (1 stopped launch, implementer, reviewer: 1 blocking fixed by lead) | feat(dashboard) |
 | 4 | customers | `/customers` | customers | 10 | 15 | todo | 0/6 | – |
 | 5 | merchants | `/merchants` | clients, catalog, billing, growth | 12 | 23 | todo | 0/6 | – |
 | 6 | services | `/services` | catalog, orders | 12 | 24 | todo | 0/6 | – |
@@ -184,6 +198,7 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 
 - Auth bodies and CSRF token source: assumptions in `docs/decisions/006-auth-and-access-control.md` (MISMATCHES M5–M7).
 - Exact shape of problem+json `errors[]` items (parser is tolerant, decision 007).
+- Per-feature assumed contracts and questions: `docs/ASSUMED_CONTRACTS.md` (filled at each merge).
 - Orders: could `POST /admin/orders/:id/change-supplier` take `dispatch: true`, so a reroute is one atomic call? Could the list sort by SLA urgency (the demo's default order)? Order DTO, event and action bodies are assumed (MISMATCHES M20–M34).
 
 ## Notes

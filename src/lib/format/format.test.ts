@@ -236,5 +236,6 @@ describe('ageText', () => {
     expect(ageText(120 * 60_000)).toBe('2h');
     expect(ageText((3 * 24 + 4) * 3_600_000)).toBe('3d 4h');
     expect(ageText(-5)).toBe('<1m');
+    expect(ageText(Number.NaN)).toBe('');
   });
 });
