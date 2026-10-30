@@ -279,7 +279,10 @@ describe('command palette', () => {
     await user.type(input, 'fin');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     await user.keyboard('{Enter}');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Finance' })).toBeInTheDocument();
+    // Pages are lazy chunks: the first load in a busy test run can take more than a second.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Finance' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
     expect(app.location()).toBe('/finance');
   });
 

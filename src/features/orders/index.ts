@@ -10,6 +10,7 @@ export * from './components/OrderStatusBadge';
 export * from './hooks/useOrder';
 export * from './hooks/useOrderDrawer';
 export * from './hooks/useOrdersList';
+export { ORDER_STALE_KEYS, staleOrders } from './hooks/keys';
 export {
   displayStatus,
   isOpen,
