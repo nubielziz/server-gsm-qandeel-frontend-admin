@@ -68,3 +68,36 @@ The map gives no bodies (MISMATCHES M10). Every shape below is marked "Assumed c
 10. API keys: a plain array or a paged list? Is there a status field, or are `revokedAt` and `expiresAt` the truth?
 11. Official statement: PDF or CSV, and does it take a period (`from`, `to`)?
 12. Dhru endpoint: is `<API base>/api/index.php` the address merchants should use?
+
+## suppliers
+
+The map gives routes, permissions and tables, not bodies (M10). Every function below says "Assumed contract" in its JSDoc; types are in `src/features/suppliers/types/index.ts`.
+
+- `GET /admin/suppliers` (simple-rest, `q` searches the name): `Supplier[]`, the table's columns minus the key, plus `status` (`active` or `disabled`), `apiKeyHint`, `health`, `successRate1h`, `successRate24h`, `p50Ms`, `p95Ms`, `openOrders`, `reviewOrders`, `lowBalance`, `runwayDays` (M60, M65). Percentages are 0 to 100; unknown figures are `null`.
+- `GET /admin/suppliers/:id`: a supplier plus `history` (`[{ at, successRate, medianMs }]`, 24 hourly points) and `links` (`[{ serviceId, serviceName, serviceCode, serviceStatus, supplierServiceId, supplierServiceName, priority, cost, slaMinutes, chain }]`, where `chain` is the service's whole chain `[{ priority, supplierId, supplierName, supplierServiceId, supplierServiceName }]`).
+- `POST /admin/suppliers`: `{ name, driver, baseUrl, username, apiKey, currency, lowBalanceAlert?, maxConcurrency?, rateLimitPerMin?, timeoutMs? }`, answer the new supplier (detail shape). `lowBalanceAlert` is a 4-decimal money string. Field errors come as problem+json `errors[]` (`name`, `baseUrl`, `apiKey`…).
+- `PATCH /admin/suppliers/:id`: only the changed fields, plus `apiKey` (replaces the stored key) and `status`. Disable and Enable send `{ status: 'disabled' }` or `{ status: 'active' }`.
+- `DELETE /admin/suppliers/:id`: 204; 409 while orders or services use it, with a readable `detail`.
+- `POST /admin/suppliers/:id/test`: no body, answer `{ ok, message, httpStatus, durationMs, accountName?, balance? }`. A failed test may be `ok: false` with the failure text, or an error response; the page shows either.
+- `POST /admin/suppliers/:id/sync`: no body, answer `{ services, added, changed, removed, balance, balanceCheckedAt }`. 409 when the supplier is disabled or down. "Last sync" in the Connection panel is `balanceCheckedAt`.
+- `GET /admin/suppliers/:id/services`: `SupplierService[]` (`id`, `supplierId`, `remoteId`, `remoteGroup`, `type`, `name`, `credit`, `time`, `isAvailable`, `lastSeenAt`, `priceChangedAt`, `imported`, `linkedServiceId`); `_start`/`_end`, `_sort=name`, `q` and the filter `imported=false`.
+- `POST /admin/suppliers/:id/import/preview`: `{ supplierServiceIds }`, answer `{ items: [{ supplierServiceId, name, type, state: 'new' | 'matching' | 'changed', serviceId, serviceName, cost, previousCost, suggestedPrice }] }`. `POST /admin/suppliers/:id/import`: the same body, answer `{ created, updated, unchanged }`. The console sends only the new and changed items.
+- `PUT /admin/services/:id/supplier-links`: `{ links: [{ supplierServiceId, priority }] }` (priority from 1, the whole chain, an empty list unlinks), answer the new chain `ChainStep[]`.
+- `GET /admin/supplier-api-logs`: rows `{ id, supplierId, orderId | null, action, httpStatus, durationMs, error, createdAt }`, no bodies; filter `supplierId`, `_sort=createdAt&_order=desc`, the newest 25. `GET /admin/supplier-api-logs/:id`: the same plus `request` and `response` (any JSON, secrets masked by the server).
+- `GET /admin/reports/suppliers?days=7`: `[{ supplierId, supplierName, orders, completed, rejected, spend, rejectionRate | null, averageSeconds | null }]`.
+- Reroute uses the orders feature's contracts: `GET /admin/orders?supplierId=<id>&status=pending&status=processing&_sort=createdAt&_order=asc&_start=0&_end=200`, then `changeOrderSupplier` (`{ supplierId, resetReference: true }`) and `dispatchOrder` for each order.
+- Money is shown with `$`, as the whole console does; the supplier's own `currency` and `creditRate` are only listed in the form and not used to convert.
+
+### Questions for the backend
+
+- Which values does `suppliers.status` take, and where do `health`, the success rates, latency percentiles, open-order counts, `lowBalance` and `runwayDays` come from? Can `GET /admin/suppliers` carry them, and `GET /admin/suppliers/:id` the 24 hourly points?
+- No route lists the services linked to a supplier: is `links` on the detail right, or should `GET /admin/services` accept `supplierId`?
+- Is `balance` in the supplier's own currency or in USD? What is `creditRate` for?
+- `PUT /admin/services/:id/supplier-links`: is `{ links: [{ supplierServiceId, priority }] }` right, and how should the console choose the supplier service for a newly added supplier (today it lists that supplier's first 100 services)?
+- Test connection: a failed test as `ok: false` or as an error response? Which fields come with a good one?
+- Sync: the answer fields, and the refusal codes for a disabled or unreachable supplier.
+- Import: do `matching` items need to be sent, who sets the suggested price, and what does the server do with fields (`service_fields`)?
+- API log: does the list leave out `request` and `response`? Is `order_id` null for tests and syncs? Are secrets masked in both bodies?
+- `GET /admin/reports/suppliers`: the period parameter and the row fields.
+- Reroute: could `change-supplier` take `dispatch: true`, so a reroute is one call (the same question as for the orders feature)?
+- Delete: which code and text come with the refusal when orders or services still use the supplier?

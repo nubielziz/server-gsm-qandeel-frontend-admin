@@ -14,7 +14,6 @@ import { resetStaffStore } from '../staff';
 import { accessHandlers } from './access';
 import { ledgerHandlers } from './ledger';
 import { ordersHandlers } from './orders';
-import { orderLookupHandlers } from './ordersLookups';
 import { settingsHandlers } from './settings';
 import { systemHandlers } from './system';
 
@@ -31,7 +30,6 @@ export const handlers: RequestHandler[] = [
   ...systemHandlers,
   ...accessHandlers,
   ...ordersHandlers,
-  ...orderLookupHandlers,
   ...ledgerHandlers,
   ...settingsHandlers,
   ...featureMocks.flatMap((feature) => feature.handlers),

@@ -131,7 +131,7 @@ describe('supplier health', () => {
     // A click on an empty part of the row opens the supplier as well (the keyboard uses the link).
     const row = link.closest('tr') as HTMLElement;
     await user.click(within(row).getByText('Down'));
-    expect(app.location()).toBe('/suppliers?supplier=2');
+    await waitFor(() => expect(app.location()).toBe('/suppliers?supplier=2'));
   });
 
   it('has plain names, not links, when the staff member may not open Suppliers', async () => {

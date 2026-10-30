@@ -2,8 +2,11 @@
 // minutes: the lists change rarely, and a menu should not wait for a request each time the page opens.
 import { listClients } from '@/features/merchants';
 import { useApiQuery } from '@/lib/query';
-import { LOOKUP_CAP, listSupplierOptions } from '../api/lookups';
-import type { ClientOption } from '../types';
+import { listSuppliers } from '@/features/suppliers';
+import type { ClientOption, SupplierOption } from '../types';
+
+/** Most names one menu loads. A longer list would need a search box; the demo's menus were plain selects too. */
+const LOOKUP_CAP = 200;
 import { ORDER_LOOKUP_KEY } from './keys';
 
 const FIVE_MINUTES = 5 * 60_000;
@@ -12,8 +15,16 @@ const FIVE_MINUTES = 5 * 60_000;
 export function useSupplierOptions(enabled = true) {
   return useApiQuery({
     queryKey: [...ORDER_LOOKUP_KEY, 'suppliers'],
-    queryFn: ({ signal }) => listSupplierOptions({ signal }),
-    select: (result) => result.data,
+    // The suppliers feature owns `GET /admin/suppliers`. The menus show health (`status` here) and skip disabled ones.
+    queryFn: ({ signal }) =>
+      listSuppliers({ start: 0, end: LOOKUP_CAP, sort: ['name'], order: ['asc'] }, { signal }),
+    select: (result): SupplierOption[] =>
+      result.data.map(({ id, name, health, status }) => ({
+        id,
+        name,
+        status: health,
+        enabled: status === 'active',
+      })),
     enabled,
     staleTime: FIVE_MINUTES,
   });

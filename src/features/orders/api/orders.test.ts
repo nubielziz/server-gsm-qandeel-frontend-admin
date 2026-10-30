@@ -8,7 +8,6 @@ import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { toListQuery } from '../lib/filters';
 import { ORDER_TABS, tabFilters } from '../lib/status';
-import { listSupplierOptions } from './lookups';
 import {
   acceptOrder,
   addOrderNote,
@@ -319,13 +318,5 @@ describe('export and files', () => {
 
   it('builds the file link from the API address, with the id in the path', () => {
     expect(orderFileUrl(77)).toBe('http://api.test/admin/files/77');
-  });
-});
-
-describe('lookups', () => {
-  it('reads the suppliers with their health (merchant names come from the merchants feature)', async () => {
-    const suppliers = await listSupplierOptions();
-    expect(suppliers.data.map((supplier) => supplier.name)).toContain('Nordic GSM');
-    expect(suppliers.data.find((supplier) => supplier.name === 'Rapid IMEI')?.status).toBe('degraded');
   });
 });
