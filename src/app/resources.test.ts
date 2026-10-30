@@ -18,7 +18,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['storefront', 'Storefront', 'Catalog', 'store', 'storefront:read'],
     ['finance', 'Finance', 'Money', 'wallet', 'ledger:read'],
     ['commissions', 'Commissions', 'Money', 'percent', 'commissions:read'],
-    ['refunds', 'Refunds & disputes', 'Money', 'undo', 'refunds:read'],
+    ['refunds', 'Refunds & disputes', 'Money', 'undo', ['refunds:read', 'disputes:read', 'reports:finance']],
     // Any one tab permission opens Admins & access (MISMATCHES M19).
     [
       'access',

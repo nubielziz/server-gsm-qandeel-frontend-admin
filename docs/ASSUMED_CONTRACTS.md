@@ -190,3 +190,30 @@ All bodies are assumed (M10); each is marked "Assumed contract" in the JSDoc of 
 5. IMEI checks: what does `imei` look like after the retention period (hash, mask, null)? Can the list send the 30-day figures (conversion to an order, lookup cost) in a header or a summary route? Which sort fields and filters are supported?
 6. Permissions: are blocklist create and delete `risk:create` and `risk:delete`, and does the rules `PUT` need the literal `risk:*`?
 7. Does approve or refund return the updated order?
+
+## refunds
+
+All of these are marked "Assumed contract" in the JSDoc of `api/` and typed in `types/index.ts`; the map gives the tables, not the bodies.
+
+- Lists `GET /admin/refunds`, `GET /admin/disputes`: simple-rest (`_start`, `_end`, `_sort`, `_order`, `status`), total in `x-total-count`.
+  - `Refund` = `RefundRow` plus `status` (`requested | completed | failed | rejected`), `method` (`original | manual`), `currency` (ISO code) and `fx` (the rate the order was priced with, display only), `partial`, `gatewayRefundId | null`, `note | null` (gateway failure or the message the customer got), `requestedBy { type: customer | staff | system, name }`, `approvedBy { id, name } | null`, `customer { id, name } | null`, `order { id, deliveredAt, cost }`, `payment { id, method, brand, amount, taxAmount }` (amount = what was paid, VAT included), `netAmount` and `taxAmount` (the split, null until completed). Money is USD.
+  - `Dispute` = `DisputeRow` plus `status` (`needs_response | under_review | won | lost`), `currency`, `fx`, `note`, `customer`. Only `GET /admin/disputes/:id` carries `evidence[] { key, title, body, ok }` and `strength` (`strong | fair | weak`); the list leaves them out.
+- `POST /admin/refunds/:id/approve` body `{ amount? }` (4-decimal string; left out means the amount on the request); answer the updated refund (an empty answer works). Refusals: 409 (`REFUND_NOT_PENDING`), 422 with `errors[{ field: 'amount' }]`.
+- `POST /admin/refunds/:id/decline` body `{ reason }` (field error on `reason`); `POST /admin/refunds/:id/retry` no body. Answer the updated refund.
+- `POST /admin/disputes/:id/evidence` body `{ items: string[], note? }` (`items` are the `key`s of the pack); `POST /admin/disputes/:id/accept` no body. Answer the updated dispute. Refusals: 409 (`DISPUTE_NOT_OPEN`, `EVIDENCE_DEADLINE_PASSED`), 422.
+- `GET /admin/reports/payments?method=card|wallet|crypto&_start&_end&_sort&_order` answers `{ methods[], payments[], total, totals }`:
+  - `methods[] { method, payments, volume, fees, feeRate (percent), refunds, disputes }`, always for all three methods.
+  - `payments[] { id, orderId, amount, feeAmount, createdAt, method, brand, status (captured | refunded | partial_refund | disputed | chargeback), currency, fx, customer }`: one page, newest first unless sorted.
+  - `total` = payments that match the method; `totals { refundedCount, refundedAmount, refundedPercentOfSales, awaitingAmount, chargebackLoss }` for the strip (last 30 days for the first three; all time for the loss).
+- The id shown is the API id with the demo's prefix: `RF-`, `DP-`, `SF-` (as MISMATCHES M32).
+
+### Questions for the backend
+
+1. Does `/admin/refunds` also return merchant (client) refunds? The table has `clientId`; this page shows customers only and prints "Unknown" for a refund without a customer.
+2. Report shape: is the method comparison plus one page of payments plus totals in one answer right? The route text also names "net amount and settlements"; the demo's tab has no place for them, so they are not read. Should the page's totals (30-day refunds, awaiting amount, chargeback loss) come from this report or from another route?
+3. Approve: is the amount left out = the amount on the request? What is the upper limit (what was paid minus earlier refunds)? Does the answer carry the revenue / VAT split (`netAmount`, `taxAmount`)?
+4. Crypto payments: the demo says "mark it as paid after you send the USDT yourself". Approve records it as paid out by hand (`method: manual`); is there a separate "mark as paid" step?
+5. Evidence: does the server build the pack and its strength, and what does the submit body look like? The console cannot attach files (`evidenceFileIds`); is that done on the server from the order record?
+6. Does accepting a loss block the customer (the demo says it does; the map's tables do not include customers)?
+7. Default order of disputes: the demo sorts by evidence deadline, soonest first, which puts old closed disputes (past deadlines) before the open ones once there are many. Can the server list `needs_response` first when asked for `_sort=evidenceDueAt&_order=asc`?
+8. Is `fee` per dispute (the demo always has $15)? Is `fx` the rate the order was priced with?
