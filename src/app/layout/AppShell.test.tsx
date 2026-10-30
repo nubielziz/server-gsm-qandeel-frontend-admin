@@ -117,14 +117,6 @@ describe('page gate and unknown addresses', () => {
     expect(app.location()).toBe('/dashboard');
   });
 
-  it('shows a page placeholder to the staff member who may open it', async () => {
-    mockMe({ permissions: ['audit:read'] });
-    renderApp('/audit');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Audit log' })).toBeInTheDocument();
-    expect(await screen.findByText('This page is being ported')).toBeInTheDocument();
-    expect(document.title).toBe('Audit log · GSM Supply');
-  });
-
   it('shows the no-access page, with a way out, when the permission is missing', async () => {
     mockMe({ permissions: ['dashboard:read'] });
     renderApp('/audit');

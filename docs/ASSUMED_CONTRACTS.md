@@ -379,3 +379,24 @@ All marked "Assumed contract" in the JSDoc of `api/*.ts` and `types/*.ts`.
 7. TAC: can `tac` be edited after creation? Which `source` values exist? Are `marketingName` and `releaseYear` optional, and what does the server send for an unknown year?
 8. Can the API send a page's public address (`path` or `url`), so the table can offer "Open the page" again?
 9. When a slug is left empty on create, does the server make it from the title (listings, pages)?
+
+## audit
+
+The map gives the table `audit_logs` and the two routes but no bodies (M10). Marked "Assumed contract" in `api/auditLogs.ts` and `types/index.ts`.
+
+- `GET /admin/audit-logs`: rows are `AuditLog`: `AuditLogRow` with `actorId` and `ip` nullable, plus `actorName` and `entityLabel` (joined by the server; the label is the record's name at the time of the change). `actorType` is `staff` or `system`. `action` is the readable phrase ("changed price of").
+- Filters: `actorType`, `actorId`, `entityType`, `from`, `to` (days, both included) and `q` (person, action, record name), with `_start`, `_end`, `_sort=createdAt`, `_order=desc`.
+- `entityType` values: the singular names of the demo (`order`, `merchant`, `service`, `supplier`, `payment`, `withdrawal`, `plan`, `session`, `customer`, `staff`, `ip_rule`, `checkout`, `refund`, `dispute`, `ticket`, `listing`, `blocklist`, `legal`, `setting`). Table names (`orders`, `clients`, `staff_users`, `support_tickets`...) are read as the same types when the server sends them, but the filter sends the singular name.
+- A list row may leave out `before` and `after` (both `undefined`); the screen then reads `GET /admin/audit-logs/:id` when the entry is opened. A row with `null` for both is a plain action (a sign-in).
+- `GET /admin/audit-logs/:id`: the same shape as a list row, with `before` and `after`.
+
+### Questions for the backend
+
+1. Which `entityType` values does the server write, and is there an endpoint (or a fixed list) for the record-type filter? The console uses a fixed list.
+2. Does the list join `actorName` and `entityLabel`? If not, can it, so a deleted record or account still reads well?
+3. Is `action` a readable phrase or a code (`order.completed`)? If it is a code, which codes exist, so the screen can write them as words?
+4. Which filters does `GET /admin/audit-logs` take (`actorType`, `actorId`, `entityType`, `from`, `to`, `q`), and are `from` and `to` whole days, both included, in which time zone?
+5. Does the list send `before` and `after`, or only the single read? Are they full rows or only the changed fields, and are secrets (API keys, password hashes) always masked?
+6. Is `ip` null for system entries, and should the console show the staff session behind an entry?
+7. Offset paging of a growing log shifts rows; would a cursor (`before=<id>`) be better?
+8. Will the server offer an audit export (CSV), permission-checked and itself audited?
