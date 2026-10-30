@@ -16,7 +16,7 @@ export function AuthenticatorSetup({ setup }: { setup: TwoFactorSetup }) {
     <div className="space-y-3">
       {setup.qrSvg && (
         <img
-          className="mx-auto h-44 w-44 rounded-md border border-line bg-white p-2"
+          className="h-44 w-44 rounded-md border border-line bg-white p-2"
           src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(setup.qrSvg)}`}
           alt="QR code to scan with your authenticator app"
         />

@@ -193,13 +193,10 @@ describe('sign-in flow', () => {
 });
 
 describe('reasons on the sign-in screen', () => {
-  it.each([
-    ['suspended', 'Account suspended'],
-    ['ip', 'Sign-in blocked from this network'],
-    ['password-set', 'Password updated'],
-  ])('shows the banner for ?reason=%s', async (reason, title) => {
-    renderApp(`/login?reason=${reason}`);
-    expect(await screen.findByText(title)).toBeInTheDocument();
+  it('shows the good-tone note for ?reason=password-set', async () => {
+    renderApp('/login?reason=password-set');
+    expect(await screen.findByText('Password updated')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Email' })).toBeInTheDocument();
   });
 
   it('shows nothing for an unknown reason', async () => {
@@ -215,7 +212,7 @@ describe('reasons on the sign-in screen', () => {
     expect(app.location()).toBe('/login?to=%2Forders%3Ftab%3Dreview');
   });
 
-  it('turns a suspended account into the suspended banner, with the page remembered', async () => {
+  it('turns a suspended account into the suspended screen, with the page remembered', async () => {
     await signInAs();
     // The session is valid, but the server now says the account is suspended.
     mockServer.use(
@@ -224,7 +221,9 @@ describe('reasons on the sign-in screen', () => {
       ),
     );
     const app = renderApp('/finance');
-    expect(await screen.findByText('Account suspended', { selector: 'p' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'This account is suspended' }),
+    ).toBeInTheDocument();
     await waitFor(() => expect(app.location()).toBe('/login?reason=suspended&to=%2Ffinance'));
   });
 

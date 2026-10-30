@@ -1,10 +1,11 @@
 // SetupTwoFactorPage: first sign-in, scan the QR code (or type the key) and confirm with the first code
 // (`/login/setup-2fa`). No demo screen exists (MISMATCHES M5).
 import { Link } from 'react-router';
-import { ErrorState, Skeleton } from '@/components/ui';
+import { Skeleton } from '@/components/ui';
 import { AuthenticatorSetup } from '../components/AuthenticatorSetup';
 import { AuthLayout } from '../components/AuthLayout';
 import { CodeForm } from '../components/CodeForm';
+import { SetupFailure } from '../components/SetupFailure';
 import { withDestination } from '../destination';
 import { useCodeStep } from '../hooks/useCodeStep';
 import { useDestination } from '../hooks/useDestination';
@@ -15,7 +16,7 @@ import { AUTH_PATHS } from '../paths';
 function SetupSkeleton() {
   return (
     <div className="space-y-3" role="status" aria-label="Preparing your setup key">
-      <Skeleton width={176} height={176} className="mx-auto" />
+      <Skeleton width={176} height={176} />
       <Skeleton height={44} />
     </div>
   );
@@ -36,13 +37,7 @@ export function SetupTwoFactorPage() {
       }
     >
       {setup.isPending && <SetupSkeleton />}
-      {setup.isError && (
-        <ErrorState
-          title="Could not start the setup"
-          error={setup.error}
-          onRetry={() => void setup.refetch()}
-        />
-      )}
+      {setup.isError && <SetupFailure error={setup.error} onRetry={() => void setup.refetch()} />}
       {setup.data && (
         <CodeForm verify={verify} isPending={isPending} submitLabel="Verify and continue">
           <AuthenticatorSetup setup={setup.data} />

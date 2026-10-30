@@ -3,6 +3,7 @@
 // a rate limit is composed here.
 import { ERROR_CODES, isApiError } from '@/lib/api';
 import { errorToast } from '@/lib/query';
+import type { LoginReason } from '../paths';
 
 /** A message for the banner at the top of a sign-in form. */
 export type AuthErrorInfo = { title: string; detail?: string; requestId?: string };
@@ -18,6 +19,20 @@ export function describeAuthError(error: unknown): AuthErrorInfo {
     };
   }
   return { title: 'Something went wrong', detail: error instanceof Error ? error.message : undefined };
+}
+
+/** The two refusals that get a screen of their own instead of a banner (the same names as `?reason=`). */
+export type BlockedKind = Extract<LoginReason, 'suspended' | 'ip'>;
+
+/**
+ * Which blocked-access screen a failed sign-in call asks for, or undefined for any other failure. The server's code
+ * decides (`ACCOUNT_SUSPENDED`, `IP_NOT_ALLOWED`), the same two codes the auth provider turns into `?reason=`.
+ */
+export function blockedKindOf(error: unknown): BlockedKind | undefined {
+  if (!isApiError(error)) return undefined;
+  if (error.code === ERROR_CODES.ACCOUNT_SUSPENDED) return 'suspended';
+  if (error.code === ERROR_CODES.IP_NOT_ALLOWED) return 'ip';
+  return undefined;
 }
 
 /**

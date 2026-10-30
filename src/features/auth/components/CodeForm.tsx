@@ -2,6 +2,7 @@
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui';
 import { splitFieldError, type AuthErrorInfo } from './authErrors';
+import { AUTH_FORM_CLASS } from './authForm';
 import { CodeField } from './CodeField';
 import { CODE_LENGTH } from './codeInput';
 import { FormMessage } from './FormMessage';
@@ -42,7 +43,7 @@ export function CodeForm({ verify, isPending, submitLabel, children }: CodeFormP
   }
 
   return (
-    <form noValidate className="space-y-3.5" onSubmit={onSubmit}>
+    <form noValidate className={AUTH_FORM_CLASS} onSubmit={onSubmit}>
       {banner && <FormMessage {...banner} />}
       {children}
       <CodeField ref={inputRef} value={code} onChange={setCode} error={fieldError} />

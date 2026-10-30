@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router';
-import { Button, TextField } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { AuthLayout } from '../components/AuthLayout';
+import { AUTH_FORM_CLASS } from '../components/authForm';
 import { mapSetPasswordError, type AuthErrorInfo } from '../components/authErrors';
 import { FormMessage } from '../components/FormMessage';
 import { NoticeBanner } from '../components/NoticeBanner';
+import { PasswordField } from '../components/PasswordField';
 import { withDestination } from '../destination';
 import { useChoosePassword } from '../hooks/useChoosePassword';
 import { useDestination } from '../hooks/useDestination';
@@ -66,11 +68,10 @@ export function SetPasswordPage() {
           {deadLink.detail}
         </NoticeBanner>
       ) : (
-        <form noValidate className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
+        <form noValidate className={AUTH_FORM_CLASS} onSubmit={handleSubmit(onSubmit)}>
           {banner && <FormMessage {...banner} />}
-          <TextField
+          <PasswordField
             label="New password"
-            type="password"
             autoComplete="new-password"
             autoFocus
             // The error already says it, so the hint steps aside rather than repeating the rule.
@@ -84,9 +85,8 @@ export function SetPasswordPage() {
               },
             })}
           />
-          <TextField
+          <PasswordField
             label="Confirm password"
-            type="password"
             autoComplete="new-password"
             error={errors.confirm}
             {...register('confirm', {

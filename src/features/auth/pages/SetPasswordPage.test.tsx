@@ -31,6 +31,22 @@ describe('set-password screen', () => {
     expect(app.location()).toBe('/login?reason=password-set');
   });
 
+  it('lets each password field be shown on its own, and keeps new-password autocomplete', async () => {
+    const user = userEvent.setup();
+    renderApp('/set-password?token=demo-token');
+    const password = await screen.findByLabelText('New password');
+    const confirm = screen.getByLabelText('Confirm password');
+    expect(password).toHaveAttribute('autocomplete', 'new-password');
+    expect(confirm).toHaveAttribute('autocomplete', 'new-password');
+
+    await user.click(screen.getByRole('button', { name: 'Show New password' }));
+    expect(password).toHaveAttribute('type', 'text');
+    expect(password).toHaveAttribute('autocomplete', 'new-password');
+    expect(confirm).toHaveAttribute('type', 'password');
+    // Showing the password is not a submit: no error appears.
+    expect(screen.queryByText('Enter a new password.')).not.toBeInTheDocument();
+  });
+
   it('shows a dead link as a page message and takes the form away', async () => {
     const user = userEvent.setup();
     renderApp('/set-password?token=expired');

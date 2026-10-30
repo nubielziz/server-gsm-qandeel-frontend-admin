@@ -31,7 +31,7 @@ export const CodeField = forwardRef<HTMLInputElement, CodeFieldProps>(function C
       placeholder="000000"
       spellCheck={false}
       autoFocus
-      className="h-10 text-center font-mono text-lg tracking-[0.35em]"
+      className="text-center font-mono text-lg tracking-[0.35em]"
     />
   );
 });

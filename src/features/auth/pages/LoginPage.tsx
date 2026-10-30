@@ -1,76 +1,40 @@
-// LoginPage: step 1 of sign-in, email and password (`/login`). No demo screen exists (MISMATCHES M5); the reason
-// banners cover the account being suspended, the IP being blocked and a password that was just changed.
+// LoginPage: step 1 of sign-in (`/login`). No demo screen exists (MISMATCHES M5). It picks what to show: the form with a
+// note above it, or, for a suspended account or a blocked address (`?reason=` or the server's answer), a screen of its own.
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router';
-import { Button, TextField } from '@/components/ui';
-import { applyServerErrors, isApiError } from '@/lib/api';
 import { AuthLayout } from '../components/AuthLayout';
-import { describeAuthError, type AuthErrorInfo } from '../components/authErrors';
-import { FormMessage } from '../components/FormMessage';
 import { parseLoginReason } from '../components/loginReason';
-import { ReasonBanner } from '../components/ReasonBanner';
-import { useCredentialsStep } from '../hooks/useCredentialsStep';
-
-type Credentials = { email: string; password: string };
-const FIELDS = ['email', 'password'] as const;
+import { SignInBlocked } from '../components/SignInBlocked';
+import { SignInForm, type Refusal } from '../components/SignInForm';
+import { SignInNotes } from '../components/SignInNotes';
+import { useDestination } from '../hooks/useDestination';
 
 export function LoginPage() {
   const [params] = useSearchParams();
   const reason = parseLoginReason(params.get('reason'));
-  const { submit, isPending } = useCredentialsStep();
-  const [banner, setBanner] = useState<AuthErrorInfo>();
-  const {
-    register,
-    handleSubmit,
-    setError,
-    setFocus,
-    formState: { errors },
-  } = useForm<Credentials>({ defaultValues: { email: '', password: '' } });
+  const { to } = useDestination();
+  const [refusal, setRefusal] = useState<Refusal>();
 
-  async function onSubmit(values: Credentials) {
-    setBanner(undefined);
-    const failure = await submit({ email: values.email.trim(), password: values.password });
-    if (!failure) return;
-    if (isApiError(failure) && Object.keys(failure.fieldErrors).length > 0) {
-      // The server named the fields: show its messages under them, and the rest (if any) in the banner.
-      const rest = applyServerErrors(failure, setError, { fields: FIELDS });
-      if (rest.length > 0)
-        setBanner({ title: failure.title, detail: rest.join(' '), requestId: failure.requestId });
-      return;
-    }
-    setBanner(describeAuthError(failure));
-    setFocus('password', { shouldSelect: true });
+  // The server's answer to this visit wins over a reason left in the address.
+  const blocked = refusal ?? (reason === 'suspended' || reason === 'ip' ? { kind: reason } : undefined);
+  if (blocked) {
+    return (
+      <SignInBlocked
+        kind={blocked.kind}
+        requestId={refusal?.requestId}
+        onUseAnotherAccount={() => setRefusal(undefined)}
+      />
+    );
   }
 
   return (
     <AuthLayout
       title="Sign in"
-      intro="Use your GSM Supply staff account."
+      intro="Staff accounts only. A two-step code follows."
       footer="Forgot your password? Ask an owner to send you a reset link."
     >
-      <ReasonBanner reason={reason} />
-      <form noValidate className="space-y-3.5" onSubmit={handleSubmit(onSubmit)}>
-        {banner && <FormMessage {...banner} />}
-        <TextField
-          label="Email"
-          type="email"
-          autoComplete="username"
-          autoFocus
-          error={errors.email}
-          {...register('email', { required: 'Enter your email.' })}
-        />
-        <TextField
-          label="Password"
-          type="password"
-          autoComplete="current-password"
-          error={errors.password}
-          {...register('password', { required: 'Enter your password.' })}
-        />
-        <Button type="submit" variant="primary" className="w-full" loading={isPending}>
-          Sign in
-        </Button>
-      </form>
+      <SignInNotes reason={reason} to={to} />
+      <SignInForm onBlocked={setRefusal} />
     </AuthLayout>
   );
 }

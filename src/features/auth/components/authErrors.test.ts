@@ -1,7 +1,7 @@
 // Tests for describeAuthError: sign-in errors turned into the text the screens show.
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/lib/api';
-import { describeAuthError, mapSetPasswordError, splitFieldError } from './authErrors';
+import { blockedKindOf, describeAuthError, mapSetPasswordError, splitFieldError } from './authErrors';
 
 describe('describeAuthError', () => {
   it("shows the server's title, detail and request ID", () => {
@@ -125,5 +125,18 @@ describe('mapSetPasswordError', () => {
       info: { title: 'Not signed in' },
     });
     expect(mapSetPasswordError(new Error('offline'))).toMatchObject({ kind: 'general' });
+  });
+});
+
+describe('blockedKindOf', () => {
+  it('names the screen for a suspended account and for a blocked address', () => {
+    expect(blockedKindOf(new ApiError({ status: 403, code: 'ACCOUNT_SUSPENDED' }))).toBe('suspended');
+    expect(blockedKindOf(new ApiError({ status: 403, code: 'IP_NOT_ALLOWED' }))).toBe('ip');
+  });
+
+  it('leaves every other failure to the banner', () => {
+    expect(blockedKindOf(new ApiError({ status: 401, code: 'UNAUTHORIZED' }))).toBeUndefined();
+    expect(blockedKindOf(new ApiError({ status: 403, code: 'FORBIDDEN' }))).toBeUndefined();
+    expect(blockedKindOf(new Error('offline'))).toBeUndefined();
   });
 });
