@@ -91,8 +91,13 @@ describe('a run', () => {
     await user.selectOptions(dialog.getByLabelText('Move them to'), 'Nordic GSM');
     await user.click(dialog.getByRole('button', { name: 'Reroute 10 orders' }));
 
+    // Twenty calls one after another (move, then send) with the mock's latency: give the run time on a busy machine.
     expect(
-      await dialog.findByText(/9 of 10 orders rerouted to Nordic GSM\. 1 was refused\./),
+      await dialog.findByText(
+        /9 of 10 orders rerouted to Nordic GSM\. 1 was refused\./,
+        {},
+        { timeout: 15_000 },
+      ),
     ).toBeInTheDocument();
     const failed = within(dialog.getByRole('list', { name: 'Orders that were not rerouted' }));
     expect(failed.getAllByRole('listitem')).toHaveLength(1);
@@ -104,8 +109,10 @@ describe('a run', () => {
 
     await user.click(dialog.getByRole('button', { name: 'Done' }));
     // Every order moved (even the one that was not sent), so Rapid IMEI has none left and Nordic GSM has them.
-    await waitFor(async () =>
-      expect(within(await supplierButton(/^Rapid IMEI/)).getByText(/· 0 open/)).toBeInTheDocument(),
+    await waitFor(
+      async () =>
+        expect(within(await supplierButton(/^Rapid IMEI/)).getByText(/· 0 open/)).toBeInTheDocument(),
+      { timeout: 10_000 },
     );
     expect(within(await supplierButton(/^Nordic GSM/)).getByText(/· 27 open/)).toBeInTheDocument();
     const rapid = await detailOf('Rapid IMEI');
