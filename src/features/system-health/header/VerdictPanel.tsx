@@ -5,7 +5,7 @@ import { useId, type ReactNode } from 'react';
 import { Button, ButtonLink, Icon, Skeleton, cx, type BadgeTone } from '@/components/ui';
 import { useNow } from '@/lib/format';
 import { StaleBadge } from '../components/StaleBadge';
-import { POLL, isMonitoringUnavailable, useHealthGrants, useSystemHealth } from '../hooks';
+import { POLL, isMonitoringUnavailable, useHealthGrants, useHealthLink, useSystemHealth } from '../hooks';
 import { failureOf } from './failure';
 import { ImpactLine } from './ImpactLine';
 import { VerdictDetails } from './VerdictDetails';
@@ -71,12 +71,13 @@ function Frame({ look, since, actions, busy, children }: FrameProps) {
 export function VerdictPanel() {
   const grants = useHealthGrants();
   const health = useSystemHealth();
+  const link = useHealthLink();
   const now = useNow(30_000);
   const { data } = health;
 
   if (data) {
     const look = verdictLook(data.status, data.monitoring.status === 'unavailable');
-    const see = seeLink(data, grants.can);
+    const see = seeLink(data, grants.can, link);
     const stale = (
       <StaleBadge
         updatedAt={health.dataUpdatedAt}

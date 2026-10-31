@@ -16,6 +16,8 @@ export interface LineChartProps {
   color?: ChartColor;
   /** Formats y-axis labels and tooltip values. */
   formatValue?: (n: number) => string;
+  /** Formats the y-axis labels only, when they need another style than the tooltip (bare numbers under a caption). */
+  formatAxis?: (n: number) => string;
   /** Fixed top of the axis (for percentages). Default: a round number above the biggest value. */
   yMax?: number;
   yMin?: number;
@@ -35,6 +37,7 @@ export function LineChart({
   height = 160,
   color = 's1',
   formatValue = formatNumber,
+  formatAxis = formatValue,
   yMax,
   yMin = 0,
   unit = '',
@@ -112,7 +115,7 @@ export function LineChart({
                     y2={tick.y}
                   />
                   <text x={LINE_MARGIN.left - 6} y={tick.y + 4} textAnchor="end">
-                    {formatValue(tick.value)}
+                    {formatAxis(tick.value)}
                   </text>
                 </g>
               ))}

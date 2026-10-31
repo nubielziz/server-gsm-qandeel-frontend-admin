@@ -12,11 +12,10 @@ setupHealthMocks();
 vi.setConfig({ testTimeout: 30_000 });
 
 describe('the tabs', () => {
-  it('opens the first tab and shows the placeholder while the tab is being built', async () => {
+  it('opens the first tab when the address names none', async () => {
     await openHealthPage();
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
-    expect(await screen.findByRole('heading', { name: 'This tab is being built' }, SLOW)).toBeInTheDocument();
-    expect(screen.getByRole('tabpanel', { name: 'Overview' })).toBeInTheDocument();
+    expect(await screen.findByRole('tabpanel', { name: 'Overview' }, SLOW)).toBeInTheDocument();
   });
 
   it('keeps the chosen tab in the address, leaves the default out, and keeps the range', async () => {

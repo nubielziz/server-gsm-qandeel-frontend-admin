@@ -1,37 +1,63 @@
-// Tests for chart.ts: axis and tooltip text per unit, and the server's threshold as the chart's dashed line.
+// Tests for chart.ts: the axis top and labels per unit, and the server's threshold as the chart's dashed line.
 import { describe, expect, it } from 'vitest';
 import type { SeriesPoint } from '../types';
-import { chartFormat, downsample, thresholdReference, unitCaption } from './chart';
+import { axisFormat, downsample, niceTop, thresholdOnAxis, thresholdReference, unitCaption } from './chart';
 
-describe('chartFormat', () => {
-  it('keeps axis labels short and leaves the unit to the tooltip suffix', () => {
-    expect(chartFormat('ms').format(250)).toBe('250');
-    expect(chartFormat('ms').suffix).toBe(' ms');
-    expect(chartFormat('percent').format(0.42)).toBe('0.42');
-    expect(chartFormat('percent').suffix).toBe(' %');
-    expect(chartFormat('per_min').format(1240)).toBe('1,240');
-    expect(chartFormat('per_min').suffix).toBe(' /min');
-    expect(chartFormat('count').suffix).toBe('');
+describe('niceTop', () => {
+  it('takes the smallest round step that fits, so a 6.2 s peak gets 7.5 s and not 15 s', () => {
+    expect(niceTop(6200, 3)).toBe(7500);
+    expect(niceTop(5800, 3)).toBe(6000);
+    expect(niceTop(0.42, 3)).toBe(0.6);
+    expect(niceTop(99.9, 3, 99)).toBeCloseTo(100.5);
   });
 
-  it('goes compact from 10,000 up so the label fits the axis', () => {
-    expect(chartFormat('per_min').format(12400)).toBe('12K');
-    expect(chartFormat('ms').format(9999)).toBe('9,999');
+  it('gives a plain axis when there is nothing above the bottom', () => {
+    expect(niceTop(0, 3)).toBe(3);
+    expect(niceTop(-Infinity, 3)).toBe(3);
+  });
+});
+
+describe('axisFormat', () => {
+  it('reads milliseconds as seconds once the axis passes a second, matching the "crit 5 s" label', () => {
+    const axis = axisFormat('ms', 7500);
+    expect(axis.caption).toBe('Seconds');
+    expect([0, 2500, 5000, 7500].map(axis.format)).toEqual(['0', '2.5', '5', '7.5']);
+    expect(axisFormat('ms', 600)).toMatchObject({ caption: 'Milliseconds' });
+    expect(axisFormat('ms', 600).format(200)).toBe('200');
   });
 
-  it('cleans up float noise on the ticks', () => {
-    expect(chartFormat('percent').format(0.30000000000000004)).toBe('0.3');
+  it('turns compact only when the top reaches 10,000, so one axis never mixes styles', () => {
+    expect([0, 5000, 10000, 15000].map(axisFormat('per_min', 15000).format)).toEqual([
+      '0',
+      '5K',
+      '10K',
+      '15K',
+    ]);
+    expect([0, 2500, 5000, 7500].map(axisFormat('count', 7500).format)).toEqual([
+      '0',
+      '2,500',
+      '5,000',
+      '7,500',
+    ]);
   });
 
-  it('prints seconds as one-unit durations', () => {
-    expect(chartFormat('s').format(45)).toBe('45s');
-    expect(chartFormat('s').format(192)).toBe('3.2m');
-    expect(chartFormat('s').format(5400)).toBe('1.5h');
-    expect(chartFormat('s').suffix).toBe('');
+  it('keeps decimals on a small axis and short forms for durations and sizes', () => {
+    expect(axisFormat('percent', 1.5).format(0.5)).toBe('0.5');
+    expect(axisFormat('s', 900).format(300)).toBe('5m');
+    expect(axisFormat('bytes', 2048).format(1024)).toBe('1 KB');
+  });
+});
+
+describe('thresholdOnAxis', () => {
+  const crit = { value: 1500, label: 'crit 1.5 s', bad: 'above' as const };
+
+  it('draws a bad-above threshold only when the line comes within 2.5 times of it', () => {
+    expect(thresholdOnAxis(crit, 700)).toBe(true);
+    expect(thresholdOnAxis(crit, 300)).toBe(false);
   });
 
-  it('prints bytes with their unit', () => {
-    expect(chartFormat('bytes').format(1288490189)).toBe('1.2 GB');
+  it('always draws a bad-below threshold, such as uptime', () => {
+    expect(thresholdOnAxis({ value: 99.5, label: 'crit 99.5 %', bad: 'below' }, 99.9)).toBe(true);
   });
 });
 

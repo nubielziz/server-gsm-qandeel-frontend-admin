@@ -98,11 +98,15 @@ describe('permission sets', () => {
 describe('the header', () => {
   it('shows how fresh the data is, the build, and the range switch with 24h picked', async () => {
     await openHealthPage();
-    await screen.findByText(/^v\d/, undefined, SLOW);
-    expect(screen.getByText(/Updated .* ago|Updated just now/)).toBeInTheDocument();
-    expect(screen.getByText(/refreshes every 15s/)).toBeInTheDocument();
-    expect(screen.getByText('production')).toBeInTheDocument();
-    expect(screen.getByText(/^[0-9a-f]{7}$/)).toHaveClass('mono');
+    // The Overview tab's Build card repeats the build, so look in the page header only.
+    const header = screen
+      .getByRole('heading', { level: 1, name: 'System health' })
+      .closest('header') as HTMLElement;
+    await within(header).findByText(/^v\d/, undefined, SLOW);
+    expect(within(header).getByText(/Updated .* ago|Updated just now/)).toBeInTheDocument();
+    expect(within(header).getByText(/refreshes every 15s/)).toBeInTheDocument();
+    expect(within(header).getByText('production')).toBeInTheDocument();
+    expect(within(header).getByText(/^[0-9a-f]{7}$/)).toHaveClass('mono');
     const range = screen.getByRole('group', { name: 'Time range' });
     expect(
       within(range)

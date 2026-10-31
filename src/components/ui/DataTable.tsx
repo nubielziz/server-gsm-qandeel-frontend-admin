@@ -35,11 +35,16 @@ export interface DataTableProps<T, K extends RowKey = RowKey> {
   /** Row the keyboard cursor is on (data-cursor). */
   cursorKey?: K;
   skeletonRows?: number;
+  /**
+   * The "N rows" line under a list without pagination. Pass `false` when the card counts its rows itself, for
+   * example a list of problems above a "12 components operational · Show" line. A pager is always drawn.
+   */
+  footer?: boolean;
 }
 
 /**
  * The page owns sort, page and selection (Refine's useTable keeps them in the URL); the table only reports
- * what the user asked for. Without `pagination` it is a plain list that ends with an "N rows" line.
+ * what the user asked for. Without `pagination` it is a plain list that ends with an "N rows" line (`footer`).
  */
 export function DataTable<T, K extends RowKey = RowKey>({
   columns,
@@ -59,6 +64,7 @@ export function DataTable<T, K extends RowKey = RowKey>({
   caption,
   cursorKey,
   skeletonRows = 8,
+  footer = true,
 }: DataTableProps<T, K>) {
   if (state === 'loading') {
     return <SkeletonTable cols={columns.length + (selection ? 1 : 0)} rows={skeletonRows} />;
@@ -105,11 +111,11 @@ export function DataTable<T, K extends RowKey = RowKey>({
           total={total}
           onPageChange={(page) => onPageChange?.(page)}
         />
-      ) : (
+      ) : footer ? (
         <div className="border-t border-line px-3.5 py-2 text-xs text-ink3">
           {formatCount(total)} {total === 1 ? 'row' : 'rows'}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

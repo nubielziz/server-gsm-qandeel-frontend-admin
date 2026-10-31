@@ -15,7 +15,7 @@ export interface ResponsiveTableProps<T, K extends RowKey = RowKey> extends Data
 /**
  * The table keeps everything DataTable does. Cards show the rows, the row click and the pager; they leave out sorting
  * and selection (a phone has no column headers to click), and the server's order stays. Loading, error and empty
- * states come from DataTable in both layouts.
+ * states come from DataTable in both layouts, and `footer={false}` leaves out the "N rows" line in both.
  */
 export function ResponsiveTable<T, K extends RowKey = RowKey>({
   layout = 'auto',
@@ -46,11 +46,11 @@ export function ResponsiveTable<T, K extends RowKey = RowKey>({
           total={total}
           onPageChange={(page) => onPageChange?.(page)}
         />
-      ) : (
+      ) : table.footer !== false ? (
         <div className="border-t border-line px-3.5 py-2 text-xs text-ink3">
           {num(total)} {total === 1 ? 'row' : 'rows'}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -4,8 +4,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ago } from '@/lib/format';
-import type { HealthGrants } from '../hooks';
-import { healthPath } from '../lib';
+import { useHealthLink, type HealthGrants, type HealthLink } from '../hooks';
 import type { SystemHealth } from '../types';
 import {
   alertName,
@@ -21,7 +20,7 @@ import {
 const MAX_NAMES = 4;
 
 /** "Down: Rapid IMEI (supplier), Postgres. Degraded: API." Each name opens that component on the Overview tab. */
-function BrokenLine({ broken }: { broken: BrokenComponent[] }) {
+function BrokenLine({ broken, link }: { broken: BrokenComponent[]; link: HealthLink }) {
   const groups = (['down', 'degraded'] as const)
     .map((status) => ({ status, items: broken.filter((item) => item.status === status) }))
     .filter((group) => group.items.length > 0);
@@ -34,7 +33,7 @@ function BrokenLine({ broken }: { broken: BrokenComponent[] }) {
           {group.items.slice(0, MAX_NAMES).map((item, position) => (
             <Fragment key={item.key}>
               {position > 0 && ', '}
-              <Link className="link" to={healthPath('overview', { component: item.key })}>
+              <Link className="link" to={link('overview', { component: item.key })}>
                 {item.label}
               </Link>
             </Fragment>
@@ -62,7 +61,15 @@ function Maybe({ to, children }: { to: string | null; children: ReactNode }) {
  * the worst ones), then the ongoing incidents, joined by a dot. An open-alert count of null is "no data", never "none".
  * With nothing open it says so in one quiet sentence.
  */
-function AlertsLine({ health, grants }: { health: SystemHealth; grants: HealthGrants }) {
+function AlertsLine({
+  health,
+  grants,
+  link,
+}: {
+  health: SystemHealth;
+  grants: HealthGrants;
+  link: HealthLink;
+}) {
   const open = health.alerts.open.value;
   const { critical, items } = health.alerts;
   const { incidents } = health;
@@ -76,7 +83,7 @@ function AlertsLine({ health, grants }: { health: SystemHealth; grants: HealthGr
     const rest = Math.max(more, (critical > 0 ? critical : open) - shown.length);
     parts.push(
       <span key="alerts">
-        <Maybe to={grants.can('alerts:read') ? healthPath('alerts') : null}>{openAlertsText(open)}</Maybe>
+        <Maybe to={grants.can('alerts:read') ? link('alerts') : null}>{openAlertsText(open)}</Maybe>
         {critical > 0 && `, ${critical} critical`}
         {shown.length > 0 && `: ${shown.map(alertName).join(', ')}`}
         {shown.length > 0 && rest > 0 && ` +${rest} more`}
@@ -93,7 +100,7 @@ function AlertsLine({ health, grants }: { health: SystemHealth; grants: HealthGr
             <Maybe
               to={
                 grants.can('incidents:read')
-                  ? healthPath('alerts', { view: 'incidents', incident: incident.id })
+                  ? link('alerts', { view: 'incidents', incident: incident.id })
                   : null
               }
             >
@@ -130,6 +137,8 @@ export interface VerdictDetailsProps {
  * Operational verdict: under Degraded it would read as an all-clear.
  */
 export function VerdictDetails({ health, grants, now }: VerdictDetailsProps) {
+  // Links to other tabs keep the chosen range, as a tab change does.
+  const link = useHealthLink();
   const broken = brokenComponents(health.components);
   const { monitoring } = health;
   const monitoringDown = monitoring.status === 'unavailable';
@@ -149,9 +158,9 @@ export function VerdictDetails({ health, grants, now }: VerdictDetailsProps) {
           Nothing that depends on it counts as healthy until it answers.
         </p>
       )}
-      {broken.length > 0 && <BrokenLine broken={broken} />}
+      {broken.length > 0 && <BrokenLine broken={broken} link={link} />}
       {operational && <p>{operational}.</p>}
-      <AlertsLine health={health} grants={grants} />
+      <AlertsLine health={health} grants={grants} link={link} />
     </>
   );
 }

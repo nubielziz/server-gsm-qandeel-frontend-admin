@@ -486,6 +486,10 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 - **Series sizes.** Metrics: 1h = 60 × 1 min, 6h = 72 × 5 min, 24h = 96 × 15 min, 7d = 168 × 1 h. Uptime cells
   (checks): at most 100 per range.
 
+- **Overview tab.** `GET …/checks?component=<key>` answers that component under the same `key` (unknown key: 404);
+  the chart draws `CheckBucket.latencyMs` against `ComponentChecks.latency`. `IncidentSummary.components[]` use
+  `HealthComponent.key`. `HealthComponent.detail` is set only while a check fails (and for a disabled supplier's note).
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -513,3 +517,5 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
     maintenance by itself? With status `unknown`, what is `since`?
 17. Are `version` and `commit` sent as shown (`v1.42.0`, short `9c4e1fa`)? Are `MAINTENANCE` 503 answers counted in
     the 5xx rate?
+18. Could `GET /admin/system/checks` offer a lean form (status only) for the uptime bars, and is the number of components capped? The Overview reads every component's buckets only to draw them.
+19. Is `HealthComponent.key` stable (`supplier:<id>`, `gateway:<id>`)? It is kept in addresses and in an incident's `components`.

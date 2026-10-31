@@ -224,6 +224,12 @@ describe('DataTable paging', () => {
     expect(screen.getByText('3 rows')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument();
   });
+
+  it('leaves the row count out when footer is false', () => {
+    render(<DataTable columns={columns} rows={rows} rowKey={(r) => r.id} footer={false} />);
+    expect(screen.queryByText('3 rows')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(rows.length + 1);
+  });
 });
 
 describe('DataTable row click', () => {

@@ -46,8 +46,25 @@ describe('ChartCard chart', () => {
   it('draws the line with its accessible name and names the unit above it', () => {
     const { container } = renderChart();
     expect(screen.getByRole('img', { name: 'API p95 latency, last 24 hours' })).toBeInTheDocument();
-    expect(screen.getByText('Milliseconds')).toBeInTheDocument();
+    // The line passes a second, so the axis reads in seconds like the "crit 1.5 s" label.
+    expect(screen.getByText('Seconds')).toBeInTheDocument();
     expect(container.querySelector('svg')).toHaveTextContent('10:00');
+  });
+
+  it('reads in milliseconds while the axis stays under a second', () => {
+    renderChart({
+      points: POINTS.map((point) => ({ ...point, value: point.value === null ? null : point.value / 3 })),
+      measure: { unit: 'ms' },
+    });
+    expect(screen.getByText('Milliseconds')).toBeInTheDocument();
+  });
+
+  it('names a far-away threshold above the chart instead of stretching the axis to it', () => {
+    const { container } = renderChart({
+      points: POINTS.map((point) => ({ ...point, value: point.value === null ? null : 120 })),
+    });
+    expect(screen.getByText('crit 1.5 s, above the chart')).toBeInTheDocument();
+    expect(container.querySelector('line[stroke-dasharray="4 3"]')).not.toBeInTheDocument();
   });
 
   it('draws the server threshold: the crit value, labelled, with the stretch past it in the critical colour', () => {

@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useLocation } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import { hookKit } from '../test/testKit';
-import { DEFAULT_RANGE, HEALTH_RANGES, parseRange, useHealthRange } from './useHealthRange';
+import { DEFAULT_RANGE, HEALTH_RANGES, parseRange, useHealthLink, useHealthRange } from './useHealthRange';
 
 // The hook with the router's location beside it, so a test can read what was written to the address.
 function useProbe() {
@@ -54,5 +54,24 @@ describe('useHealthRange', () => {
     act(() => result.current.setRange('24h'));
     expect(result.current.range).toBe('24h');
     expect(result.current.location.search).toBe('?tab=api');
+  });
+});
+
+describe('useHealthLink', () => {
+  const linkAt = (route: string) => {
+    const { Wrapper } = hookKit({ route });
+    return renderHook(() => useHealthLink(), { wrapper: Wrapper }).result.current;
+  };
+
+  it('keeps a chosen range in links to other tabs, as a tab change does', () => {
+    expect(linkAt('/system-health?range=7d')('alerts', { view: 'incidents' })).toBe(
+      '/system-health?tab=alerts&view=incidents&range=7d',
+    );
+  });
+
+  it('adds nothing for the default range', () => {
+    expect(linkAt('/system-health')('overview', { component: 'postgres' })).toBe(
+      '/system-health?component=postgres',
+    );
   });
 });

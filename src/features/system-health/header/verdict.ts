@@ -118,17 +118,19 @@ export interface SeeLink {
 
 /**
  * "See alerts" when something is open and the staff member may read alerts; otherwise "See incidents" when an incident is
- * ongoing and they may read incidents; otherwise nothing. `can` is the permission hint of the page.
+ * ongoing and they may read incidents; otherwise nothing. `can` is the permission hint of the page; `link` builds the
+ * address (the page passes one that keeps the chosen range).
  */
 export function seeLink(
   health: Pick<SystemHealth, 'alerts' | 'incidents'>,
   can: (permission: string) => boolean,
+  link: (tab: 'alerts', params?: { view: string }) => string = healthPath,
 ): SeeLink | null {
   if ((health.alerts.open.value ?? 0) > 0 && can('alerts:read')) {
-    return { to: healthPath('alerts'), label: 'See alerts' };
+    return { to: link('alerts'), label: 'See alerts' };
   }
   if (health.incidents.length > 0 && can('incidents:read')) {
-    return { to: healthPath('alerts', { view: 'incidents' }), label: 'See incidents' };
+    return { to: link('alerts', { view: 'incidents' }), label: 'See incidents' };
   }
   return null;
 }

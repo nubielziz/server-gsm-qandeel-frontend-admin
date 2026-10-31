@@ -2,6 +2,7 @@
 // values ignore it. The default (24 hours) leaves no parameter, like the other pages' defaults.
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
+import { healthPath, type HealthParam, type HealthTabId } from '../lib';
 import type { TimeRange } from '../types';
 
 /** The four ranges, shortest first: the choices of the range switch. */
@@ -36,4 +37,19 @@ export function useHealthRange(): [TimeRange, (next: TimeRange) => void] {
     [setParams],
   );
   return [range, setRange];
+}
+
+/** Builds the address of a tab of the page, with that tab's parameters. */
+export type HealthLink = (tab?: HealthTabId, params?: Readonly<Record<string, HealthParam>>) => string;
+
+/**
+ * Links to the page's tabs that keep the range the staff member chose, as a tab change does:
+ * `link('alerts', { view: 'incidents' })`. The default range adds nothing to the address.
+ */
+export function useHealthLink(): HealthLink {
+  const [range] = useHealthRange();
+  return useCallback<HealthLink>(
+    (tab, params = {}) => healthPath(tab, { ...params, range: range === DEFAULT_RANGE ? undefined : range }),
+    [range],
+  );
 }

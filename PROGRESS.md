@@ -12,14 +12,19 @@ excluded: Prometheus target, the console never calls it), the map has **66 table
 Slices of the feature, one commit each: foundation, then the tabs Overview, API, Orders & suppliers, Queues & jobs,
 Alerts & incidents, Data stores, Integrity.
 
-- **Foundation: done** (`feat(system-health): foundation …`). Types, 30 API functions (route coverage 30/30), hooks
+- **Foundation: done** (`0a43792`). Types, 30 API functions (route coverage 30/30), hooks
   with polling, mock scenarios for all 30 endpoints, page shell, header, verdict, KPI row, maintenance dialogs, shell
   banner, shared status pieces; 58 test files. One Opus review; its 2 blocking and 6 visual findings fixed by the lead
   (`*/health` mock anchored to the root route and following the scenario; mutations take `{ toastErrors }` so a
   dialog's refusal is not shown twice; verdict names the open alerts; KPI trends one point per hour from zero; ms
   thresholds in the value's scale; phone layout of tiles, meta line and impact line). Mismatches M203–M217.
   Test infra: RTL waits up to 3 s (`src/test/setup.ts`), the suite grew by 58 heavy files.
-- **Next:** the seven tab slices in worktrees (`npm run feature:worktree -- add system-health-<tab>`).
+- **Tabs: in progress.** Seven worktrees `../worktrees/system-health-<tab>` on `feat/system-health-<tab>`; one workflow
+  runs per tab: Sonnet implements and takes round-1 screenshots, Opus reviews code and images, Sonnet fixes and takes
+  round-2 screenshots; the lead looks at round 2 (third visual round), then squash-merges the tabs in order (Overview,
+  API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores, Integrity), one commit each. Pool: at most
+  4 implementers and 2 reviewers at once; no new tab while 3 wait for review. Budget: up to 3 calls per tab (21).
+  Merged so far: Overview.
 
 ### Earlier status (2026-10-30)
 

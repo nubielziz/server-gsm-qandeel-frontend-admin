@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { LineChart } from '@/components/charts';
 import { EmptyState } from '@/components/ui';
-import { chartFormat, thresholdReference, toLinePoints, unitCaption } from '../lib';
+import { axisFormat, formatValue, niceTop, thresholdOnAxis, thresholdReference, toLinePoints } from '../lib';
 import type { Measure, SeriesPoint, TimeRange } from '../types';
 import { PointsTable } from './PointsTable';
 import { TableViewToggle } from './TableViewToggle';
@@ -27,9 +27,14 @@ export interface ChartCardProps {
   yMin?: number;
 }
 
+/** Gridline intervals of the y axis. */
+const TICKS = 3;
+
 /**
  * One series in the first series colour (status hues never mean a series). The threshold is the server's `crit`, or its
- * `warn`; the chart only draws it. With no known point at all it says "No data" instead of an empty plot.
+ * `warn`; the chart only draws it, and only when the line comes near it: a far-away threshold would stretch the axis and
+ * flatten a healthy line, so it is named above the chart instead. Every axis label has one style and the caption names
+ * the unit; the tooltip prints the value with its unit. With no known point at all it says "No data".
  */
 export function ChartCard({
   points,
@@ -48,7 +53,13 @@ export function ChartCard({
     () => thresholdReference({ unit, warn, crit, direction }),
     [unit, warn, crit, direction],
   );
-  const { format, suffix } = chartFormat(unit);
+  const highest = useMemo(
+    () => Math.max(...points.flatMap((point) => (point.value === null ? [] : [point.value]))),
+    [points],
+  );
+  const drawn = reference && thresholdOnAxis(reference, highest) ? reference : undefined;
+  const top = yMax ?? niceTop(Math.max(highest, drawn?.value ?? -Infinity), TICKS, yMin ?? 0);
+  const axis = axisFormat(unit, top);
 
   if (!points.some((point) => point.value !== null)) {
     return (
@@ -63,16 +74,20 @@ export function ChartCard({
         <PointsTable points={points} unit={unit} caption={label} valueLabel={valueLabel} />
       ) : (
         <>
-          <p className="mb-1 text-2xs text-ink3">{unitCaption(unit)}</p>
+          <div className="mb-1 flex flex-wrap justify-between gap-x-3 text-2xs text-ink3">
+            <p>{axis.caption}</p>
+            {reference && !drawn && <p>{reference.label}, above the chart</p>}
+          </div>
           <LineChart
             points={linePoints}
             label={label}
             height={height}
-            yMax={yMax}
+            yMax={top}
             yMin={yMin}
-            formatValue={format}
-            unit={suffix}
-            reference={reference}
+            ticks={TICKS}
+            formatValue={(value) => formatValue(value, unit)}
+            formatAxis={axis.format}
+            reference={drawn}
           />
         </>
       )}
