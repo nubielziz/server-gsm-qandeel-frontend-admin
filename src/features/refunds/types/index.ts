@@ -15,8 +15,11 @@ export type PaymentStatus = 'captured' | 'refunded' | 'partial_refund' | 'disput
 
 // ---- Refunds ----
 
-/** Where a refund is: waiting for a person, done, failed at the gateway, or declined. */
-export type RefundStatus = 'requested' | 'completed' | 'failed' | 'rejected';
+/**
+ * Where a refund is: waiting for a person, approved and sent to the gateway (`processing`, until the gateway answers),
+ * done, failed at the gateway, or declined. `processing` follows the map's refund flow (MISMATCHES M258).
+ */
+export type RefundStatus = 'requested' | 'processing' | 'completed' | 'failed' | 'rejected';
 
 /** `original` goes back to the same payment method; `manual` is paid out by hand (a crypto payment the gateway cannot reverse). */
 export type RefundMethod = 'original' | 'manual';

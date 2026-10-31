@@ -27,6 +27,11 @@ describe('badgeFor', () => {
       tone: 'warn',
       icon: 'clock',
     });
+    expect(badgeFor(REFUND_BADGE, 'processing')).toEqual({
+      label: 'Sent to gateway',
+      tone: 'accent',
+      icon: 'loader',
+    });
     expect(badgeFor(REFUND_BADGE, 'failed').label).toBe('Failed at gateway');
     expect(badgeFor(REFUND_BADGE, 'rejected').label).toBe('Declined');
     expect(badgeFor(DISPUTE_BADGE, 'needs_response')).toEqual({

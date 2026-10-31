@@ -19,6 +19,8 @@ export type BadgeSpec = { label: string; tone: BadgeTone; icon: IconName };
 
 export const REFUND_BADGE: Readonly<Record<RefundStatus, BadgeSpec>> = {
   requested: { label: 'Needs approval', tone: 'warn', icon: 'clock' },
+  // Approved; the gateway has not answered yet (M258). No action: its answer moves the refund to Refunded or Failed.
+  processing: { label: 'Sent to gateway', tone: 'accent', icon: 'loader' },
   completed: { label: 'Refunded', tone: 'good', icon: 'checkCircle' },
   failed: { label: 'Failed at gateway', tone: 'crit', icon: 'xCircle' },
   rejected: { label: 'Declined', tone: 'neutral', icon: 'ban' },
@@ -82,6 +84,7 @@ export function isRefundStatus(value: unknown): value is RefundStatus {
 export const REFUND_FILTERS: readonly { value: RefundStatus | ''; label: string }[] = [
   { value: '', label: 'All' },
   { value: 'requested', label: 'Needs approval' },
+  { value: 'processing', label: 'Sent to gateway' },
   { value: 'failed', label: 'Failed' },
   { value: 'completed', label: 'Refunded' },
   { value: 'rejected', label: 'Declined' },
