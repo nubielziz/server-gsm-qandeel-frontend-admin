@@ -7,7 +7,8 @@ import { ButtonLink, Icon } from '@/components/ui';
 import { useHealthGrants } from '../hooks/useHealthGrants';
 import { useSystemHealth } from '../hooks/useHealth';
 import { HEALTH_PATH } from '../lib/healthTabs';
-import { scopePhrase, whenText } from './maintenance';
+import { whenText } from '../lib';
+import { scopePhrase } from './maintenance';
 
 /**
  * Renders nothing unless maintenance is on. It is a polite `status` region, so a screen reader hears it when maintenance

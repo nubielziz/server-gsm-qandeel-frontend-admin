@@ -1,6 +1,14 @@
 // Tests for time.ts: "8s ago" text and the rule that data is stale after two poll intervals.
 import { describe, expect, it } from 'vitest';
-import { formatAgo, formatInterval, isStale, sinceText } from './time';
+import {
+  formatAgo,
+  formatInterval,
+  fromLocalInput,
+  isStale,
+  sinceText,
+  toLocalInput,
+  whenText,
+} from './time';
 
 describe('formatAgo', () => {
   it('counts seconds, minutes, hours and days', () => {
@@ -66,5 +74,35 @@ describe('sinceText', () => {
   it('never prints a negative age for a start slightly in the future', () => {
     const start = new Date(2026, 7, 21, 14, 40, 20).toISOString();
     expect(sinceText(start, now)).toBe('since 14:40 (<1m)');
+  });
+});
+
+describe('expected end conversions', () => {
+  it('turns an ISO time into a datetime-local value in the local time zone and back', () => {
+    const local = new Date(2026, 10, 2, 16, 30);
+    const value = toLocalInput(local.toISOString());
+    expect(value).toBe('2026-11-02T16:30');
+    expect(fromLocalInput(value)).toBe(local.toISOString());
+  });
+
+  it('is empty for no time, an empty input or text that is not a time', () => {
+    expect(toLocalInput(null)).toBe('');
+    expect(toLocalInput('soon')).toBe('');
+    expect(fromLocalInput('')).toBeNull();
+    expect(fromLocalInput('soon')).toBeNull();
+  });
+});
+
+describe('whenText', () => {
+  const now = new Date(2026, 7, 21, 15, 0).getTime();
+
+  it('gives the time for today and the date with the time for another day', () => {
+    expect(whenText(new Date(2026, 7, 21, 14, 2).toISOString(), now)).toBe('14:02');
+    expect(whenText(new Date(2026, 7, 22, 9, 30).toISOString(), now)).toBe('22 Aug, 09:30');
+  });
+
+  it('is empty without a readable time', () => {
+    expect(whenText(null, now)).toBe('');
+    expect(whenText('soon', now)).toBe('');
   });
 });

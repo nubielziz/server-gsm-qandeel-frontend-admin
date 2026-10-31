@@ -1,6 +1,5 @@
-// The words and small conversions of the maintenance controls: the four scopes, the sentence that says what customers get,
-// and the `datetime-local` value of the expected end. No demo page (docs/system-health-design.md, "Controls and confirmation").
-import { dayKey, fmtDate, fmtTime } from '@/lib/format';
+// The words of the maintenance controls: the four scopes and the sentences that say what customers get (the date-time
+// conversions live in lib/time.ts). No demo page (docs/system-health-design.md, "Controls and confirmation").
 import type { MaintenanceScope } from '../types';
 
 /** One choice of the scope radio. The descriptions follow the contract: what the scope closes. */
@@ -42,28 +41,4 @@ export function effectSentence(scope: MaintenanceScope | '' | null | undefined):
 /** What turning maintenance off does. */
 export function offSentence(scope: MaintenanceScope | null | undefined): string {
   return `Customers can use ${scopePhrase(scope)} again, and your message stops showing. This takes effect straight away.`;
-}
-
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** An ISO time as the value of a `datetime-local` input, in the browser's time zone ("2026-10-31T16:30"). Empty if unreadable. */
-export function toLocalInput(iso: string | null | undefined): string {
-  const ms = iso ? Date.parse(iso) : Number.NaN;
-  if (Number.isNaN(ms)) return '';
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** The value of a `datetime-local` input (the browser's time zone) as an ISO time for the API. Null when empty. */
-export function fromLocalInput(value: string): string | null {
-  if (!value) return null;
-  const ms = new Date(value).getTime();
-  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
-}
-
-/** "14:02" for today, "31 Oct, 14:02" for another day; empty when there is no time. For "since" and "expected end". */
-export function whenText(iso: string | null | undefined, now: number = Date.now()): string {
-  const ms = iso ? Date.parse(iso) : Number.NaN;
-  if (Number.isNaN(ms)) return '';
-  return dayKey(ms) === dayKey(now) ? fmtTime(ms) : fmtDate(ms);
 }

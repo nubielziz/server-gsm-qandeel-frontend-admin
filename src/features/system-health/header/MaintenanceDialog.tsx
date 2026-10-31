@@ -14,14 +14,8 @@ import {
 } from '@/components/ui';
 import { useSetMaintenance } from '../hooks';
 import type { MaintenanceScope, MaintenanceState } from '../types';
-import {
-  SCOPE_OPTIONS,
-  effectSentence,
-  fromLocalInput,
-  scopePhrase,
-  toLocalInput,
-  whenText,
-} from './maintenance';
+import { fromLocalInput, toLocalInput, whenText } from '../lib';
+import { SCOPE_OPTIONS, effectSentence, scopePhrase } from './maintenance';
 
 type Values = { scope: MaintenanceScope | ''; message: string; end: string };
 

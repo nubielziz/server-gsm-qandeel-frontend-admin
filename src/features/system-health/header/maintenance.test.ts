@@ -1,14 +1,6 @@
 // Tests for the maintenance words: scope phrases, the effect sentence the dialog shows and the expected-end conversions.
 import { describe, expect, it } from 'vitest';
-import {
-  SCOPE_OPTIONS,
-  effectSentence,
-  fromLocalInput,
-  offSentence,
-  scopePhrase,
-  toLocalInput,
-  whenText,
-} from './maintenance';
+import { SCOPE_OPTIONS, effectSentence, offSentence, scopePhrase } from './maintenance';
 
 describe('SCOPE_OPTIONS', () => {
   it('offers store, checkout, API orders and all, each with a label and what it closes', () => {
@@ -59,35 +51,5 @@ describe('offSentence', () => {
     expect(offSentence('checkout')).toBe(
       'Customers can use checkout again, and your message stops showing. This takes effect straight away.',
     );
-  });
-});
-
-describe('expected end conversions', () => {
-  it('turns an ISO time into a datetime-local value in the local time zone and back', () => {
-    const local = new Date(2026, 10, 2, 16, 30);
-    const value = toLocalInput(local.toISOString());
-    expect(value).toBe('2026-11-02T16:30');
-    expect(fromLocalInput(value)).toBe(local.toISOString());
-  });
-
-  it('is empty for no time, an empty input or text that is not a time', () => {
-    expect(toLocalInput(null)).toBe('');
-    expect(toLocalInput('soon')).toBe('');
-    expect(fromLocalInput('')).toBeNull();
-    expect(fromLocalInput('soon')).toBeNull();
-  });
-});
-
-describe('whenText', () => {
-  const now = new Date(2026, 7, 21, 15, 0).getTime();
-
-  it('gives the time for today and the date with the time for another day', () => {
-    expect(whenText(new Date(2026, 7, 21, 14, 2).toISOString(), now)).toBe('14:02');
-    expect(whenText(new Date(2026, 7, 22, 9, 30).toISOString(), now)).toBe('22 Aug, 09:30');
-  });
-
-  it('is empty without a readable time', () => {
-    expect(whenText(null, now)).toBe('');
-    expect(whenText('soon', now)).toBe('');
   });
 });

@@ -503,6 +503,11 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   answer 404 for an unknown queue or job. `POST …/jobs/:name/run` answers 409 `JOB_ALREADY_RUNNING` while a run works.
   `useJobs` reads every 5 s while a job or run is `running`, like the integrity report.
 
+- **Alerts & incidents tab.** "Open" reads `?status=firing` and `?status=acknowledged`. `PATCH /admin/alert-rules/:id`
+  takes a partial body (`{ isActive }`, `{ mutedUntil }`, `{ mutedUntil: null }`, or the changed fields).
+  `PATCH /admin/incidents/:id` takes `{ status, update }`, closing `{ status: 'resolved', rootCause, update? }`.
+  `AlertRule.open` says an alert of the rule is open. An acknowledged alert without `acknowledgedBy` prints "Unknown".
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -540,3 +545,7 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 25. Is `scheduleText` always sent, and in which time zone does the cron run? When nothing waits, is `oldestAge` `{ value: 0 or null, state: 'ok' }` and `oldestUndeliveredAt` null?
 26. Does `POST …/retry` with `all: true` retry only failed jobs, and what does `retried` count? Does the server mark a paused queue itself (`state: warn`, as mocked)?
 27. How many runs does `GET …/jobs?job=` return, with paging? Is a `JobRun.result` free of secrets and stable enough to print?
+28. Will `GET /admin/alerts` take `open=true` (as incidents do) or several `status` values? Today "Open" is two reads.
+29. What does a mute do: no messages while alerts are still recorded, or no evaluation at all? Can the rule carry a `muted` flag so the console need not compare `mutedUntil` with its clock?
+30. Which metrics may a rule watch, with which units? An enum or list in the API would replace the console's list.
+31. Can one alert start more than one incident, or an incident start from a resolved alert? What happens to the alerts of a deleted rule, and do alerts keep their rule's name and limit after an edit?
