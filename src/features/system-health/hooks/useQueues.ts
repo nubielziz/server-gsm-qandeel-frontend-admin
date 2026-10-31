@@ -35,13 +35,18 @@ export function useFailedJobs(queue?: string, page: HealthPage = FIRST_PAGE, ena
 
 /**
  * The scheduled jobs; with `query.job` it also returns the run history of that job (the History drawer). The history
- * of one job never stays on screen while another job's loads.
+ * of one job never stays on screen while another job's loads. While the server says a job or a run is working (a
+ * manual Run now), it reads every few seconds, like the integrity report, so the end of the run shows soon.
  */
 export function useJobs(query: JobsQuery = {}, enabled = true) {
   return useHealthQuery({
     key: healthKey('jobs', query.job ?? null),
     read: (init) => getJobs(query, init),
-    poll: POLL.normal,
+    // Optional chaining on the lists too: a malformed answer must never stop the polling.
+    poll: (data) =>
+      data?.jobs?.some((job) => job.running) || data?.runs?.some((run) => run.status === 'running')
+        ? POLL.running
+        : POLL.normal,
     enabled,
     keepPrevious: () => false,
   });

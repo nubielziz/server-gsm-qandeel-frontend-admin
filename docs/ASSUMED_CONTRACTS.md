@@ -498,6 +498,11 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   `byServiceType[].total` counts finished orders of the last 24 hours. A supplier's `since` is when its current
   `health` began. `balance.amount` is in `balance.currency`; `balance.state` is the server's low-balance verdict.
 
+- **Queues & jobs tab.** `ScheduledJob.scheduleText` may be empty (the cron text then shows alone; the console never
+  reads cron). `JobRun.result` prints as one line of its simple fields. `…/queues/:name/failed` and `…/jobs?job=<name>`
+  answer 404 for an unknown queue or job. `POST …/jobs/:name/run` answers 409 `JOB_ALREADY_RUNNING` while a run works.
+  `useJobs` reads every 5 s while a job or run is `running`, like the integrity report.
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -532,3 +537,6 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 22. Which words does `stuck.byStatus[].status` use, and is `needs_attention` an order status or a queue? The Orders tab of each link depends on it.
 23. After a supplier is paused, do its checks and balance sync keep running, or does its `health` become `unknown`?
 24. Do supplier latency, error and timeout rates come from Prometheus? With monitoring down they should then be `unknown`; the tab shows whatever state is sent.
+25. Is `scheduleText` always sent, and in which time zone does the cron run? When nothing waits, is `oldestAge` `{ value: 0 or null, state: 'ok' }` and `oldestUndeliveredAt` null?
+26. Does `POST …/retry` with `all: true` retry only failed jobs, and what does `retried` count? Does the server mark a paused queue itself (`state: warn`, as mocked)?
+27. How many runs does `GET …/jobs?job=` return, with paging? Is a `JobRun.result` free of secrets and stable enough to print?

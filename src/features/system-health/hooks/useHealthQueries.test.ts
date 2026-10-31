@@ -23,6 +23,13 @@ function pollOf(queryClient: QueryClient, key: readonly unknown[]) {
   return queryClient.getQueryCache().find({ queryKey: key })?.observers[0]?.options.refetchInterval;
 }
 
+// The poll rate a read uses now: a function of the last answer (jobs, integrity) is asked for its value.
+function pollNow(queryClient: QueryClient, key: readonly unknown[]) {
+  const query = queryClient.getQueryCache().find({ queryKey: key });
+  const interval = pollOf(queryClient, key);
+  return typeof interval === 'function' && query ? interval(query) : interval;
+}
+
 // Every read of the hook contract with the key it uses and its poll rate.
 const READS: [string, () => unknown, readonly unknown[], number][] = [
   ['useSystemHealth', () => useSystemHealth(), healthKey('health'), POLL.fast],
@@ -52,8 +59,19 @@ describe('the reads of the hook contract', () => {
     await waitFor(() =>
       expect(queryClient.getQueryCache().find({ queryKey: key })?.state.status).toBe('success'),
     );
-    expect(pollOf(queryClient, key)).toBe(rate);
+    expect(pollNow(queryClient, key)).toBe(rate);
     expect(key.slice(0, 2)).toEqual(['api', 'system-health']);
+  });
+
+  it('reads the jobs every few seconds while a job is running, like the integrity report', async () => {
+    const { Wrapper, queryClient } = hookKit();
+    http.reply({ jobs: [{ name: 'price_sync', running: true }], runs: [] });
+    renderHook(() => useJobs(), { wrapper: Wrapper });
+    const key = healthKey('jobs', null);
+    await waitFor(() =>
+      expect(queryClient.getQueryCache().find({ queryKey: key })?.state.status).toBe('success'),
+    );
+    expect(pollNow(queryClient, key)).toBe(POLL.running);
   });
 
   it('reads the health summary with a plain GET and returns it', async () => {
