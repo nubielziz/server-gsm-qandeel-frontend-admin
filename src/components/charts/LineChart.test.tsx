@@ -66,6 +66,41 @@ describe('LineChart', () => {
     const { container } = render(<LineChart points={[points[0]]} label="One day" />);
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
+
+  it('breaks the line at a gap and says "No data" there', async () => {
+    const user = userEvent.setup();
+    const gappy: LinePoint[] = [
+      { value: 120, label: '10:00' },
+      { value: 140, label: '10:05' },
+      { value: null, label: '10:10' },
+      { value: 130, label: '10:15' },
+      { value: 150, label: '10:20' },
+    ];
+    const { container } = render(<LineChart points={gappy} label="Latency" unit=" ms" />);
+    const line = container.querySelectorAll('svg path')[1].getAttribute('d') ?? '';
+    // Two runs: each starts with its own M, so nothing is drawn through the gap.
+    expect(line.match(/M/g)).toHaveLength(2);
+    await user.tab();
+    await user.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
+    expect(container.querySelector('.tip')).toHaveTextContent('No data');
+    expect(container.querySelector('[aria-live="polite"]')).toHaveTextContent('10:10: No data');
+  });
+
+  it('keeps the critical overlay above a threshold that is bad above, and keeps the threshold in view', () => {
+    const { container } = render(
+      <LineChart
+        points={points}
+        label="p95"
+        reference={{ value: 150, label: 'Critical 150 ms', bad: 'above' }}
+      />,
+    );
+    const rect = container.querySelector('clipPath rect');
+    expect(rect?.getAttribute('y')).toBe('0');
+    // The axis grows to include the threshold even though every value is below it.
+    const line = container.querySelector('line[stroke-dasharray="4 3"]');
+    expect(Number(line?.getAttribute('y1'))).toBeGreaterThan(0);
+    expect(container.querySelector('svg')).toHaveTextContent('Critical 150 ms');
+  });
 });
 
 describe('Sparkline', () => {
@@ -74,6 +109,13 @@ describe('Sparkline', () => {
     const svg = container.querySelector('svg');
     expect(svg).toHaveAttribute('aria-hidden', 'true');
     expect(svg?.querySelector('path')?.getAttribute('d')).toMatch(/^M[\d.]+,[\d.]+(L[\d.]+,[\d.]+){3}$/);
+  });
+
+  it('starts a new stretch after a gap and draws nothing when every value is missing', () => {
+    const { container, rerender } = render(<Sparkline values={[3, null, 4, 8]} />);
+    expect(container.querySelector('path')?.getAttribute('d')?.match(/M/g)).toHaveLength(2);
+    rerender(<Sparkline values={[null, null]} />);
+    expect(container.querySelector('svg')).not.toBeInTheDocument();
   });
 
   it('draws a flat line for equal values and nothing for no values', () => {

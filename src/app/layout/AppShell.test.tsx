@@ -31,6 +31,7 @@ const OWNER_PAGES = [
   'Admins & access',
   'Settings',
   'Audit log',
+  'System health',
 ];
 
 async function primaryNav() {
@@ -42,7 +43,7 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 16 pages of the demo in four groups, and marks the current one', async () => {
+  it('lists the 16 pages of the demo and System health in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
@@ -496,7 +497,7 @@ describe('account menu', () => {
     await signInAs();
     const user = userEvent.setup();
     renderApp('/dashboard');
-    expect((await primaryNav()).getAllByRole('link')).toHaveLength(16);
+    expect((await primaryNav()).getAllByRole('link')).toHaveLength(17);
     expect(await screen.findByRole('button', { name: 'Account menu for Rami K.' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Account menu for/ }));

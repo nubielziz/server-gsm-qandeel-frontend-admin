@@ -3,8 +3,8 @@
 The admin console of GSM Supply, built with [Refine](https://refine.dev) (headless), React 19, TypeScript (strict),
 Tailwind 3 and React Query 5. It ports the static demo in `reference/gsm-admin` (screens, copy, interactions) and is
 typed against the API design in `reference/gsm-map` (routes, entities, permissions, error codes). All 16 pages of the
-demo are built, and every one of the map's 238 admin endpoints plus `GET /health` has a typed client function
-(`docs/ROUTE_COVERAGE.md`).
+demo are built, plus System health (no demo page: `docs/system-health-design.md`), and every one of the map's 268
+admin endpoints plus `GET /health` has a typed client function (`docs/ROUTE_COVERAGE.md`).
 
 ## Quick start
 
@@ -45,6 +45,31 @@ VITE_API_MOCKS=true
 Sign in with any seeded staff email (the owner is `rami@gsm-supply.example`), the password `demo-password` and the
 code `123456`. The mock layer is dev-only: a production build refuses `VITE_API_MOCKS=true`, and no mock code reaches
 `dist`.
+
+Mock scenarios: add `?mock=<name>` to any address to choose how the mock API behaves; the choice is kept for the
+browser tab, and a small switcher in the bottom corner (dev mock layer only; hide it with `?mockui=off`) reloads the
+app with another one. They mostly drive System health:
+
+| `?mock=` | What the mock API does |
+|---|---|
+| `healthy` (default) | Everything up. |
+| `degraded` | A slow supplier, a critical alert firing, an open incident, orders past SLA. |
+| `outage` | Database down, a 5xx spike; order and integrity reads fail. |
+| `monitoring-down` | The metrics backend does not answer: metrics and errors return 503, the verdict is neutral. |
+| `partial-failure` | Only `GET /admin/system/queues` fails; every other card keeps working. |
+| `maintenance` | Checkout maintenance on, a ledger mismatch alert and a failed integrity check. |
+| `readonly` | Degraded data, and whoever signs in gets the read-only role (no action buttons). |
+
+### System health links
+
+The System health page links to the monitoring tools only when their address is set at build time; unset means no
+link, never a dead one:
+
+```dotenv
+VITE_GRAFANA_URL=https://grafana.example.com/d/gsm-api     # "Open in Grafana" (header and API tab)
+VITE_SENTRY_URL=https://sentry.example.com/organizations/gsm/issues/   # Sentry links of the top errors
+VITE_BULL_BOARD_URL=https://api.example.com/admin/queues   # "Open in Bull Board"; a queue opens at <url>/queue/<name>
+```
 
 ## Scripts
 

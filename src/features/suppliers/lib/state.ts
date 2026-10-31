@@ -1,10 +1,10 @@
-// How the screen names a supplier's state: Healthy, Degraded, Down or Disabled. Ports statusDot and supBadge of 20-ui.js.
+// How the screen names a supplier's state: Healthy, Degraded, Down, Paused or Disabled. Ports statusDot and supBadge of 20-ui.js.
 // The server works out the health; these helpers only pick the word, the colour and the icon (status is never colour alone).
 import type { BadgeTone, IconName } from '@/components/ui';
 import type { Supplier, SupplierHealth } from '../types';
 
-/** The four states a badge can show. A disabled supplier shows Disabled whatever its health is. */
-export type SupplierState = SupplierHealth | 'disabled';
+/** The states a badge can show. A disabled or paused supplier shows that word whatever its health is. */
+export type SupplierState = SupplierHealth | 'disabled' | 'paused';
 
 /** The badge of each state: word, tone and icon. */
 export const STATE_BADGE: Readonly<
@@ -14,16 +14,18 @@ export const STATE_BADGE: Readonly<
   degraded: { label: 'Degraded', tone: 'serious', icon: 'alert' },
   down: { label: 'Down', tone: 'crit', icon: 'xCircle' },
   disabled: { label: 'Disabled', tone: 'neutral', icon: 'ban' },
+  paused: { label: 'Paused', tone: 'warn', icon: 'pause' },
 };
 
-/** True while the supplier takes orders (the demo's `enabled`). */
+/** True while the supplier takes orders (the demo's `enabled`). A paused supplier takes none until it is resumed. */
 export function isEnabled(supplier: Pick<Supplier, 'status'>): boolean {
-  return supplier.status !== 'disabled';
+  return supplier.status === 'active';
 }
 
 /** The state the badge shows. */
 export function supplierState(supplier: Pick<Supplier, 'status' | 'health'>): SupplierState {
-  return isEnabled(supplier) ? supplier.health : 'disabled';
+  if (supplier.status === 'disabled' || supplier.status === 'paused') return supplier.status;
+  return supplier.health;
 }
 
 /** An enabled supplier that is not healthy: the page header counts it and the detail opens with a banner. */

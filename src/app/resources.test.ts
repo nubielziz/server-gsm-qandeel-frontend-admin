@@ -41,10 +41,12 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read', 'webhooks:read'],
     ],
     ['audit', 'Audit log', 'System', 'history', 'audit:read'],
+    // No demo page; any one of the three read permissions opens it (docs/system-health-design.md).
+    ['system-health', 'System health', 'System', 'pulse', ['system:read', 'alerts:read', 'incidents:read']],
   ];
 
 describe('page resources', () => {
-  it('are the demo’s 16 pages, in its order', () => {
+  it('are the demo’s 16 pages, in its order, then System health', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
   });
 

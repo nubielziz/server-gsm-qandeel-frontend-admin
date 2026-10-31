@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { AppErrorBoundary } from '../AppErrorBoundary';
 import { AppCommandPalette } from '../palette';
 import { BreadcrumbTitleContext } from './breadcrumbTitle';
+import { ShellBanners } from './ShellBanners';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
@@ -81,6 +82,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             menuButtonRef={nav.menuButtonRef}
             onOpenPalette={() => setPaletteOpen(true)}
           />
+          <ShellBanners />
           <main
             id="main"
             ref={mainRef}

@@ -4,6 +4,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { applyListQuery } from '@/mocks/crud';
 import { invalid, notFound, textOf } from '@/mocks/handlers/accessShared';
 import { problem, type ProblemError } from '@/mocks/problem';
+import { mockScenario } from '@/mocks/scenario';
 import { toMoney } from '@/mocks/seed';
 import type { MockSupplier, SuppliersState } from './seed';
 import { secured } from './secured';
@@ -51,7 +52,8 @@ function applyFields(row: MockSupplier, body: Record<string, unknown>): void {
   row.rateLimitPerMin = num(body.rateLimitPerMin) ?? row.rateLimitPerMin;
   row.timeoutMs = num(body.timeoutMs) ?? row.timeoutMs;
   if (typeof body.apiKey === 'string' && body.apiKey.trim()) row.apiKeyHint = body.apiKey.trim().slice(0, 5);
-  if (body.status === 'active' || body.status === 'disabled') row.status = body.status;
+  if (body.status === 'active' || body.status === 'disabled' || body.status === 'paused')
+    row.status = body.status;
 }
 
 /** The routes for listing, reading, connecting, editing and deleting suppliers. */
@@ -117,6 +119,10 @@ export const supplierHandlers: HttpHandler[] = [
   http.patch(
     '*/admin/suppliers/:id',
     secured(async ({ params, data, body }) => {
+      // The `readonly` dev scenario signs in a viewer, whom the real API refuses (System health's Pause, for one).
+      if (mockScenario() === 'readonly') {
+        return problem(403, 'FORBIDDEN', 'Forbidden', 'You need the suppliers:update permission.');
+      }
       const row = data.suppliers.find(String(params.id));
       if (!row) return notFound('supplier', params.id);
       const input = await body();

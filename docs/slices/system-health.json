@@ -1,0 +1,609 @@
+{
+  "feature": "system-health",
+  "page": "/system-health",
+  "demo": [],
+  "folders": [
+    "src/features/system-health"
+  ],
+  "notes": "No demo page: designed in docs/system-health-design.md. Overview, API, orders and suppliers, queues and jobs, alerts and incidents, data stores, integrity, maintenance. Pausing a supplier reuses updateSupplier from features/suppliers (PATCH /admin/suppliers/:id, status = paused).",
+  "rules": {
+    "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
+    "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
+    "crud": "L=GET /resource (list), S=GET /resource/:id (show), C=POST /resource (create), U=PATCH /resource/:id (update), D=DELETE /resource/:id (delete); every other row is one endpoint with op \"action\""
+  },
+  "endpoints": [
+    {
+      "key": "GET /admin/system/health",
+      "method": "GET",
+      "path": "/admin/system/health",
+      "group": "health",
+      "op": "action",
+      "description": "Overall status (Operational, Degraded or Outage), the running build (version, commit, environment), the status of each component, uptime over 24 hours, 7 and 30 days, open alerts, ongoing incidents and the maintenance state.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "service_checks",
+        "alert_events",
+        "incidents",
+        "settings"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/health"
+      }
+    },
+    {
+      "key": "GET /admin/system/checks",
+      "method": "GET",
+      "path": "/admin/system/checks",
+      "group": "health",
+      "op": "action",
+      "description": "Check history of a component over a time range: uptime bars and response time.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "service_checks"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/checks"
+      }
+    },
+    {
+      "key": "GET /admin/system/metrics",
+      "method": "GET",
+      "path": "/admin/system/metrics",
+      "group": "health",
+      "op": "action",
+      "description": "API performance per surface over a time range: requests/min, latency p50, p95 and p99, 4xx and 5xx rates, 429 count and the 10 slowest endpoints. Read from the monitoring system.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/metrics"
+      }
+    },
+    {
+      "key": "GET /admin/system/errors",
+      "method": "GET",
+      "path": "/admin/system/errors",
+      "group": "health",
+      "op": "action",
+      "description": "Most frequent errors by code and endpoint over a time range, with first and last seen, request_id and a Sentry link.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/errors"
+      }
+    },
+    {
+      "key": "GET /admin/system/orders-health",
+      "method": "GET",
+      "path": "/admin/system/orders-health",
+      "group": "health",
+      "op": "action",
+      "description": "Order pipeline health: orders stuck beyond SLA per status, dispatch time p95, success and failure rate per service type, and orders held by risk.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "orders",
+        "order_events",
+        "risk_assessments"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/orders-health"
+      }
+    },
+    {
+      "key": "GET /admin/system/suppliers",
+      "method": "GET",
+      "path": "/admin/system/suppliers",
+      "group": "health",
+      "op": "action",
+      "description": "Health of each supplier: up or down, last successful call, response time, error and timeout rate, circuit-breaker state, last sync and our balance with them. Pausing uses PATCH /admin/suppliers/:id (status = paused).",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "suppliers",
+        "supplier_api_logs",
+        "service_checks"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/suppliers"
+      }
+    },
+    {
+      "key": "GET /admin/system/queues",
+      "method": "GET",
+      "path": "/admin/system/queues",
+      "group": "health",
+      "op": "action",
+      "description": "BullMQ counters per queue: waiting, active, delayed, failed, age of the oldest job, rate and number of workers. Deep details stay in Bull Board.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "outbox_events"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/queues"
+      }
+    },
+    {
+      "key": "GET /admin/system/queues/:name/failed",
+      "method": "GET",
+      "path": "/admin/system/queues/:name/failed",
+      "group": "health",
+      "op": "action",
+      "description": "Failed jobs with the failure reason and the number of attempts.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "outbox_events"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/queues/:name/failed"
+      }
+    },
+    {
+      "key": "POST /admin/system/queues/:name/retry",
+      "method": "POST",
+      "path": "/admin/system/queues/:name/retry",
+      "group": "health",
+      "op": "action",
+      "description": "Retry one failed job or all failed jobs.",
+      "access": "permission",
+      "permission": "system:manage",
+      "stage": 9,
+      "tables": [
+        "outbox_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/system/queues/:name/retry"
+      }
+    },
+    {
+      "key": "POST /admin/system/queues/:name/pause",
+      "method": "POST",
+      "path": "/admin/system/queues/:name/pause",
+      "group": "health",
+      "op": "action",
+      "description": "Pause or resume processing of a queue (paused: true or false) during an incident.",
+      "access": "permission",
+      "permission": "system:manage",
+      "stage": 9,
+      "tables": [
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/system/queues/:name/pause"
+      }
+    },
+    {
+      "key": "GET /admin/system/jobs",
+      "method": "GET",
+      "path": "/admin/system/jobs",
+      "group": "health",
+      "op": "action",
+      "description": "Scheduled jobs: name, schedule, last run, next run and result; ?job= returns the run history of one job.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "job_runs"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/jobs"
+      }
+    },
+    {
+      "key": "POST /admin/system/jobs/:name/run",
+      "method": "POST",
+      "path": "/admin/system/jobs/:name/run",
+      "group": "health",
+      "op": "action",
+      "description": "Run a job now by hand (for example the price sync); the run is recorded in job_runs with trigger = manual.",
+      "access": "permission",
+      "permission": "system:manage",
+      "stage": 9,
+      "tables": [
+        "job_runs",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/system/jobs/:name/run"
+      }
+    },
+    {
+      "key": "GET /admin/system/database",
+      "method": "GET",
+      "path": "/admin/system/database",
+      "group": "health",
+      "op": "action",
+      "description": "Postgres: connections out of the maximum and pool wait, slowest queries (pg_stat_statements), locks and long transactions, replica lag, size and growth, and pending migrations.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/database"
+      }
+    },
+    {
+      "key": "GET /admin/system/cache",
+      "method": "GET",
+      "path": "/admin/system/cache",
+      "group": "health",
+      "op": "action",
+      "description": "Redis: memory used out of the limit, evictions, hit rate, clients and latency.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/cache"
+      }
+    },
+    {
+      "key": "GET /admin/system/webhooks",
+      "method": "GET",
+      "path": "/admin/system/webhooks",
+      "group": "health",
+      "op": "action",
+      "description": "Delivery health of outgoing webhooks to merchants and incoming ones from gateways: success rate, failures, attempts and the oldest undelivered message.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 9,
+      "tables": [
+        "webhook_deliveries",
+        "outbox_events"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/webhooks"
+      }
+    },
+    {
+      "key": "GET /admin/system/integrity",
+      "method": "GET",
+      "path": "/admin/system/integrity",
+      "group": "health",
+      "op": "action",
+      "description": "Money integrity checks: every entry sums to zero, every account balance equals the sum of its lines, holds stuck over 24 hours, confirmed payments without an entry, and the last result.",
+      "access": "permission",
+      "permission": "system:read",
+      "stage": 12,
+      "tables": [
+        "ledger_entries",
+        "ledger_accounts",
+        "payments",
+        "job_runs"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/system/integrity"
+      }
+    },
+    {
+      "key": "POST /admin/system/integrity/run",
+      "method": "POST",
+      "path": "/admin/system/integrity/run",
+      "group": "health",
+      "op": "action",
+      "description": "Run the integrity check now as a background job; the result appears in GET /admin/system/integrity.",
+      "access": "permission",
+      "permission": "system:manage",
+      "stage": 12,
+      "tables": [
+        "job_runs",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/system/integrity/run"
+      }
+    },
+    {
+      "key": "PUT /admin/system/maintenance",
+      "method": "PUT",
+      "path": "/admin/system/maintenance",
+      "group": "health",
+      "op": "action",
+      "description": "Maintenance mode with a scope (store, checkout, API orders or all), a message and an expected time. The chosen scope answers 503 MAINTENANCE; the admin console is never affected, so staff are not locked out. The switch is stored in settings.",
+      "access": "permission",
+      "permission": "system:manage",
+      "stage": 9,
+      "tables": [
+        "settings",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "PUT",
+        "ops": null,
+        "path": "/admin/system/maintenance"
+      }
+    },
+    {
+      "key": "GET /admin/alert-rules",
+      "method": "GET",
+      "path": "/admin/alert-rules",
+      "group": "health",
+      "op": "list",
+      "description": "Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.",
+      "access": "permission",
+      "permission": "alerts:*",
+      "stage": 12,
+      "tables": [
+        "alert_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/alert-rules"
+      }
+    },
+    {
+      "key": "GET /admin/alert-rules/:id",
+      "method": "GET",
+      "path": "/admin/alert-rules/:id",
+      "group": "health",
+      "op": "show",
+      "description": "Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.",
+      "access": "permission",
+      "permission": "alerts:*",
+      "stage": 12,
+      "tables": [
+        "alert_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/alert-rules"
+      }
+    },
+    {
+      "key": "POST /admin/alert-rules",
+      "method": "POST",
+      "path": "/admin/alert-rules",
+      "group": "health",
+      "op": "create",
+      "description": "Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.",
+      "access": "permission",
+      "permission": "alerts:*",
+      "stage": 12,
+      "tables": [
+        "alert_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/alert-rules"
+      }
+    },
+    {
+      "key": "PATCH /admin/alert-rules/:id",
+      "method": "PATCH",
+      "path": "/admin/alert-rules/:id",
+      "group": "health",
+      "op": "update",
+      "description": "Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.",
+      "access": "permission",
+      "permission": "alerts:*",
+      "stage": 12,
+      "tables": [
+        "alert_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/alert-rules"
+      }
+    },
+    {
+      "key": "DELETE /admin/alert-rules/:id",
+      "method": "DELETE",
+      "path": "/admin/alert-rules/:id",
+      "group": "health",
+      "op": "delete",
+      "description": "Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.",
+      "access": "permission",
+      "permission": "alerts:*",
+      "stage": 12,
+      "tables": [
+        "alert_rules",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCUD",
+        "path": "/admin/alert-rules"
+      }
+    },
+    {
+      "key": "GET /admin/alerts",
+      "method": "GET",
+      "path": "/admin/alerts",
+      "group": "health",
+      "op": "list",
+      "description": "Fired alerts and their status: firing, acknowledged or resolved.",
+      "access": "permission",
+      "permission": "alerts:read",
+      "stage": 12,
+      "tables": [
+        "alert_events",
+        "alert_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/alerts"
+      }
+    },
+    {
+      "key": "GET /admin/alerts/:id",
+      "method": "GET",
+      "path": "/admin/alerts/:id",
+      "group": "health",
+      "op": "show",
+      "description": "Fired alerts and their status: firing, acknowledged or resolved.",
+      "access": "permission",
+      "permission": "alerts:read",
+      "stage": 12,
+      "tables": [
+        "alert_events",
+        "alert_rules"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LS",
+        "path": "/admin/alerts"
+      }
+    },
+    {
+      "key": "POST /admin/alerts/:id/ack",
+      "method": "POST",
+      "path": "/admin/alerts/:id/ack",
+      "group": "health",
+      "op": "action",
+      "description": "Acknowledge: stops repeated messages and records the staff member and the time.",
+      "access": "permission",
+      "permission": "alerts:update",
+      "stage": 12,
+      "tables": [
+        "alert_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "POST",
+        "ops": null,
+        "path": "/admin/alerts/:id/ack"
+      }
+    },
+    {
+      "key": "GET /admin/incidents",
+      "method": "GET",
+      "path": "/admin/incidents",
+      "group": "health",
+      "op": "list",
+      "description": "Incidents: declare an incident, update its timeline and close it with the cause and the action taken.",
+      "access": "permission",
+      "permission": "incidents:*",
+      "stage": 12,
+      "tables": [
+        "incidents",
+        "alert_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/incidents"
+      }
+    },
+    {
+      "key": "GET /admin/incidents/:id",
+      "method": "GET",
+      "path": "/admin/incidents/:id",
+      "group": "health",
+      "op": "show",
+      "description": "Incidents: declare an incident, update its timeline and close it with the cause and the action taken.",
+      "access": "permission",
+      "permission": "incidents:*",
+      "stage": 12,
+      "tables": [
+        "incidents",
+        "alert_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/incidents"
+      }
+    },
+    {
+      "key": "POST /admin/incidents",
+      "method": "POST",
+      "path": "/admin/incidents",
+      "group": "health",
+      "op": "create",
+      "description": "Incidents: declare an incident, update its timeline and close it with the cause and the action taken.",
+      "access": "permission",
+      "permission": "incidents:*",
+      "stage": 12,
+      "tables": [
+        "incidents",
+        "alert_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/incidents"
+      }
+    },
+    {
+      "key": "PATCH /admin/incidents/:id",
+      "method": "PATCH",
+      "path": "/admin/incidents/:id",
+      "group": "health",
+      "op": "update",
+      "description": "Incidents: declare an incident, update its timeline and close it with the cause and the action taken.",
+      "access": "permission",
+      "permission": "incidents:*",
+      "stage": 12,
+      "tables": [
+        "incidents",
+        "alert_events",
+        "audit_logs"
+      ],
+      "origin": {
+        "method": "CRUD",
+        "ops": "LSCU",
+        "path": "/admin/incidents"
+      }
+    }
+  ]
+}

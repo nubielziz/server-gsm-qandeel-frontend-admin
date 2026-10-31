@@ -2,23 +2,33 @@
 import { colorVar, type ChartColor } from './chartSeries';
 
 export interface SparklineProps {
-  values: readonly number[];
+  /** The trend, oldest first; a null value is a gap (no data). */
+  values: readonly (number | null)[];
   color?: ChartColor;
   width?: number;
   height?: number;
+  /**
+   * Lowest value of the scale. Pass 0 for counts, rates and latencies, so small noise near zero stays a flat line
+   * instead of filling the full height. Without it the line spans its own lowest to highest value.
+   */
+  min?: number;
 }
 
 /** Decorative: the figure it sits next to carries the meaning, so the SVG is hidden from assistive tech. */
-export function Sparkline({ values, color = 'ink3', width = 56, height = 16 }: SparklineProps) {
-  if (values.length === 0) return null;
-  const low = Math.min(...values);
-  const high = Math.max(...values);
+export function Sparkline({ values, color = 'ink3', width = 56, height = 16, min }: SparklineProps) {
+  const known = values.filter((v): v is number => v !== null);
+  if (known.length === 0) return null;
+  const low = min === undefined ? Math.min(...known) : Math.min(min, ...known);
+  const high = Math.max(...known);
   const last = values.length - 1;
+  // A point after a gap starts a new sub-path (M) instead of joining the previous one.
   const path = values
     .map((v, i) => {
+      if (v === null) return '';
       const x = (last ? i / last : 0.5) * (width - 2) + 1;
       const y = height - 2 - ((v - low) / (high - low || 1)) * (height - 4);
-      return `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
+      const joined = i > 0 && values[i - 1] !== null;
+      return `${joined ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join('');
   return (

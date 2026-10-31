@@ -1,9 +1,14 @@
 // Vitest setup: DOM matchers, the browser APIs jsdom lacks, and a clean page between tests.
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import '../components/ui/testing/dialogPolyfill';
 import { clearToasts } from '../components/ui/toast';
+
+// Many tests render the whole shell against the mock API. With the full suite running in parallel, a first render
+// can take more than the default 1 s, so `findBy…` and `waitFor` wait up to 3 s: still under the 5 s test timeout,
+// so a failure prints the DOM instead of a bare timeout.
+configure({ asyncUtilTimeout: 3_000 });
 
 // jsdom has no layout, so scrolling is a no-op (its own version only logs "not implemented").
 window.scrollTo = () => {};

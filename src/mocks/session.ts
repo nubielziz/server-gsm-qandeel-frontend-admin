@@ -9,7 +9,8 @@ import type { Me, SetPasswordBody } from '@/features/auth';
 import { csrfCookieName } from '@/lib/api/config';
 import { latency } from './latency';
 import { problem } from './problem';
-import { roleStore } from './roles';
+import { permissionsOf, roleOf, roleStore } from './roles';
+import { mockScenario } from './scenario';
 import { staffStore, type MockStaff } from './staff';
 
 export const DEMO_PASSWORD = 'demo-password';
@@ -138,7 +139,13 @@ export async function currentStaff(): Promise<MockStaff | undefined> {
 
 function toMe(staff: MockStaff): Me {
   // A role that was deleted since gives the least access: no permissions.
-  const role = roleStore().find(staff.roleId) ?? { id: staff.roleId, name: 'No role', permissions: [] };
+  const stored = roleStore().find(staff.roleId) ?? { id: staff.roleId, name: 'No role', permissions: [] };
+  // The `readonly` scenario (?mock=readonly) signs anyone in with the read-only role, to check the screens without actions.
+  const viewer = roleOf('viewer');
+  const role =
+    mockScenario() === 'readonly'
+      ? { id: viewer.id, name: viewer.name, permissions: permissionsOf('viewer') }
+      : stored;
   return {
     id: staff.id,
     email: staff.email,

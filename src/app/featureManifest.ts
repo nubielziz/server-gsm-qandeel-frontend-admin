@@ -42,4 +42,9 @@ export type FeatureManifest = {
    * this hook on every page, so it must be cheap and must not fetch without the permission it needs.
    */
   useNavCounts?: () => NavCounts;
+  /**
+   * A notice the shell shows above every page while it has something to say (System health: maintenance is on).
+   * It renders nothing otherwise, and must not fetch without the permission it needs.
+   */
+  banner?: ComponentType;
 };

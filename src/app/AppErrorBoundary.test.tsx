@@ -92,7 +92,8 @@ describe('AppErrorBoundary', () => {
     );
     expect(await screen.findByText('This page failed to render')).toBeInTheDocument();
     const nav = within(await screen.findByRole('navigation', { name: 'Primary' }));
-    await user.click(nav.getByRole('link', { name: 'Support' }));
+    // The link's name grows with its count badge once the counts load ("Support 10 …"), so match the start only.
+    await user.click(await nav.findByRole('link', { name: /^Support/ }));
     expect(await screen.findByText('support page')).toBeInTheDocument();
     expect(screen.queryByText('This page failed to render')).not.toBeInTheDocument();
   });

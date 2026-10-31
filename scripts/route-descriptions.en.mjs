@@ -16,6 +16,7 @@ export const groupNames = {
   support: 'Support',
   risk: 'Risk and compliance',
   promo: 'Abandoned carts and sales funnel',
+  health: 'System health and performance',
 };
 
 export const descriptions = {
@@ -184,5 +185,45 @@ export const descriptions = {
   'GET /admin/checkouts/abandoned': 'Abandoned carts, including who has marketing consent.',
   'POST /admin/checkouts/recover': 'Send a recovery email once, only to customers with marketing consent.',
   'GET /admin/reports/funnel': 'Sales funnel: check, then payment started, then paid, then delivered.',
+  'GET /admin/system/health':
+    'Overall status (Operational, Degraded or Outage), the running build (version, commit, environment), the status of each component, uptime over 24 hours, 7 and 30 days, open alerts, ongoing incidents and the maintenance state.',
+  'GET /admin/system/checks':
+    'Check history of a component over a time range: uptime bars and response time.',
+  'GET /admin/system/metrics':
+    'API performance per surface over a time range: requests/min, latency p50, p95 and p99, 4xx and 5xx rates, 429 count and the 10 slowest endpoints. Read from the monitoring system.',
+  'GET /admin/system/errors':
+    'Most frequent errors by code and endpoint over a time range, with first and last seen, request_id and a Sentry link.',
+  'GET /admin/system/orders-health':
+    'Order pipeline health: orders stuck beyond SLA per status, dispatch time p95, success and failure rate per service type, and orders held by risk.',
+  'GET /admin/system/suppliers':
+    'Health of each supplier: up or down, last successful call, response time, error and timeout rate, circuit-breaker state, last sync and our balance with them. Pausing uses PATCH /admin/suppliers/:id (status = paused).',
+  'GET /admin/system/queues':
+    'BullMQ counters per queue: waiting, active, delayed, failed, age of the oldest job, rate and number of workers. Deep details stay in Bull Board.',
+  'GET /admin/system/queues/:name/failed': 'Failed jobs with the failure reason and the number of attempts.',
+  'POST /admin/system/queues/:name/retry': 'Retry one failed job or all failed jobs.',
+  'POST /admin/system/queues/:name/pause':
+    'Pause or resume processing of a queue (paused: true or false) during an incident.',
+  'GET /admin/system/jobs':
+    'Scheduled jobs: name, schedule, last run, next run and result; ?job= returns the run history of one job.',
+  'POST /admin/system/jobs/:name/run':
+    'Run a job now by hand (for example the price sync); the run is recorded in job_runs with trigger = manual.',
+  'GET /admin/system/database':
+    'Postgres: connections out of the maximum and pool wait, slowest queries (pg_stat_statements), locks and long transactions, replica lag, size and growth, and pending migrations.',
+  'GET /admin/system/cache': 'Redis: memory used out of the limit, evictions, hit rate, clients and latency.',
+  'GET /admin/system/webhooks':
+    'Delivery health of outgoing webhooks to merchants and incoming ones from gateways: success rate, failures, attempts and the oldest undelivered message.',
+  'GET /admin/system/integrity':
+    'Money integrity checks: every entry sums to zero, every account balance equals the sum of its lines, holds stuck over 24 hours, confirmed payments without an entry, and the last result.',
+  'POST /admin/system/integrity/run':
+    'Run the integrity check now as a background job; the result appears in GET /admin/system/integrity.',
+  'PUT /admin/system/maintenance':
+    'Maintenance mode with a scope (store, checkout, API orders or all), a message and an expected time. The chosen scope answers 503 MAINTENANCE; the admin console is never affected, so staff are not locked out. The switch is stored in settings.',
+  'CRUD /admin/alert-rules':
+    'Alert rules: metric, threshold, window, severity and channels, with a temporary mute through muted_until.',
+  'CRUD /admin/alerts': 'Fired alerts and their status: firing, acknowledged or resolved.',
+  'POST /admin/alerts/:id/ack':
+    'Acknowledge: stops repeated messages and records the staff member and the time.',
+  'CRUD /admin/incidents':
+    'Incidents: declare an incident, update its timeline and close it with the cause and the action taken.',
   'GET /health': 'Service health check: Postgres and Redis.',
 };

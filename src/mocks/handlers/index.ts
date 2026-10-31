@@ -7,6 +7,7 @@ import { resetIpRuleStore } from '../ipRules';
 import { resetLedgerStore } from '../ledger';
 import { resetOrderStore } from '../orders';
 import { resetRoleStore } from '../roles';
+import { resetMockScenario } from '../scenario';
 import { resetSession, sessionHandlers } from '../session';
 import { resetSessionStore } from '../sessions';
 import { resetSettingsStore } from '../settings';
@@ -37,6 +38,7 @@ export const handlers: RequestHandler[] = [
 
 /** Puts all stateful mock stores back to their seed. For tests; add each feature's reset here. */
 export function resetMockState(): void {
+  resetMockScenario();
   resetSession();
   resetStaffStore();
   resetRoleStore();

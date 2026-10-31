@@ -2,7 +2,26 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
-## Status (2026-10-30)
+## Status (2026-10-31)
+
+**In progress: `system-health`** (new map route group `health`, designed from scratch: `docs/system-health-design.md`,
+brief `docs/briefs/system-health.md`). Inputs refreshed on 2026-10-31 from the replaced `reference/`:
+`docs/route-manifest.json` has **160 admin route rows, 268 admin endpoints** (+ `GET /health` = 269; `GET /metrics`
+excluded: Prometheus target, the console never calls it), the map has **66 tables** (5 new: `service_checks`,
+`alert_rules`, `alert_events`, `incidents`, `job_runs`; row types regenerated), `docs/slices/` has 18 slices.
+Slices of the feature, one commit each: foundation, then the tabs Overview, API, Orders & suppliers, Queues & jobs,
+Alerts & incidents, Data stores, Integrity.
+
+- **Foundation: done** (`feat(system-health): foundation …`). Types, 30 API functions (route coverage 30/30), hooks
+  with polling, mock scenarios for all 30 endpoints, page shell, header, verdict, KPI row, maintenance dialogs, shell
+  banner, shared status pieces; 58 test files. One Opus review; its 2 blocking and 6 visual findings fixed by the lead
+  (`*/health` mock anchored to the root route and following the scenario; mutations take `{ toastErrors }` so a
+  dialog's refusal is not shown twice; verdict names the open alerts; KPI trends one point per hour from zero; ms
+  thresholds in the value's scale; phone layout of tiles, meta line and impact line). Mismatches M203–M217.
+  Test infra: RTL waits up to 3 s (`src/test/setup.ts`), the suite grew by 58 heavy files.
+- **Next:** the seven tab slices in worktrees (`npm run feature:worktree -- add system-health-<tab>`).
+
+### Earlier status (2026-10-30)
 
 **Done.** All 17 features are merged on `feat/refine-admin`, route coverage is 239/239 (`--strict` passes), and
 `npm run typecheck && npm run lint && npm run build && npm test` are green (295 test files, 3,058 tests). The production
@@ -30,7 +49,10 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | resumed after limits | 5 (customers fix, services fix, finance, refunds, risk) + services round-2 review, checkouts, support |
 | later | finance, risk, refunds, checkouts reviews; storefront, commissions, settings, audit implementers |
 | final reviews and merges | support, commissions (+1 fix round), storefront, settings, audit |
-| **Total** | **57 / 120** |
+| **Total before system-health** | **57 / 120** |
+| system-health | each slice counts as a feature (≤ 10 calls): foundation, then 7 tabs. |
+| system-health foundation | 5 (4 implementers: F-data, F-mocks, F-kit, F-page; 1 reviewer). Fixes by the lead. |
+| **Total** | **62 / 120** |
 
 ## Pool
 
@@ -69,6 +91,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 14 | commissions | `/commissions` | growth | 4 | 13 | done | see pool history | `b0b268a` |
 | 15 | settings | `/settings` | auth, billing, refunds, clients, ops | 12 | 28 | done | see pool history | `bc4febf` |
 | 16 | audit | `/audit` | auth | 1 | 2 | done | see pool history | `44e0a22` |
+| 17 | system-health | `/system-health` | health | 22 | 30 | in progress | see Agent budget | one per slice |
 
 ### 0. foundation (Phase 2) — 7 endpoints
 
@@ -165,6 +188,18 @@ Demo: `46-p-commissions.js`. Accruals, agents (assignments), plans.
 Demo: `55-p-settings.js`, `12-state-b2c.js (fx/gateway/policy/notif mutations)`. Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs.
 
 `GET /admin/settings` · `PATCH /admin/settings` · `CRUD[LSCUD] /admin/payment-gateways` · `CRUD[LSCU] /admin/tax-rates` · `CRUD[LSCU] /admin/currencies` · `POST /admin/currencies/refresh-fx` · `PATCH /admin/storefront/settings` · `CRUD[LSCUD] /admin/notification-templates` · `POST /admin/notification-templates/:id/preview` · `CRUD[LS] /admin/notifications` · `CRUD[LS] /admin/webhook-deliveries` · `POST /admin/webhook-deliveries/:id/retry`
+
+### 17. system-health (`/system-health`) — 30 endpoints
+
+No demo page: design in `docs/system-health-design.md`, brief in `docs/briefs/system-health.md`. Slices: foundation
+(types, 30 API functions, hooks, mock scenarios, page shell, header, KPI row, shared status pieces, shell maintenance
+banner), then Overview, API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores, Integrity. Pausing a
+supplier reuses `updateSupplier` (suppliers). Shared changes by the lead: `system-health` page resource and `pulse`
+icon, manifest `banner` slot, `LineChart` gaps and threshold side, `?mock=` scenarios with a dev-only switcher and a
+read-only `me`, System area in the role matrix and mock roles, `paused` supplier status, monitoring deep-link env
+variables.
+
+`GET /admin/system/health` · `GET /admin/system/checks` · `GET /admin/system/metrics` · `GET /admin/system/errors` · `GET /admin/system/orders-health` · `GET /admin/system/suppliers` · `GET /admin/system/queues` · `GET /admin/system/queues/:name/failed` · `POST /admin/system/queues/:name/retry` · `POST /admin/system/queues/:name/pause` · `GET /admin/system/jobs` · `POST /admin/system/jobs/:name/run` · `GET /admin/system/database` · `GET /admin/system/cache` · `GET /admin/system/webhooks` · `GET /admin/system/integrity` · `POST /admin/system/integrity/run` · `PUT /admin/system/maintenance` · `CRUD[LSCUD] /admin/alert-rules` · `CRUD[LS] /admin/alerts` · `POST /admin/alerts/:id/ack` · `CRUD[LSCU] /admin/incidents`
 
 ### 16. audit (`/audit`) — 2 endpoints
 

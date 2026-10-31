@@ -30,7 +30,7 @@ function items(pages: PageResource[], overrides: Partial<Parameters<typeof build
 describe('buildPaletteItems', () => {
   it('offers a "Go to" row per permitted page, in the demo’s order, then the actions', () => {
     const rows = items(ALL_PAGES);
-    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(16);
+    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(17);
     expect(rows.slice(0, 3).map((row) => row.label)).toEqual(['Dashboard', 'Orders', 'Merchants']);
     expect(rows.filter((row) => row.group === 'Actions').map((row) => row.label)).toEqual([
       'Open the risk review queue',
@@ -300,7 +300,7 @@ describe('AppCommandPalette', () => {
   it('shows at most 14 rows, like the demo', async () => {
     renderPalette([]);
     await screen.findByRole('combobox');
-    // 16 pages and 5 actions are available; the list stops at 14.
+    // 17 pages and 5 actions are available; the list stops at 14.
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(14));
   });
 });

@@ -778,6 +778,114 @@ export interface FileRow {
 }
 
 /**
+ * Results of the periodic health checks: every minute the worker checks the database, the cache,
+ * storage, every supplier and every payment gateway, and writes the status and the response time.
+ * Uptime is computed from these rows and outages are detected from them. High-resolution metrics
+ * (requests, latency) are not stored here but in the monitoring system. Rows are deleted after 90
+ * days. Table `service_checks`.
+ */
+export interface ServiceCheckRow {
+  id: Id;
+  component: string;
+  supplierId: Id | null;
+  gatewayId: Id | null;
+  status: string;
+  latencyMs: number;
+  detail: JsonObject;
+  checkedAt: IsoDateTime | null;
+  createdAt: IsoDateTime;
+  updatedAt?: IsoDateTime;
+}
+
+/**
+ * Alert rules: metric, comparator, threshold, window, severity and channels (Telegram or email). A
+ * temporary mute, for example during maintenance, uses muted_until. Table `alert_rules`.
+ */
+export interface AlertRuleRow {
+  id: Id;
+  key: string;
+  name: string;
+  metric: string;
+  comparator: string;
+  threshold: number;
+  windowSeconds: number;
+  severity: string;
+  channels: string[];
+  isActive: boolean;
+  mutedUntil: IsoDateTime | null;
+  createdBy: Id;
+  updatedBy: Id;
+  createdAt: IsoDateTime;
+  updatedAt?: IsoDateTime;
+}
+
+/**
+ * Each time a rule fires: firing, then acknowledged, then resolved. It closes on its own when the
+ * value is back in range, and the message is not repeated until a staff member acknowledges it or
+ * the reminder interval passes. Table `alert_events`.
+ */
+export interface AlertEventRow {
+  id: Id;
+  ruleId: Id;
+  status: string;
+  severity: string;
+  value: number;
+  subjectType: string;
+  subjectId: Id;
+  startedAt: IsoDateTime | null;
+  acknowledgedBy: Id;
+  acknowledgedAt: IsoDateTime | null;
+  resolvedAt: IsoDateTime | null;
+  note: string;
+  createdAt: IsoDateTime;
+  updatedAt?: IsoDateTime;
+}
+
+/**
+ * Operational incidents: declared by a staff member or opened from a critical alert. Severity,
+ * affected components, the timeline (timeline jsonb), and the root cause and action taken at
+ * closing. Table `incidents`.
+ */
+export interface IncidentRow {
+  id: Id;
+  title: string;
+  severity: string;
+  status: string;
+  components: string[];
+  summary: string;
+  timeline: JsonObject;
+  rootCause: string;
+  startedAt: IsoDateTime | null;
+  resolvedAt: IsoDateTime | null;
+  alertEventId: Id | null;
+  createdBy: Id;
+  resolvedBy: Id;
+  createdAt: IsoDateTime;
+  updatedAt?: IsoDateTime;
+}
+
+/**
+ * Run log of scheduled and background jobs (price sync, ledger integrity check, expired-data
+ * deletion, reminders): start, end, result and error. result holds the job summary; the last money
+ * integrity result comes from it. Table `job_runs`.
+ */
+export interface JobRunRow {
+  id: Id;
+  job: string;
+  trigger: string;
+  status: string;
+  startedAt: IsoDateTime | null;
+  finishedAt: IsoDateTime | null;
+  durationMs: number;
+  processed: number;
+  result: JsonObject;
+  error: string;
+  triggeredBy: Id | null;
+  createdAt: IsoDateTime;
+  updatedAt?: IsoDateTime;
+}
+
+/**
  * The public service page in the storefront: title, slug and SEO fields per language. Table
  * `service_listings`.
  */

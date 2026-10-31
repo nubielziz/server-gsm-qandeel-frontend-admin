@@ -3,7 +3,7 @@ import { surfaces, groups, routes, endpointCount } from '../data/routes.mjs';
 
 import { tables as schemaTables } from '../data/schema.mjs';
 const TABLES = schemaTables.map((t) => t.n);
-if (TABLES.length !== 61) throw new Error('expected 61 tables, got ' + TABLES.length);
+if (TABLES.length !== 66) throw new Error('expected 66 tables, got ' + TABLES.length);
 for (const r of routes) for (const t of r.t) if (!TABLES.includes(t)) throw new Error(`unknown table ${t} in ${r.p}`);
 
 const by = (s) => routes.filter((r) => r.s === s);

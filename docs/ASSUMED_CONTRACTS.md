@@ -400,3 +400,116 @@ The map gives the table `audit_logs` and the two routes but no bodies (M10). Mar
 6. Is `ip` null for system entries, and should the console show the staff session behind an entry?
 7. Offset paging of a growing log shifts rows; would a cursor (`before=<id>`) be better?
 8. Will the server offer an audit export (CSV), permission-checked and itself audited?
+
+## system-health
+
+The map describes the 22 rows of the `health` group in words only. Every shape below is in
+`src/features/system-health/types/` and marked "Assumed contract" in the JSDoc of `api/`.
+
+- **Measures.** Every number the page judges comes as a `Measure`: `{ value: number | null, unit, state, warn?, crit?,
+  direction? }`. `unit` is `ms`, `s` (shown as a duration), `percent` (0 to 100), `per_min`, `count` or `bytes`;
+  `state` is `ok`, `warn`, `crit` or `unknown` and is decided by the server; `warn`/`crit` are the thresholds it used
+  (printed and drawn, never re-evaluated); `direction` says which side is bad. `value: null` means no data.
+- **Series.** `{ at: IsoDateTime, value: number | null }[]`, oldest first; null is a gap.
+- **Statuses.** Overall `operational | degraded | outage | unknown` (`unknown` when monitoring data is missing);
+  component and store checks `ok | degraded | down | unknown`; circuit breaker `closed | open | half_open`.
+- **Ranges.** `GET /admin/system/checks`, `/metrics` and `/errors` take `range=1h|6h|24h|7d` (checks also
+  `component=<key>`, metrics and errors also `surface=<id>`); the server picks the bucket size and returns
+  `bucketSeconds`. The other reads take no range; their trends cover the last 24 hours (uptime: 30 daily points).
+- **Errors.** Reads backed by the monitoring system (`/metrics`, `/errors`) answer 503 `MONITORING_UNAVAILABLE` when
+  Prometheus or Sentry does not answer; the console shows "Monitoring unavailable" in neutral, never an error or green.
+  Reads that need Postgres answer 503 `DATABASE_UNAVAILABLE` during a database outage.
+- `GET /admin/system/health` returns `SystemHealth`: `status`, `since`, `checkedAt`, `monitoring {status, detail,
+  lastScrapeAt}`, `build {version, commit, environment, deployedAt}`, `components[]` (key, name, kind
+  `core|supplier|gateway`, status, since, latency, uptime 24h/7d/30d, lastCheckedAt, detail, supplierId, gatewayId),
+  `uptime {h24, d7, d30, daily}`, `alerts {open, critical, items[], trend}`, `incidents[]` (not resolved),
+  `maintenance {enabled, scope, message, expectedEndAt, startedAt, startedBy}`.
+- `PUT /admin/system/maintenance` takes `{ enabled: true, scope: store|checkout|api_orders|all, message,
+  expectedEndAt | null }` or `{ enabled: false }` and returns the new `MaintenanceState`.
+- `GET /admin/system/orders-health`: `stuck {total, heldAmount, byStatus[{status, label, count, oldestAgeSeconds,
+  heldAmount}], trend}`, `needsAttention`, `dispatchP95` (seconds), `byServiceType[{type, total, success, failure}]`,
+  `heldByRisk {count, amount, oldestAt}`.
+- `GET /admin/system/suppliers`: `suppliers[]` with the supplier's switch `status` (`active|disabled|paused`), `health`,
+  `since`, `lastSuccessAt`, `latency`, `errorRate`, `timeoutRate`, `circuit`, `lastSyncAt`, `balance {amount,
+  currency, state, checkedAt}`. Pausing is the suppliers route (`PATCH /admin/suppliers/:id`, `status: paused`).
+- `GET /admin/system/queues`: `queues[]` (name, state, paused, waiting, active, delayed, failed, oldestAge,
+  ratePerMin, workers), plus `oldestAge` and `trend` over all queues. `GET …/queues/:name/failed` is a simple-rest
+  list of `{id (string), name, failedReason, attemptsMade, maxAttempts, failedAt, subject}`. `POST …/retry` takes
+  `{ jobId }` or `{ all: true }` and returns `{ retried }`; `POST …/pause` takes `{ paused, reason? }` (reason
+  required to pause) and returns the queue.
+- `GET /admin/system/jobs` returns `{ jobs[], runs[] }`; `runs` is the history of one job and is filled only with
+  `?job=<name>`. `POST …/jobs/:name/run` and `POST /admin/system/integrity/run` start a run and return the `JobRun`
+  (`status: running`).
+- `GET /admin/system/integrity`: `{ running, lastRun, lastSuccessAt, checks[] }`; each check has `key`
+  (`entries_balanced`, `accounts_match_lines`, `stuck_holds`, `payments_without_entry`), `status pass|fail|unknown`,
+  `count`, `difference`, and the first `findings[]` (kind, id, ref, label, difference, ageSeconds, lastEntryAt).
+- `GET /admin/system/database` and `/cache`: see `types/stores.ts` (connections, pool wait, locks, replica lag, size
+  and growth, pending migrations, slow queries, long transactions; Redis memory, evictions, hit rate, clients,
+  latency).
+- `GET /admin/system/webhooks`: `{ outgoing, incoming }`, each `{successRate, delivered, failed, retrying,
+  oldestUndeliveredAt, oldestAge}` over the last 24 hours.
+- Alerts: severities `info | warning | critical`, statuses `firing | acknowledged | resolved`, comparators
+  `gt | gte | lt | lte`, channels `telegram | email`. An alert carries its rule (`rule {id, key, name, metric,
+  comparator, threshold, windowSeconds, unit}`), `subjectLabel`, `acknowledgedBy {id, name}`, `note`, `incidentId`.
+  `GET /admin/alerts` filters `status`, `severity`. `POST /admin/alerts/:id/ack` takes `{ note? }`. Rules: `unit`
+  and `open` come from the server; mute is `PATCH { mutedUntil }`, enable is `PATCH { isActive }`.
+- Incidents: severities `minor | major | critical`, statuses `investigating | identified | monitoring | resolved`,
+  `timeline[{at, status, text, by}]` written by the server. `POST` takes `{title, severity, components, summary,
+  alertEventId?}`; `PATCH` takes any of those plus `status` and `update` (one timeline line); closing is
+  `{ status: 'resolved', rootCause }`. List filters `status` and `open=true`.
+
+Added after the foundation slice (the mock layer plays all of it; `src/features/system-health/mocks/`):
+
+- **Lists.** Simple-rest (`_start`, `_end`, `_sort`, `_order`, total in `x-total-count`), 25 rows a page. Failed jobs
+  newest first (`failedAt`); alerts and incidents newest first (`startedAt`), filters `status`, `severity`,
+  `open=true`; `q` searches alerts (rule, subject, note), rules (name, key, metric) and incidents (title, summary).
+- **Answers of the writes.** The console reads only `retried` of a retry; an empty 200 or a 204 works for the rest.
+  Assumed: pause → the queue's `QueueStats`; run job and integrity run → 202 with the new `JobRun` (`running`,
+  `trigger: manual`); maintenance → `MaintenanceState`; ack → `AlertEvent`; rules and incidents → the record (201 on
+  create); delete of a rule → 204.
+- **Codes.** 404 `NOT_FOUND` (unknown queue, job, alert, rule, incident, component, failed job); 409
+  `ALERT_ACKNOWLEDGED`, `ALERT_RESOLVED`, `INCIDENT_CLOSED`, `JOB_ALREADY_RUNNING`; 403 `FORBIDDEN` whose `detail`
+  names the missing permission; 422 with `errors[]` on the fields below.
+- **422 fields.** Rule: `key` (3-41 `[a-z0-9_]`, unique), `name` (3-80), `metric` (from a fixed list; the server sets
+  `unit`), `comparator`, `threshold`, `windowSeconds` (60-86400), `severity`, `channels` (1+), `isActive`, `mutedUntil`
+  (future or null). Incident: `title` (3-120), `severity`, `summary` (10+), `components` (1+ known keys), `alertEventId`;
+  update: `status`, `update` (≤ 1000), `rootCause` (10+) to close. Maintenance: `scope`, `message` (1-300),
+  `expectedEndAt` (future or null). Ack: `note` (≤ 500). Pause: `paused`, `reason` (3+ to pause). Retry: `jobId` or
+  `all`. Bad `range` or `surface`: 422 on that field.
+- **Health summary details.** `alerts.critical` counts open critical alerts, acknowledged ones included;
+  `alerts.items` lists open alerts (the verdict names the critical ones, at most two); `alerts.open.value` null means
+  the rules cannot be evaluated. `incidents` holds ongoing incidents only. The KPI row always reads
+  `metrics?range=24h`, `queues`, `orders-health` and the summary, whatever the page range.
+- **Keys the mock uses** (a guess at the server's): components `api`, `postgres`, `redis`, `storage`, `workers`, `mail`,
+  `supplier:<id>`, `gateway:<id>`; surfaces `v1`, `dhru`, `client`, `store`, `admin`, `hooks`; jobs `price_sync`,
+  `supplier_balance`, `reminders`, `fx_refresh`, `accruals`, `ledger_integrity`, `data_retention`.
+- **Series sizes.** Metrics: 1h = 60 × 1 min, 6h = 72 × 5 min, 24h = 96 × 15 min, 7d = 168 × 1 h. Uptime cells
+  (checks): at most 100 per range.
+
+### Questions for the backend
+
+1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
+   compares a value with a threshold).
+2. Are the proposed thresholds of the KPI row right (`docs/system-health-design.md`: uptime 99.9 / 99.5 %, API p95
+   800 / 1500 ms, 5xx 0.5 / 2 %, oldest queued job 2 / 10 min, orders past SLA 5 / 20)?
+3. Should acknowledging an alert have its own permission? Today `alerts:update` covers both the ack and editing rules.
+4. Could the maintenance state also come with `GET /admin/auth/me` (or `GET /health`), so the shell banner reaches staff
+   without `system:read` (MISMATCHES M201)?
+5. Which surfaces does `/metrics` report (`v1`, `dhru`, `client`, `store`, `admin`, `hooks`?) and with which labels?
+6. Do the actions (pause, run job, integrity run, ack, maintenance) answer with the changed record, or 204?
+7. Does `POST …/queues/:name/pause` require `reason` to pause (422 on `reason`)?
+8. Where does "the action taken" go when an incident closes: `rootCause`, or the closing timeline `update` (M205)?
+9. Do `/admin/alerts` and `/admin/incidents` take `status`, `severity`, `open=true` and `_sort=startedAt`; does
+   `…/queues/:name/failed` take `_sort=failedAt` and send `x-total-count`?
+10. Is `MONITORING_UNAVAILABLE` the code on both `metrics` and `errors`, and does `health` then send `status: unknown`
+    with `monitoring.status: unavailable` (M216)?
+11. Does every `Measure` with a threshold carry `direction`? Charts colour the wrong side without it.
+12. How many buckets does `GET /admin/system/checks` return per range? The uptime strip reads well up to about 100.
+13. `GET /admin/system/database` while Postgres is down: 200 with `status: down` (as mocked) or 503? And does
+    `health` keep answering then (M212)?
+14. Does `?surface=` scope `total` too (M215)? Is an acknowledged critical alert still critical until it resolves (M214)?
+15. With Prometheus down, can alert rules still be evaluated (M213)?
+16. Does maintenance `message` have a maximum length? Does `expectedEndAt` only inform customers, or does it end
+    maintenance by itself? With status `unknown`, what is `since`?
+17. Are `version` and `commit` sent as shown (`v1.42.0`, short `9c4e1fa`)? Are `MAINTENANCE` 503 answers counted in
+    the 5xx rate?

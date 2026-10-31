@@ -1,4 +1,5 @@
 // LineChart: one line with a soft area, tooltip, keyboard and an optional threshold. Ports drawLine() of 30-charts.js.
+// Points without a value are gaps ("No data" in the tooltip), never zeros.
 import { useId, useMemo, type PointerEvent } from 'react';
 import { ChartTooltip } from './ChartTooltip';
 import { colorVar, type ChartColor } from './chartSeries';
@@ -22,7 +23,7 @@ export interface LineChartProps {
   unit?: string;
   /** Number of gridline intervals. */
   ticks?: number;
-  /** Dashed threshold; the stretch of the line below it is redrawn in the critical colour. */
+  /** Dashed threshold; the stretch of the line on its bad side (below by default) is redrawn in the critical colour. */
   reference?: LineReference;
   /** Accessible name of the chart. */
   label: string;
@@ -50,10 +51,15 @@ export function LineChart({
         : null,
     [points, width, height, yMax, yMin, ticks, reference],
   );
-  const cursor = useChartCursor(points.length, (index) => ({
-    x: layout?.x(index) ?? 0,
-    y: layout?.y(points[index].value) ?? 0,
-  }));
+  // A gap has no y of its own: the tooltip then sits in the middle of the plot.
+  const pointY = (index: number) => {
+    if (!layout) return 0;
+    const value = points[index].value;
+    return value === null
+      ? LINE_MARGIN.top + (height - LINE_MARGIN.top - LINE_MARGIN.bottom) / 2
+      : layout.y(value);
+  };
+  const cursor = useChartCursor(points.length, (index) => ({ x: layout?.x(index) ?? 0, y: pointY(index) }));
   const point = cursor.active !== null ? points[cursor.active] : null;
 
   function onPointerMove(e: PointerEvent<SVGSVGElement>) {
@@ -61,11 +67,17 @@ export function LineChart({
     const box = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - box.left - LINE_MARGIN.left) / layout.plotWidth;
     const index = clamp(Math.round(ratio * (points.length - 1)), 0, points.length - 1);
-    cursor.show(index, layout.x(index), layout.y(points[index].value));
+    cursor.show(index, layout.x(index), pointY(index));
   }
 
   const stroke = colorVar(color);
-  const live = point ? `${point.detail ?? point.label}: ${formatValue(point.value)}${unit}` : '';
+  const valueText = (value: number | null) => (value === null ? 'No data' : `${formatValue(value)}${unit}`);
+  const live = point ? `${point.detail ?? point.label}: ${valueText(point.value)}` : '';
+  // The clip keeps the critical overlay on the bad side of the threshold only.
+  const badAbove = reference?.bad === 'above';
+  const refY = layout?.referenceY ?? 0;
+  // The label sits just above the dashed line, or under it when the line is too close to the top.
+  const refLabelY = refY - 4 >= LINE_MARGIN.top + 10 ? refY - 4 : refY + 12;
 
   return (
     <>
@@ -123,9 +135,9 @@ export function LineChart({
                   <clipPath id={clipId}>
                     <rect
                       x="0"
-                      y={layout.referenceY}
+                      y={badAbove ? 0 : refY}
                       width={width}
-                      height={Math.max(0, height - layout.referenceY)}
+                      height={Math.max(0, badAbove ? refY : height - refY)}
                     />
                   </clipPath>
                   <line
@@ -137,7 +149,7 @@ export function LineChart({
                     strokeWidth="1"
                     strokeDasharray="4 3"
                   />
-                  <text x={LINE_MARGIN.left + 4} y={layout.referenceY + 12} textAnchor="start">
+                  <text x={LINE_MARGIN.left + 4} y={refLabelY} textAnchor="start">
                     {reference.label}
                   </text>
                   <path
@@ -151,6 +163,15 @@ export function LineChart({
                   />
                 </>
               )}
+              {layout.isolated.map((index) => (
+                <circle
+                  key={index}
+                  cx={layout.x(index)}
+                  cy={layout.y(points[index].value as number)}
+                  r="2"
+                  fill={stroke}
+                />
+              ))}
               {point && cursor.active !== null && (
                 <>
                   <line
@@ -161,24 +182,23 @@ export function LineChart({
                     stroke="rgb(var(--line2))"
                     strokeWidth="1"
                   />
-                  <circle
-                    cx={layout.x(cursor.active)}
-                    cy={layout.y(point.value)}
-                    r="4"
-                    fill={stroke}
-                    stroke="rgb(var(--surface))"
-                    strokeWidth="2"
-                  />
+                  {point.value !== null && (
+                    <circle
+                      cx={layout.x(cursor.active)}
+                      cy={layout.y(point.value)}
+                      r="4"
+                      fill={stroke}
+                      stroke="rgb(var(--surface))"
+                      strokeWidth="2"
+                    />
+                  )}
                 </>
               )}
               <rect className="hit" x={LINE_MARGIN.left} y={0} width={layout.plotWidth} height={height} />
             </svg>
             {point && (
               <ChartTooltip x={cursor.anchor.x} y={cursor.anchor.y} boxWidth={width} boxHeight={height}>
-                <div className="font-medium">
-                  {formatValue(point.value)}
-                  {unit}
-                </div>
+                <div className="font-medium">{valueText(point.value)}</div>
                 <div className="text-ink3">{point.detail ?? point.label}</div>
               </ChartTooltip>
             )}

@@ -34,7 +34,14 @@ const BOOLEAN_NAMES = new Set([
 ]);
 
 // Dates that do not end in `_at`.
-const DATE_NAMES = new Set(['valid_from', 'valid_to', 'effective_from', 'cached_until', 'locked_until']);
+const DATE_NAMES = new Set([
+  'valid_from',
+  'valid_to',
+  'effective_from',
+  'cached_until',
+  'locked_until',
+  'muted_until',
+]);
 
 const NUMBER_PATTERN = /_(count|ms|qty|per_min|hours|h)$/;
 const NUMBER_NAMES = new Set([
@@ -55,6 +62,8 @@ const NUMBER_NAMES = new Set([
   'max_concurrency',
   'helpful_yes',
   'helpful_no',
+  'window_seconds',
+  'processed',
 ]);
 
 const DECIMAL_PATTERN = /^percent$|_percent$|_rate$|^rate_/;
@@ -83,6 +92,8 @@ const OVERRIDES = {
   'legal_documents.version': 'string', // "3.2"
   'orders.customer_id': 'Id | null', // exactly one of client_id / customer_id is set (see the table's description)
   'invoices.customer_id': 'Id | null',
+  'alert_rules.threshold': 'number', // a metric value in the metric's own unit (ms, %, count), not money
+  'alert_events.value': 'number', // the metric value that fired the rule, same unit as the threshold
 };
 
 /** Splits a schema column such as "client_id nullable" or "file_ids bigint[]". */

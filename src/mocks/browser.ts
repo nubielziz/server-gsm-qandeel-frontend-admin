@@ -2,8 +2,12 @@
 // from main.tsx so production bundles never contain it.
 import { setupWorker } from 'msw/browser';
 import { handlers } from './handlers';
+import { mountScenarioSwitcher } from './scenarioSwitcher';
 
-/** Registers the worker (served at /mockServiceWorker.js by the dev server) and resolves when it is ready. */
+/**
+ * Registers the worker (served at /mockServiceWorker.js by the dev server) and resolves when it is ready, then shows
+ * the scenario switcher (`?mock=`).
+ */
 export async function startMockWorker(): Promise<void> {
   const worker = setupWorker(...handlers);
   await worker.start({
@@ -12,4 +16,5 @@ export async function startMockWorker(): Promise<void> {
     onUnhandledRequest: 'bypass',
     quiet: true,
   });
+  mountScenarioSwitcher();
 }

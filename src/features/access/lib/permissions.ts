@@ -78,7 +78,10 @@ export function groupPermissions(
 /** One screen of the summary: a demo "area" and the API permission prefixes behind it. */
 export type RoleArea = { name: string; full: string; prefixes: readonly string[] };
 
-/** The demo's eight areas (ROLE_AREAS), each with the permission prefixes of the map that belong to it. */
+/**
+ * The demo's eight areas (ROLE_AREAS), each with the permission prefixes of the map that belong to it, plus System
+ * (health, alerts, incidents), which the demo does not have (MISMATCHES).
+ */
 export const ROLE_AREAS: readonly RoleArea[] = [
   { name: 'Orders', full: 'Orders and the review queue', prefixes: ['orders', 'inventory', 'files'] },
   {
@@ -107,6 +110,11 @@ export const ROLE_AREAS: readonly RoleArea[] = [
     name: 'Admins',
     full: 'Admin accounts and access rules',
     prefixes: ['staff', 'access', 'roles', 'sessions', 'audit', 'queues'],
+  },
+  {
+    name: 'System',
+    full: 'System health, alerts and incidents',
+    prefixes: ['system', 'alerts', 'incidents'],
   },
 ];
 

@@ -639,7 +639,8 @@ describe('roles', () => {
     expect(await screen.findByRole('table', { name: 'Role permissions' })).toBeInTheDocument();
     const summary = within(screen.getByRole('table', { name: 'Role permissions' }));
     const ownerRow = summary.getByRole('rowheader', { name: /Owner/ }).closest('tr')!;
-    expect(within(ownerRow).getAllByText('Full')).toHaveLength(8);
+    // The demo's eight areas plus System (health, alerts, incidents).
+    expect(within(ownerRow).getAllByText('Full')).toHaveLength(9);
     const readOnly = summary.getByRole('rowheader', { name: /Read only/ }).closest('tr')!;
     expect(within(readOnly).getAllByText('View').length).toBeGreaterThan(0);
   });

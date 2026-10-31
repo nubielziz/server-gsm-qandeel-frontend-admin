@@ -1,4 +1,4 @@
-// 61 tables: the 40 from the original plan (B2B) + 21 for the B2C expansion (stages 14-19).
+// 66 tables: the 40 from the original plan (B2B) + 21 for the B2C expansion (stages 14-19) + 5 for system health and alerting (domain G).
 // fk: [column, target, kind]
 // kind: 'fk' (default) | 'poly' (polymorphic / logical) | 'array' (id array)
 // b2c: 'new' = table added for B2C, 'mod' = existing table that gained B2C columns (shown as tags on the map)
@@ -79,6 +79,12 @@ export const tables = [
   T('outbox_events', 'G', 'أحداث تنتظر المعالجة بالـ Worker', ['type', 'aggregate_type', 'aggregate_id', 'payload', 'processed_at', 'attempts'], [['aggregate_id', 'orders', 'poly'], ['aggregate_id', 'invoices', 'poly'], ['aggregate_id', 'checkout_sessions', 'poly']], 'mod'),
   T('audit_logs', 'G', 'سجل التدقيق لعمليات الإدارة', ['actor_type', 'actor_id', 'action', 'entity_type', 'entity_id', 'before', 'after', 'ip'], [['actor_id', 'staff_users', 'poly']]),
   T('files', 'G', 'ملفات S3 وبياناتها', ['bucket', 'key', 'filename', 'mime', 'size', 'sha256', 'owner_type', 'owner_id'], [['owner_id', 'clients', 'poly'], ['owner_id', 'staff_users', 'poly'], ['owner_id', 'customers', 'poly']], 'mod'),
+
+  T('service_checks', 'G', 'نتائج فحوص الصحة الدورية: كل دقيقة يفحص الـ Worker قاعدة البيانات والكاش والتخزين وكل مورد وبوابة دفع ويكتب الحالة وزمن الاستجابة. منها تُحسب نسبة التشغيل ويُكتشف العطل. المقاييس عالية الدقة (الطلبات والـ latency) لا تُخزَّن هنا بل في نظام المراقبة. تُحذف بعد 90 يوماً', ['component', 'supplier_id nullable', 'gateway_id nullable', 'status', 'latency_ms', 'detail jsonb', 'checked_at'], [['supplier_id', 'suppliers'], ['gateway_id', 'payment_gateways']]),
+  T('alert_rules', 'G', 'قواعد التنبيه: المقياس والمقارنة والعتبة والمدة والخطورة والقنوات (Telegram أو إيميل). الكتم المؤقت بـ muted_until أثناء الصيانة', ['key', 'name', 'metric', 'comparator', 'threshold', 'window_seconds', 'severity', 'channels text[]', 'is_active', 'muted_until', 'created_by', 'updated_by'], [['created_by', 'staff_users'], ['updated_by', 'staff_users']]),
+  T('alert_events', 'G', 'كل انطلاقة لقاعدة: firing ثم acknowledged ثم resolved. تُغلق آلياً عند عودة القيمة لمجالها، ولا تتكرر الرسالة حتى يؤكد الموظف أو تمر مدة التذكير', ['rule_id', 'status', 'severity', 'value', 'subject_type', 'subject_id', 'started_at', 'acknowledged_by', 'acknowledged_at', 'resolved_at', 'note'], [['rule_id', 'alert_rules'], ['subject_id', 'suppliers', 'poly'], ['acknowledged_by', 'staff_users']]),
+  T('incidents', 'G', 'حوادث التشغيل: يعلنها موظف أو تُفتح من تنبيه حرج. الخطورة والمكوّنات المتأثرة والخط الزمني (timeline jsonb) والسبب والإجراء عند الإغلاق', ['title', 'severity', 'status', 'components text[]', 'summary', 'timeline jsonb', 'root_cause', 'started_at', 'resolved_at', 'alert_event_id nullable', 'created_by', 'resolved_by'], [['alert_event_id', 'alert_events'], ['created_by', 'staff_users'], ['resolved_by', 'staff_users']]),
+  T('job_runs', 'G', 'سجل تشغيل المهام المجدولة والخلفية (مزامنة الأسعار، فحص سلامة الـ ledger، حذف البيانات المنتهية، تذكيرات): البداية والنهاية والنتيجة والخطأ. result يحمل ملخص الفحص، ومنه آخر نتيجة لفحص المال', ['job', 'trigger', 'status', 'started_at', 'finished_at', 'duration_ms', 'processed', 'result jsonb', 'error', 'triggered_by nullable'], [['triggered_by', 'staff_users']]),
 
   // ── H. المتجر والمحتوى (B2C) ──
   T('service_listings', 'H', 'صفحة الخدمة العامة في المتجر: العنوان والـ slug والـ SEO لكل لغة', ['service_id', 'locale', 'slug', 'public_title', 'summary', 'description_md', 'eta_text', 'requirements_md', 'brand', 'carrier', 'country', 'is_listed', 'is_featured', 'sort', 'seo_title', 'seo_description', 'og_file_id'], [['service_id', 'services'], ['og_file_id', 'files']], 'new'),

@@ -46,6 +46,7 @@ export const groups = {
     { id: 'support', name: 'الدعم' },
     { id: 'risk', name: 'المخاطر والامتثال' },
     { id: 'promo', name: 'السلات المتروكة وقمع المبيعات' },
+    { id: 'health', name: 'صحة النظام والأداء' },
   ],
 };
 
@@ -329,11 +330,36 @@ export const routes = [
   R('admin', 'promo', 'POST', '/admin/checkouts/recover', 'إرسال إيميل استرجاع مرة واحدة لمن وافق على التسويق', 'growth:send', 19, ['checkout_sessions', 'notifications']),
   R('admin', 'promo', 'GET', '/admin/reports/funnel', 'قمع المبيعات: فحص ثم بدء دفع ثم مدفوع ثم مسلَّم', 'reports:growth', 19, ['imei_checks', 'checkout_sessions', 'orders']),
 
+  // ── صحة النظام والأداء: صفحة واحدة بالإدارة تقرأ من هذه المسارات. المقاييس عالية الدقة تأتي من نظام المراقبة (Prometheus) لا من Postgres ──
+  R('admin', 'health', 'GET', '/admin/system/health', 'الحالة العامة Operational أو Degraded أو Outage، ونسخة التشغيل (version و commit والبيئة)، وحالة كل مكوّن، ونسبة التشغيل 24 ساعة و7 و30 يوماً، والتنبيهات المفتوحة والحوادث الجارية ووضع الصيانة', 'system:read', 9, ['service_checks', 'alert_events', 'incidents', 'settings']),
+  R('admin', 'health', 'GET', '/admin/system/checks', 'سجل الفحوص لمكوّن بمدى زمني: شرائط التشغيل وزمن الاستجابة', 'system:read', 9, ['service_checks']),
+  R('admin', 'health', 'GET', '/admin/system/metrics', 'أداء الـ API لكل surface بمدى زمني: requests/min و latency p50 و p95 و p99 ونسبة 4xx و5xx وعدد 429، وأبطأ 10 endpoints. تُقرأ من نظام المراقبة', 'system:read', 9, []),
+  R('admin', 'health', 'GET', '/admin/system/errors', 'أكثر الأخطاء تكراراً حسب code والـ endpoint بمدى زمني، مع أول وآخر ظهور وrequest_id ورابط Sentry', 'system:read', 9, []),
+  R('admin', 'health', 'GET', '/admin/system/orders-health', 'صحة خط الطلبات: العالق أكثر من SLA لكل حالة، وزمن الإرسال p95، ونسبة النجاح والفشل لكل نوع خدمة، والموقوف عند المخاطر', 'system:read', 9, ['orders', 'order_events', 'risk_assessments']),
+  R('admin', 'health', 'GET', '/admin/system/suppliers', 'صحة كل مورد: يعمل أو متوقف، آخر نداء ناجح، زمن الاستجابة، نسبة الخطأ والـ timeout، حالة circuit breaker، آخر مزامنة، ورصيدنا عنده. الإيقاف المؤقت بـ PATCH /admin/suppliers/:id (status = paused)', 'system:read', 9, ['suppliers', 'supplier_api_logs', 'service_checks']),
+  R('admin', 'health', 'GET', '/admin/system/queues', 'عدّادات BullMQ لكل queue: waiting و active و delayed و failed وعمر أقدم مهمة والمعدل وعدد الـ workers. التفاصيل العميقة في Bull Board', 'system:read', 9, ['outbox_events']),
+  R('admin', 'health', 'GET', '/admin/system/queues/:name/failed', 'المهام الفاشلة بسبب الفشل وعدد المحاولات', 'system:read', 9, ['outbox_events']),
+  R('admin', 'health', 'POST', '/admin/system/queues/:name/retry', 'إعادة محاولة مهمة فاشلة أو كل الفاشلة', 'system:manage', 9, ['outbox_events', 'audit_logs']),
+  R('admin', 'health', 'POST', '/admin/system/queues/:name/pause', 'إيقاف معالجة queue أو استئنافها (paused: true أو false) أثناء حادثة', 'system:manage', 9, ['audit_logs']),
+  R('admin', 'health', 'GET', '/admin/system/jobs', 'المهام المجدولة: الاسم والجدول وآخر تشغيل والقادم والنتيجة، مع تاريخ تشغيل مهمة واحدة بـ ?job=', 'system:read', 9, ['job_runs']),
+  R('admin', 'health', 'POST', '/admin/system/jobs/:name/run', 'تشغيل مهمة الآن يدوياً (مثل مزامنة الأسعار)، وتُسجَّل في job_runs بـ trigger = manual', 'system:manage', 9, ['job_runs', 'audit_logs']),
+  R('admin', 'health', 'GET', '/admin/system/database', 'Postgres: الاتصالات من الحد الأقصى وانتظار الـ pool، وأبطأ الاستعلامات (pg_stat_statements)، والـ locks والمعاملات الطويلة، وتأخر النسخة، والحجم والنمو، والـ migrations المعلّقة', 'system:read', 9, []),
+  R('admin', 'health', 'GET', '/admin/system/cache', 'Redis: الذاكرة المستعملة من الحد، والإخلاءات، ونسبة الإصابة hit rate، والعملاء، والـ latency', 'system:read', 9, []),
+  R('admin', 'health', 'GET', '/admin/system/webhooks', 'نجاح الـ webhooks الصادرة للتجار والواردة من البوابات: النسبة والفاشل والمحاولات وأقدم رسالة لم تُسلَّم', 'system:read', 9, ['webhook_deliveries', 'outbox_events']),
+  R('admin', 'health', 'GET', '/admin/system/integrity', 'فحوص سلامة المال: مجموع كل قيد صفر، ورصيد كل حساب يساوي مجموع أسطره، وحجوزات عالقة أكثر من 24 ساعة، ودفعات مؤكدة بلا قيد، وآخر نتيجة', 'system:read', 12, ['ledger_entries', 'ledger_accounts', 'payments', 'job_runs']),
+  R('admin', 'health', 'POST', '/admin/system/integrity/run', 'تشغيل فحص السلامة الآن كمهمة خلفية؛ النتيجة تظهر بـ GET /admin/system/integrity', 'system:manage', 12, ['job_runs', 'audit_logs']),
+  R('admin', 'health', 'PUT', '/admin/system/maintenance', 'وضع الصيانة بنطاق: المتجر أو الدفع (checkout) أو طلبات API أو الكل، مع رسالة ووقت متوقع. يرجع 503 MAINTENANCE للنطاق المحدد، ولا يمس لوحة الإدارة فلا يُقفل الموظف خارجها. المفتاح يُخزَّن في settings', 'system:manage', 9, ['settings', 'audit_logs']),
+  R('admin', 'health', 'CRUD', '/admin/alert-rules', 'قواعد التنبيه: المقياس والعتبة والمدة والخطورة والقنوات، وكتم مؤقت بـ muted_until', 'alerts:*', 12, ['alert_rules', 'audit_logs'], { ops: 'LSCUD' }),
+  R('admin', 'health', 'CRUD', '/admin/alerts', 'التنبيهات المنطلقة وحالتها: firing أو acknowledged أو resolved', 'alerts:read', 12, ['alert_events', 'alert_rules'], { ops: 'LS' }),
+  R('admin', 'health', 'POST', '/admin/alerts/:id/ack', 'تأكيد الاستلام: يوقف تكرار الرسائل ويسجّل اسم الموظف ووقته', 'alerts:update', 12, ['alert_events', 'audit_logs']),
+  R('admin', 'health', 'CRUD', '/admin/incidents', 'الحوادث: إعلان حادثة، وتحديث خطها الزمني، وإغلاقها مع السبب والإجراء', 'incidents:*', 12, ['incidents', 'alert_events', 'audit_logs'], { ops: 'LSCU' }),
+
   // ── Incoming webhook: disputes ──
   R('hooks', null, 'POST', '/webhooks/disputes/:gateway', 'نزاع جديد أو محسوم من البوابة؛ يسجل النزاع بموعد الأدلة ويقيّد الخسارة عند الخسارة', 'توقيع البوابة', 16, ['disputes', 'payments', 'ledger_entries']),
 
   // ── System ──
   R('system', null, 'GET', '/health', 'فحص الخدمة: Postgres و Redis', 'عام', 0, []),
+  R('system', null, 'GET', '/metrics', 'مقاييس Prometheus: الطلبات والـ latency والـ queues. للشبكة الداخلية أو بـ token فقط، وتقرأ منها لوحة الإدارة صفحة الصحة', 'شبكة داخلية أو token', 9, []),
   R('system', null, 'GET', '/openapi.json', 'مواصفات REST v1', 'عام', 7, []),
   R('system', null, 'GET', '/docs', 'صفحة توثيق REST v1', 'عام', 7, []),
 ];

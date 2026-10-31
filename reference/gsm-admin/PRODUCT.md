@@ -43,7 +43,7 @@ Compatible with Dhru Fusion (merchants can switch with no integration work) but 
 No existing logo or brand. The brief pins the quality bar: modern SaaS in the vein of Linear, Stripe and Vercel; dense, restrained, no AI-slop patterns. Working name in the demo: "GSM Supply".
 
 ## Evidence on Hand
-- 20-stage build plan (Claude Docs artifact) and an interactive system map (`/root/gsm-map/dist/gsm-system-map.html`) with the data model (61 tables), 251 routes across 9 API surfaces and the money events for both channels.
+- 20-stage build plan (Claude Docs artifact) and an interactive system map (`/root/gsm-map/dist/gsm-system-map.html`) with the data model (66 tables), 274 routes across 9 API surfaces and the money events for both channels.
 - No real customers, orders, supplier names or prices exist yet. All demo data is synthetic and labelled so on screen. Supplier and merchant names are invented.
 
 ## Product Principles

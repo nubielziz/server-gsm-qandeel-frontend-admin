@@ -6,8 +6,11 @@ import type { SupplierApiLogRow, SupplierRow, SupplierServiceRow } from '@/lib/a
 
 // ---- Supplier ----
 
-/** Whether the supplier takes orders: the `status` column, switched by Disable and Enable (MISMATCHES M60). */
-export type SupplierStatus = 'active' | 'disabled';
+/**
+ * Whether the supplier takes orders: the `status` column, switched by Disable and Enable (MISMATCHES M60). `paused` is a
+ * temporary stop during an incident, set from System health (the map's `GET /admin/system/suppliers` row).
+ */
+export type SupplierStatus = 'active' | 'disabled' | 'paused';
 
 /** How the supplier is doing, worked out by the server from its recent calls. Read-only. */
 export type SupplierHealth = 'up' | 'degraded' | 'down';

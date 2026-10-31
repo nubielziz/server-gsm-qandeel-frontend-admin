@@ -1,4 +1,4 @@
-// English descriptions of the 61 tables in reference/gsm-map/data/schema.mjs (the map's own text is Arabic).
+// English descriptions of the 66 tables in reference/gsm-map/data/schema.mjs (the map's own text is Arabic).
 // scripts/gen-entity-types.mjs turns each into the JSDoc of that table's row type, so business rules stay in the sentence.
 
 export const tableDescriptions = {
@@ -98,4 +98,15 @@ export const tableDescriptions = {
   blocklist_entries:
     'The blocklist: email, domain, IMEI, card fingerprint, device and country. IP addresses live in ip_rules.',
   data_requests: 'Data-subject requests: export or deletion, with a legal deadline.',
+  // G. System health and alerting (domain G in the map)
+  service_checks:
+    'Results of the periodic health checks: every minute the worker checks the database, the cache, storage, every supplier and every payment gateway, and writes the status and the response time. Uptime is computed from these rows and outages are detected from them. High-resolution metrics (requests, latency) are not stored here but in the monitoring system. Rows are deleted after 90 days.',
+  alert_rules:
+    'Alert rules: metric, comparator, threshold, window, severity and channels (Telegram or email). A temporary mute, for example during maintenance, uses muted_until.',
+  alert_events:
+    'Each time a rule fires: firing, then acknowledged, then resolved. It closes on its own when the value is back in range, and the message is not repeated until a staff member acknowledges it or the reminder interval passes.',
+  incidents:
+    'Operational incidents: declared by a staff member or opened from a critical alert. Severity, affected components, the timeline (timeline jsonb), and the root cause and action taken at closing.',
+  job_runs:
+    'Run log of scheduled and background jobs (price sync, ledger integrity check, expired-data deletion, reminders): start, end, result and error. result holds the job summary; the last money integrity result comes from it.',
 };

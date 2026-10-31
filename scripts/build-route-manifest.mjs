@@ -26,13 +26,19 @@ const EXPECTED_ROWS = {
   support: 4,
   risk: 7,
   promo: 3,
+  health: 22,
 };
-const EXPECTED_ADMIN_ENDPOINTS = 238;
+const EXPECTED_ADMIN_ENDPOINTS = 268;
 
 // Every system route must be listed in one of these, so a new one gets a decision instead of a silent default.
+// Each excluded route keeps its own reason, which is printed in the markdown view.
 const SYSTEM_KEEP = ['GET /health'];
-const SYSTEM_EXCLUDE = ['GET /openapi.json', 'GET /docs'];
-const EXCLUDE_REASON = 'REST v1 docs, not used by the admin console';
+const SYSTEM_EXCLUDE = {
+  'GET /openapi.json': 'REST v1 docs, not used by the admin console',
+  'GET /docs': 'REST v1 docs, not used by the admin console',
+  'GET /metrics':
+    'Prometheus scrape target for the internal network or a token; the API reads it for the health routes, the console never calls it',
+};
 
 const RULES = {
   pagination:
@@ -70,8 +76,8 @@ function selectRows() {
     const key = rowKey(row);
     if (row.s === 'admin') rows.push(row);
     else if (row.s === 'system' && SYSTEM_KEEP.includes(key)) rows.push(row);
-    else if (row.s === 'system' && SYSTEM_EXCLUDE.includes(key))
-      excluded.push({ key, reason: EXCLUDE_REASON });
+    else if (row.s === 'system' && Object.hasOwn(SYSTEM_EXCLUDE, key))
+      excluded.push({ key, reason: SYSTEM_EXCLUDE[key] });
     else if (row.s === 'system')
       throw new Error(`system route "${key}" is not classified: add it to SYSTEM_KEEP or SYSTEM_EXCLUDE`);
   }

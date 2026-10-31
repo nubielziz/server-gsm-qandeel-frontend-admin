@@ -14,18 +14,19 @@ export const ROLES: { key: RoleKey; id: number; name: string }[] = [
   { key: 'viewer', id: 6, name: 'Read only' },
 ];
 
-// Access level per demo area, in the order of ROLE_AREAS: 0 none, 1 view, 2 manage.
+// Access level per demo area, in the order of ROLE_AREAS: 0 none, 1 view, 2 manage. The ninth area, System (health,
+// alerts, incidents), has no demo column: Owner and Admin manage it, every other role may look (MISMATCHES).
 const ROLE_MATRIX: Record<RoleKey, number[]> = {
-  owner: [2, 2, 2, 2, 2, 2, 2, 2],
-  admin: [2, 2, 2, 2, 2, 2, 2, 1],
-  finance: [1, 1, 0, 1, 2, 1, 0, 0],
-  support: [1, 2, 2, 1, 0, 1, 0, 0],
-  risk: [1, 1, 1, 2, 1, 0, 0, 0],
-  viewer: [1, 1, 1, 1, 1, 1, 0, 0],
+  owner: [2, 2, 2, 2, 2, 2, 2, 2, 2],
+  admin: [2, 2, 2, 2, 2, 2, 2, 1, 2],
+  finance: [1, 1, 0, 1, 2, 1, 0, 0, 1],
+  support: [1, 2, 2, 1, 0, 1, 0, 0, 1],
+  risk: [1, 1, 1, 2, 1, 0, 0, 0, 1],
+  viewer: [1, 1, 1, 1, 1, 1, 0, 0, 1],
 };
 
 // The API permission areas (the part before the colon) behind each demo area, in the same order:
-// Orders, Customers, Support, Risk, Money, Catalog, Settings, Admins.
+// Orders, Customers, Support, Risk, Money, Catalog, Settings, Admins, System.
 const AREA_PERMISSIONS: string[][] = [
   ['orders', 'inventory', 'files'],
   ['customers', 'clients', 'wallet', 'groups', 'kyc', 'api_keys', 'growth'],
@@ -35,6 +36,7 @@ const AREA_PERMISSIONS: string[][] = [
   ['catalog', 'pricing', 'suppliers', 'storefront', 'legal'],
   ['settings', 'tax', 'currencies', 'webhooks', 'notifications'],
   ['staff', 'access', 'roles', 'sessions', 'audit', 'queues'],
+  ['system', 'alerts', 'incidents'],
 ];
 
 // Every permission of the map, by prefix, written out from docs/route-manifest.json (a CRUD row `x:*` stands for
@@ -76,6 +78,9 @@ const CATALOG: Record<string, string> = {
   support: 'read create update delete reply',
   risk: 'read create delete decide',
   growth: 'read send',
+  system: 'read manage',
+  alerts: 'read create update delete',
+  incidents: 'read create update',
 };
 
 /** `GET /admin/permissions` answers with this list. */

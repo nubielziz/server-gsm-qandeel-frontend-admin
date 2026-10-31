@@ -283,6 +283,37 @@
       "folders": ["src/features/audit"],
       "rows": ["CRUD /admin/audit-logs"],
       "notes": "Audit log with filters and expandable before/after."
+    },
+    {
+      "id": "system-health",
+      "page": "/system-health",
+      "demo": [],
+      "folders": ["src/features/system-health"],
+      "rows": [
+        "GET /admin/system/health",
+        "GET /admin/system/checks",
+        "GET /admin/system/metrics",
+        "GET /admin/system/errors",
+        "GET /admin/system/orders-health",
+        "GET /admin/system/suppliers",
+        "GET /admin/system/queues",
+        "GET /admin/system/queues/:name/failed",
+        "POST /admin/system/queues/:name/retry",
+        "POST /admin/system/queues/:name/pause",
+        "GET /admin/system/jobs",
+        "POST /admin/system/jobs/:name/run",
+        "GET /admin/system/database",
+        "GET /admin/system/cache",
+        "GET /admin/system/webhooks",
+        "GET /admin/system/integrity",
+        "POST /admin/system/integrity/run",
+        "PUT /admin/system/maintenance",
+        "CRUD /admin/alert-rules",
+        "CRUD /admin/alerts",
+        "POST /admin/alerts/:id/ack",
+        "CRUD /admin/incidents"
+      ],
+      "notes": "No demo page: designed in docs/system-health-design.md. Overview, API, orders and suppliers, queues and jobs, alerts and incidents, data stores, integrity, maintenance. Pausing a supplier reuses updateSupplier from features/suppliers (PATCH /admin/suppliers/:id, status = paused)."
     }
   ]
 }

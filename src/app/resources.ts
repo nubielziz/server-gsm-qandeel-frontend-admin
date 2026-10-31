@@ -1,5 +1,5 @@
-// Refine resources of the app: the 16 pages of the demo's ROUTES (90-app.js) with the data the sidebar, palette and
-// access checks need, plus the registry that serves Refine's data hooks.
+// Refine resources of the app: the 16 pages of the demo's ROUTES (90-app.js) plus System health (no demo page), with
+// the data the sidebar, palette and access checks need, and the registry that serves Refine's data hooks.
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
 import { mergeRegistries } from '@/lib/api';
@@ -79,6 +79,13 @@ export const resources: ResourceProps[] = [
   page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),
   page('settings', { label: 'Settings', group: 'System', icon: 'sliders', permission: 'settings:read' }),
   page('audit', { label: 'Audit log', group: 'System', icon: 'history', permission: 'audit:read' }),
+  // No demo page (docs/system-health-design.md). The feature's manifest widens this to alerts and incidents readers.
+  page('system-health', {
+    label: 'System health',
+    group: 'System',
+    icon: 'pulse',
+    permission: 'system:read',
+  }),
 ];
 
 /**
