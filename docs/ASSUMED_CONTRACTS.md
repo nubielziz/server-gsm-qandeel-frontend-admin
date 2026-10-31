@@ -512,6 +512,11 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   `DATABASE_UNAVAILABLE`; both are handled. `SlowQuery.id` and `LongTransaction.pid` are unique in an answer.
   `size.growthPerDayBytes` null means not measured. `memory.maxBytes` null or 0 means no limit.
 
+- **Integrity tab.** `lastRun` is the last run that ended, or the run going now (`status: running`). A failed or
+  skipped run never looked at the ledger. `count` is the full number of findings and `findings` the first ones;
+  `ref` of an account finding starts with the account kind and a colon (`client_wallet:4`). `difference: null` means
+  the check counts no money.
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -556,3 +561,5 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 32. While Postgres is down, can the lists of `GET …/database` be `null` (not `[]`) when they could not be read, and `locks.waiting` and `waitingClients` null rather than 0? Should these two counts be `Measure`s with limits?
 33. When `usage` has no reading, are `used` and `usedBytes` zeros, last known values, or absent? Does Redis send `maxBytes: null` or `0` without a limit?
 34. Over which window do a slow query's `calls`, `meanMs` and `totalMs` count, how many statements does `slowQueries` hold, and from which age is a transaction long?
+35. Could `GET /admin/system/integrity` carry an overall result (or a count of failed checks), and the start time of a run that is going now?
+36. What is the `ref` format of an account finding, and can the ledger be filtered to one account? For entry and payment findings, is `id` the journal entry id and the payment id? How many findings per check does the server send?

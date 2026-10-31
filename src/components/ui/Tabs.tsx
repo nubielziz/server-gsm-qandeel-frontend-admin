@@ -1,5 +1,5 @@
 // Tabs: controlled tab strip with counts. Ports tabsEl() of 20-ui.js and adds arrow-key navigation.
-import { useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 import { cx } from './cx';
 import { Count } from './Count';
 
@@ -33,8 +33,22 @@ function targetIndex(key: string, from: number, count: number, rtl: boolean): nu
  * layouts), Home and End move focus and select the tab at once, so the content follows the keyboard.
  */
 export function Tabs<V extends string = string>({ items, value, onChange, label, className }: TabsProps<V>) {
+  const strip = useRef<HTMLDivElement>(null);
   const buttons = useRef(new Map<V, HTMLButtonElement>());
   const selected = items.findIndex((item) => item.value === value);
+
+  // On a phone the strip scrolls sideways. Keep the selected tab in view (after a load from an address, and after a
+  // change), moving only the strip, never the page.
+  useEffect(() => {
+    const box = strip.current;
+    const button = buttons.current.get(value);
+    if (!box || !button || box.scrollWidth <= box.clientWidth) return;
+    const edge = 16;
+    const boxRect = box.getBoundingClientRect();
+    const rect = button.getBoundingClientRect();
+    if (rect.left < boxRect.left) box.scrollLeft -= boxRect.left - rect.left + edge;
+    else if (rect.right > boxRect.right) box.scrollLeft += rect.right - boxRect.right + edge;
+  }, [value]);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
@@ -48,7 +62,13 @@ export function Tabs<V extends string = string>({ items, value, onChange, label,
   }
 
   return (
-    <div className={cx('tabs', className)} role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+    <div
+      ref={strip}
+      className={cx('tabs', className)}
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+    >
       {items.map((item, index) => (
         <button
           key={item.value}

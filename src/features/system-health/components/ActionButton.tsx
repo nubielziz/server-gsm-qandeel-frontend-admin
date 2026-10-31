@@ -16,8 +16,9 @@ export interface ActionButtonProps extends ButtonProps {
  * title and as its description for screen readers. Otherwise it is an ordinary `Button`. While the staff member is still
  * loading nothing is drawn either, so the button never flashes in and out.
  *
- * A disabled button takes no hover, so the tooltip would never show on it. The reason therefore sits as a title on a
- * wrapper too, which does get the hover.
+ * A disabled button takes no hover, so its tooltip would never show. Whenever the button is off for a reason (the missing
+ * permission, or the caller's `disabled` with a `title` such as "A run is going"), the reason sits as a title on a
+ * wrapper, which does get the hover, and as the button's description for screen readers.
  */
 export function ActionButton({ permission, title, disabled, children, ...rest }: ActionButtonProps) {
   const grants = useHealthGrants();
@@ -25,7 +26,8 @@ export function ActionButton({ permission, title, disabled, children, ...rest }:
   if (!grants.ready || grants.readOnly) return null;
 
   const need = grants.needs(permission);
-  if (!need.disabled) {
+  const reason = need.disabled ? need.title : disabled ? title : undefined;
+  if (!reason) {
     return (
       <Button {...rest} title={title} disabled={disabled}>
         {children}
@@ -33,12 +35,12 @@ export function ActionButton({ permission, title, disabled, children, ...rest }:
     );
   }
   return (
-    <span className="inline-flex" title={need.title}>
-      <Button {...rest} title={need.title} disabled aria-describedby={reasonId}>
+    <span className="inline-flex" title={reason}>
+      <Button {...rest} title={reason} disabled aria-describedby={reasonId}>
         {children}
       </Button>
       <span id={reasonId} className="sr-only">
-        {need.title}
+        {reason}
       </span>
     </span>
   );

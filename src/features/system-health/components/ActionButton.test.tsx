@@ -60,11 +60,14 @@ describe('ActionButton', () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
-  it('keeps the caller title and disabled state when the permission is held', async () => {
-    renderButton(['system:manage'], { title: 'Stops the workers', disabled: true });
+  it('keeps the caller title and disabled state when the permission is held, and explains the disabled button', async () => {
+    renderButton(['system:manage'], { title: 'The check is running now', disabled: true });
     const button = await screen.findByRole('button', { name: 'Pause queue' });
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', 'Stops the workers');
+    expect(button).toHaveAttribute('title', 'The check is running now');
+    // A disabled button takes no hover: the wrapper carries the reason, and screen readers hear it as the description.
+    expect(button.parentElement).toHaveAttribute('title', 'The check is running now');
+    expect(button).toHaveAccessibleDescription('The check is running now');
   });
 
   it('passes the button style through, and shows busy while it works', async () => {
