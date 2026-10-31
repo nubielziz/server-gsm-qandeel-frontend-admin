@@ -147,6 +147,12 @@ describe('thresholdText', () => {
     expect(thresholdText({ unit: 'ms', value: null, warn: 800 })).toBe('warn 800 ms');
   });
 
+  it('keeps small limits in milliseconds even under a value in seconds, so 50 ms never reads 0.05 s', () => {
+    expect(thresholdText({ unit: 'ms', value: 30_000, warn: 50, crit: 500 }, { both: true })).toBe(
+      'warn 50 ms · crit 500 ms',
+    );
+  });
+
   it('is null when the measure has no threshold', () => {
     expect(thresholdText({ unit: 'ms' })).toBeNull();
     expect(thresholdText({ unit: 'ms', warn: null, crit: null })).toBeNull();

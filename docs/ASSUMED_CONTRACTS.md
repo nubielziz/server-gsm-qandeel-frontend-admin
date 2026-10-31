@@ -490,6 +490,10 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   the chart draws `CheckBucket.latencyMs` against `ComponentChecks.latency`. `IncidentSummary.components[]` use
   `HealthComponent.key`. `HealthComponent.detail` is set only while a check fails (and for a disabled supplier's note).
 
+- **API tab.** A figure without limits (requests per minute) is `ok` with a value and `unknown` when null. An answer to
+  `?surface=<key>` still lists that surface in `surfaces`. `slowest` holds at most ten endpoints, slowest first.
+  `ErrorGroup.lastRequestId` may be null; `sentryUrl` is a full address or null (no link then).
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -519,3 +523,5 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
     the 5xx rate?
 18. Could `GET /admin/system/checks` offer a lean form (status only) for the uptime bars, and is the number of components capped? The Overview reads every component's buckets only to draw them.
 19. Is `HealthComponent.key` stable (`supplier:<id>`, `gateway:<id>`)? It is kept in addresses and in an incident's `components`.
+20. Can `SurfaceMetrics` carry its own `state`, so a surface's badge is the server's and not the worst of its figures?
+21. Which window do `count429` and the other current figures of `/metrics` cover? Does `slowest` follow `range`? Is an error group's `firstSeenAt` the first time ever or the first time inside the range?

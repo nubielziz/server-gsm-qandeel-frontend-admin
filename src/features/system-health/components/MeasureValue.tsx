@@ -7,6 +7,11 @@ export interface MeasureValueProps {
   measure: Measure;
   /** Adds the threshold the server applied under the value ("warn 800 ms"). */
   threshold?: boolean;
+  /**
+   * For a right-aligned number column: an ok figure keeps the room of the state icon free, so "783 ms" ends on the same
+   * line as "3.1 s ⊗" above it.
+   */
+  reserveIcon?: boolean;
   className?: string;
 }
 
@@ -14,7 +19,12 @@ export interface MeasureValueProps {
  * Prints the value as the server sent it: "412 ms", "0.42 %", "No data" for null. A warn, crit or unknown state adds a
  * small icon and a screen-reader word; an ok state adds nothing. It never compares the value with a threshold.
  */
-export function MeasureValue({ measure, threshold = false, className }: MeasureValueProps) {
+export function MeasureValue({
+  measure,
+  threshold = false,
+  reserveIcon = false,
+  className,
+}: MeasureValueProps) {
   const noData = measure.value === null;
   const meta = stateMeta(measure.state);
   // A null value has no state worth marking: "No data" already says it.
@@ -30,6 +40,7 @@ export function MeasureValue({ measure, threshold = false, className }: MeasureV
             <span className="sr-only">{meta.word}</span>
           </>
         )}
+        {!marked && reserveIcon && <span aria-hidden="true" className="ic-xs inline-block flex-none" />}
       </span>
       {line && <span className="whitespace-nowrap text-xs text-ink3">{line}</span>}
     </span>

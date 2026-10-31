@@ -51,6 +51,9 @@ export default defineConfig(({ mode }) => {
       // react-router, whose router context our <MemoryRouter> never fills ('useLocation() may be used only in a <Router>').
       server: { deps: { inline: ['@refinedev/react-router'] } },
       setupFiles: ['./src/test/setup.ts'],
+      // Many tests render the whole app against the mock API. With every file running in parallel, a few of them pass
+      // the default 5 s on a busy machine, so a test may take 15 s before it counts as hung.
+      testTimeout: 15_000,
       include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.mjs'],
       css: false,
       passWithNoTests: true,

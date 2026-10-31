@@ -18,13 +18,14 @@ Alerts & incidents, Data stores, Integrity.
   (`*/health` mock anchored to the root route and following the scenario; mutations take `{ toastErrors }` so a
   dialog's refusal is not shown twice; verdict names the open alerts; KPI trends one point per hour from zero; ms
   thresholds in the value's scale; phone layout of tiles, meta line and impact line). Mismatches M203–M217.
-  Test infra: RTL waits up to 3 s (`src/test/setup.ts`), the suite grew by 58 heavy files.
+  Test infra: RTL waits up to 3 s (`src/test/setup.ts`) and a test may take 15 s (`vite.config.ts`): the suite grew
+  by more than 60 heavy files and app-level tests timed out under full parallel load.
 - **Tabs: in progress.** Seven worktrees `../worktrees/system-health-<tab>` on `feat/system-health-<tab>`; one workflow
   runs per tab: Sonnet implements and takes round-1 screenshots, Opus reviews code and images, Sonnet fixes and takes
   round-2 screenshots; the lead looks at round 2 (third visual round), then squash-merges the tabs in order (Overview,
   API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores, Integrity), one commit each. Pool: at most
   4 implementers and 2 reviewers at once; no new tab while 3 wait for review. Budget: up to 3 calls per tab (21).
-  Merged so far: Overview.
+  Merged so far: Overview, API.
 
 ### Earlier status (2026-10-30)
 

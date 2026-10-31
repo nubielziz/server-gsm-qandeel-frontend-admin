@@ -102,28 +102,32 @@ export interface ThresholdTextOptions {
 }
 
 /**
- * Milliseconds in the scale the value itself prints in: seconds when the value is a second or more ("warn 0.8 s" under
- * "8.7 s"), milliseconds otherwise ("warn 1,500 ms" under "340 ms"). A limit in another unit than its value misleads.
+ * Millisecond limits in one scale for the pair: seconds when the value itself prints in seconds and every limit is at
+ * least 100 ms ("8.7 s" over "warn 0.8 s · crit 1.5 s"), milliseconds otherwise ("30 s" over "warn 50 ms · crit
+ * 500 ms", never "0.05 s"). Both limits always share the unit.
  */
-function formatMsLike(ms: number, value: number): string {
-  if (Math.abs(value) >= 1000) return `${plainNumber(ms / 1000, Math.abs(ms) < 10_000 ? 2 : 0)} s`;
-  return `${plainNumber(ms, Math.abs(ms) < 10 ? 1 : 0)} ms`;
+function msLimitsInSeconds(value: number, limits: readonly number[]): boolean {
+  return Math.abs(value) >= 1000 && limits.every((limit) => Math.abs(limit) >= 100);
+}
+
+function formatMsIn(ms: number, seconds: boolean): string {
+  return seconds ? `${plainNumber(ms / 1000, 2)} s` : `${plainNumber(ms, Math.abs(ms) < 10 ? 1 : 0)} ms`;
 }
 
 /**
  * The thresholds the server applied, as small text: "warn 800 ms" (the first line the value would cross), or the crit one
  * when there is no warn. Returns null when the measure has no threshold. It only prints; it never compares the value.
- * With a `value` in milliseconds, the thresholds print in the same scale as that value.
+ * With a `value` in milliseconds, both thresholds print in one scale that suits the value (see msLimitsInSeconds).
  */
 export function thresholdText(
   measure: Pick<Measure, 'unit' | 'warn' | 'crit'> & { value?: number | null },
   { both = false, warnLabel = 'warn' }: ThresholdTextOptions = {},
 ): string | null {
   const { unit, warn, crit, value } = measure;
-  const print = (limit: number) =>
-    unit === 'ms' && value != null && Number.isFinite(value) && Number.isFinite(limit)
-      ? formatMsLike(limit, value)
-      : formatValue(limit, unit);
+  const limits = [warn, crit].filter((limit): limit is number => limit != null && Number.isFinite(limit));
+  const scaled = unit === 'ms' && value != null && Number.isFinite(value);
+  const seconds = scaled && msLimitsInSeconds(value, limits);
+  const print = (limit: number) => (scaled ? formatMsIn(limit, seconds) : formatValue(limit, unit));
   const warnText = warn == null ? null : `${warnLabel} ${print(warn)}`;
   const critText = crit == null ? null : `crit ${print(crit)}`;
   if (both) return [warnText, critText].filter(Boolean).join(' · ') || null;
