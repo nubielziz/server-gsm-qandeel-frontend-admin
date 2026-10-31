@@ -30,7 +30,9 @@ describe('the healthy scenario', () => {
     expect(within(surfaces).getAllByText(/^[\d,.]+ ms$/).length).toBeGreaterThanOrEqual(6);
     expect(within(surfaces).getAllByText(/^[\d,.]+ %$/).length).toBeGreaterThanOrEqual(12);
     // Nothing needs attention, so there is no quiet line and no one is picked.
-    expect(within(surfaces).queryByRole('button', { name: 'Show' })).not.toBeInTheDocument();
+    expect(
+      within(surfaces).queryByRole('button', { name: 'Show the healthy surfaces' }),
+    ).not.toBeInTheDocument();
     expect(within(surfaces).queryByRole('button', { name: 'All surfaces' })).not.toBeInTheDocument();
     // Without Grafana and Sentry in the env there is no link to either.
     expect(within(surfaces).queryByRole('link')).not.toBeInTheDocument();
@@ -77,12 +79,12 @@ describe('a problem scenario', () => {
     expect(within(surfaces).queryByRole('button', { name: 'Client app' })).not.toBeInTheDocument();
     expect(surfaces).toHaveTextContent('4 surfaces OK');
 
-    await user.click(within(surfaces).getByRole('button', { name: 'Show' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     expect(rowsOf(surfaces)).toHaveLength(6);
     expect(within(surfaces).getByRole('button', { name: 'Client app' })).toBeInTheDocument();
     // The problems are still first.
     expect(rowsOf(surfaces)[0]).toHaveTextContent('Merchant API v1');
-    await user.click(within(surfaces).getByRole('button', { name: 'Hide' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Hide the healthy surfaces' }));
     expect(rowsOf(surfaces)).toHaveLength(2);
   });
 
@@ -104,7 +106,7 @@ describe('a problem scenario', () => {
     );
     expect(surfaces).toHaveTextContent('4 surfaces OK');
     expect(rowsOf(surfaces)).toHaveLength(2);
-    expect(within(surfaces).getByRole('button', { name: 'Show' })).toHaveFocus();
+    expect(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' })).toHaveFocus();
   });
 
   it('leaves the keyboard on a surface that stays in view after All surfaces', async () => {
@@ -137,7 +139,9 @@ describe('a problem scenario', () => {
     const surfaces = await surfacesCard();
     expect(rowsOf(surfaces)).toHaveLength(6);
     expect(within(surfaces).getAllByText('Critical').length).toBeGreaterThanOrEqual(6);
-    expect(within(surfaces).queryByRole('button', { name: 'Show' })).not.toBeInTheDocument();
+    expect(
+      within(surfaces).queryByRole('button', { name: 'Show the healthy surfaces' }),
+    ).not.toBeInTheDocument();
   });
 });
 

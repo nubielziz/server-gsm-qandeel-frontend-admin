@@ -1,7 +1,6 @@
 // HealthyStrip: the quiet line on top of a table of the Queues & jobs tab. On the left what the card holds; on the right how
 // many healthy rows are folded away, with Show / Hide (design: "healthy rows collapse into one quiet line").
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui';
 import { countOf } from './text';
 
 export interface HealthyStripProps {
@@ -25,17 +24,18 @@ export function HealthyStrip({ children, healthy, noun, all, expanded, onToggle 
     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-line px-3.5 py-1.5 text-xs text-ink3 [&:not(:last-child)]:border-b">
       <span className="inline-flex flex-wrap items-center gap-x-2">{children}</span>
       {healthy > 0 && (
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-x-1.5">
           {all ? `All ${rows} healthy` : `${rows} healthy`}
-          <Button
-            size="sm"
-            variant="ghost"
+          <span aria-hidden="true">·</span>
+          <button
+            type="button"
+            className="link"
             aria-expanded={expanded}
             aria-label={`${expanded ? 'Hide' : 'Show'} ${countOf(healthy, `healthy ${noun}`)}`}
             onClick={onToggle}
           >
             {expanded ? 'Hide' : 'Show'}
-          </Button>
+          </button>
         </span>
       )}
     </div>

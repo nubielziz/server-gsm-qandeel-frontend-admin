@@ -3,10 +3,9 @@
 import { useMemo, useState } from 'react';
 import { SkeletonTable } from '@/components/ui';
 import { useNow } from '@/lib/format';
-import { HealthCard, type HealthQuery } from '../../components';
+import { HealthCard, type HealthQuery, QuietLine } from '../../components';
 import { POLL } from '../../hooks';
 import type { SupplierHealth, SuppliersHealth } from '../../types';
-import { QuietLine } from './QuietLine';
 import { SupplierStatusDialog } from './SupplierStatusDialog';
 import { SupplierTable } from './SupplierTable';
 import { groupSuppliers, quietText, suppliersSummary, type StatusChange } from './suppliersModel';
@@ -35,9 +34,10 @@ function SuppliersBody({ suppliers }: { suppliers: readonly SupplierHealth[] }) 
       {groups.quiet.length > 0 && (
         <QuietLine
           text={quietText(groups)}
+          what="the healthy suppliers"
           open={open}
           onToggle={() => setOpen((value) => !value)}
-          separated={rows.length > 0}
+          divided={rows.length > 0}
         />
       )}
       {change && <SupplierStatusDialog change={change} onClose={() => setChange(null)} />}

@@ -1,12 +1,12 @@
 // SurfacesCard: the first card of the API tab: one row per API surface with traffic, latency, error rates, the server's
 // badge and a p95 trend. Choosing a surface focuses the cards below it (`?surface=`).
+import { num } from '@/lib/format';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Icon, SkeletonTable } from '@/components/ui';
-import { HealthCard, ResponsiveTable, type HealthQuery } from '../../components';
+import { HealthCard, type HealthQuery, QuietLine, ResponsiveTable } from '../../components';
 import { POLL } from '../../hooks';
 import { RANGE_LABEL, useCompactScreen } from '../../lib';
 import type { ApiMetrics, TimeRange } from '../../types';
-import { QuietSurfaces } from './QuietSurfaces';
 import { surfaceColumns } from './surfaceColumns';
 import { orderSurfaces, viewSurfaces } from './surfaces';
 
@@ -87,11 +87,13 @@ export function SurfacesCard({ query, range, surface, onPick, onClear }: Surface
               />
             )}
             {view.quiet > 0 && (
-              <QuietSurfaces
-                count={view.quiet}
-                expanded={expanded}
+              <QuietLine
+                text={`${num(view.quiet)} ${view.quiet === 1 ? 'surface' : 'surfaces'} OK`}
+                what="the healthy surfaces"
+                open={expanded}
                 onToggle={() => setExpanded((open) => !open)}
                 toggleRef={quietToggle}
+                divided={view.rows.length > 0}
               />
             )}
           </div>

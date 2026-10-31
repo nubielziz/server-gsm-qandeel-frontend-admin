@@ -144,7 +144,7 @@ describe('on a phone', () => {
     expect(within(surfaces).queryByRole('table')).not.toBeInTheDocument();
     expect(within(surfaces).queryByRole('button', { name: 'Merchant API v1' })).not.toBeInTheDocument();
 
-    await user.click(within(surfaces).getByRole('button', { name: 'Show' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     const list = within(surfaces).getByRole('list', { name: 'API surfaces' });
     expect(within(list).getAllByRole('listitem')).toHaveLength(6);
     const first = within(list).getAllByRole('listitem')[0]!;
@@ -153,7 +153,7 @@ describe('on a phone', () => {
     }
     expect(within(surfaces).queryByRole('table')).not.toBeInTheDocument();
 
-    await user.click(within(surfaces).getByRole('button', { name: 'Hide' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Hide the healthy surfaces' }));
     expect(within(surfaces).queryByRole('list', { name: 'API surfaces' })).not.toBeInTheDocument();
     expect(surfaces).toHaveTextContent('6 surfaces OK');
   });
@@ -169,7 +169,7 @@ describe('on a phone', () => {
     expect(cards[1]).toHaveTextContent('Dhru Fusion API');
     expect(surfaces).toHaveTextContent('4 surfaces OK');
 
-    await user.click(within(surfaces).getByRole('button', { name: 'Show' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     expect(within(list).getAllByRole('listitem')).toHaveLength(6);
   });
 
@@ -239,7 +239,9 @@ describe('data that is missing', () => {
     // The badge, the seven figures and the trend all say it; nothing is drawn as healthy.
     expect(within(row!).getAllByText('No data')).toHaveLength(9);
     expect(within(surfaces).queryByText('OK')).not.toBeInTheDocument();
-    expect(within(surfaces).queryByRole('button', { name: 'Show' })).not.toBeInTheDocument();
+    expect(
+      within(surfaces).queryByRole('button', { name: 'Show the healthy surfaces' }),
+    ).not.toBeInTheDocument();
 
     const latency = await card('Latency');
     expect(await within(latency).findByRole('heading', { name: 'No data' }, SLOW)).toBeInTheDocument();
@@ -283,7 +285,7 @@ describe('data that is missing', () => {
     // Only the surface that really is fine folds away; the one with a null figure stays in view as a problem.
     expect(rowsOf(surfaces)).toHaveLength(1);
     expect(surfaces).toHaveTextContent('1 surface OK');
-    await user.click(within(surfaces).getByRole('button', { name: 'Show' }));
+    await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     expect(rowsOf(surfaces)).toHaveLength(2);
     expect(rowsOf(surfaces)[0]).toHaveTextContent('Incoming webhooks');
     expect(rowsOf(surfaces)[1]).toHaveTextContent('Merchant API v1');

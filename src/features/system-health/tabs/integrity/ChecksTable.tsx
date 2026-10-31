@@ -2,11 +2,10 @@
 // Integrity tab (route group health, GET /admin/system/integrity). No demo screen.
 import type { DataTableColumn } from '@/components/ui';
 import { num } from '@/lib/format';
-import { MetaBadge, ResponsiveTable } from '../../components';
+import { MetaBadge, QuietLine, ResponsiveTable } from '../../components';
 import { integrityMeta } from '../../lib';
 import type { IntegrityCheck } from '../../types';
 import { formatDifference } from './format';
-import { PassingLine } from './PassingLine';
 import { splitChecks, wasChecked } from './report';
 
 /** Nothing was checked, so the figure is "No data" and not a zero that would read as healthy. */
@@ -71,11 +70,12 @@ export function ChecksTable({ checks, showPassing, onTogglePassing }: ChecksTabl
         />
       )}
       {passing.length > 0 && (
-        <PassingLine
-          passed={passing.length}
-          all={problems.length === 0}
+        <QuietLine
+          text={`${problems.length === 0 ? 'All ' : ''}${passing.length} ${passing.length === 1 ? 'check' : 'checks'} passed`}
+          what="the passed checks"
           open={showPassing}
           onToggle={onTogglePassing}
+          divided={rows.length > 0}
         />
       )}
     </div>

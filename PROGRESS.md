@@ -4,28 +4,33 @@ Single source of truth for status. The lead updates it after every step. Read it
 
 ## Status (2026-10-31)
 
-**In progress: `system-health`** (new map route group `health`, designed from scratch: `docs/system-health-design.md`,
+**Done: `system-health`** (new map route group `health`, designed from scratch: `docs/system-health-design.md`,
 brief `docs/briefs/system-health.md`). Inputs refreshed on 2026-10-31 from the replaced `reference/`:
 `docs/route-manifest.json` has **160 admin route rows, 268 admin endpoints** (+ `GET /health` = 269; `GET /metrics`
 excluded: Prometheus target, the console never calls it), the map has **66 tables** (5 new: `service_checks`,
 `alert_rules`, `alert_events`, `incidents`, `job_runs`; row types regenerated), `docs/slices/` has 18 slices.
-Slices of the feature, one commit each: foundation, then the tabs Overview, API, Orders & suppliers, Queues & jobs,
-Alerts & incidents, Data stores, Integrity.
+Route coverage is 269/269 (`--strict`); System health covers all 22 rows (30 endpoints). Typecheck, lint, build and
+the whole suite are green; the production bundle holds no mock code. Mismatches M196–M257; assumed contracts and 36
+backend questions in `docs/ASSUMED_CONTRACTS.md` § system-health. No worktrees or feature branches remain.
 
-- **Foundation: done** (`0a43792`). Types, 30 API functions (route coverage 30/30), hooks
-  with polling, mock scenarios for all 30 endpoints, page shell, header, verdict, KPI row, maintenance dialogs, shell
-  banner, shared status pieces; 58 test files. One Opus review; its 2 blocking and 6 visual findings fixed by the lead
-  (`*/health` mock anchored to the root route and following the scenario; mutations take `{ toastErrors }` so a
-  dialog's refusal is not shown twice; verdict names the open alerts; KPI trends one point per hour from zero; ms
-  thresholds in the value's scale; phone layout of tiles, meta line and impact line). Mismatches M203–M217.
-  Test infra: RTL waits up to 3 s (`src/test/setup.ts`) and a test may take 15 s (`vite.config.ts`): the suite grew
-  by more than 60 heavy files and app-level tests timed out under full parallel load.
-- **Tabs: in progress.** Seven worktrees `../worktrees/system-health-<tab>` on `feat/system-health-<tab>`; one workflow
-  runs per tab: Sonnet implements and takes round-1 screenshots, Opus reviews code and images, Sonnet fixes and takes
-  round-2 screenshots; the lead looks at round 2 (third visual round), then squash-merges the tabs in order (Overview,
-  API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores, Integrity), one commit each. Pool: at most
-  4 implementers and 2 reviewers at once; no new tab while 3 wait for review. Budget: up to 3 calls per tab (21).
-  Merged: all seven tabs.
+Commits, one per slice: foundation `0a43792`, Overview `b2fe5c6`, API `43486fd`, Orders & suppliers `1bb072b`,
+Queues & jobs `91ac505`, Alerts & incidents `4ef43d5`, Data stores `93aa02c`, Integrity `0ca288d`, then one polish
+commit (a shared quiet line for folded healthy items, docs).
+
+How it was built: the foundation by 4 implementers in the main checkout and one Opus review; each tab in its own
+worktree through one workflow (Sonnet implements and takes round-1 screenshots, Opus reviews code and images, Sonnet
+fixes and takes round-2 screenshots), then the lead's third visual round, shared fixes and a squash merge. At most 4
+implementers and 2 reviewers ran at once. Shared changes the tabs asked for went in with the first tab that needed
+them (table `footer`, `MeasureValue reserveIcon`, chart axis and threshold rules, `useHealthLink`, time helpers in
+`lib/time.ts`, `useJobs` fast polling while a run works, `ActionButton` reasons, the kit `Tabs` scrolling to the
+selected tab). Test infra: RTL waits up to 3 s (`src/test/setup.ts`) and a test may take 15 s (`vite.config.ts`).
+
+Open follow-ups (none blocks the page):
+- The backend questions of `docs/ASSUMED_CONTRACTS.md` § system-health; then adjust `types/`, `api/` and `mocks/`.
+- `HealthCard` builds an empty header bar for a card without a title once data is stale (every card has a title now).
+- "Open" alerts are two reads until `GET /admin/alerts` takes `open=true` (backend question).
+- The integrity mock reports a running run only through `running`; the tab falls back to the start time it got.
+- The mocks seed no disabled or paused supplier; those rows are covered by tests, not by a scenario.
 
 ### Earlier status (2026-10-30)
 
@@ -58,7 +63,8 @@ Limits: 8 at once (≤ 5 implementers, ≤ 2 reviewers, ≤ 3 readers), 10 calls
 | **Total before system-health** | **57 / 120** |
 | system-health | each slice counts as a feature (≤ 10 calls): foundation, then 7 tabs. |
 | system-health foundation | 5 (4 implementers: F-data, F-mocks, F-kit, F-page; 1 reviewer). Fixes by the lead. |
-| **Total** | **62 / 120** |
+| system-health tabs | 21: per tab 3 (implementer, Opus reviewer, fix round). Third visual round and merges by the lead. |
+| **Total** | **83 / 120** |
 
 ## Pool
 
@@ -97,7 +103,7 @@ Ownership source: `docs/feature-plan.json` (every endpoint of `docs/route-manife
 | 14 | commissions | `/commissions` | growth | 4 | 13 | done | see pool history | `b0b268a` |
 | 15 | settings | `/settings` | auth, billing, refunds, clients, ops | 12 | 28 | done | see pool history | `bc4febf` |
 | 16 | audit | `/audit` | auth | 1 | 2 | done | see pool history | `44e0a22` |
-| 17 | system-health | `/system-health` | health | 22 | 30 | in progress | see Agent budget | one per slice |
+| 17 | system-health | `/system-health` | health | 22 | 30 | done | 26 (foundation 5, tabs 21) | `0a43792` … `0ca288d` (8 slices) + polish |
 
 ### 0. foundation (Phase 2) — 7 endpoints
 

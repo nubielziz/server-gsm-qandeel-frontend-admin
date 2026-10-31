@@ -4,13 +4,12 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { SkeletonTable } from '@/components/ui';
 import type { ApiError } from '@/lib/api';
-import { HealthCard } from '../../components';
+import { HealthCard, QuietLine } from '../../components';
 import { POLL, useChecks, useHealthGrants, useHealthRange, useSystemHealth } from '../../hooks';
 import { RANGE_LABEL } from '../../lib';
 import type { ChecksResponse, HealthComponent, TimeRange } from '../../types';
-import { groupComponents, listComponents } from './componentRows';
+import { groupComponents, listComponents, operationalLine } from './componentRows';
 import { ComponentsTable } from './ComponentsTable';
-import { HealthyLine } from './HealthyLine';
 import { historyView } from './history';
 import { HistoryNotice } from './HistoryNotice';
 import type { PickedComponent } from './usePickedComponent';
@@ -55,9 +54,9 @@ function ComponentsBody({ components, checks, range, picked, canOpenSupplier }: 
         />
       )}
       {line && (
-        <HealthyLine
-          count={line.count}
-          others={line.others}
+        <QuietLine
+          text={operationalLine(line.count, line.others)}
+          what="the operational components"
           open={showHealthy}
           onToggle={() => setShowHealthy((open) => !open)}
           divided={rows.length > 0}

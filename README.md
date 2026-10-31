@@ -66,7 +66,7 @@ The System health page links to the monitoring tools only when their address is 
 link, never a dead one:
 
 ```dotenv
-VITE_GRAFANA_URL=https://grafana.example.com/d/gsm-api     # "Open in Grafana" (header and API tab)
+VITE_GRAFANA_URL=https://grafana.example.com/d/gsm-api     # "Open in Grafana" in the page header
 VITE_SENTRY_URL=https://sentry.example.com/organizations/gsm/issues/   # Sentry links of the top errors
 VITE_BULL_BOARD_URL=https://api.example.com/admin/queues   # "Open in Bull Board"; a queue opens at <url>/queue/<name>
 ```

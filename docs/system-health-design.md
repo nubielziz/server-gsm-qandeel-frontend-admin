@@ -148,7 +148,7 @@ Refresh refetches every health query at once.
 
 ## Deep links (only when configured)
 
-`VITE_GRAFANA_URL` (header, API tab), `VITE_SENTRY_URL` (top errors: the server's per-error `sentryUrl` shows only
+`VITE_GRAFANA_URL` (page header; it has no dashboard path, so no tab repeats it, M229), `VITE_SENTRY_URL` (top errors: the server's per-error `sentryUrl` shows only
 when set), `VITE_BULL_BOARD_URL` (queues tab, per queue `<url>/queue/<name>`). Unset means no link, never a dead one.
 
 ## Mock scenarios (dev only, `?mock=<name>`, remembered for the tab; switcher in the mock layer only)

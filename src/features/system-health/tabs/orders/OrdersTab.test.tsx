@@ -146,9 +146,9 @@ describe('the suppliers card', () => {
     expect(within(row).getByText('Low balance')).toBeInTheDocument();
     expect(within(row).getByText('Closed')).toBeInTheDocument();
 
-    const show = suppliers.getByRole('button', { name: 'Show' });
+    const show = suppliers.getByRole('button', { name: 'Show the healthy suppliers' });
     expect(show).toHaveAttribute('aria-expanded', 'false');
-    expect(show).toHaveAccessibleDescription('5 suppliers healthy');
+    expect(suppliers.getByText('5 suppliers healthy')).toBeInTheDocument();
     expect(suppliers.queryByText('Nordic GSM')).not.toBeInTheDocument();
 
     await user.click(show);
@@ -162,8 +162,11 @@ describe('the suppliers card', () => {
       'FileForge',
       'Bosphorus Unlock',
     ]);
-    expect(suppliers.getByRole('button', { name: 'Hide' })).toHaveAttribute('aria-expanded', 'true');
-    await user.click(suppliers.getByRole('button', { name: 'Hide' }));
+    expect(suppliers.getByRole('button', { name: 'Hide the healthy suppliers' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await user.click(suppliers.getByRole('button', { name: 'Hide the healthy suppliers' }));
     expect(suppliers.queryByRole('table', { name: 'All suppliers' })).not.toBeInTheDocument();
     expect(firstCells(suppliers.getByRole('table', { name: 'Suppliers that need attention' }))).toEqual([
       'Gulf Server Hub',
@@ -244,7 +247,7 @@ describe('the suppliers card', () => {
     expect(within(paused).getByRole('button', { name: 'Resume' })).toBeEnabled();
 
     expect(suppliers.getByText('1 supplier healthy · 1 disabled')).toBeInTheDocument();
-    await user.click(suppliers.getByRole('button', { name: 'Show' }));
+    await user.click(suppliers.getByRole('button', { name: 'Show the healthy suppliers' }));
     const all = await suppliers.findByRole('table', { name: 'All suppliers' });
     expect(firstCells(all)).toEqual(['Mystery Hub', 'Paused Hub', 'Euro Hub', 'Old Hub']);
     expect(within(all).getByText('EUR 1,850.00')).toBeInTheDocument();
@@ -292,7 +295,7 @@ describe('the balance column', () => {
   it('adds no words and no tone to a balance the server calls ok', async () => {
     const user = userEvent.setup();
     const { suppliers } = await openOrders({ scenario: 'healthy' });
-    await user.click(await suppliers.findByRole('button', { name: 'Show' }, SLOW));
+    await user.click(await suppliers.findByRole('button', { name: 'Show the healthy suppliers' }, SLOW));
     const all = await suppliers.findByRole('table', { name: 'All suppliers' });
     // Six suppliers and one low balance: the other five say nothing about theirs.
     expect(within(all).getAllByText('Low balance')).toHaveLength(1);
