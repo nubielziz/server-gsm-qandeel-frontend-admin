@@ -6,10 +6,11 @@ import { Button, ButtonLink, Icon, Skeleton, cx, type BadgeTone } from '@/compon
 import { useNow } from '@/lib/format';
 import { StaleBadge } from '../components/StaleBadge';
 import { POLL, isMonitoringUnavailable, useHealthGrants, useHealthLink, useSystemHealth } from '../hooks';
+import { sinceText } from '../lib';
 import { failureOf } from './failure';
 import { ImpactLine } from './ImpactLine';
 import { VerdictDetails } from './VerdictDetails';
-import { STATUS_UNAVAILABLE, seeLink, sinceText, verdictLook, type VerdictLook } from './verdict';
+import { STATUS_UNAVAILABLE, seeLink, verdictLook, type VerdictLook } from './verdict';
 
 // Full class names so Tailwind's scanner sees them. Status hues only ever appear with an icon and a word.
 const TONE_BOX: Record<BadgeTone, string> = {

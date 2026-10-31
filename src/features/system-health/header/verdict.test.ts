@@ -10,7 +10,6 @@ import {
   openAlertsText,
   operationalText,
   seeLink,
-  sinceText,
   verdictLook,
 } from './verdict';
 
@@ -74,33 +73,6 @@ describe('verdictLook', () => {
 
   it('has a neutral look for a failed health call', () => {
     expect(STATUS_UNAVAILABLE).toEqual({ tone: 'neutral', icon: 'info', word: 'Status unavailable' });
-  });
-});
-
-describe('sinceText', () => {
-  // August: no clock change in between in the common time zones, so the elapsed time is the same everywhere.
-  const now = new Date(2026, 7, 21, 14, 40, 0).getTime();
-
-  it('gives the time and how long ago, for a start on the same day', () => {
-    const start = new Date(2026, 7, 21, 14, 2, 0).toISOString();
-    expect(sinceText(start, now)).toBe('since 14:02 (38m)');
-  });
-
-  it('adds the date when it began on an earlier day', () => {
-    const start = new Date(2026, 7, 12, 8, 14, 0).toISOString();
-    // ageText joins the two units with a non-breaking space.
-    expect(sinceText(start, now)).toBe('since 12 Aug, 08:14 (9d\u00a06h)');
-  });
-
-  it('is empty when the server sent no time or one that cannot be read', () => {
-    expect(sinceText(null, now)).toBeNull();
-    expect(sinceText(undefined, now)).toBeNull();
-    expect(sinceText('not a time', now)).toBeNull();
-  });
-
-  it('never prints a negative age for a start slightly in the future', () => {
-    const start = new Date(2026, 7, 21, 14, 40, 20).toISOString();
-    expect(sinceText(start, now)).toBe('since 14:40 (<1m)');
   });
 });
 

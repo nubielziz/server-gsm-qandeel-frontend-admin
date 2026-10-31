@@ -1,7 +1,5 @@
-// The words of the verdict panel: how an overall status looks, since when, which components are broken and how many are
-// fine. Pure functions over the server's answer; they only choose words and order, never decide a status.
+// The words of the verdict panel: how an overall status looks, which components are broken and how many are fine. Pure functions over the server's answer; they only choose words and order, never decide a status.
 import type { BadgeTone, IconName } from '@/components/ui';
-import { ageText, dayKey, fmtDate, fmtTime } from '@/lib/format';
 import { healthPath, sortProblemsFirst, statusMeta } from '../lib';
 import type { AlertSeverity, AlertSummary, HealthComponent, OverallStatus, SystemHealth } from '../types';
 
@@ -30,17 +28,6 @@ export function verdictLook(status: OverallStatus, monitoringUnavailable: boolea
     return { tone, icon, word: monitoringUnavailable ? 'Monitoring unavailable' : 'Status unknown' };
   }
   return { tone, icon, word };
-}
-
-/**
- * "since 14:02 (38m)", or with the date when it began on an earlier day: "since 22 Oct, 08:14 (9d)". Null when the server
- * sent no time, or one that cannot be read.
- */
-export function sinceText(since: string | null | undefined, now: number): string | null {
-  const start = since ? Date.parse(since) : Number.NaN;
-  if (Number.isNaN(start)) return null;
-  const when = dayKey(start) === dayKey(now) ? fmtTime(start) : fmtDate(start);
-  return `since ${when} (${ageText(now - start)})`;
 }
 
 /** A component the server marked as not working properly. */

@@ -494,6 +494,10 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   `?surface=<key>` still lists that surface in `surfaces`. `slowest` holds at most ten endpoints, slowest first.
   `ErrorGroup.lastRequestId` may be null; `sentryUrl` is a full address or null (no link then).
 
+- **Orders & suppliers tab.** `stuck.byStatus[].status` uses `pending`, `processing`, `needs_attention`.
+  `byServiceType[].total` counts finished orders of the last 24 hours. A supplier's `since` is when its current
+  `health` began. `balance.amount` is in `balance.currency`; `balance.state` is the server's low-balance verdict.
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -525,3 +529,6 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 19. Is `HealthComponent.key` stable (`supplier:<id>`, `gateway:<id>`)? It is kept in addresses and in an incident's `components`.
 20. Can `SurfaceMetrics` carry its own `state`, so a surface's badge is the server's and not the worst of its figures?
 21. Which window do `count429` and the other current figures of `/metrics` cover? Does `slowest` follow `range`? Is an error group's `firstSeenAt` the first time ever or the first time inside the range?
+22. Which words does `stuck.byStatus[].status` use, and is `needs_attention` an order status or a queue? The Orders tab of each link depends on it.
+23. After a supplier is paused, do its checks and balance sync keep running, or does its `health` become `unknown`?
+24. Do supplier latency, error and timeout rates come from Prometheus? With monitoring down they should then be `unknown`; the tab shows whatever state is sent.
