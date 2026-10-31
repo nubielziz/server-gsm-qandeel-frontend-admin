@@ -508,6 +508,10 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   `PATCH /admin/incidents/:id` takes `{ status, update }`, closing `{ status: 'resolved', rootCause, update? }`.
   `AlertRule.open` says an alert of the rule is open. An acknowledged alert without `acknowledgedBy` prints "Unknown".
 
+- **Data stores tab.** While Postgres is down, `GET …/database` may answer 200 with `status: down` or 503
+  `DATABASE_UNAVAILABLE`; both are handled. `SlowQuery.id` and `LongTransaction.pid` are unique in an answer.
+  `size.growthPerDayBytes` null means not measured. `memory.maxBytes` null or 0 means no limit.
+
 ### Questions for the backend
 
 1. Please confirm the `Measure` shape and that every state and threshold is computed server-side (the console never
@@ -549,3 +553,6 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 29. What does a mute do: no messages while alerts are still recorded, or no evaluation at all? Can the rule carry a `muted` flag so the console need not compare `mutedUntil` with its clock?
 30. Which metrics may a rule watch, with which units? An enum or list in the API would replace the console's list.
 31. Can one alert start more than one incident, or an incident start from a resolved alert? What happens to the alerts of a deleted rule, and do alerts keep their rule's name and limit after an edit?
+32. While Postgres is down, can the lists of `GET …/database` be `null` (not `[]`) when they could not be read, and `locks.waiting` and `waitingClients` null rather than 0? Should these two counts be `Measure`s with limits?
+33. When `usage` has no reading, are `used` and `usedBytes` zeros, last known values, or absent? Does Redis send `maxBytes: null` or `0` without a limit?
+34. Over which window do a slow query's `calls`, `meanMs` and `totalMs` count, how many statements does `slowQueries` hold, and from which age is a transaction long?

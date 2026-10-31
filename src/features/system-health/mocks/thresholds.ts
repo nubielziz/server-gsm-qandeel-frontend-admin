@@ -56,6 +56,8 @@ function roundFor(unit: MeasureUnit, value: number): number {
   if (unit === 'percent') return round(value, 2);
   if (unit === 'per_min') return round(value, 1);
   if (unit === 's') return round(value, value < 10 ? 1 : 0);
+  // A Redis latency of 0.4 ms must not arrive as 0: "0 ms" would read as a real zero.
+  if (unit === 'ms') return round(value, value < 10 ? 1 : 0);
   return round(value);
 }
 

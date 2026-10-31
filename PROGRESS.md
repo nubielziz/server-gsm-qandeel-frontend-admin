@@ -25,7 +25,7 @@ Alerts & incidents, Data stores, Integrity.
   round-2 screenshots; the lead looks at round 2 (third visual round), then squash-merges the tabs in order (Overview,
   API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores, Integrity), one commit each. Pool: at most
   4 implementers and 2 reviewers at once; no new tab while 3 wait for review. Budget: up to 3 calls per tab (21).
-  Merged so far: Overview, API, Orders & suppliers, Queues & jobs, Alerts & incidents.
+  Merged so far: Overview, API, Orders & suppliers, Queues & jobs, Alerts & incidents, Data stores.
 
 ### Earlier status (2026-10-30)
 
