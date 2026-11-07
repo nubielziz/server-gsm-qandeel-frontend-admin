@@ -44,7 +44,9 @@ buttons. No console change was needed (the backend's seeded payloads were fixed:
 Fifth walk after the backend's orders engine (2026-11-07): the seven Orders tabs with their counts (70 real answers),
 then on one order Complete (with a reply), Reopen and Reject through the drawer, and Accept on a manual order: all `204`
 from the real API, with the toasts, the drawer's timeline and money, and the Finance ledger's settle, reversal and release
-journals. No console change was needed.
+journals. A second walk covered the rest of the page: the verification decision (`204`), a staff note (`204`), a bulk reply
+matched by IMEI (preview `200` with both lines matched, apply `200` with 2 applied) and the CSV export (`200`). No console
+change was needed.
 
 Stock delivery (backend, 2026-11-07): a merchant order of a service with codes in stock comes back completed; the console's
 drawer shows the code under "Result sent to merchant" and the timeline line "Delivered from stock: 1 code" with the
