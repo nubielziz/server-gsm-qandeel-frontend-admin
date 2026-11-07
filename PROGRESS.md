@@ -8,7 +8,8 @@ The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sig
 their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
 real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
-calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **50 routes**. `docs/ASSUMED_CONTRACTS.md` has
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **70 routes** after the backend's catalog
+feature 4a (services, categories, client groups, code inventory). `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -23,8 +24,11 @@ Note: a production build reads `.env` too, and a local `.env` with `VITE_API_MOC
 (by design, decision 014); run the build with `VITE_API_MOCKS=false npm run build` or keep the flag in
 `.env.development.local` only.
 
+Second walk after 4a (Services & pricing: services, categories, inventory, rules; merchant groups; a merchant page): 42
+real answers, no error, and a real service disable and enable from the Services list. No console change was needed.
+
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
-Services & pricing for the backend's catalog features 4a and 4b, then Orders for feature 5).
+the price resolver, pricing rules and merchant pricing tabs for the backend's 4b, then Orders for feature 5).
 
 ## Status (2026-10-31)
 
