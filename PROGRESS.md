@@ -8,8 +8,9 @@ The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sig
 their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
 real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
-calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **70 routes** after the backend's catalog
-feature 4a (services, categories, client groups, code inventory). `docs/ASSUMED_CONTRACTS.md` has
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **74 routes** after the backend's catalog
+feature 4a (services, categories, client groups, code inventory) and its tax rates (Settings > Tax and currency is now all
+real). `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and

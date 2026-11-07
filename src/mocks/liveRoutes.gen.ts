@@ -72,5 +72,9 @@ export const LIVE_ROUTE_KEYS: readonly string[] = [
   'POST /admin/staff/:id/reset-2fa',
   'POST /admin/staff/:id/sessions/revoke',
   'POST /admin/staff/:id/suspend',
+  'GET /admin/tax-rates',
+  'POST /admin/tax-rates',
+  'GET /admin/tax-rates/:id',
+  'PATCH /admin/tax-rates/:id',
   'GET /health',
 ];
