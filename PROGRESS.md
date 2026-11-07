@@ -13,7 +13,11 @@ features 4a (services, categories, client groups, code inventory) and 4b (price 
 prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
 and the webhook delivery log), its orders engine (feature 5), its suppliers (feature 6), Dhru and REST v1 (feature 7a: no console screen), its
 billing (feature 8) and its dashboard and System health (feature 9): **154 routes**. `docs/ASSUMED_CONTRACTS.md` has
-a table of what the backend now confirms.
+a table of what the backend now confirms. The backend's feature 14a (storefront catalog, IMEI check,
+guest checkout, tracking; merged 2026-11-07 night) adds no console route, so the list stays at 154. Next backend merges
+(running on 2026-11-07 night, resumed the next day): 12a notifications, 14b customers, 15 storefront content, 11
+commissions and reports, 12b alerts and integrity, 16 B2C payments, refunds and disputes; after each, `npm run mocks:live`
+and a walk of the pages it feeds.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
 access: all five tabs; Merchants: list, pending, groups, detail, wallet; Finance: ledger, trial balance; Settings: tax and
