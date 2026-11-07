@@ -11,7 +11,8 @@ real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen
 calls (`npm run mocks:live`, generated from the backend's OpenAPI contract), after the backend's catalog
 features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
 prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
-and the webhook delivery log), its orders engine (feature 5) and its suppliers (feature 6): **122 routes**. `docs/ASSUMED_CONTRACTS.md` has
+and the webhook delivery log), its orders engine (feature 5), its suppliers (feature 6), Dhru and REST v1 (feature 7a: no console screen) and its
+billing (feature 8): **137 routes**. `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -58,9 +59,14 @@ placed through the portal was sent by the real dispatch job, the placeholder sup
 went to Needs review with the supplier's reason; Retry from the drawer (`POST /admin/orders/:id/dispatch`, `204`) sent it
 again. No console change was needed.
 
-Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (eight
-backend features are being built in parallel: billing, Dhru and REST v1, health and dashboard, commissions and reports,
-notifications, storefront checkout, customers, storefront content).
+Seventh walk after the backend's billing (feature 8, 2026-11-07): Finance > Deposits from the real API, a pending bank
+deposit approved and credited from its dialog (`200`, the toast names the new wallet balance), Finance > Invoices and one
+invoice, Settings > Payment methods (four gateways, masked secrets, limits, groups, 30-day volume), and Merchants >
+Verification with a KYC request approved (`200`). 82 real answers, no failure, no console change.
+
+Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (still
+being built: health and dashboard, commissions and reports, notifications, storefront checkout, customers, storefront
+content, then refunds and disputes, support, risk, growth).
 
 ## Status (2026-10-31)
 
