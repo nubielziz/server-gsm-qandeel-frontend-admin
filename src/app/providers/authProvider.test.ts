@@ -209,6 +209,27 @@ describe('onError', () => {
     await expect(provider.onError(new Error('boom'))).resolves.toEqual({});
   });
 
+  it('keeps the page the session ended on, so signing in again goes back to it', async () => {
+    const { provider } = setup();
+    window.history.pushState({}, '', '/merchants/3?tab=wallet');
+    try {
+      await expect(provider.onError(apiError(401, 'UNAUTHORIZED'))).resolves.toMatchObject({
+        logout: true,
+        redirectTo: '/login?to=%2Fmerchants%2F3%3Ftab%3Dwallet',
+      });
+      await expect(provider.onError(apiError(403, ERROR_CODES.ACCOUNT_SUSPENDED))).resolves.toMatchObject({
+        redirectTo: '/login?reason=suspended&to=%2Fmerchants%2F3%3Ftab%3Dwallet',
+      });
+      // A sign-in screen is never a destination (it would only bounce the user again).
+      window.history.pushState({}, '', '/login');
+      await expect(provider.onError(apiError(401, 'UNAUTHORIZED'))).resolves.toMatchObject({
+        redirectTo: '/login',
+      });
+    } finally {
+      window.history.pushState({}, '', '/');
+    }
+  });
+
   it('also reads the status of errors that are not ApiErrors', async () => {
     const { provider } = setup();
     await expect(provider.onError({ statusCode: 401, message: 'x' })).resolves.toMatchObject({

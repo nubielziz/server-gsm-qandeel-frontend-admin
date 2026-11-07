@@ -10,8 +10,10 @@ import {
   loginPath,
   login as loginRequest,
   logout as logoutRequest,
+  safeDestination,
   setPassword,
   verifyTwoFactor,
+  withDestination,
   type LoginResult,
 } from '@/features/auth';
 import { ERROR_CODES, forgetCsrfToken, isApiError } from '@/lib/api';
@@ -38,6 +40,16 @@ function loginRedirect(error: unknown): string {
     if (error.code === ERROR_CODES.IP_NOT_ALLOWED) return loginPath('ip');
   }
   return AUTH_PATHS.login;
+}
+
+/**
+ * The page to come back to after signing in again, when the session ends in the middle of the work (an idle timeout, a
+ * revoked session): the current address, if it is a console page other than the home page.
+ */
+function currentDestination(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const { pathname, search, hash } = window.location;
+  return pathname === '/' ? undefined : safeDestination(`${pathname}${search}${hash}`);
 }
 
 /** True when an error means the server no longer accepts this session: 401, a suspended account or a blocked IP. */
@@ -99,7 +111,11 @@ export function createAuthProvider(cache: MeCache = appMeCache): AuthProvider {
     async onError(error: unknown): Promise<OnErrorResponse> {
       if (endsSession(error)) {
         cache.clear();
-        return { logout: true, redirectTo: loginRedirect(error), error: toError(error) };
+        return {
+          logout: true,
+          redirectTo: withDestination(loginRedirect(error), currentDestination()),
+          error: toError(error),
+        };
       }
       return {};
     },

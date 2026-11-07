@@ -259,7 +259,8 @@ Demo: `47-p-audit.js`. Audit log with filters and expandable before/after.
 
 ## Tech debt
 
-- foundation: a 401 in the middle of a session signs out to `/login` without `?to=` (the user lands on the start page after signing in again).
+- merchants: the wallet adjustment sends no `Idempotency-Key`; the backend accepts one (a retry then posts once). The submit
+  button is disabled while a request runs, so only a manual retry after a lost answer can post twice.
 - foundation: a signed-in staff member who opens an invite/reset link (`/set-password?token=…`) is redirected into the console instead of being told to sign out first.
 - foundation: registry `create`/`update`/`delete` take no `ApiInit` (no custom headers such as idempotency keys); admin routes do not need them today.
 - orders: the filter and reroute menus read `GET /admin/suppliers` and `GET /admin/clients` through private lookups (`src/features/orders/api/lookups.ts`, no `@route` tag, first 200 rows). Replace them with the suppliers and merchants features' functions when those are built.
