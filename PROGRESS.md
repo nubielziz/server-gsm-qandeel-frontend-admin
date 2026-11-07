@@ -26,6 +26,10 @@ Note: a production build reads `.env` too, and a local `.env` with `VITE_API_MOC
 
 Second walk after 4a (Services & pricing: services, categories, inventory, rules; merchant groups; a merchant page): 42
 real answers, no error, and a real service disable and enable from the Services list. No console change was needed.
+With no mocks at all (`VITE_API_MOCKS=false`), the pages of unbuilt routes (dashboard, orders, customers, deposits, system
+health) show their error state with the server's `404` detail and request id and a Retry button; nothing crashed (83 real
+calls, no page error). The sign-in origin must be one of the backend's `CORS_ORIGINS` (`http://localhost:5173` in dev): a
+dev server on another port gets `403 CSRF_FAILED` at sign-in, by design.
 
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
 the price resolver, pricing rules and merchant pricing tabs for the backend's 4b, then Orders for feature 5).
