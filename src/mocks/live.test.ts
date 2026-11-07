@@ -108,7 +108,13 @@ describe('withLivePassthrough', () => {
 
   it('leaves routes the backend has not built to the mocks', async () => {
     vi.stubEnv('VITE_API_MOCKS', 'unbuilt');
-    const list = withLivePassthrough(handlers, LIVE_ROUTE_KEYS, '');
+    // A fixed list, not the generated one: the backend keeps building routes, so any route picked from the generated
+    // list as "not built" stops being an example after a merge.
+    const list = withLivePassthrough(
+      handlers,
+      ['GET /admin/auth/me', 'POST /admin/auth/login', 'GET /health'],
+      '',
+    );
     expect(await whoAnswers(list, 'GET', here('/admin/staff'))).toBe('mock');
     expect(await whoAnswers(list, 'GET', here('/admin/system/health'))).toBe('mock');
     // The unbuilt mock answers a request that carries no mock session, because the real session is an HttpOnly cookie.
