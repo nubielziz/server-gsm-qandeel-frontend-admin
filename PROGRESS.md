@@ -8,10 +8,10 @@ The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sig
 their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
 real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
-calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **92 routes** after the backend's catalog
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract), after the backend's catalog
 features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
 prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
-and the webhook delivery log). `docs/ASSUMED_CONTRACTS.md` has
+and the webhook delivery log), and its orders engine (feature 5): **106 routes**. `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -41,8 +41,13 @@ the Revoked badge follow); Settings > Webhook deliveries lists the real log, ope
 retries it (`200`, Waiting); a second retry within the minute gets the server's `429 RATE_LIMITED`, shown under the
 buttons. No console change was needed (the backend's seeded payloads were fixed: each event now carries its own data).
 
+Fifth walk after the backend's orders engine (2026-11-07): the seven Orders tabs with their counts (70 real answers),
+then on one order Complete (with a reply), Reopen and Reject through the drawer, and Accept on a manual order: all `204`
+from the real API, with the toasts, the drawer's timeline and money, and the Finance ledger's settle, reversal and release
+journals. No console change was needed.
+
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
-Orders for the backend's feature 5).
+Suppliers and the order drawer's dispatch, fetch and change-supplier for the backend's feature 6).
 
 ## Status (2026-10-31)
 
