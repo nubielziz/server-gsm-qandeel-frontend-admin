@@ -46,6 +46,10 @@ then on one order Complete (with a reply), Reopen and Reject through the drawer,
 from the real API, with the toasts, the drawer's timeline and money, and the Finance ledger's settle, reversal and release
 journals. No console change was needed.
 
+Stock delivery (backend, 2026-11-07): a merchant order of a service with codes in stock comes back completed; the console's
+drawer shows the code under "Result sent to merchant" and the timeline line "Delivered from stock: 1 code" with the
+settlement. No console change was needed.
+
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
 Suppliers and the order drawer's dispatch, fetch and change-supplier for the backend's feature 6).
 
