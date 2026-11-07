@@ -11,8 +11,8 @@ real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen
 calls (`npm run mocks:live`, generated from the backend's OpenAPI contract), after the backend's catalog
 features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
 prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
-and the webhook delivery log), its orders engine (feature 5), its suppliers (feature 6), Dhru and REST v1 (feature 7a: no console screen) and its
-billing (feature 8): **137 routes**. `docs/ASSUMED_CONTRACTS.md` has
+and the webhook delivery log), its orders engine (feature 5), its suppliers (feature 6), Dhru and REST v1 (feature 7a: no console screen), its
+billing (feature 8) and its dashboard and System health (feature 9): **154 routes**. `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -64,9 +64,15 @@ deposit approved and credited from its dialog (`200`, the toast names the new wa
 invoice, Settings > Payment methods (four gateways, masked secrets, limits, groups, 30-day volume), and Merchants >
 Verification with a KYC request approved (`200`). 82 real answers, no failure, no console change.
 
+Eighth walk after the backend's dashboard and System health (feature 9, 2026-11-07): the Dashboard (KPIs, attention items,
+open queue by type, supplier health) and the System health tabs Overview, API, Orders & suppliers, Queues & jobs and Data
+stores, 52 real answers and no page error. Prometheus was not running, so `/admin/system/metrics` and `/errors` answered
+`503 MONITORING_UNAVAILABLE` and the page said so in its banner ("Prometheus is not configured") with the affected tiles
+marked "Monitoring unavailable": the outage state the design asks for. No console change was needed.
+
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (still
-being built: health and dashboard, commissions and reports, notifications, storefront checkout, customers, storefront
-content, then refunds and disputes, support, risk, growth).
+being built: commissions and reports, notifications, storefront checkout, customers, storefront content, alerts and
+incidents, then refunds and disputes, support, risk, growth).
 
 ## Status (2026-10-31)
 
