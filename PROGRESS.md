@@ -8,9 +8,9 @@ The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sig
 their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
 real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
-calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **74 routes** after the backend's catalog
-feature 4a (services, categories, client groups, code inventory) and its tax rates (Settings > Tax and currency is now all
-real). `docs/ASSUMED_CONTRACTS.md` has
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **87 routes** after the backend's catalog
+features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
+prices, bulk price), and its tax rates (Settings > Tax and currency is now all real). `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -32,8 +32,11 @@ health) show their error state with the server's `404` detail and request id and
 calls, no page error). The sign-in origin must be one of the backend's `CORS_ORIGINS` (`http://localhost:5173` in dev): a
 dev server on another port gets `403 CSRF_FAILED` at sign-in, by design.
 
+Third walk after 4b (price resolver, rules and groups, services list, a merchant's pricing tab): 30 real answers, no error;
+the resolver trace and the client override with its floor come from the real API.
+
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
-the price resolver, pricing rules and merchant pricing tabs for the backend's 4b, then Orders for feature 5).
+Orders for the backend's feature 5).
 
 ## Status (2026-10-31)
 
