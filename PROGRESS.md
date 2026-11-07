@@ -4,21 +4,27 @@ Single source of truth for status. The lead updates it after every step. Read it
 
 ## Status (2026-11-07): integration with the real backend started
 
-The backend (`../backend`, its own `PROGRESS.md`) now serves staff sign-in, merchant wallets, the ledger, reconciliation and
-currencies, with staff access, merchants, audit logs and settings being merged. The console gained a third dev mode,
+The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sign-in, access (all 23 routes), merchants and
+their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
-real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes
-(`npm run mocks:live`, generated from the backend's OpenAPI contract; 19 routes after the backend's features 3 and 2b).
-Checks green after the change (typecheck, lint, build, 404 test files / 4,254 tests). Built by one Sonnet implementer,
-reviewed and committed by the lead.
+real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **50 routes**. `docs/ASSUMED_CONTRACTS.md` has
+a table of what the backend now confirms.
+
+Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
+access: all five tabs; Merchants: list, pending, groups, detail, wallet; Finance: ledger, trial balance; Settings: tax and
+currency, system; Audit log) made 112 calls the real API answered and 54 the mocks answered, with no error. Real writes
+through the UI: run reconciliation, approve a pending merchant, post a wallet adjustment; the audit log shows them. The
+walk found one backend issue (audit action phrases of the money module, fixed in the backend) and no console change was
+needed. Checks after the change: typecheck, lint, build, 404 test files / 4,254 tests (the mock tests again after the
+route list grew).
 
 Note: a production build reads `.env` too, and a local `.env` with `VITE_API_MOCKS=true` makes `npm run build` refuse
 (by design, decision 014); run the build with `VITE_API_MOCKS=false npm run build` or keep the flag in
 `.env.development.local` only.
 
-Next: walk the console against the API at runtime for every built route (sign-in, access, merchants, wallet, ledger,
-currencies, audit, settings), fix wire mismatches on whichever side is wrong, re-run `npm run mocks:live` after each backend
-merge.
+Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
+Services & pricing for the backend's catalog features 4a and 4b, then Orders for feature 5).
 
 ## Status (2026-10-31)
 
