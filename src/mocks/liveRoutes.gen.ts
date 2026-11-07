@@ -4,6 +4,7 @@
 // route stays mocked. Format: "METHOD /path/:param".
 export const LIVE_ROUTE_KEYS: readonly string[] = [
   'PUT /admin/access/restriction',
+  'DELETE /admin/api-keys/:id',
   'GET /admin/audit-logs',
   'GET /admin/audit-logs/:id',
   'POST /admin/auth/2fa',
@@ -25,6 +26,7 @@ export const LIVE_ROUTE_KEYS: readonly string[] = [
   'POST /admin/clients',
   'GET /admin/clients/:id',
   'PATCH /admin/clients/:id',
+  'GET /admin/clients/:id/api-keys',
   'PATCH /admin/clients/:id/credit-limit',
   'GET /admin/clients/:id/statement',
   'GET /admin/clients/:id/wallet',
@@ -89,5 +91,8 @@ export const LIVE_ROUTE_KEYS: readonly string[] = [
   'POST /admin/tax-rates',
   'GET /admin/tax-rates/:id',
   'PATCH /admin/tax-rates/:id',
+  'GET /admin/webhook-deliveries',
+  'GET /admin/webhook-deliveries/:id',
+  'POST /admin/webhook-deliveries/:id/retry',
   'GET /health',
 ];
