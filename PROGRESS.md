@@ -8,9 +8,10 @@ The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sig
 their wallets, the ledger and reconciliation, currencies, audit log and settings. The console gained a third dev mode,
 `VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
 real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes the console
-calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **87 routes** after the backend's catalog
+calls (`npm run mocks:live`, generated from the backend's OpenAPI contract): **92 routes** after the backend's catalog
 features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
-prices, bulk price), and its tax rates (Settings > Tax and currency is now all real). `docs/ASSUMED_CONTRACTS.md` has
+prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
+and the webhook delivery log). `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -34,6 +35,11 @@ dev server on another port gets `403 CSRF_FAILED` at sign-in, by design.
 
 Third walk after 4b (price resolver, rules and groups, services list, a merchant's pricing tab): 30 real answers, no error;
 the resolver trace and the client override with its floor come from the real API.
+
+Fourth walk after 7b (2026-11-07): a merchant's API access tab lists the real keys and revokes one (`204`, the toast and
+the Revoked badge follow); Settings > Webhook deliveries lists the real log, opens a failed delivery in the drawer and
+retries it (`200`, Waiting); a second retry within the minute gets the server's `429 RATE_LIMITED`, shown under the
+buttons. No console change was needed (the backend's seeded payloads were fixed: each event now carries its own data).
 
 Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
 Orders for the backend's feature 5).
