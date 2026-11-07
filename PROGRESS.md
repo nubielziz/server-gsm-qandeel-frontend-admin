@@ -11,7 +11,7 @@ real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen
 calls (`npm run mocks:live`, generated from the backend's OpenAPI contract), after the backend's catalog
 features 4a (services, categories, client groups, code inventory) and 4b (price resolver, pricing rules, group and client
 prices, bulk price), its tax rates (Settings > Tax and currency is now all real) and its feature 7b (a merchant's API keys
-and the webhook delivery log), and its orders engine (feature 5): **106 routes**. `docs/ASSUMED_CONTRACTS.md` has
+and the webhook delivery log), its orders engine (feature 5) and its suppliers (feature 6): **122 routes**. `docs/ASSUMED_CONTRACTS.md` has
 a table of what the backend now confirms.
 
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
@@ -52,8 +52,15 @@ Stock delivery (backend, 2026-11-07): a merchant order of a service with codes i
 drawer shows the code under "Result sent to merchant" and the timeline line "Delivered from stock: 1 code" with the
 settlement. No console change was needed.
 
-Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (next:
-Suppliers and the order drawer's dispatch, fetch and change-supplier for the backend's feature 6).
+Sixth walk after the backend's suppliers (feature 6, 2026-11-07): the Suppliers page lists the six seeded suppliers with
+their health, success rate, latency, open orders, balance, services and masked key from the real API; a merchant order
+placed through the portal was sent by the real dispatch job, the placeholder supplier refused the connection and the order
+went to Needs review with the supplier's reason; Retry from the drawer (`POST /admin/orders/:id/dispatch`, `204`) sent it
+again. No console change was needed.
+
+Next: after each backend merge run `npm run mocks:live`, commit the list, and walk the pages the new routes feed (eight
+backend features are being built in parallel: billing, Dhru and REST v1, health and dashboard, commissions and reports,
+notifications, storefront checkout, customers, storefront content).
 
 ## Status (2026-10-31)
 
