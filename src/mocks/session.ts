@@ -4,10 +4,12 @@
 // Demo credentials: any seeded admin with password `demo-password`, authenticator code `123456`, invite token
 // `demo-token`. Rami (owner) signs in normally, Nadia (invited, no 2FA yet) goes through the first-time setup and
 // Yusuf is suspended. The session lives in localStorage, so a page reload stays signed in.
+// In unbuilt mode (VITE_API_MOCKS=unbuilt, decision 018) sign-in is real: see `guard` and `currentStaff`.
 import { http, HttpResponse } from 'msw';
 import type { Me, SetPasswordBody } from '@/features/auth';
 import { csrfCookieName } from '@/lib/api/config';
 import { latency } from './latency';
+import { isUnbuiltMode } from './live';
 import { problem } from './problem';
 import { permissionsOf, roleOf, roleStore } from './roles';
 import { mockScenario } from './scenario';
@@ -114,8 +116,11 @@ function requireSession(request: Request, stages: Session['stage'][]): Session |
 /**
  * Guard for other mock handlers: a problem response to return as it is, or null when the request may continue.
  * Needs a fully signed-in session; mutations also need the matching `X-CSRF-Token` header.
+ * In unbuilt mode it lets every request through: the real session is an HttpOnly cookie the mocks cannot see, the real
+ * API already enforces sign-in on the routes it has built, and the mocked routes are only stand-ins.
  */
 export function guard(request: Request): Response | null {
+  if (isUnbuiltMode()) return null;
   const result = requireSession(request, ['signed-in']);
   return result instanceof Response ? result : null;
 }
@@ -131,8 +136,10 @@ async function readBody<T>(request: Request): Promise<Partial<T>> {
 /**
  * The staff member behind the signed-in mock session (or the half-signed-in one), for handlers that need to know
  * who is asking: whose address a restriction must keep, who created a record, which session is the caller's.
+ * In unbuilt mode there is no mock session, so it answers seeded staff member 1 (the owner).
  */
 export async function currentStaff(): Promise<MockStaff | undefined> {
+  if (isUnbuiltMode()) return (await staffStore()).find(1);
   const session = readSession();
   return session ? (await staffStore()).find(session.staffId) : undefined;
 }

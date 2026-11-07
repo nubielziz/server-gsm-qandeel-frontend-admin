@@ -35,6 +35,27 @@ Admin sign-in uses an httpOnly session cookie, the CSRF token on every mutation,
 authentication (decision 006). Where the map gives no request or response body, the console assumes one; every
 assumption is listed in `docs/ASSUMED_CONTRACTS.md`, with the questions for the backend team.
 
+### Against the real backend, with mocks for what it has not built yet
+
+The backend is built feature by feature, so most pages have no real API yet. `unbuilt` mode sends every route the
+backend has built to the real API and keeps answering the rest with the mocks (decision 018):
+
+1. Start the backend API as its README says (port 3000; `bun run db:migrate && bun run db:seed` gives it the demo
+   staff, see its "Local sign-in" for passwords and authenticator secrets). Sign-in is real in this mode.
+2. In `.env.development.local` (Vite reads it after `.env` and `.env.local`, so it wins for `npm run dev`; or pass the
+   three variables on the command line):
+
+   ```dotenv
+   VITE_DEV_PROXY_TARGET=http://localhost:3000
+   VITE_API_BASE_URL=
+   VITE_API_MOCKS=unbuilt          # or false: no mocks at all
+   ```
+
+3. `npm run dev`. The footer badge of the sign-in screen says "partial mocks".
+4. After the backend gains routes, run `npm run mocks:live` (it reads `../backend/docs/contract/openapi.json`; set
+   `BACKEND_DIR` for another checkout) and commit `src/mocks/liveRoutes.gen.ts`. `npm run mocks:live -- --check` fails
+   when the committed list is stale.
+
 ### With the dev mock API (no backend)
 
 ```dotenv
@@ -43,7 +64,7 @@ VITE_API_MOCKS=true
 
 `npm run dev` then starts an MSW service worker seeded with the demo's own data (`src/mocks/seed/demo-state.json`).
 Sign in with any seeded staff email (the owner is `rami@gsm-supply.example`), the password `demo-password` and the
-code `123456`. The mock layer is dev-only: a production build refuses `VITE_API_MOCKS=true`, and no mock code reaches
+code `123456`. The mock layer is dev-only: a production build refuses `VITE_API_MOCKS=true` (and `unbuilt`), and no mock code reaches
 `dist`.
 
 Mock scenarios: add `?mock=<name>` to any address to choose how the mock API behaves; the choice is kept for the
@@ -83,6 +104,7 @@ VITE_BULL_BOARD_URL=https://api.example.com/admin/queues   # "Open in Bull Board
 | `npm run routes:coverage` | Rewrites `docs/ROUTE_COVERAGE.md`; `-- --strict` fails below 100% or on a bad `@route` tag; `-- --feature <name>` checks one feature without writing. |
 | `npm run routes:manifest` / `routes:slices` | Rebuild the route manifest from the map, and the per-feature slices in `docs/slices/`. |
 | `npm run gen:types` | Regenerate entity types from the map (`src/lib/api/schema.gen.ts`). |
+| `npm run mocks:live` | Regenerate `src/mocks/liveRoutes.gen.ts` (the routes the real backend has built) from the backend's OpenAPI contract, for `VITE_API_MOCKS=unbuilt`; `-- --check` fails when it is stale. |
 | `npm run feature:worktree -- add\|remove <name>` | Worktree on `feat/<name>` for building a feature in parallel. |
 
 A change is done when `npm run typecheck && npm run lint && npm run build && npm test` are green.

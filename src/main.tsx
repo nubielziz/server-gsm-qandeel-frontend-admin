@@ -24,9 +24,11 @@ window.addEventListener('vite:preloadError', (event) => {
 });
 
 async function start() {
-  // The only place app code loads the mock layer (decision 014). `import.meta.env.DEV` is false in a production
-  // build, so the whole branch and the mock modules it imports are removed from the bundle.
-  if (import.meta.env.DEV && import.meta.env.VITE_API_MOCKS === 'true') {
+  // The only place app code loads the mock layer (decisions 014 and 018): `true` mocks every route, `unbuilt` only the
+  // routes the real backend has not built. `import.meta.env.DEV` is false in a production build, so the whole branch
+  // and the mock modules it imports are removed from the bundle.
+  const mocks = import.meta.env.VITE_API_MOCKS;
+  if (import.meta.env.DEV && (mocks === 'true' || mocks === 'unbuilt')) {
     try {
       const { startMockWorker } = await import('./mocks/browser');
       await startMockWorker();

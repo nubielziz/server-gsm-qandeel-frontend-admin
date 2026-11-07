@@ -6,7 +6,7 @@ import { apiGet, apiPost, forgetCsrfToken } from '@/lib/api';
 import { Collection } from './db';
 import { crudHandlers } from './crud';
 import { handlers, resetMockState } from './handlers';
-import { DEMO_CODE, DEMO_INVITE_TOKEN, DEMO_PASSWORD, guard } from './session';
+import { currentStaff, DEMO_CODE, DEMO_INVITE_TOKEN, DEMO_PASSWORD, guard } from './session';
 
 const API = 'http://api.test';
 const server = setupServer(
@@ -177,5 +177,34 @@ describe('session storage', () => {
     await expect(apiPost('/admin/things', {})).resolves.toBeDefined();
     await apiPost('/admin/auth/logout');
     expect(data.has('gsm-mock-session')).toBe(false);
+  });
+});
+
+describe('unbuilt mode (VITE_API_MOCKS=unbuilt)', () => {
+  it('lets a request through with no mock session, because the real session is an HttpOnly cookie', async () => {
+    vi.stubEnv('VITE_API_MOCKS', 'unbuilt');
+    expect(guard(new Request(`${API}/admin/open`))).toBeNull();
+    await expect(apiGet('/admin/open')).resolves.toEqual({ ok: true });
+    await expect(apiGet('/admin/things')).resolves.toContainEqual({ id: 1 });
+    // Mutations skip the mock CSRF check too: the real API checks its own token on the routes it has built.
+    forgetCsrfToken();
+    await expect(apiPost('/admin/things', { x: 2 })).resolves.toMatchObject({ x: 2 });
+  });
+
+  it('answers seeded staff member 1 as the current staff member', async () => {
+    vi.stubEnv('VITE_API_MOCKS', 'unbuilt');
+    expect(await currentStaff()).toMatchObject({ id: 1, email: 'rami@gsm-supply.example' });
+  });
+
+  it('keeps the all-mocked behaviour in the other modes', async () => {
+    for (const mode of ['true', 'false']) {
+      vi.stubEnv('VITE_API_MOCKS', mode);
+      expect(guard(new Request(`${API}/admin/open`))).toBeInstanceOf(Response);
+      expect(await currentStaff()).toBeUndefined();
+    }
+    vi.stubEnv('VITE_API_MOCKS', 'true');
+    await signIn('omar@gsm-supply.example');
+    expect(await currentStaff()).toMatchObject({ email: 'omar@gsm-supply.example' });
+    expect(guard(new Request(`${API}/admin/open`))).toBeNull();
   });
 });

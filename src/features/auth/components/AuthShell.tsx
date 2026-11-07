@@ -5,12 +5,17 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { version } from '../../../../package.json';
 import { WaveBackground } from '../wave/WaveBackground';
 
-/** Development builds name themselves in the footer, so a screenshot of a test console never passes for production. */
-const DEV_BADGE = import.meta.env.DEV
-  ? import.meta.env.VITE_API_MOCKS === 'true'
-    ? 'Development · mock data'
-    : 'Development'
-  : undefined;
+/**
+ * Development builds name themselves in the footer, so a screenshot of a test console never passes for production.
+ * Only `VITE_API_MOCKS=true` says "mock data": in `unbuilt` mode sign-in and the built routes are real. Read on every
+ * render, so tests can stub the env.
+ */
+function devBadge(): string | undefined {
+  if (!import.meta.env.DEV) return undefined;
+  if (import.meta.env.VITE_API_MOCKS === 'true') return 'Development · mock data';
+  if (import.meta.env.VITE_API_MOCKS === 'unbuilt') return 'Development · partial mocks';
+  return 'Development';
+}
 
 /**
  * The card's spot. Wide screens: centred across, and its top edge where a typical card would sit if centred (a bit
@@ -102,10 +107,11 @@ function AuthWordmark() {
 
 /** Product and version, plus the environment badge in development builds only. */
 function AuthFooter() {
+  const badge = devBadge();
   return (
     <footer className="relative flex flex-wrap items-center gap-x-2.5 gap-y-1 px-5 py-6 text-xs text-ink3 md:absolute md:inset-x-0 md:bottom-0 md:px-8">
       <span>GSM Supply admin console · v{version}</span>
-      {DEV_BADGE && <span className="badge b-neutral">{DEV_BADGE}</span>}
+      {badge && <span className="badge b-neutral">{badge}</span>}
     </footer>
   );
 }

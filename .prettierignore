@@ -10,3 +10,4 @@ src/mocks/seed/*.json
 src/mocks/worker
 .serena
 .claude
+src/mocks/liveRoutes.gen.ts

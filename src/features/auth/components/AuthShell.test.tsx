@@ -1,11 +1,13 @@
 // Tests for AuthShell: the landmarks, the card and its heading, the tab title, the wordmark and footer, and that the
 // page works without the artwork (the test DOM has no canvas, like a browser without one).
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { version } from '../../../../package.json';
 import { AuthShell } from './AuthShell';
 
 describe('AuthShell', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it('puts one h1 in a card inside the main landmark, with the intro, the content and the way back', () => {
     render(
       <AuthShell title="Sign in" intro="Staff accounts only." footer={<a href="/login">Back</a>}>
@@ -27,6 +29,21 @@ describe('AuthShell', () => {
     expect(footer).toHaveTextContent(`GSM Supply admin console · v${version}`);
     // Tests run as a development build.
     expect(within(footer).getByText(/^Development/)).toBeInTheDocument();
+  });
+
+  it('says "mock data" only when everything is mocked, never in unbuilt mode where sign-in is real', () => {
+    const badge = () => within(screen.getByRole('contentinfo')).getByText(/^Development/).textContent;
+    vi.stubEnv('VITE_API_MOCKS', 'true');
+    const { unmount } = render(<AuthShell title="Sign in" />);
+    expect(badge()).toBe('Development · mock data');
+    unmount();
+    vi.stubEnv('VITE_API_MOCKS', 'unbuilt');
+    const second = render(<AuthShell title="Sign in" />);
+    expect(badge()).toBe('Development · partial mocks');
+    second.unmount();
+    vi.stubEnv('VITE_API_MOCKS', 'false');
+    render(<AuthShell title="Sign in" />);
+    expect(badge()).toBe('Development');
   });
 
   it('puts focus on the heading only when asked', () => {

@@ -11,3 +11,5 @@
 - Mocks fake responses and simple state changes only; they never become a second implementation of server rules.
 
 **Consequences.** Every page can be run and compared with the demo before the server exists; the same handlers back API tests. Phase 4 checks that `dist/` contains no MSW or seed code.
+
+**Update.** A third mode, `VITE_API_MOCKS=unbuilt` (mocks only for the routes the backend has not built yet), is decision 018.

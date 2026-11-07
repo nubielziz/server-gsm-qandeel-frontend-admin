@@ -8,8 +8,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 
 const MOCK_WORKER_FILE = fileURLToPath(new URL('./src/mocks/worker/mockServiceWorker.js', import.meta.url));
 
-// Serves the MSW worker script straight from src/mocks/worker, in `vite dev` only and only with VITE_API_MOCKS=true,
-// so the file never lands in public/ or dist/ (decision 014).
+// Serves the MSW worker script straight from src/mocks/worker, in `vite dev` only and only with VITE_API_MOCKS=true or
+// `unbuilt`, so the file never lands in public/ or dist/ (decisions 014 and 018).
 function serveMockWorker(): Plugin {
   return {
     name: 'gsm-serve-mock-worker',
@@ -27,9 +27,10 @@ function serveMockWorker(): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
 
-  // The mock layer is dev-only (decision 014): refuse to bake it into a production bundle.
-  if (mode === 'production' && env.VITE_API_MOCKS === 'true') {
-    throw new Error('VITE_API_MOCKS=true is not allowed in a production build.');
+  // The mock layer is dev-only (decisions 014 and 018): refuse to bake it into a production bundle, in either mode.
+  const mocksOn = env.VITE_API_MOCKS === 'true' || env.VITE_API_MOCKS === 'unbuilt';
+  if (mode === 'production' && mocksOn) {
+    throw new Error(`VITE_API_MOCKS=${env.VITE_API_MOCKS} is not allowed in a production build.`);
   }
 
   // Optional: proxy /admin and /health to a real server so the browser sees one origin in dev.
@@ -39,7 +40,7 @@ export default defineConfig(({ mode }) => {
     : undefined;
 
   return {
-    plugins: [react(), ...(env.VITE_API_MOCKS === 'true' ? [serveMockWorker()] : [])],
+    plugins: [react(), ...(mocksOn ? [serveMockWorker()] : [])],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
     server: { proxy },
     test: {

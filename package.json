@@ -21,6 +21,7 @@
     "seed:extract": "node scripts/extract-demo-seed.mjs",
     "routes:coverage": "node scripts/check-route-coverage.mjs",
     "routes:slices": "node scripts/build-route-slices.mjs",
+    "mocks:live": "node scripts/gen-live-routes.mjs",
     "feature:worktree": "node scripts/feature-worktree.mjs"
   },
   "dependencies": {

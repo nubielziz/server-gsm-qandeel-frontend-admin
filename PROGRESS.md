@@ -2,6 +2,24 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
+## Status (2026-11-07): integration with the real backend started
+
+The backend (`../backend`, its own `PROGRESS.md`) now serves staff sign-in, merchant wallets, the ledger, reconciliation and
+currencies, with staff access, merchants, audit logs and settings being merged. The console gained a third dev mode,
+`VITE_API_MOCKS=unbuilt` (decision 018, README "Against the real backend"): every route the backend has built goes to the
+real API through the dev proxy, the rest stays mocked. `src/mocks/liveRoutes.gen.ts` lists the built routes
+(`npm run mocks:live`, generated from the backend's OpenAPI contract; 19 routes after the backend's features 3 and 2b).
+Checks green after the change (typecheck, lint, build, 404 test files / 4,254 tests). Built by one Sonnet implementer,
+reviewed and committed by the lead.
+
+Note: a production build reads `.env` too, and a local `.env` with `VITE_API_MOCKS=true` makes `npm run build` refuse
+(by design, decision 014); run the build with `VITE_API_MOCKS=false npm run build` or keep the flag in
+`.env.development.local` only.
+
+Next: walk the console against the API at runtime for every built route (sign-in, access, merchants, wallet, ledger,
+currencies, audit, settings), fix wire mismatches on whichever side is wrong, re-run `npm run mocks:live` after each backend
+merge.
+
 ## Status (2026-10-31)
 
 **Done: `system-health`** (new map route group `health`, designed from scratch: `docs/system-health-design.md`,
