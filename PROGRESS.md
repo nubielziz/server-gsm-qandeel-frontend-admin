@@ -19,6 +19,13 @@ guest checkout, tracking; merged 2026-11-07 night) adds no console route, so the
 commissions and reports, 12b alerts and integrity, 16 B2C payments, refunds and disputes; after each, `npm run mocks:live`
 and a walk of the pages it feeds.
 
+**2026-11-08:** the backend merged 12a (notifications), 15 (storefront content), 14b (customer accounts) and 11 (commissions
+and reports): `src/mocks/liveRoutes.gen.ts` lists **211** live routes. Walk against the real API (Playwright, real sign-in):
+Settings (notification templates and log, tax and currencies), Storefront (all five tabs), Customers (list, suspended, a
+customer), Commissions (accruals, agents, plans) and Finance reports made 133 real calls with no failure and no page or
+console error; only `GET /admin/data-requests` (backend feature 18) stayed mocked. No console change was needed. Backend still
+to merge: 12b (alerts), 16 (B2C payments and refunds), 17 (support), 18 (risk and privacy), 19 (growth).
+
 Runtime walk (Playwright against the real API, real sign-in with password and TOTP, 2026-11-07): 15 pages (Admins and
 access: all five tabs; Merchants: list, pending, groups, detail, wallet; Finance: ledger, trial balance; Settings: tax and
 currency, system; Audit log) made 112 calls the real API answered and 54 the mocks answered, with no error. Real writes
