@@ -10,7 +10,7 @@ import { CUSTOMER_COUNTS_KEY } from './keys';
 export type CustomerCounts = {
   /** The customers of each tab; the Data requests tab counts the requests still to do. A count shows once its call has answered. */
   tabs: Partial<Record<CustomerTab, number>>;
-  /** Customers who have an account (the header says how many of the rest checked out as guests). */
+  /** Customers who have an account (the header says the rest are guests). */
   withAccount: number | undefined;
 };
 
