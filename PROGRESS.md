@@ -9,9 +9,12 @@ lists 268 routes (the 269th, `GET /admin/queues`, is the Bull Board page the das
 `VITE_API_MOCKS=false`** (Playwright, real sign-in with password and TOTP, Prometheus and Mailpit running, the backend's dev
 database migrated and seeded): every page and every tab of its first tab list, plus a merchant's and a customer's detail
 (76 steps): **289 real API calls, none mocked, no failed call, no page or console error** (`../backend/.lead/walk/walk-final.cjs`,
-screenshots in `../backend/.lead/walk/out-final2`). The only console change it asked for: the Customers header counted
-storefront customers as buyers (a guest exists from the first checkout): M259, `28a4d97`. Checks on `main`: typecheck, lint,
-build and 404 test files / 4,255 tests green. README and `docs/ASSUMED_CONTRACTS.md` say to run with mocks off (`211ff14`).
+screenshots in `../backend/.lead/walk/out-final2`). The walks asked for two console changes: the Customers header counted
+storefront customers as buyers (a guest exists from the first checkout): M259, `28a4d97`; and an idle supplier on the dashboard
+is a neutral "No recent calls" badge, never healthy and never a fault (the backend sends `unknown`, its B180): M260, `df99600`.
+After the backend's last merge (P4a, `6afa404`) the walk ran again: 76 steps, 290 real calls, none mocked, no failure, no page or
+console error (`../backend/.lead/walk/out-final3`). Checks on `main`: typecheck, lint, build and 405 test files / 4,261 tests
+green. README and `docs/ASSUMED_CONTRACTS.md` say to run with mocks off (`211ff14`). **The port is complete.**
 
 ## Status (2026-11-07): integration with the real backend started
 
