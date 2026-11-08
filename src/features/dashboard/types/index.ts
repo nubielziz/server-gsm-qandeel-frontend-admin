@@ -91,12 +91,15 @@ export type QueueByType = {
   oldestCreatedAt: IsoDateTime | null;
 };
 
-/** One supplier's health over the last hour and its prepaid balance. `lowBalance` is the server's call. Assumed contract. */
+/**
+ * One supplier's health over the last hour and its prepaid balance. `lowBalance` is the server's call. `health` is `unknown` when
+ * the supplier had no calls to judge (an idle supplier): never shown as healthy or degraded (MISMATCHES M260). Assumed contract.
+ */
 export type SupplierHealth = {
   id: Id;
   name: string;
   enabled: boolean;
-  health: 'up' | 'degraded' | 'down';
+  health: 'up' | 'degraded' | 'down' | 'unknown';
   successRate1h: number | null;
   p50Ms: number | null;
   balance: Money;
