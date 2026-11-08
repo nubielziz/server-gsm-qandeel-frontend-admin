@@ -2,6 +2,17 @@
 
 Single source of truth for status. The lead updates it after every step. Read it first.
 
+## Status (2026-11-08, evening): the console runs on the real backend with no mocks
+
+The backend builds every route the console calls (269 of 269; it has all 382 entries of the map). `src/mocks/liveRoutes.gen.ts`
+lists 268 routes (the 269th, `GET /admin/queues`, is the Bull Board page the dashboard only links to). **Walk with
+`VITE_API_MOCKS=false`** (Playwright, real sign-in with password and TOTP, Prometheus and Mailpit running, the backend's dev
+database migrated and seeded): every page and every tab of its first tab list, plus a merchant's and a customer's detail
+(76 steps): **289 real API calls, none mocked, no failed call, no page or console error** (`../backend/.lead/walk/walk-final.cjs`,
+screenshots in `../backend/.lead/walk/out-final2`). The only console change it asked for: the Customers header counted
+storefront customers as buyers (a guest exists from the first checkout): M259, `28a4d97`. Checks on `main`: typecheck, lint,
+build and 404 test files / 4,255 tests green. README and `docs/ASSUMED_CONTRACTS.md` say to run with mocks off (`211ff14`).
+
 ## Status (2026-11-07): integration with the real backend started
 
 The backend (`../backend`, its own `PROGRESS.md`) finished its wave 1: staff sign-in, access (all 23 routes), merchants and
