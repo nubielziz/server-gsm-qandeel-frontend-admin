@@ -4,22 +4,15 @@ What the console assumes where the API map gives no body, field or parameter, pe
 backend team. Each item is also marked "Assumed contract" in the feature's JSDoc. Moved here from each feature's
 HANDOFF.md at merge time.
 
-## Backend status (2026-11-07)
+## Backend status (2026-11-08)
 
-The backend (`../backend`) now serves these console routes. Its contract was extracted from this console's types, and its
-contract tests compare every built route the console calls with them (50 routes today), so the assumptions below are
-confirmed for these routes unless the backend's `docs/contract/MISMATCHES.md` says otherwise. The answers to the questions
-of each section are in the backend's `docs/contract/ANSWERS.md` (same feature, same question number). Run the console with
-`VITE_API_MOCKS=unbuilt` (decision 018) to use them; everything else stays mocked.
-
-| Feature | Built | Not built yet (backend feature) |
-|---|---|---|
-| foundation | sign-in, 2FA, set password, sign-out, `me`, `GET /health` | |
-| access | all 23 routes | |
-| merchants | merchants list, detail, invite, approve, suspend, group move; wallet, statement, adjust, credit limit | client groups (4a), client prices (4b), API keys (7b), KYC (8), statement report (11) |
-| finance | ledger list and detail, trial balance, reconciliation | payments, invoices (8); reports (11, 16) |
-| settings | `GET`/`PATCH /admin/settings`, currencies | gateways (8), tax rates and FX refresh (14b), storefront settings (16), notifications (12a), webhook deliveries (7b) |
-| audit | both routes | |
+The backend (`../backend`) builds every route the console calls: 269 of 269 (its `docs/COVERAGE.md`; it has built all 382
+entries of the map: routes, Dhru actions, supplier calls and events). Its contract was extracted from this console's types, and its contract tests compare every built route the
+console calls with them (shape parity: 269 routes), so the assumptions below are confirmed unless the backend's
+`docs/contract/MISMATCHES.md` says otherwise. The answers to the questions of each section are in the backend's
+`docs/contract/ANSWERS.md` (same feature, same question number). Run the console with `VITE_API_MOCKS=false` against it (README
+"Against the real API"); `unbuilt` mode (decision 018) is only for a backend checkout that is behind. One route is not fetched:
+`GET /admin/queues` is the backend's Bull Board page, which the dashboard only links to.
 
 ## dashboard
 

@@ -37,8 +37,9 @@ assumption is listed in `docs/ASSUMED_CONTRACTS.md`, with the questions for the 
 
 ### Against the real backend, with mocks for what it has not built yet
 
-The backend is built feature by feature, so most pages have no real API yet. `unbuilt` mode sends every route the
-backend has built to the real API and keeps answering the rest with the mocks (decision 018):
+Since 2026-11-08 the backend builds every route the console calls, so `VITE_API_MOCKS=false` (above) is the normal way to run
+against it. `unbuilt` mode is for a backend checkout that is behind: it sends every route that checkout has built to the
+real API and keeps answering the rest with the mocks (decision 018):
 
 1. Start the backend API as its README says (port 3000; `bun run db:migrate && bun run db:seed` gives it the demo
    staff, see its "Local sign-in" for passwords and authenticator secrets). Sign-in is real in this mode.
