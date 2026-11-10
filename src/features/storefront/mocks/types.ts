@@ -20,24 +20,8 @@ export type MockListing = {
   locale: string;
   slug: string;
   publicTitle: string;
-  summary: string;
-  descriptionMd: string;
-  requirementsMd: string;
-  etaText: string;
-  seoTitle: string;
-  seoDescription: string;
-  /** The facts of the service (brand, carrier, country, position, featured, picture) are kept on every language row alike. */
-  brand: string;
-  carrier: string;
-  country: string;
-  sort: number;
   isListed: boolean;
   isFeatured: boolean;
-  /** When the listing first went on the site; `null` until then. */
-  listedAt: string | null;
-  updatedAt: string;
-  /** The picture's address: an object URL in the browser, a made-up media path in tests. */
-  imageUrl: string | null;
   /** Why the service can never go on the public site; `null` when it can. */
   lockedReason: string | null;
 };

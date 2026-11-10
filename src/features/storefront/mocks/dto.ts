@@ -1,7 +1,7 @@
 // Turns a stored listing into what `GET /admin/service-listings` sends: the service join and the figures a real server works out
 // (the floor, the margin, the 30-day orders). The mock plays the server here and does not re-implement more than the demo did.
 import { toMoney } from '@/mocks/seed';
-import type { ServiceListing, ServiceListingDetail } from '../types';
+import type { ServiceListing } from '../types';
 import type { MockListing, Stores } from './types';
 
 /** The demo's `retailFloor`: the B2B base price plus 10%, to the cent. */
@@ -9,7 +9,7 @@ export function floorOf(basePrice: number): number {
   return Math.round(basePrice * 110) / 100;
 }
 
-/** One listing as the list sends it: without the two Markdown bodies. */
+/** One listing as the API sends it. */
 export function toListing(stores: Stores, row: MockListing): ServiceListing {
   const service = stores.services.get(row.serviceId);
   if (!service) throw new Error(`Listing ${row.id} points at a service the mock does not have.`);
@@ -21,19 +21,8 @@ export function toListing(stores: Stores, row: MockListing): ServiceListing {
     locale: row.locale,
     slug: row.slug,
     publicTitle: row.publicTitle,
-    summary: row.summary,
-    etaText: row.etaText,
-    brand: row.brand,
-    carrier: row.carrier,
-    country: row.country,
-    sort: row.sort,
-    seoTitle: row.seoTitle,
-    seoDescription: row.seoDescription,
     isListed: row.isListed,
     isFeatured: row.isFeatured,
-    listedAt: row.listedAt,
-    updatedAt: row.updatedAt,
-    imageUrl: row.imageUrl,
     service: {
       id: service.id,
       name: service.name,
@@ -49,9 +38,4 @@ export function toListing(stores: Stores, row: MockListing): ServiceListing {
     locked: row.lockedReason !== null,
     lockedReason: row.lockedReason,
   };
-}
-
-/** One listing as show, create, change and the picture upload send it: the row plus its two Markdown bodies. */
-export function toListingDetail(stores: Stores, row: MockListing): ServiceListingDetail {
-  return { ...toListing(stores, row), descriptionMd: row.descriptionMd, requirementsMd: row.requirementsMd };
 }

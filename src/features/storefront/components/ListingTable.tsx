@@ -1,5 +1,5 @@
-// ListingTable: the listings table with the demo's columns (service with its picture and slug, B2B base, storefront price and floor,
-// margin, orders, language, the "On the site" switch with the date it first went live, the Edit and Price buttons). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
+// ListingTable: the listings table with the demo's columns (service and slug, B2B base, storefront price and floor, margin, orders,
+// language, the "On the site" switch, the Price button). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
 // is given: the floor, margin and order figures come from the server, and the tab owns data, sort and page.
 import type { ReactNode } from 'react';
 import {
@@ -11,10 +11,9 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { fmtDate, money0, num, pct, price } from '@/lib/format';
+import { money0, num, pct, price } from '@/lib/format';
 import { localeLabel } from '../lib/kinds';
 import type { ServiceListing } from '../types';
-import { ListingThumbnail } from './ListingThumbnail';
 
 export interface ListingTableProps {
   rows: readonly ServiceListing[];
@@ -32,7 +31,6 @@ export interface ListingTableProps {
   busyId?: number;
   onToggle: (listing: ServiceListing, on: boolean) => void;
   onEditPrice: (listing: ServiceListing) => void;
-  onEdit: (listing: ServiceListing) => void;
 }
 
 // The amber tint for a thin margin is the demo's (below 15%); the margin itself is the server's figure.
@@ -53,7 +51,6 @@ export function ListingTable({
   busyId,
   onToggle,
   onEditPrice,
-  onEdit,
 }: ListingTableProps) {
   const columns: DataTableColumn<ServiceListing>[] = [
     {
@@ -61,15 +58,12 @@ export function ListingTable({
       label: 'Service',
       sortField: 'publicTitle',
       render: (l) => (
-        <div className="flex items-center gap-2.5">
-          <ListingThumbnail listing={l} />
-          <div className="min-w-0">
-            <p className="font-medium">{l.publicTitle}</p>
-            <p className="mono text-2xs text-ink3">
-              {l.service.code} · /{l.slug}
-            </p>
-          </div>
-        </div>
+        <>
+          <p className="font-medium">{l.publicTitle}</p>
+          <p className="mono text-2xs text-ink3">
+            {l.service.code} · /{l.slug}
+          </p>
+        </>
       ),
     },
     {
@@ -142,16 +136,13 @@ export function ListingTable({
             {l.lockedReason}
           </span>
         ) : (
-          <>
-            <Switch
-              checked={l.isListed}
-              label={`Show ${l.publicTitle} on the storefront`}
-              disabled={lock.disabled || busyId === l.id}
-              title={lock.title}
-              onChange={(on) => onToggle(l, on)}
-            />
-            {l.listedAt && <p className="mt-0.5 text-2xs text-ink3">Listed {fmtDate(l.listedAt)}</p>}
-          </>
+          <Switch
+            checked={l.isListed}
+            label={`Show ${l.publicTitle} on the storefront`}
+            disabled={lock.disabled || busyId === l.id}
+            title={lock.title}
+            onChange={(on) => onToggle(l, on)}
+          />
         ),
     },
     {
@@ -159,28 +150,16 @@ export function ListingTable({
       label: '',
       render: (l) =>
         l.locked ? null : (
-          <div className="flex justify-end gap-1.5">
-            <Button
-              size="sm"
-              disabled={lock.disabled}
-              title={lock.title}
-              aria-label={`Edit listing ${l.publicTitle}`}
-              onClick={() => onEdit(l)}
-            >
-              <Icon name="edit" className="ic-xs" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              disabled={lock.disabled}
-              title={lock.title}
-              aria-label={`Edit the storefront price of ${l.publicTitle}`}
-              onClick={() => onEditPrice(l)}
-            >
-              <Icon name="edit" className="ic-xs" />
-              Price
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            disabled={lock.disabled}
+            title={lock.title}
+            aria-label={`Edit the storefront price of ${l.publicTitle}`}
+            onClick={() => onEditPrice(l)}
+          >
+            <Icon name="edit" className="ic-xs" />
+            Price
+          </Button>
         ),
     },
   ];

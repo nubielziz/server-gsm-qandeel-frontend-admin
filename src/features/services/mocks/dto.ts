@@ -48,7 +48,6 @@ export function toCategory(stores: Stores, row: MockCategory): ServiceCategory {
   return {
     id: row.id,
     name: row.name,
-    nameAr: row.nameAr,
     type: row.type,
     allowedGroupIds: row.allowedGroupIds,
     sort: row.sort,

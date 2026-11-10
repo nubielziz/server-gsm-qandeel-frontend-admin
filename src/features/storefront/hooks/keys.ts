@@ -22,6 +22,3 @@ export const PICKER_CAP = 200;
 
 /** The five minutes a menu is kept: the catalog changes rarely, and a dialog should not wait for a request each time. */
 export const PICKER_STALE_MS = 5 * 60_000;
-
-/** One listing with its Markdown bodies, read when the editor opens (`['api', 'storefront', 'listing', id]`). */
-export const listingDetailKey = (id: number) => ['api', 'storefront', 'listing', id] as const;

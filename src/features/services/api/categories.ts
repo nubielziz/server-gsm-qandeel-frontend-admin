@@ -16,7 +16,7 @@ import type { CreateCategoryBody, ServiceCategory, UpdateCategoryBody } from '..
 
 /**
  * The service categories with the merchant groups that can see each one.
- * Rows carry `nameAr` (the storefront's Arabic name, empty for none) and may carry `serviceCount`.
+ * Assumed contract: rows may carry `serviceCount` (how many services the category holds).
  * @route GET /admin/service-categories
  */
 export function listCategories(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<ServiceCategory>> {
@@ -34,7 +34,7 @@ export function getCategory(id: Id, init?: ApiInit): Promise<ServiceCategory> {
 
 /**
  * Creates a category. An empty `allowedGroupIds` makes it visible to every group.
- * Assumed contract: body `{ name, nameAr?, type, allowedGroupIds, sort, isActive }`, answer the new category.
+ * Assumed contract: body `{ name, type, allowedGroupIds, sort, isActive }`, answer the new category.
  * @route POST /admin/service-categories
  */
 export function createCategory(body: CreateCategoryBody, init?: ApiInit): Promise<ServiceCategory> {

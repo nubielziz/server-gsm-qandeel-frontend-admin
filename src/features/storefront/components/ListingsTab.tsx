@@ -1,5 +1,5 @@
-// ListingsTab: the "Services on sale" tab: the figures, the search, the table with its switch, Edit and Price buttons, and the
-// three dialogs. Ports `tabListings`, `sf-list` and `sf-price` of 50-p-storefront.js. Search, page and sort live in the address; the
+// ListingsTab: the "Services on sale" tab: the figures, the search, the table with its switch and Price button, and the two
+// dialogs. Ports `tabListings`, `sf-list` and `sf-price` of 50-p-storefront.js. Search, page and sort live in the address; the
 // server filters, sorts and counts, and works out every price figure and every refusal.
 import { useState } from 'react';
 import { Button, Icon, Panel, usePageClamp } from '@/components/ui';
@@ -10,15 +10,13 @@ import type { StorefrontGrants } from '../hooks/useStorefrontGrants';
 import { hasActiveFilters, LISTING_VIEW, PAGE_SIZE, toRefineFilters } from '../lib/views';
 import type { ServiceListing } from '../types';
 import { ListingCreateDialog } from './ListingCreateDialog';
-import { ListingEditDialog } from './ListingEditDialog';
 import { ListingStats } from './ListingStats';
 import { ListingTable } from './ListingTable';
 import { ListingsEmpty } from './ListingsEmpty';
 import { ListToolbar } from './ListToolbar';
 import { PriceDialog } from './PriceDialog';
 
-type Dialog =
-  { kind: 'create' } | { kind: 'price'; listing: ServiceListing } | { kind: 'edit'; listing: ServiceListing };
+type Dialog = { kind: 'create' } | { kind: 'price'; listing: ServiceListing };
 
 /** Figures, search, table and dialogs; owns the switch's request. */
 export function ListingsTab({ grants }: { grants: StorefrontGrants }) {
@@ -87,15 +85,11 @@ export function ListingsTab({ grants }: { grants: StorefrontGrants }) {
             busyId={setListed.isPending ? setListed.variables?.listing.id : undefined}
             onToggle={(listing, on) => setListed.mutate({ listing, on })}
             onEditPrice={(listing) => setDialog({ kind: 'price', listing })}
-            onEdit={(listing) => setDialog({ kind: 'edit', listing })}
           />
         </div>
       </Panel>
       {dialog?.kind === 'create' && <ListingCreateDialog onClose={() => setDialog(null)} />}
       {dialog?.kind === 'price' && <PriceDialog listing={dialog.listing} onClose={() => setDialog(null)} />}
-      {dialog?.kind === 'edit' && (
-        <ListingEditDialog listing={dialog.listing} onClose={() => setDialog(null)} />
-      )}
     </>
   );
 }
