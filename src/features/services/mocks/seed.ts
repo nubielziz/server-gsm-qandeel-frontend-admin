@@ -95,6 +95,7 @@ export function buildStores(state: DemoState): Stores {
     categories.push({
       id,
       name: service.category,
+      nameAr: '',
       type: service.type.toLowerCase() as ServiceType,
       allowedGroupIds: [],
       sort: id,

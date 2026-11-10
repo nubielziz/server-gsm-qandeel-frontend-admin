@@ -1,11 +1,11 @@
 // The actions on listings, each with the toast the demo showed and the reads it makes stale. Ports the toasts of `sf-list` and
-// `sf-price` in 50-p-storefront.js. The switch leaves a failed call to the default error toast (the server's words); the hooks
+// `sf-price` in 50-p-storefront.js; the editor's save and the picture upload and removal are new (feature 22). The switch leaves a failed call to the default error toast (the server's words); the hooks
 // used from a dialog leave it to that dialog, which shows it under the field or in its error slot.
 import { toast } from '@/components/ui';
 import { money } from '@/lib/format';
 import { useApiMutation } from '@/lib/query';
-import { createListing, updateListing } from '../api';
-import type { CreateListingBody, ServiceListing } from '../types';
+import { createListing, removeListingImage, updateListing, uploadListingImage } from '../api';
+import type { CreateListingBody, ServiceListing, UpdateListingBody } from '../types';
 import { STOREFRONT_STALE_KEYS, staleResource } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
@@ -61,6 +61,47 @@ export function useCreateListing() {
         body: `${created.publicTitle} is ready. Set its price, then switch it on.`,
         ttl: 3200,
       });
+    },
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
+/** Saves the changed fields of the editor. The dialog shows a refusal (a slug in use, a text over its limit) under the field. */
+export function useUpdateListingContent() {
+  return useApiMutation({
+    mutationFn: ({ listing, body }: { listing: ServiceListing; body: UpdateListingBody }) =>
+      updateListing(listing.id, body),
+    invalidates: staleResource(RESOURCE),
+    invalidateKeys: STOREFRONT_STALE_KEYS,
+    onSuccess: (updated) => {
+      toast({ kind: 'success', title: 'Listing saved', body: updated.publicTitle, ttl: 2600 });
+    },
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
+/** Uploads the picture of the service (every language). The field under the picture shows the server's refusal. */
+export function useUploadListingImage() {
+  return useApiMutation({
+    mutationFn: ({ listing, file }: { listing: ServiceListing; file: File }) =>
+      uploadListingImage(listing.id, file),
+    invalidates: staleResource(RESOURCE),
+    invalidateKeys: STOREFRONT_STALE_KEYS,
+    onSuccess: (updated) => {
+      toast({ kind: 'success', title: 'Picture saved', body: updated.publicTitle, ttl: 2600 });
+    },
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
+/** Removes the picture of the service (every language). */
+export function useRemoveListingImage() {
+  return useApiMutation({
+    mutationFn: (listing: ServiceListing) => removeListingImage(listing.id),
+    invalidates: staleResource(RESOURCE),
+    invalidateKeys: STOREFRONT_STALE_KEYS,
+    onSuccess: (_result, listing) => {
+      toast({ kind: 'success', title: 'Picture removed', body: listing.publicTitle, ttl: 2600 });
     },
     errorNotification: NO_ERROR_TOAST,
   });

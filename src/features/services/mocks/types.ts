@@ -37,6 +37,8 @@ export type MockService = {
 export type MockCategory = {
   id: number;
   name: string;
+  /** The storefront's Arabic name; empty for none. */
+  nameAr: string;
   type: ServiceType;
   allowedGroupIds: number[];
   sort: number;

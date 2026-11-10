@@ -19,6 +19,10 @@ function applyFields(
     draft.name = textOf(body.name);
     if (!draft.name) problems.push({ field: 'name', message: 'Enter a name.' });
   }
+  if ('nameAr' in body) {
+    draft.nameAr = textOf(body.nameAr);
+    if (draft.nameAr.length > 80) problems.push({ field: 'nameAr', message: 'Use at most 80 characters.' });
+  }
   if ('type' in body) {
     if (typeof body.type === 'string' && TYPES.includes(body.type))
       draft.type = body.type as MockCategory['type'];
@@ -66,7 +70,7 @@ export const categoryRoutes: HttpHandler[] = [
       const body = await bodyOf(request);
       const problems: { field: string; message: string }[] = [];
       const draft = applyFields(
-        { id: 0, name: '', type: 'imei', allowedGroupIds: [], sort: 0, isActive: true },
+        { id: 0, name: '', nameAr: '', type: 'imei', allowedGroupIds: [], sort: 0, isActive: true },
         body,
         problems,
       );

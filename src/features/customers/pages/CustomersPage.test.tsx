@@ -47,9 +47,7 @@ describe('tabs and counts', () => {
       ]),
     );
     expect(
-      screen.getByText(
-        '30 customers on the storefront. 10 have an account, the rest are guests.',
-      ),
+      screen.getByText('30 customers on the storefront. 10 have an account, the rest are guests.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
   });

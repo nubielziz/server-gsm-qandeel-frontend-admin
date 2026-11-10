@@ -12,7 +12,7 @@ import { TYPE_OPTIONS } from '../lib/status';
 import type { ServiceCategory, ServiceType, UpdateCategoryBody } from '../types';
 import { LookupNote } from './LookupNote';
 
-type Values = { name: string; type: ServiceType; sort: string; isActive: boolean };
+type Values = { name: string; nameAr: string; type: ServiceType; sort: string; isActive: boolean };
 
 export interface CategoryDialogProps {
   /** The category to edit; leave out to create one. */
@@ -31,6 +31,7 @@ export function CategoryDialog({ category, onClose }: CategoryDialogProps) {
   const form = useForm<Values>({
     defaultValues: {
       name: category?.name ?? '',
+      nameAr: category?.nameAr ?? '',
       type: category?.type ?? 'imei',
       sort: String(category?.sort ?? 0),
       isActive: category?.isActive ?? true,
@@ -46,17 +47,21 @@ export function CategoryDialog({ category, onClose }: CategoryDialogProps) {
     async (values) => {
       const next = {
         name: values.name.trim(),
+        nameAr: values.nameAr.trim(),
         type: values.type,
         allowedGroupIds: groupIds,
         sort: Number(values.sort),
         isActive: values.isActive,
       };
       if (!category) {
-        await create.mutateAsync(next);
+        // An empty Arabic name is left out: the server's default is the same.
+        const { nameAr, ...rest } = next;
+        await create.mutateAsync(nameAr ? next : rest);
         return;
       }
       const body: UpdateCategoryBody = {};
       if (next.name !== category.name) body.name = next.name;
+      if (next.nameAr !== category.nameAr) body.nameAr = next.nameAr;
       if (next.type !== category.type) body.type = next.type;
       if (!sameIds(next.allowedGroupIds, category.allowedGroupIds))
         body.allowedGroupIds = next.allowedGroupIds;
@@ -69,7 +74,7 @@ export function CategoryDialog({ category, onClose }: CategoryDialogProps) {
       await update.mutateAsync({ category, body });
     },
     // `allowedGroupIds` is not a form field (the ticks are state), so a message about it falls to the dialog's error slot.
-    { fields: ['name', 'type', 'sort', 'isActive'] },
+    { fields: ['name', 'nameAr', 'type', 'sort', 'isActive'] },
   );
 
   return (
@@ -89,6 +94,15 @@ export function CategoryDialog({ category, onClose }: CategoryDialogProps) {
           autoFocus
           error={errors.name}
           {...register('name', { validate: (value) => value.trim() !== '' || 'Enter a name.' })}
+        />
+        <TextField
+          label="Arabic name (storefront)"
+          dir="rtl"
+          autoComplete="off"
+          maxLength={80}
+          hint="Optional. The Arabic storefront shows this name; leave it empty and it shows the name above."
+          error={errors.nameAr}
+          {...register('nameAr')}
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <SelectField
