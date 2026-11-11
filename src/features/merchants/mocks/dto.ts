@@ -20,12 +20,17 @@ export function toWallet(row: MockClient): ClientWallet {
   };
 }
 
-export function toClient(row: MockClient, store: MerchantStore): Client {
+/**
+ * The merchant as the API sends it. `activeSessions` is the live count of open merchant sessions when the route knows it (it
+ * reads the sessions mock); without it the seeded number stands.
+ */
+export function toClient(row: MockClient, store: MerchantStore, activeSessions?: number): Client {
   const { referredById, balance: _balance, reserved: _reserved, creditLimit: _creditLimit, ...rest } = row;
   const group = store.groups.find(row.groupId);
   const referrer = referredById === null ? undefined : store.clients.find(referredById);
   return {
     ...rest,
+    security: { ...row.security, activeSessions: activeSessions ?? row.security.activeSessions },
     group: group ? { id: group.id, name: group.name, discountPercent: group.discountPercent } : null,
     referredBy: referrer ? { id: referrer.id, name: referrer.name } : null,
     wallet: toWallet(row),

@@ -1,12 +1,14 @@
-// MerchantDialogs: shows the dialog the merchant page's header opened (adjust wallet, credit limit, suspend). The page keeps
-// which one is open; each dialog is mounted only while open, so every opening starts with empty fields.
+// MerchantDialogs: shows the dialog the merchant page opened (adjust wallet, credit limit, suspend, decline, edit details). The page
+// keeps which one is open; each dialog is mounted only while open, so every opening starts with empty fields.
 import type { Client, ClientWallet } from '../types';
 import { AdjustWalletDialog } from './AdjustWalletDialog';
 import { CreditLimitDialog } from './CreditLimitDialog';
+import { EditMerchantDialog } from './EditMerchantDialog';
 import { SuspendMerchantDialog } from './SuspendMerchantDialog';
 
-/** The dialogs of the page header. */
-export type MerchantDialogState = { kind: 'adjust' } | { kind: 'credit' } | { kind: 'suspend' };
+/** The dialogs of the page header and of the Profile tab. */
+export type MerchantDialogState =
+  { kind: 'adjust' } | { kind: 'credit' } | { kind: 'suspend' } | { kind: 'decline' } | { kind: 'edit' };
 
 export interface MerchantDialogsProps {
   dialog: MerchantDialogState | null;
@@ -24,6 +26,10 @@ export function MerchantDialogs({ dialog, client, wallet, onClose }: MerchantDia
       return <CreditLimitDialog client={client} wallet={wallet} onClose={onClose} />;
     case 'suspend':
       return <SuspendMerchantDialog client={client} onClose={onClose} />;
+    case 'decline':
+      return <SuspendMerchantDialog client={client} decline onClose={onClose} />;
+    case 'edit':
+      return <EditMerchantDialog client={client} onClose={onClose} />;
     default:
       return null;
   }

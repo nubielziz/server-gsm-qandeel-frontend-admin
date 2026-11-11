@@ -1,5 +1,6 @@
-// ApiKeyTable: a merchant's API keys (name, key prefix, allowed addresses, created, last used, status, Revoke). Ports the API key
-// row of merApiTab in 42-p-merchants.js, which showed one key and a "Rotate key" button; the map has only list and revoke (MISMATCHES M45).
+// ApiKeyTable: a merchant's API keys (name, key prefix, per-minute limit, allowed addresses, created, last used, status, Limits…,
+// Revoke). Ports the API key row of merApiTab in 42-p-merchants.js, which showed one key and a "Rotate key" button; the map has
+// no rotate (MISMATCHES M45). A key staff made carries a "Made by support" chip.
 import { Badge, Button, DataTable, type DataTableColumn } from '@/components/ui';
 import { ago, fmtDate } from '@/lib/format';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
@@ -11,11 +12,13 @@ export interface ApiKeyTableProps {
   now: number;
   grants: MerchantGrants;
   onRevoke: (key: ApiKey) => void;
+  onLimits: (key: ApiKey) => void;
 }
 
 /** Draws the keys, with a Revoke button on the ones that still work. */
-export function ApiKeyTable({ rows, now, grants, onRevoke }: ApiKeyTableProps) {
+export function ApiKeyTable({ rows, now, grants, onRevoke, onLimits }: ApiKeyTableProps) {
   const revokeLock = grants.needs('api_keys:revoke');
+  const limitsLock = grants.needs('api_keys:update');
   const columns: DataTableColumn<ApiKey>[] = [
     {
       key: 'name',
@@ -23,9 +26,17 @@ export function ApiKeyTable({ rows, now, grants, onRevoke }: ApiKeyTableProps) {
       render: (key) => (
         <>
           <span className="font-medium">{key.name}</span>
+          {key.createdByStaff && <span className="chip ms-1.5">Made by support</span>}
           <p className="mono text-2xs text-ink3">{key.prefix}…</p>
         </>
       ),
+    },
+    {
+      key: 'limit',
+      label: 'Limit',
+      num: true,
+      hide: 'sm',
+      render: (key) => `${key.rateLimitPerMin}/min`,
     },
     {
       key: 'ips',
@@ -73,19 +84,30 @@ export function ApiKeyTable({ rows, now, grants, onRevoke }: ApiKeyTableProps) {
     {
       key: 'actions',
       label: '',
-      className: 'w-24',
+      className: 'w-44',
       render: (key) =>
         apiKeyState(key, now) === 'active' ? (
-          <Button
-            size="sm"
-            variant="danger"
-            aria-label={`Revoke ${key.name}`}
-            disabled={revokeLock.disabled}
-            title={revokeLock.title}
-            onClick={() => onRevoke(key)}
-          >
-            Revoke
-          </Button>
+          <span className="flex gap-1.5">
+            <Button
+              size="sm"
+              aria-label={`Change limits of ${key.name}`}
+              disabled={limitsLock.disabled}
+              title={limitsLock.title}
+              onClick={() => onLimits(key)}
+            >
+              Limits…
+            </Button>
+            <Button
+              size="sm"
+              variant="danger"
+              aria-label={`Revoke ${key.name}`}
+              disabled={revokeLock.disabled}
+              title={revokeLock.title}
+              onClick={() => onRevoke(key)}
+            >
+              Revoke
+            </Button>
+          </span>
         ) : null,
     },
   ];

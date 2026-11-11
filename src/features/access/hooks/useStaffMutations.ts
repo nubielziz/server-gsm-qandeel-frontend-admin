@@ -36,7 +36,7 @@ export function useCreateStaff() {
       message: `${created.name} added as ${created.role.name}`,
       description:
         body.onboarding === 'invite'
-          ? `An invitation was sent to ${created.email}. It works for 1 hour.`
+          ? `An invitation email is on its way to ${created.email}. The link works for 1 hour.`
           : 'Temporary password set. They must change it at first sign-in.',
     }),
     errorNotification: NO_ERROR_TOAST,
@@ -68,7 +68,7 @@ export function useSetStaffPassword() {
     invalidateKeys: [SESSIONS_KEY],
     successNotification: (_result, { staff, body }) =>
       body.mode === 'reset_link'
-        ? { message: 'Reset link sent', description: `Sent to ${staff.email}. It works for 1 hour.` }
+        ? { message: 'Reset link emailed', description: `Sent to ${staff.email}. The link works for 1 hour.` }
         : { message: 'Temporary password set', description: `${staff.name} must change it at next sign-in.` },
     errorNotification: NO_ERROR_TOAST,
   });

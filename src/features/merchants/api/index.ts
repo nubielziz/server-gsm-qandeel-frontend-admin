@@ -6,4 +6,5 @@ export * from './groups';
 export * from './kyc';
 export * from './prices';
 export * from './resources';
+export * from './security';
 export * from './wallet';

@@ -146,7 +146,9 @@ describe('admin accounts', () => {
 
     expect(await screen.findByText('Hana Q. added as Finance')).toBeInTheDocument();
     expect(
-      screen.getByText('An invitation was sent to hana@gsm-supply.example. It works for 1 hour.'),
+      screen.getByText(
+        'An invitation email is on its way to hana@gsm-supply.example. The link works for 1 hour.',
+      ),
     ).toBeInTheDocument();
     const drawer = await screen.findByRole('dialog', { name: 'Hana Q.' });
     expect(within(drawer).getByText(/Invitation link sent/)).toBeInTheDocument();
@@ -326,8 +328,10 @@ describe('admin accounts', () => {
     await user.click(within(drawer).getByRole('button', { name: 'Password…' }));
     let dialog = await screen.findByRole('dialog', { name: 'Password for Omar T.' });
     await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
-    expect(await screen.findByText('Reset link sent')).toBeInTheDocument();
-    expect(screen.getByText('Sent to omar@gsm-supply.example. It works for 1 hour.')).toBeInTheDocument();
+    expect(await screen.findByText('Reset link emailed')).toBeInTheDocument();
+    expect(
+      screen.getByText('Sent to omar@gsm-supply.example. The link works for 1 hour.'),
+    ).toBeInTheDocument();
 
     await user.click(within(drawer).getByRole('button', { name: 'Password…' }));
     dialog = await screen.findByRole('dialog', { name: 'Password for Omar T.' });
@@ -336,6 +340,30 @@ describe('admin accounts', () => {
     const reveal = await screen.findByRole('dialog', { name: 'Temporary password for Omar T.' });
     expect(within(reveal).getByText(/^[A-Za-z0-9]{14}$/)).toBeInTheDocument();
     expect(await screen.findByText('Temporary password set')).toBeInTheDocument();
+  });
+
+  it('shows the server’s mail limit (429) in the password dialog and keeps it open', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/staff/:id/password', () =>
+        problem(
+          429,
+          'RATE_LIMITED',
+          'Too many emails',
+          'Five link emails an hour is the limit for one account.',
+        ),
+      ),
+    );
+    await openAccess();
+    await user.click((await adminRow('Omar T.')).getByRole('button', { name: 'Manage' }));
+    const drawer = await screen.findByRole('dialog', { name: 'Omar T.' });
+    await user.click(within(drawer).getByRole('button', { name: 'Password…' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Password for Omar T.' });
+    await user.click(within(dialog).getByRole('button', { name: 'Continue' }));
+    expect(
+      await within(dialog).findByText('Five link emails an hour is the limit for one account.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Password for Omar T.' })).toBeInTheDocument();
   });
 
   it('tells how an invited admin will join, and why a suspended one cannot', async () => {

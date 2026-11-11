@@ -31,13 +31,15 @@ export type AuditLog = Omit<
 
 /**
  * The filters of `GET /admin/audit-logs` (assumed contract), on top of the list query's `q`, range and sort:
- * `actorType` and `actorId` pick a person or the system, `entityType` one kind of record, `from` and `to` a
- * range of days (`YYYY-MM-DD`, both included).
+ * `actorType` and `actorId` pick a person or the system, `entityType` one kind of record (with `entityId`, one record of
+ * that kind: the merchant page's Audit tab uses `entityType=merchant&entityId=7`), `from` and `to` a range of days
+ * (`YYYY-MM-DD`, both included).
  */
 export type AuditFilters = {
   actorType?: string;
   actorId?: Id;
   entityType?: string;
+  entityId?: Id;
   q?: string;
   from?: string;
   to?: string;

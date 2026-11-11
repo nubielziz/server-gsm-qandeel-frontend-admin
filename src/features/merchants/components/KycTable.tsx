@@ -16,6 +16,8 @@ export interface KycTableProps {
   onPageChange?: (page: number) => void;
   onOpen: (submission: KycSubmission) => void;
   empty?: ReactNode;
+  /** The list holds one merchant's requests: the merchant column is replaced by the request's number. */
+  single?: boolean;
 }
 
 /** Draws the verification requests; the page owns the data and the page number. */
@@ -29,22 +31,33 @@ export function KycTable({
   onPageChange,
   onOpen,
   empty,
+  single = false,
 }: KycTableProps) {
   const columns: DataTableColumn<KycSubmission>[] = [
-    {
-      key: 'merchant',
-      label: 'Merchant',
-      render: (submission) => (
-        <>
-          <button type="button" className="link font-medium" onClick={() => onOpen(submission)}>
-            {submission.client.name}
-          </button>
-          <p className="max-w-[320px] truncate text-2xs text-ink3">
-            <span className="mono">{submission.client.country}</span> · {submission.client.email}
-          </p>
-        </>
-      ),
-    },
+    single
+      ? {
+          key: 'request',
+          label: 'Request',
+          render: (submission) => (
+            <button type="button" className="link font-medium" onClick={() => onOpen(submission)}>
+              Request #{submission.id}
+            </button>
+          ),
+        }
+      : {
+          key: 'merchant',
+          label: 'Merchant',
+          render: (submission) => (
+            <>
+              <button type="button" className="link font-medium" onClick={() => onOpen(submission)}>
+                {submission.client.name}
+              </button>
+              <p className="max-w-[320px] truncate text-2xs text-ink3">
+                <span className="mono">{submission.client.country}</span> · {submission.client.email}
+              </p>
+            </>
+          ),
+        },
     {
       key: 'submitted',
       label: 'Submitted',

@@ -302,10 +302,21 @@ describe('permissions', () => {
     lock('Credit limit…', 'wallet:credit_limit');
     lock('Suspend…', 'clients:update');
     lock('Group: VIP', 'clients:update');
-    expect(await screen.findByText('Nothing here for your role')).toBeInTheDocument();
-    expect(screen.queryByRole('tablist', { name: 'Merchant sections' })).not.toBeInTheDocument();
+    // clients:read alone opens Profile and Security; the tabs that need other permissions are left out.
+    expect(
+      within(await screen.findByRole('tablist', { name: 'Merchant sections' }))
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['Profile', 'Security']);
+    expect(screen.queryByText('Nothing here for your role')).not.toBeInTheDocument();
     // The wallet cannot be read, so its figures say why they are missing instead of showing a wrong number.
     expect(summary().getAllByText('Needs wallet:read')).toHaveLength(2);
+  });
+
+  it('says there is nothing to show to a role that may open the page but read none of its tabs', async () => {
+    await openMerchant(1, ZAIN, '', { permissions: ['groups:read'] });
+    expect(await screen.findByText('Nothing here for your role')).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'Merchant sections' })).not.toBeInTheDocument();
   });
 
   it('says the group menu needs groups:read when the role may change groups but not list them', async () => {

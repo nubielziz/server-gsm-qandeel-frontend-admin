@@ -4,8 +4,11 @@
 import type { CrudFilters } from '@refinedev/core';
 import type { AuditFilters } from '../types';
 
-/** The toolbar. `actor` is empty (everyone), `system`, or a staff id; `type` is a record type; `from` / `to` are days. */
-export type AuditView = { q: string; actor: string; type: string; from: string; to: string };
+/**
+ * The toolbar. `actor` is empty (everyone), `system`, or a staff id; `type` is a record type; `record` is the id of one record of
+ * that type (a link from a merchant's page), empty for all; `from` / `to` are days.
+ */
+export type AuditView = { q: string; actor: string; type: string; record: string; from: string; to: string };
 
 /** The actor value that means the system rather than a person. */
 export const SYSTEM_ACTOR = 'system';
@@ -20,6 +23,11 @@ export function parseActor(raw: string | null): string {
   return raw === SYSTEM_ACTOR || (raw !== null && /^\d+$/.test(raw)) ? raw : '';
 }
 
+/** A record id: digits only; anything else (a typo in a link) means every record. */
+export function parseRecord(raw: string | null): string {
+  return raw !== null && /^\d+$/.test(raw) ? raw : '';
+}
+
 export function parseView(params: URLSearchParams): AuditView {
   const from = params.get('from') ?? '';
   const to = params.get('to') ?? '';
@@ -27,6 +35,7 @@ export function parseView(params: URLSearchParams): AuditView {
     q: params.get('q') ?? '',
     actor: parseActor(params.get('actor')),
     type: params.get('type')?.trim() ?? '',
+    record: parseRecord(params.get('record')),
     from: DAY.test(from) ? from : '',
     to: DAY.test(to) ? to : '',
   };
@@ -34,7 +43,7 @@ export function parseView(params: URLSearchParams): AuditView {
 
 /** True when any filter is on, which is when "Clear filters" shows. */
 export function hasFilters(view: AuditView): boolean {
-  return Boolean(view.q.trim() || view.actor || view.type || view.from || view.to);
+  return Boolean(view.q.trim() || view.actor || view.type || view.record || view.from || view.to);
 }
 
 /** The API filters for the toolbar. A person is `actorType=staff` with `actorId`; the system is `actorType=system`. */
@@ -45,6 +54,8 @@ export function toFilters(view: AuditView): AuditFilters {
     ...(view.actor === SYSTEM_ACTOR ? { actorType: 'system' } : {}),
     ...(view.actor && view.actor !== SYSTEM_ACTOR ? { actorType: 'staff', actorId: Number(view.actor) } : {}),
     ...(view.type ? { entityType: view.type } : {}),
+    // A record id means nothing without its type (ids of different kinds overlap), so it is sent only beside one.
+    ...(view.type && view.record ? { entityId: Number(view.record) } : {}),
     ...(view.from ? { from: view.from } : {}),
     ...(view.to ? { to: view.to } : {}),
   };
@@ -65,6 +76,7 @@ export function writeView(base: URLSearchParams, patch: Partial<AuditView>): URL
   put('q', merged.q);
   put('actor', merged.actor);
   put('type', merged.type);
+  put('record', merged.record);
   put('from', merged.from);
   put('to', merged.to);
   return next;
@@ -72,5 +84,5 @@ export function writeView(base: URLSearchParams, patch: Partial<AuditView>): URL
 
 /** The address with every filter removed. */
 export function clearView(base: URLSearchParams): URLSearchParams {
-  return writeView(base, { q: '', actor: '', type: '', from: '', to: '' });
+  return writeView(base, { q: '', actor: '', type: '', record: '', from: '', to: '' });
 }

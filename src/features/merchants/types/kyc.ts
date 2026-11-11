@@ -33,7 +33,7 @@ export type KycDecisionBody = { decision: KycDecision; note?: string };
 /** The filters `GET /admin/kyc-submissions` understands besides paging and sorting (assumed contract). */
 export type KycListFilters = { status?: KycSubmissionStatus; clientId?: Id };
 
-/** One API key of a merchant, without its secret: only the prefix is ever readable (the generated row, as it is). */
+/** One API key of a merchant, without its secret: only the prefix is ever readable (the generated row, plus `createdByStaff`). */
 export type ApiKey = Pick<
   ApiKeyRow,
   | 'id'
@@ -48,4 +48,26 @@ export type ApiKey = Pick<
   | 'expiresAt'
   | 'revokedAt'
   | 'createdAt'
->;
+> & {
+  /** True for a key staff made for the merchant (feature 20); the server always sends it. */
+  createdByStaff?: boolean;
+};
+
+/**
+ * Body of `POST /admin/clients/:id/api-keys` (backend feature 20): the merchant's own creation plus the per-minute limit.
+ * `name` 1-60 characters, `scopes` 1-20 entries, `allowedIps` up to 20 addresses or ranges (empty: any address), `expiresAt`
+ * an ISO time in the future, `rateLimitPerMin` an integer from 1 to 6000 (the server's default is 60).
+ */
+export type CreateApiKeyBody = {
+  name: string;
+  scopes: string[];
+  allowedIps?: string[];
+  expiresAt?: string;
+  rateLimitPerMin?: number;
+};
+
+/** The answer of `POST /admin/clients/:id/api-keys`: the new key's row and the full key, which is shown once and never again. */
+export type CreatedApiKey = { key: ApiKey; secret: string };
+
+/** Body of `PATCH /admin/api-keys/:id`: at least one of the two. An empty `allowedIps` removes the restriction. */
+export type UpdateApiKeyBody = { rateLimitPerMin?: number; allowedIps?: string[] };

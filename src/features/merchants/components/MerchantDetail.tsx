@@ -1,6 +1,7 @@
 // MerchantDetail: the body of a merchant's page (`/merchants/:id`, `pageMerchant` in 42-p-merchants.js): header and actions,
-// a pending/suspended note, five figures and the Orders, Wallet ledger, Pricing and API access tabs (`?tab=`). It only
-// composes; tabs the staff member may not read are left out, and the order drawer opens in the address.
+// a pending/suspended note, five figures and the Orders, Wallet ledger, Billing, Pricing, API access, Profile, Security,
+// Verification and Audit tabs (`?tab=`). It only composes; tabs the staff member may not read are left out, and the order
+// drawer opens in the address.
 import { useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
@@ -17,13 +18,18 @@ import { OrderDrawerHost } from '@/features/orders';
 import { isApiError } from '@/lib/api';
 import { useNow } from '@/lib/format';
 import { ApiAccessTab } from './ApiAccessTab';
+import { BillingTab } from './BillingTab';
 import { MerchantDialogs, type MerchantDialogState } from './MerchantDialogs';
+import { MerchantAuditTab } from './MerchantAuditTab';
 import { MerchantHeader } from './MerchantHeader';
 import { MerchantNotFound } from './MerchantNotFound';
 import { MerchantNote } from './MerchantNote';
 import { MerchantOrdersTab } from './MerchantOrdersTab';
 import { MerchantStats } from './MerchantStats';
+import { MerchantVerificationTab } from './MerchantVerificationTab';
 import { PricingTab } from './PricingTab';
+import { ProfileTab } from './ProfileTab';
+import { SecurityTab } from './SecurityTab';
 import { WalletTab } from './WalletTab';
 import { useClient } from '../hooks/useClient';
 import { useClientGroups } from '../hooks/useClientGroups';
@@ -101,13 +107,15 @@ export function MerchantDetail({ id }: { id: number | null }) {
         onAdjust={() => setDialog({ kind: 'adjust' })}
         onCreditLimit={() => setDialog({ kind: 'credit' })}
         onSuspend={() => setDialog({ kind: 'suspend' })}
+        onDecline={() => setDialog({ kind: 'decline' })}
       />
-      <MerchantNote client={client} />
+      <MerchantNote client={client} now={now} />
       <MerchantStats client={client} wallet={wallet.data} walletNote={walletNote} />
       <Panel flush>
         {!current ? (
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot read orders, the wallet, prices or API keys. Ask an owner if you need access.
+            Your role cannot read orders, the wallet, billing, prices, API keys, profiles, verification or the
+            audit log. Ask an owner if you need access.
           </EmptyState>
         ) : (
           <>
@@ -115,8 +123,15 @@ export function MerchantDetail({ id }: { id: number | null }) {
             <div role="tabpanel" aria-label={DETAIL_TABS.find((spec) => spec.id === current)?.label}>
               {current === 'orders' && <MerchantOrdersTab client={client} />}
               {current === 'wallet' && <WalletTab client={client} grants={grants} />}
+              {current === 'billing' && <BillingTab client={client} grants={grants} />}
               {current === 'pricing' && <PricingTab client={client} grants={grants} />}
               {current === 'api' && <ApiAccessTab client={client} grants={grants} />}
+              {current === 'profile' && (
+                <ProfileTab client={client} grants={grants} onEdit={() => setDialog({ kind: 'edit' })} />
+              )}
+              {current === 'security' && <SecurityTab client={client} grants={grants} />}
+              {current === 'verification' && <MerchantVerificationTab client={client} grants={grants} />}
+              {current === 'audit' && <MerchantAuditTab client={client} />}
             </div>
           </>
         )}

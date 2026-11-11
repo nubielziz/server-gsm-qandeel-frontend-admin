@@ -1,6 +1,6 @@
 // MerchantHeader: a merchant's title, status, the line under it and the actions (Adjust wallet…, Credit limit…, group menu,
-// Approve / Suspend… / Reactivate). Ports `head` and `actionsHtml` of pageMerchant in 42-p-merchants.js; an action the staff
-// member lacks the permission for is disabled with that permission as its title.
+// Approve / Decline… / Suspend… / Reactivate). Ports `head` and `actionsHtml` of pageMerchant in 42-p-merchants.js; an action the
+// staff member lacks the permission for is disabled with that permission as its title.
 import { Link } from 'react-router';
 import { Button, Icon, PageHeader } from '@/components/ui';
 import { useApproveClient, useReactivateClient } from '../hooks/useClientMutations';
@@ -21,6 +21,8 @@ export interface MerchantHeaderProps {
   onAdjust: () => void;
   onCreditLimit: () => void;
   onSuspend: () => void;
+  /** Opens the suspend dialog in decline mode (a pending application). */
+  onDecline: () => void;
 }
 
 /** The title, subtitle and action buttons of a merchant's page. Approve and Reactivate act at once; the others open a dialog. */
@@ -33,6 +35,7 @@ export function MerchantHeader({
   onAdjust,
   onCreditLimit,
   onSuspend,
+  onDecline,
 }: MerchantHeaderProps) {
   const approve = useApproveClient();
   const reactivate = useReactivateClient();
@@ -74,15 +77,25 @@ export function MerchantHeader({
           </Button>
           <GroupMenu client={client} groups={groups} groupsLoading={groupsLoading} grants={grants} />
           {client.status === 'pending' ? (
-            <Button
-              variant="primary"
-              disabled={updateLock.disabled}
-              title={updateLock.title}
-              loading={approve.isPending}
-              onClick={() => approve.mutate(client)}
-            >
-              Approve account
-            </Button>
+            <>
+              <Button
+                variant="danger"
+                disabled={updateLock.disabled}
+                title={updateLock.title}
+                onClick={onDecline}
+              >
+                Decline…
+              </Button>
+              <Button
+                variant="primary"
+                disabled={updateLock.disabled}
+                title={updateLock.title}
+                loading={approve.isPending}
+                onClick={() => approve.mutate(client)}
+              >
+                Approve account
+              </Button>
+            </>
           ) : client.status === 'active' ? (
             <Button
               variant="danger"

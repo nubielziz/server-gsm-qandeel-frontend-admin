@@ -5,24 +5,26 @@ import { clearView, hasFilters, parseActor, parseView, toFilters, toRefineFilter
 const params = (query: string) => new URLSearchParams(query);
 
 describe('parseView', () => {
-  it('reads the five filters', () => {
-    expect(parseView(params('q=price&actor=2&type=order&from=2026-03-01&to=2026-03-05'))).toEqual({
+  it('reads the six filters', () => {
+    expect(parseView(params('q=price&actor=2&type=order&record=48&from=2026-03-01&to=2026-03-05'))).toEqual({
       q: 'price',
       actor: '2',
       type: 'order',
+      record: '48',
       from: '2026-03-01',
       to: '2026-03-05',
     });
   });
 
   it('starts empty', () => {
-    expect(parseView(params(''))).toEqual({ q: '', actor: '', type: '', from: '', to: '' });
+    expect(parseView(params(''))).toEqual({ q: '', actor: '', type: '', record: '', from: '', to: '' });
     expect(hasFilters(parseView(params('')))).toBe(false);
   });
 
   it('drops values that cannot be right', () => {
-    expect(parseView(params('actor=admin&from=yesterday&to=2026-3-5'))).toMatchObject({
+    expect(parseView(params('actor=admin&record=7a&from=yesterday&to=2026-3-5'))).toMatchObject({
       actor: '',
+      record: '',
       from: '',
       to: '',
     });
@@ -44,6 +46,18 @@ describe('toFilters', () => {
       from: '2026-03-01',
       to: '2026-03-05',
     });
+  });
+
+  it('sends a record id only beside its type, as a number', () => {
+    expect(toFilters(parseView(params('type=merchant&record=7')))).toEqual({
+      entityType: 'merchant',
+      entityId: 7,
+    });
+    expect(toFilters(parseView(params('record=7')))).toEqual({});
+  });
+
+  it('counts a record id as a filter', () => {
+    expect(hasFilters(parseView(params('record=7')))).toBe(true);
   });
 
   it('sends nothing when nothing is chosen', () => {
@@ -70,9 +84,16 @@ describe('writeView', () => {
     expect(writeView(params('q=a&type=order'), { q: '' }).toString()).toBe('type=order');
   });
 
-  it('clears every filter but leaves other parameters', () => {
-    expect(clearView(params('q=a&actor=2&type=order&from=2026-03-01&to=2026-03-02&order=9')).toString()).toBe(
-      'order=9',
+  it('keeps the record id when other filters change, and clears it with the rest', () => {
+    expect(writeView(params('type=merchant&record=7'), { actor: '2' }).toString()).toBe(
+      'type=merchant&record=7&actor=2',
     );
+    expect(writeView(params('type=merchant&record=7'), { record: '' }).toString()).toBe('type=merchant');
+  });
+
+  it('clears every filter but leaves other parameters', () => {
+    expect(
+      clearView(params('q=a&actor=2&type=order&record=3&from=2026-03-01&to=2026-03-02&order=9')).toString(),
+    ).toBe('order=9');
   });
 });

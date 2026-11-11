@@ -38,7 +38,7 @@ describe('joinText', () => {
   });
 
   it('still says something useful when the server does not tell when the link went out', () => {
-    expect(joinText(invited, NOW)).toContain('invitation was sent');
+    expect(joinText(invited, NOW)).toContain('invitation was emailed');
   });
 });
 

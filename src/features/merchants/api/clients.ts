@@ -46,10 +46,13 @@ export function createClient(body: CreateClientBody, init?: ApiInit): Promise<Cl
 }
 
 /**
- * Changes a merchant: approve or reactivate (`status: 'active'`), suspend (`status: 'suspended'` with a `reason`) or move
- * to another price group (`groupId`). Only the fields that change are sent; the server writes the audit entry and refuses
- * a change that is not allowed.
- * Assumed contract: body `{ status?, reason?, groupId? }`, answer the updated merchant.
+ * Changes a merchant, one kind of change per call: approve or reactivate (`status: 'active'`), suspend or decline a pending
+ * application (`status: 'suspended'` with a `reason`), move to another price group (`groupId`), or edit the details (`name`,
+ * `company`, `phone`, `country`, `email`, `locale`, `address`, `taxId`, `internalNotes`; several at once). Mixing kinds is a
+ * 422 on the first key of the second kind. Changing the email cancels open links, clears verification and mails the new address.
+ * Only the fields that change are sent; the server writes the audit entry and refuses a change that is not allowed
+ * (`INVALID_TRANSITION` 409, `EMAIL_TAKEN` 409, `RATE_LIMITED` 429).
+ * Contract: body `{ status?, reason?, groupId? }` or the details, answer the updated merchant.
  * @route PATCH /admin/clients/:id
  */
 export function updateClient(id: Id, body: UpdateClientBody, init?: ApiInit): Promise<Client> {

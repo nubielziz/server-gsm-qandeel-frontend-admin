@@ -53,6 +53,39 @@ describe('the filters', () => {
     await waitFor(() => expect(countText()).toBe('6 entries'));
   });
 
+  it('filters to one record when the address names its type and id, with a chip that removes it', async () => {
+    const user = userEvent.setup();
+    const app = await openAudit('/audit?type=merchant&record=5');
+    await waitFor(() => expect(countText()).toBe('2 entries'));
+    for (const row of await entries()) expect(row).toHaveTextContent('Cairo GSM Lab');
+    expect(screen.getByText('Record #5')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove the filter on record #5' }));
+    await waitFor(() => expect(app.location()).toBe('/audit?type=merchant'));
+    await waitFor(() => expect(countText()).toBe('6 entries'));
+    expect(screen.queryByText('Record #5')).not.toBeInTheDocument();
+  });
+
+  it('drops the record when the record type changes, and Clear filters removes it too', async () => {
+    const user = userEvent.setup();
+    const app = await openAudit('/audit?type=merchant&record=5');
+    await waitFor(() => expect(countText()).toBe('2 entries'));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by record type' }), 'Order');
+    await waitFor(() => expect(app.location()).toBe('/audit?type=order'));
+    expect(screen.queryByText(/^Record #/)).not.toBeInTheDocument();
+    app.unmount();
+    const again = await openAudit('/audit?type=merchant&record=5');
+    await waitFor(() => expect(countText()).toBe('2 entries'));
+    await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+    await waitFor(() => expect(again.location()).toBe('/audit'));
+  });
+
+  it('ignores a record id that has no type beside it', async () => {
+    const app = await openAudit('/audit?record=5');
+    await waitFor(() => expect(countText()).toBe('42 entries'));
+    expect(screen.queryByText('Record #5')).not.toBeInTheDocument();
+    expect(app.location()).toBe('/audit?record=5');
+  });
+
   it('filters by days and says when nothing is in the range', async () => {
     const user = userEvent.setup();
     const app = await openAudit();

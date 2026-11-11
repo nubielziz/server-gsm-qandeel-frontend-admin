@@ -6,15 +6,29 @@ import type {
   ApiKey,
   Client,
   ClientGroup,
+  ClientLocale,
   ClientPrice,
+  ClientSecurity,
   ClientStats,
+  ClientSuspension,
   KycSubmission,
   StatementRow,
 } from '../types';
 import { buildStore } from './seed';
 
-/** A merchant as the mock keeps it: the API row without its joins, plus the wallet numbers in dollars. */
+/**
+ * A merchant as the mock keeps it: the API row without its joins, plus the wallet numbers in dollars. The keys the server always
+ * sends but the type leaves optional (`locale` to `suspension`) are required here. `security.activeSessions` is only the seed
+ * value: the routes count the open merchant sessions of the sessions mock instead (see `clientRoutes.ts`).
+ */
 export type MockClient = Omit<Client, 'group' | 'referredBy' | 'wallet' | 'stats'> & {
+  locale: ClientLocale;
+  address: string;
+  taxId: string;
+  internalNotes: string;
+  telegramLinked: boolean;
+  security: ClientSecurity;
+  suspension: ClientSuspension | null;
   referredById: number | null;
   /** The wallet balance, what is held for open orders and the credit limit, all in dollars. */
   balance: number;

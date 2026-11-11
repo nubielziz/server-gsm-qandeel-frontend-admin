@@ -2,4 +2,5 @@
 export * from './client';
 export * from './kyc';
 export * from './pricing';
+export * from './security';
 export * from './wallet';

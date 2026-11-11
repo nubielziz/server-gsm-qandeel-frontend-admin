@@ -25,14 +25,24 @@ const ZAIN = /Zain Mobile Hub/;
 type User = ReturnType<typeof userEvent.setup>;
 
 describe('tabs', () => {
-  it('shows the four tabs, opens on Orders, and keeps the chosen tab in the address', async () => {
+  it('shows the nine tabs, opens on Orders, and keeps the chosen tab in the address', async () => {
     const user = userEvent.setup();
     const app = await openMerchant(1, ZAIN);
     expect(
       sectionTabs()
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
-    ).toEqual(['Orders', 'Wallet ledger', 'Pricing', 'API access']);
+    ).toEqual([
+      'Orders',
+      'Wallet ledger',
+      'Billing',
+      'Pricing',
+      'API access',
+      'Profile',
+      'Security',
+      'Verification',
+      'Audit',
+    ]);
     expect(sectionTabs().getByRole('tab', { name: 'Orders' })).toHaveAttribute('aria-selected', 'true');
     await user.click(sectionTabs().getByRole('tab', { name: 'Wallet ledger' }));
     expect(app.location()).toBe('/merchants/1?tab=wallet');
@@ -44,6 +54,24 @@ describe('tabs', () => {
     await openMerchant(1, ZAIN, '?tab=pricing');
     expect(sectionTabs().getByRole('tab', { name: 'Pricing' })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText('Client overrides')).toBeInTheDocument();
+  });
+});
+
+describe('tabs by permission', () => {
+  it('leaves out the tabs a role cannot read, and Billing needs either invoices:read or payments:read', async () => {
+    await openMerchant(1, ZAIN, '', { permissions: ['clients:read', 'payments:read', 'audit:read'] });
+    expect(
+      sectionTabs()
+        .getAllByRole('tab')
+        .map((tab) => tab.textContent),
+    ).toEqual(['Billing', 'Profile', 'Security', 'Audit']);
+    // The first tab the role may open is the one that shows when the address names none.
+    expect(sectionTabs().getByRole('tab', { name: 'Billing' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('falls back to the first readable tab when the address names one the role cannot read', async () => {
+    await openMerchant(1, ZAIN, '?tab=audit', { permissions: ['clients:read'] });
+    expect(sectionTabs().getByRole('tab', { name: 'Profile' })).toHaveAttribute('aria-selected', 'true');
   });
 });
 

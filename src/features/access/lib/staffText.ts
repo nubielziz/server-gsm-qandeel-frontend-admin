@@ -18,7 +18,7 @@ export function joinText(staff: StaffMember, now: number = Date.now()): string {
   }
   const sent = sentAt(staff);
   if (sent === undefined) {
-    return 'An invitation was sent. If it did not arrive or has expired, send a new one from Password.';
+    return 'An invitation was emailed. If it did not arrive or has expired, send a new one from Password.';
   }
   return now - sent > HOUR_MS
     ? 'The invitation link expired. Send a new one from Password.'

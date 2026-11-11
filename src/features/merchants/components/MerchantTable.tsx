@@ -99,7 +99,17 @@ export function MerchantTable({
       key: 'status',
       label: 'Status',
       sortField: 'status',
-      render: (client) => <MerchantStatusBadge status={client.status} />,
+      render: (client) => (
+        <>
+          <MerchantStatusBadge status={client.status} />
+          {/* A merchant invited by staff who has not chosen a password yet (feature 20). */}
+          {client.security?.hasPassword === false && (
+            <p className="mt-0.5">
+              <span className="chip">Invitation pending</span>
+            </p>
+          )}
+        </>
+      ),
     },
     { key: 'wallet', label: 'Wallet', num: true, render: (client) => <WalletCell client={client} /> },
     {

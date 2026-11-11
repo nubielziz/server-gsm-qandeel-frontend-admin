@@ -4,8 +4,9 @@
 import { Collection } from '@/mocks/db';
 import { ledgerStore } from '@/mocks/ledger';
 import { orderStore } from '@/mocks/orders';
+import { sessionStore } from '@/mocks/sessions';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
-import type { ApiKey, ClientGroup, StatementRow } from '../types';
+import type { ApiKey, ClientGroup, ClientSecurity, ClientSuspension, StatementRow } from '../types';
 import { statementOf, statsOf } from './figures';
 import { kycRows } from './kycSeed';
 import type { MerchantStore, MockClient, MockPrice, MockService } from './store';
@@ -91,6 +92,7 @@ function keysOf(merchants: DemoMerchant[]): ApiKey[] {
     expiresAt: null,
     revokedAt: null,
     createdAt: toIso(Date.now() - Math.max(1, m.joined - 1) * DAY_MS),
+    createdByStaff: false,
     ...extra,
   });
   for (const m of merchants.filter((merchant) => merchant.status !== 'pending')) {
@@ -108,11 +110,47 @@ function keysOf(merchants: DemoMerchant[]): ApiKey[] {
   return keys.map((key, index) => ({ ...key, id: index + 1 }));
 }
 
+const HOUR_MS = 3_600_000;
+
+// The business details the demo has no field for, by merchant id: the first merchants carry some, the rest are empty.
+const BUSINESS: Record<number, { address: string; taxId: string; internalNotes: string }> = {
+  1: {
+    address: 'Abdali Boulevard, Amman',
+    taxId: 'JO-1234567',
+    internalNotes: 'Pays by bank transfer on Sundays.',
+  },
+  2: { address: 'Olaya Street, Riyadh', taxId: 'SA-300112233400003', internalNotes: '' },
+};
+
+/** How a merchant signs in, made up from the demo's status, last sign-in and allowed addresses. Merchant 18 was invited and has not chosen a password; 20 registered but has not verified the email. */
+function securityOf(m: DemoMerchant, id: number, created: number, sessions: number): ClientSecurity {
+  const pending = m.status === 'pending';
+  const invited = id === 18;
+  return {
+    hasPassword: !invited,
+    mustChangePassword: false,
+    passwordChangedAt: pending ? null : toIso(created + HOUR_MS),
+    twofaEnabled: !pending && id % 2 === 1,
+    lastLoginAt: m.lastSeen ? toIso(m.lastSeen) : null,
+    lastLoginIp: m.lastSeen ? (m.ips?.[0] ?? '203.0.113.201') : null,
+    activeSessions: sessions,
+    linkSentAt: invited ? toIso(Date.now() - 20 * 60_000) : null,
+    verificationSentAt: id === 20 ? toIso(Date.now() - 2 * HOUR_MS) : null,
+  };
+}
+
+/** Why a suspended merchant was stopped (the demo has no reason): shown on the page's banner. */
+const suspensionOf = (m: DemoMerchant): ClientSuspension | null =>
+  m.status === 'suspended'
+    ? { at: toIso(Date.now() - 6 * DAY_MS), reason: 'Chargeback dispute', by: { id: 1, name: 'Rami K.' } }
+    : null;
+
 /** Reads the demo state, the order mock and the ledger mock and maps them to the merchants mock stores. */
 export async function buildStore(): Promise<MerchantStore> {
   const state = await loadDemoState();
   const orders = (await orderStore()).list();
   const ledger = (await ledgerStore()).list();
+  const sessions = (await sessionStore()).list();
   const merchants = demoRows<DemoMerchant>(state, 'merchants');
   const wallet = (state.wallet ?? {}) as Record<string, number>;
   const hold = (state.hold ?? {}) as Record<string, number>;
@@ -135,6 +173,18 @@ export async function buildStore(): Promise<MerchantStore> {
       referralCode: `GSM${String(id).padStart(4, '0')}`,
       emailVerifiedAt: m.status === 'pending' ? null : toIso(created + 3_600_000),
       createdAt: toIso(created),
+      locale: 'en',
+      address: BUSINESS[id]?.address ?? '',
+      taxId: BUSINESS[id]?.taxId ?? '',
+      internalNotes: BUSINESS[id]?.internalNotes ?? '',
+      telegramLinked: id % 3 === 1,
+      security: securityOf(
+        m,
+        id,
+        created,
+        sessions.filter((s) => s.subjectType === 'client' && s.subject.id === id).length,
+      ),
+      suspension: suspensionOf(m),
       balance: wallet[m.id] ?? 0,
       reserved: hold[m.id] ?? 0,
       creditLimit: m.credit,

@@ -2,7 +2,8 @@
 import type { MerchantTab } from './status';
 
 /** The tabs of the detail page, in the order the page shows them. */
-export type DetailTab = 'orders' | 'wallet' | 'pricing' | 'api';
+export type DetailTab =
+  'orders' | 'wallet' | 'billing' | 'pricing' | 'api' | 'profile' | 'security' | 'verification' | 'audit';
 
 /** The address of one merchant's page, optionally on a tab (`/merchants/7?tab=wallet`). */
 export function merchantPath(id: number, tab?: DetailTab): string {

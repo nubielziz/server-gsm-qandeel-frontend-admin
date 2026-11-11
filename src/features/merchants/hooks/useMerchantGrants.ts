@@ -5,13 +5,15 @@ import { useMe } from '@/features/auth';
 import { hasPermission } from '@/lib/auth/permissions';
 
 /**
- * `can('wallet:adjust')` answers from the permissions in `me`. `ready` is false until `me` has loaded. `needs` gives the
- * props for a control that needs a permission: disabled, with the reason as its title, when it is missing.
+ * `can('wallet:adjust')` answers from the permissions in `me`; a list means any of them (`can(['invoices:read', 'payments:read'])`).
+ * `ready` is false until `me` has loaded. `needs` gives the props for a control that needs a permission: disabled, with the
+ * reason as its title, when it is missing.
  */
 export function useMerchantGrants() {
   const { data: me } = useMe();
   return useMemo(() => {
-    const can = (permission: string) => me !== undefined && hasPermission(me.permissions, permission);
+    const can = (permission: string | readonly string[]) =>
+      me !== undefined && hasPermission(me.permissions, permission);
     return {
       me,
       ready: me !== undefined,

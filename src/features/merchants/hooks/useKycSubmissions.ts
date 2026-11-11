@@ -9,12 +9,22 @@ import type { KycFilter } from '../lib/filters';
 import type { KycDecisionBody, KycListFilters, KycSubmission } from '../types';
 import { CLIENT_STALE_KEYS, REFRESH_MS } from './keys';
 
-/** What the request list needs: the status filter, the page and the page size. */
-export type KycListArgs = { filter: KycFilter; page: number; pageSize: number; enabled?: boolean };
+/** What the request list needs: the status filter, the page and the page size, and optionally one merchant's id. */
+export type KycListArgs = {
+  filter: KycFilter;
+  page: number;
+  pageSize: number;
+  /** Only this merchant's requests (the Verification tab of a merchant's page). */
+  clientId?: number;
+  enabled?: boolean;
+};
 
-/** One page of requests of the chosen status, newest first. Pending requests are the work to do, so they also refresh by themselves. */
-export function useKycList({ filter, page, pageSize, enabled = true }: KycListArgs) {
-  const filters: KycListFilters = filter === 'all' ? {} : { status: filter };
+/** One page of requests of the chosen status (of one merchant when `clientId` is given), newest first. Pending requests are the work to do, so they also refresh by themselves. */
+export function useKycList({ filter, page, pageSize, clientId, enabled = true }: KycListArgs) {
+  const filters: KycListFilters = {
+    ...(filter === 'all' ? {} : { status: filter }),
+    ...(clientId === undefined ? {} : { clientId }),
+  };
   const { result, query } = useList<KycSubmission>({
     resource: 'kyc-submissions',
     pagination: { currentPage: page, pageSize },

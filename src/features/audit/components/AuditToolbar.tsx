@@ -1,7 +1,7 @@
 // AuditToolbar: the search box, the "who" and record-type filters, the date range, Clear filters and the live entry count
 // above the audit list. Ports the `toolbar` of pageAudit in 47-p-audit.js (the date range is new). The search text is sent
 // after a pause.
-import { Button, SearchInput, SelectField, TableToolbar, useDebouncedCommit } from '@/components/ui';
+import { Button, Icon, SearchInput, SelectField, TableToolbar, useDebouncedCommit } from '@/components/ui';
 import { num } from '@/lib/format';
 import type { AuditActor } from '../hooks/useAuditActors';
 import { ENTITY_KINDS, entityTypeLabel } from '../lib/entities';
@@ -59,8 +59,20 @@ export function AuditToolbar({ view, actors, onChange, onClear, total }: AuditTo
         aria-label="Filter by record type"
         value={view.type}
         options={typeOptions(view)}
-        onChange={(event) => onChange({ type: event.target.value })}
+        // Another record type makes the record id meaningless, so it goes.
+        onChange={(event) => onChange({ type: event.target.value, record: '' })}
       />
+      {view.type && view.record && (
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Remove the filter on record #${view.record}`}
+          onClick={() => onChange({ record: '' })}
+        >
+          <span className="chip">Record #{view.record}</span>
+          <Icon name="x" className="ic-xs" />
+        </Button>
+      )}
       {/* A range that runs backwards cannot be typed: each date limits the other. */}
       <input
         type="date"

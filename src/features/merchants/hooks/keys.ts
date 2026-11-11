@@ -15,6 +15,14 @@ export const STATEMENT_KEY = ['api', 'merchants', 'statement'] as const;
 /** The API keys of each merchant. */
 export const API_KEYS_KEY = ['api', 'merchants', 'api-keys'] as const;
 
+/** The open sessions of each merchant (the Security tab's list). */
+export const MERCHANT_SESSIONS_KEY = ['api', 'merchants', 'sessions'] as const;
+
+/** One merchant's invoices and deposits (the Billing tab), and the audit entries about one merchant (the Audit tab). */
+export const MERCHANT_INVOICES_KEY = ['api', 'merchants', 'invoices'] as const;
+export const MERCHANT_PAYMENTS_KEY = ['api', 'merchants', 'payments'] as const;
+export const MERCHANT_AUDIT_KEY = ['api', 'merchants', 'audit'] as const;
+
 /** The journal entries behind the statement's "View journal" button. */
 export const JOURNAL_KEY = ['api', 'merchants', 'journal'] as const;
 

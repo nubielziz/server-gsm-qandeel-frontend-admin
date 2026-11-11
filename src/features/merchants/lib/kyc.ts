@@ -1,6 +1,6 @@
 // The words and looks of verification (KYC) requests, and how an uploaded document is named. A screen the demo lacks (MISMATCHES M47).
 import type { BadgeTone, IconName } from '@/components/ui';
-import type { KycFile, KycSubmissionStatus } from '../types';
+import type { ClientKycStatus, KycFile, KycSubmissionStatus } from '../types';
 import type { KycFilter } from './filters';
 
 export const KYC_BADGE: Readonly<
@@ -8,6 +8,16 @@ export const KYC_BADGE: Readonly<
 > = {
   pending: { tone: 'warn', icon: 'clock', label: 'Pending' },
   approved: { tone: 'good', icon: 'checkCircle', label: 'Approved' },
+  rejected: { tone: 'crit', icon: 'xCircle', label: 'Rejected' },
+};
+
+/** How a merchant's current verification state looks in the Verification tab: not submitted, in review, verified or rejected. */
+export const CLIENT_KYC_BADGE: Readonly<
+  Record<ClientKycStatus, { tone: BadgeTone; icon: IconName; label: string }>
+> = {
+  none: { tone: 'neutral', icon: 'info', label: 'Not submitted' },
+  pending: { tone: 'warn', icon: 'clock', label: 'In review' },
+  approved: { tone: 'good', icon: 'checkCircle', label: 'Verified' },
   rejected: { tone: 'crit', icon: 'xCircle', label: 'Rejected' },
 };
 

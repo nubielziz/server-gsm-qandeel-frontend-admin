@@ -7,17 +7,25 @@ import { ApiError } from '@/lib/api';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { installMerchantMocks } from '../test/installMerchantMocks';
+import { listSessions } from '@/features/access';
 import {
   adjustClientWallet,
   createClient,
+  createClientApiKey,
   downloadClientStatement,
   getClient,
   getClientWallet,
   listClientApiKeys,
   listClients,
+  listKycSubmissions,
   listClientStatement,
+  resendClientVerification,
+  resetClientTwoFactor,
   revokeApiKey,
+  revokeClientSessions,
   setClientCreditLimit,
+  setClientPassword,
+  updateApiKey,
   updateClient,
 } from '.';
 
@@ -345,5 +353,308 @@ describe('API keys', () => {
     const seen = spy('delete', '/admin/api-keys/7', () => new HttpResponse(null, { status: 204 }));
     await revokeApiKey(7);
     expect(seen[0]).toMatchObject({ method: 'DELETE', path: '/admin/api-keys/7' });
+  });
+});
+
+describe('merchant details', () => {
+  it('carries the keys of feature 20: language, business details, notes, sign-in facts and the suspension', async () => {
+    const zain = await getClient(ZAIN);
+    expect(zain).toMatchObject({
+      locale: 'en',
+      address: 'Abdali Boulevard, Amman',
+      taxId: 'JO-1234567',
+      internalNotes: 'Pays by bank transfer on Sundays.',
+      telegramLinked: true,
+      suspension: null,
+      security: {
+        hasPassword: true,
+        mustChangePassword: false,
+        twofaEnabled: true,
+        activeSessions: 1,
+        linkSentAt: null,
+      },
+    });
+    expect((await getClient(PENDING)).security).toMatchObject({ hasPassword: false });
+    expect((await getClient(19)).suspension).toMatchObject({
+      reason: 'Chargeback dispute',
+      by: { name: 'Rami K.' },
+    });
+  });
+
+  it('sends the details with the sent keys only and the mock applies them', async () => {
+    const updated = await updateClient(ZAIN, { company: 'Zain Hub LLC', locale: 'ar', taxId: '' });
+    expect(updated).toMatchObject({ company: 'Zain Hub LLC', locale: 'ar', taxId: '' });
+    expect((await getClient(ZAIN)).company).toBe('Zain Hub LLC');
+  });
+
+  it('cleans the name, the country and the email like the server', async () => {
+    const updated = await updateClient(ZAIN, {
+      name: '  Zain   Hub ',
+      country: 'sa',
+      email: 'New@Zain.example',
+    });
+    expect(updated).toMatchObject({ name: 'Zain Hub', country: 'SA', email: 'new@zain.example' });
+  });
+
+  it('clears verification and opens a new link when the email changes', async () => {
+    const updated = await updateClient(ZAIN, { email: 'fresh@zain.example' });
+    expect(updated.emailVerifiedAt).toBeNull();
+    expect(updated.security?.verificationSentAt).not.toBeNull();
+    // An invited merchant with no password gets the invitation again instead.
+    const invited = await updateClient(PENDING, { email: 'fresh@algiers.example' });
+    expect(invited.security).toMatchObject({ hasPassword: false });
+    expect(invited.security?.linkSentAt).not.toBeNull();
+    expect(invited.security?.verificationSentAt).toBeNull();
+  });
+
+  it('refuses a taken email with EMAIL_TAKEN, a mix of kinds and an empty change with a 422', async () => {
+    const other = (await getClient(2)).email;
+    await expect(updateClient(ZAIN, { email: other })).rejects.toMatchObject({
+      status: 409,
+      code: 'EMAIL_TAKEN',
+    });
+    await expect(updateClient(ZAIN, { email: 'OPS@zainmobilehub.example' })).resolves.toMatchObject({
+      id: ZAIN,
+    });
+    await expect(updateClient(ZAIN, { groupId: 2, taxId: 'X' })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { taxId: ['Send one change at a time: a status, a group or details.'] },
+    });
+    await expect(
+      updateClient(ZAIN, { status: 'suspended', reason: 'Fraud review', name: 'Other' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { name: ['Send one change at a time: a status, a group or details.'] },
+    });
+    await expect(updateClient(ZAIN, {})).rejects.toMatchObject({ status: 422 });
+  });
+
+  it('refuses a detail over its limit or in a bad shape with a message on its field', async () => {
+    await expect(
+      updateClient(ZAIN, {
+        name: ' ',
+        country: 'JOR',
+        email: 'nope',
+        taxId: 'x'.repeat(41),
+        locale: 'fr' as never,
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: {
+        name: ['Enter a name.'],
+        country: ['Enter the two-letter country code.'],
+        email: ['Enter a valid email address.'],
+        taxId: ['Use at most 40 characters.'],
+        locale: ['Choose English or Arabic.'],
+      },
+    });
+  });
+
+  it('follows the status rules: decline a pending merchant, refuse a status that is not a transition', async () => {
+    const declined = await updateClient(PENDING, { status: 'suspended', reason: 'Documents do not match' });
+    expect(declined).toMatchObject({
+      status: 'suspended',
+      suspension: { reason: 'Documents do not match', by: { name: 'Rami K.' } },
+    });
+    expect((await updateClient(PENDING, { status: 'active' })).suspension).toBeNull();
+    await expect(updateClient(ZAIN, { status: 'active' })).rejects.toMatchObject({
+      status: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    await expect(updateClient(ZAIN, { status: 'suspended', reason: 'x' })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { reason: ['Use 3 to 140 characters.'] },
+    });
+  });
+
+  it('ends the merchant’s sessions and cancels open links when suspended', async () => {
+    const before = await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } });
+    expect(before.total).toBe(1);
+    await updateClient(ZAIN, { status: 'suspended', reason: 'Fraud review' });
+    expect((await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } })).total).toBe(0);
+    expect((await getClient(ZAIN)).security?.activeSessions).toBe(0);
+  });
+});
+
+describe('security tools', () => {
+  it('uses the routes and bodies of the backend contract', async () => {
+    const calls = [
+      spy('post', `/admin/clients/${ZAIN}/password`, () => HttpResponse.json({ link: 'reset' })),
+      spy('post', `/admin/clients/${ZAIN}/reset-2fa`, () => new HttpResponse(null, { status: 204 })),
+      spy('post', `/admin/clients/${ZAIN}/sessions/revoke`, () => new HttpResponse(null, { status: 204 })),
+      spy(
+        'post',
+        `/admin/clients/${ZAIN}/verify-email/resend`,
+        () => new HttpResponse(null, { status: 204 }),
+      ),
+    ];
+    expect(await setClientPassword(ZAIN, { mode: 'reset_link', revokeSessions: false })).toEqual({
+      link: 'reset',
+    });
+    await resetClientTwoFactor(ZAIN);
+    await revokeClientSessions(ZAIN);
+    await resendClientVerification(ZAIN);
+    expect(calls[0][0]).toMatchObject({
+      method: 'POST',
+      body: { mode: 'reset_link', revokeSessions: false },
+    });
+    expect(calls[1][0]).toMatchObject({ method: 'POST', body: undefined });
+    expect(calls[2][0]).toMatchObject({ method: 'POST', body: undefined });
+    expect(calls[3][0]).toMatchObject({ method: 'POST', body: undefined });
+  });
+
+  it('answers the link mode with which mail went out and the temporary mode with the password once', async () => {
+    expect(await setClientPassword(PENDING, { mode: 'reset_link', revokeSessions: false })).toEqual({
+      link: 'invite',
+    });
+    expect(await setClientPassword(ZAIN, { mode: 'reset_link', revokeSessions: false })).toEqual({
+      link: 'reset',
+    });
+    const temporary = await setClientPassword(ZAIN, { mode: 'temporary_password', revokeSessions: true });
+    expect(temporary.temporaryPassword).toMatch(/^[A-Za-z0-9]{14}$/);
+    expect(temporary.link).toBeUndefined();
+    expect((await getClient(ZAIN)).security).toMatchObject({ mustChangePassword: true, activeSessions: 0 });
+  });
+
+  it('refuses what the server refuses: a suspended merchant, 2FA that is off, a verified email', async () => {
+    await expect(setClientPassword(19, { mode: 'reset_link', revokeSessions: false })).rejects.toMatchObject({
+      status: 409,
+      code: 'NOT_ACTIVE',
+    });
+    await resetClientTwoFactor(ZAIN);
+    await expect(resetClientTwoFactor(ZAIN)).rejects.toMatchObject({
+      status: 409,
+      code: 'TWOFA_NOT_ENABLED',
+    });
+    await expect(resendClientVerification(ZAIN)).rejects.toMatchObject({ status: 409, code: 'CONFLICT' });
+    await resendClientVerification(EMPTY_WALLET);
+    expect((await getClient(EMPTY_WALLET)).security?.verificationSentAt).not.toBeNull();
+    await expect(
+      setClientPassword(9999, { mode: 'reset_link', revokeSessions: false }),
+    ).rejects.toMatchObject({
+      status: 404,
+    });
+    await expect(
+      setClientPassword(ZAIN, { mode: 'nope' as never, revokeSessions: false }),
+    ).rejects.toMatchObject({
+      status: 422,
+    });
+  });
+
+  it('lists one merchant’s sessions with subjectId, and needs subjectType beside it', async () => {
+    const mine = await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } });
+    expect(mine.data.map((session) => session.subject.id)).toEqual([ZAIN]);
+    await expect(listSessions({ filters: { subjectId: ZAIN } })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { subjectId: ['Send subjectType together with subjectId.'] },
+    });
+    await revokeClientSessions(ZAIN);
+    expect((await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } })).total).toBe(0);
+  });
+});
+
+describe('staff-made API keys', () => {
+  it('creates a key for an active merchant: the secret once, the row marked as made by staff', async () => {
+    const created = await createClientApiKey(ZAIN, {
+      name: 'Support key',
+      scopes: ['orders:read', 'orders:*'],
+      allowedIps: ['203.0.113.9'],
+      rateLimitPerMin: 300,
+    });
+    expect(created.secret).toMatch(/^gsm_[A-Za-z0-9]{44}$/);
+    expect(created.key).toMatchObject({
+      clientId: ZAIN,
+      name: 'Support key',
+      prefix: created.secret.slice(0, 8),
+      scopes: ['orders:read', 'orders:*'],
+      allowedIps: ['203.0.113.9'],
+      rateLimitPerMin: 300,
+      createdByStaff: true,
+      revokedAt: null,
+    });
+    const keys = await listClientApiKeys(ZAIN);
+    expect(keys[0].id).toBe(created.key.id);
+    expect(JSON.stringify(keys)).not.toContain(created.secret);
+  });
+
+  it('refuses a merchant who is not active, bad entries and the eleventh live key', async () => {
+    await expect(createClientApiKey(PENDING, { name: 'K', scopes: ['orders:read'] })).rejects.toMatchObject({
+      status: 409,
+      code: 'NOT_ACTIVE',
+    });
+    await expect(
+      createClientApiKey(ZAIN, {
+        name: '',
+        scopes: ['orders:read', 'admin:*'],
+        allowedIps: ['nope'],
+        rateLimitPerMin: 7000,
+        expiresAt: '2000-01-01T00:00:00.000Z',
+      }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: {
+        name: ['Name the key.'],
+        'scopes.1': expect.any(Array),
+        'allowedIps.0': ['Enter an IP address or range.'],
+        rateLimitPerMin: ['Use at most 6000.'],
+        expiresAt: ['Use a time in the future.'],
+      },
+    });
+    // Zain holds two live keys (Production, Staging); eight more reach ten.
+    for (let n = 0; n < 8; n += 1) {
+      await createClientApiKey(ZAIN, { name: `Key ${n}`, scopes: ['dhru'] });
+    }
+    await expect(createClientApiKey(ZAIN, { name: 'One too many', scopes: ['dhru'] })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { name: ['This merchant already has 10 live keys. Revoke one first.'] },
+    });
+  });
+
+  it('changes the limit and the addresses of a live key, and refuses a revoked key', async () => {
+    const [, , production] = await listClientApiKeys(ZAIN);
+    const updated = await updateApiKey(production.id, { rateLimitPerMin: 300, allowedIps: [] });
+    expect(updated).toMatchObject({ id: production.id, rateLimitPerMin: 300, allowedIps: [] });
+    expect((await listClientApiKeys(ZAIN)).find((key) => key.id === production.id)).toMatchObject({
+      rateLimitPerMin: 300,
+    });
+    await expect(updateApiKey(production.id, {})).rejects.toMatchObject({ status: 422 });
+    await expect(updateApiKey(production.id, { rateLimitPerMin: 0 })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { rateLimitPerMin: ['Use at least 1.'] },
+    });
+    await revokeApiKey(production.id);
+    await expect(updateApiKey(production.id, { rateLimitPerMin: 10 })).rejects.toMatchObject({
+      status: 409,
+      code: 'ALREADY_REVOKED',
+    });
+    await expect(updateApiKey(9999, { rateLimitPerMin: 10 })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('uses the routes of the backend contract', async () => {
+    const seen = spy('patch', '/admin/api-keys/7', () => HttpResponse.json({ id: 7 }));
+    await updateApiKey(7, { rateLimitPerMin: 300 });
+    expect(seen[0]).toMatchObject({
+      method: 'PATCH',
+      path: '/admin/api-keys/7',
+      body: { rateLimitPerMin: 300 },
+    });
+    const created = spy('post', '/admin/clients/7/api-keys', () =>
+      HttpResponse.json({ key: { id: 1 }, secret: 's' }),
+    );
+    await createClientApiKey(7, { name: 'K', scopes: ['dhru'] });
+    expect(created[0]).toMatchObject({
+      method: 'POST',
+      path: '/admin/clients/7/api-keys',
+      body: { name: 'K', scopes: ['dhru'] },
+    });
+  });
+});
+
+describe('verification requests of one merchant', () => {
+  it('filters by clientId', async () => {
+    const mine = await listKycSubmissions({ filters: { clientId: PENDING } });
+    expect(mine.total).toBe(1);
+    expect(mine.data[0].client.id).toBe(PENDING);
+    expect((await listKycSubmissions({ filters: { clientId: 5 } })).total).toBe(0);
   });
 });

@@ -1,7 +1,7 @@
 // Public surface of the access feature: the `/admin/staff`, `/admin/ip-rules`, `/admin/roles`, `/admin/permissions`,
 // `/admin/sessions` and `/admin/access/restriction` API functions, their types, the hooks, the data-provider registry
 // and the IP helpers. "Block IP", the "Blocked" chip and the show-once temporary password dialog are exported too, for
-// the customers page. The page itself is not re-exported here: it loads lazily from `./pages`.
+// the customers page (and the merchants page, which also uses `describeUserAgent`). The page itself is not re-exported here: it loads lazily from `./pages`.
 export * from './api';
 export * from './components/BlockIpDialog';
 export * from './components/IpVerdictChip';
@@ -19,4 +19,5 @@ export * from './hooks/useStaffMember';
 export * from './hooks/useStaffMutations';
 export * from './lib/ip';
 export * from './lib/ipRules';
+export * from './lib/userAgent';
 export * from './types';
