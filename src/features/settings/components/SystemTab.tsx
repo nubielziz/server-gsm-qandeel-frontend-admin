@@ -1,5 +1,5 @@
-// SystemTab: the "System" tab, one the demo lacks: the settings keys this console knows (a typed form each), the ones another page edits
-// (shown with a link), and every other key as read-only JSON. `GET /admin/settings` is one flat object (assumed contract); each save is a
+// SystemTab: the "System" tab, one the demo lacks: the settings keys this console knows (a typed form each), the Customer wallet
+// panel (feature 21), the ones another page edits (shown with a link), and every other key as read-only JSON. `GET /admin/settings` is one flat object (assumed contract); each save is a
 // `PATCH /admin/settings` with that key alone.
 import { useState } from 'react';
 import { Badge, ButtonLink, Panel, QueryState, SkeletonTable } from '@/components/ui';
@@ -10,6 +10,7 @@ import { jsonText } from '../lib/logs';
 import { policyMessage } from '../lib/policies';
 import { fieldText, KNOWN_SETTINGS, LINKED_SETTINGS, unknownSettings } from '../lib/system';
 import { SettingField } from './SettingField';
+import { WalletSettingsPanel } from './WalletSettingsPanel';
 
 /** The three groups of settings. */
 export function SystemTab() {
@@ -21,7 +22,7 @@ export function SystemTab() {
   const other = unknownSettings(settings.data);
 
   // Saves one key; the server's refusal stays under that key until the next try.
-  const saveOne = (key: string, value: number) => {
+  const saveOne = (key: string, value: number | boolean) => {
     setErrors((current) => ({ ...current, [key]: '' }));
     save.mutate(
       { [key]: value },
@@ -77,6 +78,15 @@ export function SystemTab() {
           </ul>
         </QueryState>
       </Panel>
+      {settings.isSuccess && (
+        <WalletSettingsPanel
+          settings={settings.data}
+          lock={lock}
+          savingKey={save.isPending && save.variables ? Object.keys(save.variables)[0] : undefined}
+          errors={errors}
+          onSave={saveOne}
+        />
+      )}
       {settings.isSuccess && (
         <Panel
           title="Other settings"

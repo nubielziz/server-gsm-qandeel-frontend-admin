@@ -233,6 +233,35 @@ describe('adjust wallet', () => {
     expect(body).toEqual({ amount: '1000.5000', direction: 'debit', reason: 'Duplicate top-up' });
   });
 
+  it('sends one Idempotency-Key for every retry of one opening, and a new one for the next opening', async () => {
+    const user = userEvent.setup();
+    const keys: (string | null)[] = [];
+    mockServer.use(
+      http.post('*/admin/clients/:id/wallet/adjust', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key'));
+        return problem(409, 'X', 'Stop', 'Stopped here.');
+      }),
+    );
+    let dialog = await openAdjust(user);
+    await user.type(within(dialog).getByLabelText('Amount (USD)'), '25');
+    await user.type(within(dialog).getByLabelText('Reason'), 'Refund for duplicate charge');
+    await user.click(within(dialog).getByRole('button', { name: 'Post adjustment' }));
+    await within(dialog).findByText('Stopped here.');
+    await user.click(within(dialog).getByRole('button', { name: 'Post adjustment' }));
+    await waitFor(() => expect(keys).toHaveLength(2));
+    expect(keys[0]).toMatch(/\S+/);
+    expect(keys[1]).toBe(keys[0]);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Adjust wallet…' }));
+    dialog = await screen.findByRole('dialog', { name: 'Adjust wallet' });
+    await user.type(within(dialog).getByLabelText('Amount (USD)'), '25');
+    await user.type(within(dialog).getByLabelText('Reason'), 'Refund for duplicate charge');
+    await user.click(within(dialog).getByRole('button', { name: 'Post adjustment' }));
+    await waitFor(() => expect(keys).toHaveLength(3));
+    expect(keys[2]).not.toBe(keys[0]);
+  });
+
   it('shows the server’s refusal when a debit would pass the credit limit, and posts nothing', async () => {
     const user = userEvent.setup();
     const dialog = await openAdjust(user);

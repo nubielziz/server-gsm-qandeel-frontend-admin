@@ -2,10 +2,10 @@
 // the field's range before the request (a hint); the server's own message for the key shows under the box.
 import { useState } from 'react';
 import { Button } from '@/components/ui';
-import { settingProblem, type SettingSpec } from '../lib/system';
+import { settingProblem, type NumberSetting } from '../lib/system';
 
 export interface SettingFieldProps {
-  spec: SettingSpec;
+  spec: NumberSetting;
   /** The saved value as text; empty when the server has not set it. */
   saved: string;
   lock: { disabled: boolean; title?: string };
@@ -50,7 +50,7 @@ export function SettingField({ spec, saved, lock, saving, error, onSave }: Setti
             inputMode="numeric"
             autoComplete="off"
             value={text}
-            placeholder="–"
+            placeholder={spec.fallback === undefined ? '–' : String(spec.fallback)}
             disabled={lock.disabled}
             title={lock.title}
             aria-invalid={message ? true : undefined}

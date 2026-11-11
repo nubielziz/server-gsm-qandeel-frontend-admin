@@ -3,23 +3,38 @@
 import { useQueries } from '@tanstack/react-query';
 import { useApiQuery } from '@/lib/query';
 import { listPayments } from '../api';
-import { PAYMENT_FILTERS, paymentListFilters, type PaymentFilter } from '../lib/paymentView';
+import {
+  PAYMENT_FILTERS,
+  paymentListFilters,
+  type PaymentFilter,
+  type PaymentOwnerFilter,
+} from '../lib/paymentView';
 import { PAYMENT_COUNTS_KEY, REFRESH_MS } from './keys';
 
 export type PaymentCounts = Partial<Record<PaymentFilter, number>>;
 
 // How many deposits a sub-tab would list: the list call asked for one row, read from the total.
-async function countOf(filter: PaymentFilter, signal: AbortSignal): Promise<number> {
-  const { total } = await listPayments({ filters: paymentListFilters(filter), start: 0, end: 1 }, { signal });
+async function countOf(
+  filter: PaymentFilter,
+  owner: PaymentOwnerFilter,
+  signal: AbortSignal,
+): Promise<number> {
+  const { total } = await listPayments(
+    { filters: paymentListFilters(filter, owner), start: 0, end: 1 },
+    { signal },
+  );
   return total;
 }
 
-/** `enabled` is false until the staff member's permissions are known, or without `payments:read`. */
-export function usePaymentCounts(enabled = true): PaymentCounts {
+/**
+ * `enabled` is false until the staff member's permissions are known, or without `payments:read`. `owner` counts only
+ * merchants' or only customers' top-ups (feature 21), so each number is what its sub-tab lists.
+ */
+export function usePaymentCounts(enabled = true, owner: PaymentOwnerFilter = 'all'): PaymentCounts {
   const results = useQueries({
     queries: PAYMENT_FILTERS.map((filter) => ({
-      queryKey: [...PAYMENT_COUNTS_KEY, filter.id],
-      queryFn: ({ signal }: { signal: AbortSignal }) => countOf(filter.id, signal),
+      queryKey: [...PAYMENT_COUNTS_KEY, owner, filter.id],
+      queryFn: ({ signal }: { signal: AbortSignal }) => countOf(filter.id, owner, signal),
       enabled,
       refetchInterval: REFRESH_MS,
     })),
@@ -38,8 +53,8 @@ export function usePaymentCounts(enabled = true): PaymentCounts {
  */
 export function usePendingDeposits(enabled = true) {
   return useApiQuery({
-    queryKey: [...PAYMENT_COUNTS_KEY, 'pending'],
-    queryFn: ({ signal }) => countOf('pending', signal),
+    queryKey: [...PAYMENT_COUNTS_KEY, 'all', 'pending'],
+    queryFn: ({ signal }) => countOf('pending', 'all', signal),
     enabled,
     refetchInterval: REFRESH_MS,
   });

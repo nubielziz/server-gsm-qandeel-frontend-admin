@@ -67,10 +67,11 @@ export const METHOD_LABEL: Readonly<Record<PaymentMethod, string>> = {
   card: 'Card (3DS)',
   wallet: 'Apple / Google Pay',
   crypto: 'Crypto (USDT / BTC)',
+  balance: 'Store balance',
 };
 
 /** The comparison table lists the methods in this order. */
-export const PAYMENT_METHODS: readonly PaymentMethod[] = ['card', 'wallet', 'crypto'];
+export const PAYMENT_METHODS: readonly PaymentMethod[] = ['card', 'wallet', 'crypto', 'balance'];
 
 export function isPaymentMethod(value: unknown): value is PaymentMethod {
   return PAYMENT_METHODS.some((method) => method === value);
@@ -96,4 +97,5 @@ export const METHOD_FILTERS: readonly { value: PaymentMethod | ''; label: string
   { value: 'card', label: 'Card' },
   { value: 'wallet', label: 'Apple / Google Pay' },
   { value: 'crypto', label: 'Crypto' },
+  { value: 'balance', label: 'Store balance' },
 ];

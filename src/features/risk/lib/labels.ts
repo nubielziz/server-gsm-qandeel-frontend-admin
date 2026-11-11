@@ -78,6 +78,7 @@ export const PAYMENT_LABEL: Readonly<Record<PaymentMethod, string>> = {
   card: 'Card (3DS)',
   wallet: 'Apple / Google Pay',
   crypto: 'Crypto (USDT / BTC)',
+  balance: 'Store balance',
 };
 
 /** The badge of a customer's risk level, shown as "Medium risk". */

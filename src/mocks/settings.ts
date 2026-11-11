@@ -12,7 +12,12 @@ export function settingsStore(): Promise<MockSettings> {
   store ??= loadDemoState().then((state) => {
     const access = state.access as { restrict?: boolean } | undefined;
     const settings = state.settings as { policies?: Record<string, unknown> } | undefined;
-    return { ...settings?.policies, adminAllowlistOnly: access?.restrict ?? false };
+    // The customer store balance is on, as the backend's development seed leaves it (feature 21).
+    return {
+      ...settings?.policies,
+      adminAllowlistOnly: access?.restrict ?? false,
+      'wallet.customer.enabled': true,
+    };
   });
   return store;
 }

@@ -17,6 +17,8 @@ afterEach(() => vi.restoreAllMocks());
 
 const SYSTEM = '/settings?tab=system';
 const retention = () => screen.getByRole('textbox', { name: /^IMEI retention/ });
+// The Save button of the IMEI retention row (the Customer wallet panel has Save buttons of its own).
+const save = () => within(retention().closest('li') as HTMLElement).getByRole('button', { name: 'Save' });
 
 describe('the typed settings', () => {
   it('shows the saved number, and Save wakes up when it changes', async () => {
@@ -24,9 +26,9 @@ describe('the typed settings', () => {
     await openSettings(SYSTEM);
     await screen.findByRole('textbox', { name: /^IMEI retention/ });
     expect(retention()).toHaveValue('180');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(save()).toBeDisabled();
     await user.type(retention(), '0');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+    expect(save()).toBeEnabled();
   });
 
   it('saves the one key and shows the new value', async () => {
@@ -36,7 +38,7 @@ describe('the typed settings', () => {
     await screen.findByRole('textbox', { name: /^IMEI retention/ });
     await user.clear(retention());
     await user.type(retention(), '90');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(save());
     expect(await screen.findByText('Setting saved')).toBeInTheDocument();
     expect(recorder.to('PATCH', '/admin/settings')[0].body).toEqual({ imeiRetentionDays: 90 });
     expect((await getSettings()).imeiRetentionDays).toBe(90);
@@ -50,7 +52,7 @@ describe('the typed settings', () => {
     await screen.findByRole('textbox', { name: /^IMEI retention/ });
     await user.clear(retention());
     await user.type(retention(), '5000');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(save());
     expect(await screen.findByText('Enter 0 to 3650.')).toBeInTheDocument();
     expect(recorder.to('PATCH', '/admin/settings')).toHaveLength(0);
   });
@@ -68,7 +70,7 @@ describe('the typed settings', () => {
     await screen.findByRole('textbox', { name: /^IMEI retention/ });
     await user.clear(retention());
     await user.type(retention(), '10');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(save());
     expect(await screen.findByText('Our legal minimum is 30 days.')).toBeInTheDocument();
     expect(retention()).toHaveAttribute('aria-invalid', 'true');
     expect((await getSettings()).imeiRetentionDays).toBe(180);
@@ -122,6 +124,6 @@ describe('permissions', () => {
     await screen.findByRole('textbox', { name: /^IMEI retention/ });
     expect(retention()).toBeDisabled();
     expect(retention()).toHaveAttribute('title', 'You need the settings:update permission');
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(save()).toBeDisabled();
   });
 });

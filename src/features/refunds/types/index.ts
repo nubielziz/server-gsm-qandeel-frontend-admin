@@ -7,8 +7,11 @@ import type { DisputeRow, PaymentRow, RefundRow } from '@/lib/api/schema.gen';
 
 // ---- Payments ----
 
-/** How a storefront customer paid (the demo's `B2C_METHODS`): card, Apple / Google Pay, or crypto. */
-export type PaymentMethod = 'card' | 'wallet' | 'crypto';
+/**
+ * How a storefront customer paid (the demo's `B2C_METHODS`): card, Apple / Google Pay, or crypto; since feature 21 also
+ * `balance`, the customer's store balance (no gateway and no fee: a refund goes back to the balance at once).
+ */
+export type PaymentMethod = 'card' | 'wallet' | 'crypto' | 'balance';
 
 /** What happened to a payment since it was captured (the demo's `PAY_STATUS`). */
 export type PaymentStatus = 'captured' | 'refunded' | 'partial_refund' | 'disputed' | 'chargeback';

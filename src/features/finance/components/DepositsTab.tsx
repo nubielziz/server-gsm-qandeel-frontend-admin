@@ -17,9 +17,10 @@ export function DepositsTab({ grants }: { grants: FinanceGrants }) {
   const view = usePaymentView();
   const dialog = useOpenRecord('payment');
   const now = useNow();
-  const counts = usePaymentCounts(grants.ready);
+  const counts = usePaymentCounts(grants.ready, view.owner);
   const list = usePaymentsList({
     filter: view.filter,
+    owner: view.owner,
     page: view.page,
     pageSize: PAGE_SIZE,
     sort: view.sort,
@@ -35,7 +36,13 @@ export function DepositsTab({ grants }: { grants: FinanceGrants }) {
 
   return (
     <>
-      <PaymentFilterBar value={view.filter} counts={counts} onChange={view.setFilter} />
+      <PaymentFilterBar
+        value={view.filter}
+        counts={counts}
+        onChange={view.setFilter}
+        owner={view.owner}
+        onOwnerChange={view.setOwner}
+      />
       <div className="border-t border-line">
         <PaymentTable
           rows={list.payments}

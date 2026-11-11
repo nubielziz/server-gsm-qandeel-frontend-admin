@@ -23,12 +23,12 @@ const subTab = (name: RegExp | string) =>
 describe('the queue', () => {
   it('opens on Pending with the count of every sub-tab, and no Status column', async () => {
     const app = await openFinance('/finance?tab=payments');
-    expect(await screen.findByRole('button', { name: 'Pending 6' })).toHaveAttribute('aria-pressed', 'true');
-    expect(await screen.findByRole('button', { name: 'Approved 46' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Pending 7' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByRole('button', { name: 'Approved 47' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rejected 2' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'All 54' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All 56' })).toBeInTheDocument();
     const table = await tableNamed('Deposits');
-    expect(table.getAllByRole('row')).toHaveLength(7); // the header and six deposits
+    expect(table.getAllByRole('row')).toHaveLength(8); // the header and seven deposits
     expect(table.queryByRole('columnheader', { name: /Status/ })).not.toBeInTheDocument();
     const large = await rowWith('Deposits', 'PAY-1048');
     expect(large.getByText('Phone Doctor FZE')).toBeInTheDocument();
@@ -101,9 +101,9 @@ describe('the review dialog', () => {
       screen.getByText(/\$2,475\.00 credited to Phone Doctor FZE\. Wallet is now \$/),
     ).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog', { name: /PAY-1048/ })).not.toBeInTheDocument());
-    expect(await screen.findByRole('button', { name: 'Pending 5' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Approved 47' })).toBeInTheDocument();
-    expect(financeTabs().getByRole('tab', { name: /Deposits/ })).toHaveTextContent('5');
+    expect(await screen.findByRole('button', { name: 'Pending 6' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Approved 48' })).toBeInTheDocument();
+    expect(financeTabs().getByRole('tab', { name: /Deposits/ })).toHaveTextContent('6');
   });
 
   it('keeps the dialog open and shows the server’s message when the approval is refused', async () => {
@@ -223,6 +223,6 @@ describe('permissions', () => {
 
   it('counts the deposits waiting for a role that can only read payments', async () => {
     await openFinance('/finance', { permissions: ['payments:read'] });
-    await waitFor(() => expect(tabTexts()).toEqual(['Deposits6']));
+    await waitFor(() => expect(tabTexts()).toEqual(['Deposits7']));
   });
 });

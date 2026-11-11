@@ -1,7 +1,7 @@
 // Tests for the words of a customer's status and risk, the dialogs' reasons, the countries and the detail tabs' addresses.
 import { describe, expect, it } from 'vitest';
 import { COUNTRIES, countryName, countryOptions } from './countries';
-import { customerPath, DETAIL_TABS, isDetailTab } from './detailTabs';
+import { customerPath, DETAIL_TABS, isDetailTab, visibleDetailTabs } from './detailTabs';
 import {
   BLOCK_REASONS,
   LOCALES,
@@ -76,10 +76,11 @@ describe('countries', () => {
 });
 
 describe('detail tabs', () => {
-  it('lists the five tabs of the demo', () => {
+  it('lists the five tabs of the demo and the Wallet tab after Account', () => {
     expect(DETAIL_TABS.map((tab) => tab.label)).toEqual([
       'Orders',
       'Account',
+      'Wallet',
       'Support',
       'Consents and data',
       'Risk',
@@ -87,6 +88,14 @@ describe('detail tabs', () => {
     expect(isDetailTab('risk')).toBe(true);
     expect(isDetailTab('billing')).toBe(false);
     expect(isDetailTab(null)).toBe(false);
+  });
+
+  it('leaves the Wallet tab out without wallet:read', () => {
+    expect(visibleDetailTabs(() => false).map((tab) => tab.id)).not.toContain('wallet');
+    expect(visibleDetailTabs((permission) => permission === 'wallet:read').map((tab) => tab.id)).toContain(
+      'wallet',
+    );
+    expect(visibleDetailTabs(() => true)).toHaveLength(DETAIL_TABS.length);
   });
 
   it('builds the address of a customer and its tabs; the default tab needs no parameter', () => {

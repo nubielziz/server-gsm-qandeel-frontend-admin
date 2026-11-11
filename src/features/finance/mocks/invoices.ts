@@ -1,6 +1,7 @@
 // Mock invoices. The demo has none, so they are made up from its data (MISMATCHES M123): a top-up invoice for every deposit, three
 // manual invoices and the tax receipts of the latest delivered storefront orders. Kept in memory so issuing one in the dev
 // layer adds it to the list. Mock data only (decision 014).
+import { customerTopUps, type MockTopUp } from '@/features/customers/mocks';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
 import type { Invoice } from '../types';
@@ -146,18 +147,45 @@ function receipts(firstId: number, orders: DemoOrder[], customers: Map<string, D
   });
 }
 
+// The top-up invoice of a customer's store balance (feature 21): no fee, no tax and no PDF (stored value carries no tax document).
+function customerTopup(topUp: MockTopUp): Invoice {
+  return {
+    id: topUp.invoiceId,
+    number: invoiceNumber(topUp.createdAt, topUp.invoiceId),
+    kind: 'topup',
+    status: STATUS_OF[topUp.status],
+    amount: toMoney(topUp.amount),
+    fee: toMoney(0),
+    netAmount: toMoney(topUp.amount),
+    taxAmount: toMoney(0),
+    taxRate: toMoney(0),
+    taxCountry: '',
+    customerVatId: '',
+    total: toMoney(topUp.amount),
+    currency: 'USD',
+    client: null,
+    customer: topUp.customer,
+    orderId: null,
+    pdfFileId: null,
+    description: null,
+    dueAt: toIso(Date.parse(topUp.createdAt) + 3 * DAY_MS),
+    paidAt: topUp.status === 'approved' ? topUp.createdAt : null,
+    createdAt: topUp.createdAt,
+  };
+}
+
 let store: Promise<Collection<Invoice>> | undefined;
 
 /** The invoices, seeded on first use. Handlers change them in place. */
 export function invoiceStore(): Promise<Collection<Invoice>> {
-  store ??= loadDemoState().then((state) => {
+  store ??= Promise.all([loadDemoState(), customerTopUps()]).then(([state, topUps]) => {
     const merchants = new Map(demoRows<DemoMerchant>(state, 'merchants').map((m) => [m.id, m]));
     const customers = new Map(demoRows<DemoCustomer>(state, 'customers').map((c) => [c.id, c]));
     const payments = demoRows<DemoPayment>(state, 'payments').map((payment) => topup(payment, merchants));
     const next = payments.reduce((max, invoice) => Math.max(max, invoice.id), 0) + 1;
     const manuals = manual(next, merchants, Date.now());
     const taxReceipts = receipts(next + manuals.length, demoRows<DemoOrder>(state, 'orders'), customers);
-    return new Collection([...payments, ...manuals, ...taxReceipts]);
+    return new Collection([...payments, ...manuals, ...taxReceipts, ...topUps.map(customerTopup)]);
   });
   return store;
 }

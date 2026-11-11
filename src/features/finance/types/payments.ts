@@ -1,5 +1,5 @@
-// Types for the payments routes (`/admin/payments*`): a deposit (a merchant's wallet top-up) and the bodies of its
-// review. Ports the demo's `S.payments` rows (10-data.js). The map gives no bodies (MISMATCHES M10), so every shape is an
+// Types for the payments routes (`/admin/payments*`): a deposit (a merchant's wallet top-up, or since feature 21 a storefront
+// customer's store balance top-up) and the bodies of its review. Ports the demo's `S.payments` rows (10-data.js). The map gives no bodies (MISMATCHES M10), so every shape is an
 // assumed contract, built from `PaymentRow` in `src/lib/api/schema.gen.ts`.
 import type { Id, IsoDateTime, Money } from '@/lib/api';
 import type { PaymentRow } from '@/lib/api/schema.gen';
@@ -20,6 +20,32 @@ export type PaymentClient = {
   /** The merchant's group name (Standard, Wholesale, VIP). */
   group: string | null;
   walletBalance: Money | null;
+};
+
+/**
+ * The storefront customer who topped up their store balance (feature 21); `client` is null for such a row. `walletBalance` is
+ * what the balance holds now, null while the customer has no wallet.
+ */
+export type PaymentCustomer = { id: Id; name: string; email: string; walletBalance: Money | null };
+
+/** Where a top-up's chargeback stands: waiting for evidence, with the card network, won or lost. */
+export type PaymentDisputeStatus = 'needs_response' | 'under_review' | 'won' | 'lost';
+
+/**
+ * The newest chargeback of a top-up (feature 21; customers and merchants). A top-up dispute shows here and never in the
+ * Disputes tab: `created` puts a customer's balance on hold, `lost` takes the credit back (the balance may go below zero),
+ * `won` changes nothing and staff lift the hold. `amount` and `fee` are in the payment currency.
+ */
+export type PaymentDispute = {
+  id: Id;
+  status: PaymentDisputeStatus;
+  reasonCode: string;
+  amount: Money;
+  fee: Money;
+  evidenceDueAt: IsoDateTime;
+  resolvedAt: IsoDateTime | null;
+  /** The chargeback journal of a lost dispute; null otherwise. */
+  transactionId: Id | null;
 };
 
 /** The gateway or manual channel the money came through. */
@@ -46,17 +72,28 @@ export type Payment = Pick<
   /** The uploaded proof of payment, a file the `files:read` permission can download. */
   receiptFileId: Id | null;
   client: PaymentClient | null;
+  /** Set for a customer's top-up, null for a merchant deposit. */
+  customer: PaymentCustomer | null;
+  /** The newest chargeback of this top-up, or null. */
+  dispute: PaymentDispute | null;
   gateway: PaymentGateway | null;
   reviewedBy: PaymentReviewer | null;
   reviewedAt: IsoDateTime | null;
   note: string | null;
 };
 
-/** The filters `GET /admin/payments` understands besides paging and sorting (assumed contract). */
+/** Whose top-up: a merchant's deposit or a storefront customer's store balance top-up (feature 21). */
+export type PaymentOwner = 'merchant' | 'customer';
+
+/** The filters `GET /admin/payments` understands besides paging, sorting and `q` (assumed contract). */
 export type PaymentFilters = {
   purpose?: PaymentPurpose;
   status?: PaymentStatus;
   clientId?: Id;
+  /** One customer's top-ups (feature 21). */
+  customerId?: Id;
+  /** Merchant deposits only, or customer top-ups only (feature 21). */
+  owner?: PaymentOwner;
 };
 
 /** Body of `POST /admin/payments/:id/reject` (assumed contract): the reason the merchant is shown. */

@@ -37,7 +37,7 @@ const PENDING = 18; // Algiers Service Plus, waiting for approval
 const EMPTY_WALLET = 20; // Accra Devices, pending, nothing in the wallet and a $300 credit limit
 
 // Answers a route itself and records how it was called, for the checks that are about the request.
-type Seen = { method: string; path: string; params: URLSearchParams; body: unknown };
+type Seen = { method: string; path: string; params: URLSearchParams; body: unknown; headers: Headers };
 function spy(method: 'get' | 'post' | 'patch' | 'delete', path: string, answer: () => Response): Seen[] {
   const seen: Seen[] = [];
   mockServer.use(
@@ -49,6 +49,7 @@ function spy(method: 'get' | 'post' | 'patch' | 'delete', path: string, answer: 
         path: url.pathname,
         params: url.searchParams,
         body: text ? JSON.parse(text) : undefined,
+        headers: request.headers,
       });
       return answer();
     }),
@@ -233,11 +234,11 @@ describe('wallet', () => {
   });
 
   it('posts an adjustment, shows it as the newest line and moves the balance', async () => {
-    const result = await adjustClientWallet(EMPTY_WALLET, {
-      amount: '25.0000',
-      direction: 'credit',
-      reason: 'Refund for duplicate charge',
-    });
+    const result = await adjustClientWallet(
+      EMPTY_WALLET,
+      { amount: '25.0000', direction: 'credit', reason: 'Refund for duplicate charge' },
+      'key-adjust-1',
+    );
     expect(result.wallet).toMatchObject({ balance: '25.0000', available: '325.0000' });
     expect(result.transactionId).toBeGreaterThan(0);
     const [newest] = (
@@ -256,20 +257,30 @@ describe('wallet', () => {
     const seen = spy('post', `/admin/clients/${ZAIN}/wallet/adjust`, () =>
       HttpResponse.json({ transactionId: 1, wallet: {} }),
     );
-    await adjustClientWallet(ZAIN, { amount: '10.0000', direction: 'debit', reason: 'Duplicate top-up' });
+    await adjustClientWallet(
+      ZAIN,
+      { amount: '10.0000', direction: 'debit', reason: 'Duplicate top-up' },
+      'key-adjust-2',
+    );
     expect(seen[0].body).toEqual({ amount: '10.0000', direction: 'debit', reason: 'Duplicate top-up' });
+    // Feature 21 (D5): the same key goes with every retry of one dialog opening, so a retry cannot post twice.
+    expect(seen[0].headers.get('Idempotency-Key')).toBe('key-adjust-2');
   });
 
   it('shows the server’s refusals: past the credit limit, and over the approval limit', async () => {
-    const past = await adjustClientWallet(ZAIN, {
-      amount: '9000.0000',
-      direction: 'debit',
-      reason: 'Too much',
-    }).catch((e: unknown) => e);
+    const past = await adjustClientWallet(
+      ZAIN,
+      { amount: '9000.0000', direction: 'debit', reason: 'Too much' },
+      'key-adjust-3',
+    ).catch((e: unknown) => e);
     expect(past).toMatchObject({ status: 409, code: 'CREDIT_LIMIT_EXCEEDED' });
     expect((past as ApiError).detail).toBe('This would take the wallet below the credit limit (-$2,000.00).');
     await expect(
-      adjustClientWallet(ZAIN, { amount: '10001.0000', direction: 'credit', reason: 'Big credit' }),
+      adjustClientWallet(
+        ZAIN,
+        { amount: '10001.0000', direction: 'credit', reason: 'Big credit' },
+        'key-adjust-4',
+      ),
     ).rejects.toMatchObject({ status: 409, code: 'APPROVAL_REQUIRED' });
     expect((await getClientWallet(ZAIN)).balance).toBe('1209.7500');
   });

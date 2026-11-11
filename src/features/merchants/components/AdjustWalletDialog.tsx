@@ -1,9 +1,13 @@
 // AdjustWalletDialog: "Adjust wallet" (the demo's `m-adjust` action): a direction, an amount and a reason. The server posts the
 // balanced ledger entries and answers with the new balance; if it refuses (for example a debit past the credit limit, or an
 // amount that needs a second approver) the dialog shows its message and nothing is posted. The console never works out a balance.
+// The Idempotency-Key is made once when the dialog opens and sent with every retry of that opening (feature 21, D5), so a retry
+// after a lost answer cannot post the adjustment twice.
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextField, dialogSubmit } from '@/components/ui';
 import { money } from '@/lib/format';
+import { newIdempotencyKey } from '../lib/idempotency';
 import { useAdjustWallet } from '../hooks/useWalletMutations';
 import { parseAmount } from '../lib/amount';
 import { cleanText } from '../lib/input';
@@ -26,6 +30,7 @@ export interface AdjustWalletDialogProps {
 /** Posts a manual credit or debit. The server's refusal shows in the dialog and nothing is posted. */
 export function AdjustWalletDialog({ client, wallet, onClose }: AdjustWalletDialogProps) {
   const adjust = useAdjustWallet();
+  const [key] = useState(newIdempotencyKey);
   const form = useForm<Values>({ defaultValues: { direction: 'credit', amount: '', reason: '' } });
   const {
     register,
@@ -41,6 +46,7 @@ export function AdjustWalletDialog({ client, wallet, onClose }: AdjustWalletDial
       await adjust.mutateAsync({
         client,
         body: { amount, direction: values.direction, reason: cleanText(values.reason) },
+        key,
       });
     },
     { fields: ['direction', 'amount', 'reason'] },

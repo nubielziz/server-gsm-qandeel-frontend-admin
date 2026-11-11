@@ -1,5 +1,6 @@
 // Mock deposits: the demo's `S.payments` as the API's payment DTO (a merchant, a method, an amount, a fee, a status), kept in
 // memory so approving and rejecting in the dev layer changes what the Deposits tab shows. Mock data only (decision 014).
+import { customerTopUps, walletOf, type MockTopUp } from '@/features/customers/mocks';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
 import { walletsOf } from './books';
@@ -54,6 +55,8 @@ function toPayment(demo: DemoPayment, merchants: Map<string, DemoMerchant>): Pay
     createdAt: toIso(demo.created),
     invoiceId: topupInvoiceId(id),
     receiptFileId: demo.receipt ? 9000 + id : null,
+    customer: null,
+    dispute: null,
     client: merchant
       ? {
           id: demoNumericId(merchant.id),
@@ -69,31 +72,67 @@ function toPayment(demo: DemoPayment, merchants: Map<string, DemoMerchant>): Pay
   };
 }
 
+// A customer's top-up of their store balance (feature 21): the customer instead of a merchant, no fee, a bank transfer by CliQ.
+function toCustomerPayment(topUp: MockTopUp): Payment {
+  const paid = topUp.status === 'approved';
+  return {
+    id: topUp.id,
+    purpose: 'topup',
+    status: topUp.status,
+    methodType: 'bank',
+    amount: toMoney(topUp.amount),
+    feeAmount: toMoney(0),
+    netAmount: toMoney(topUp.amount),
+    currency: 'USD',
+    gatewayTxnId: topUp.reference,
+    capturedAt: paid ? topUp.createdAt : null,
+    createdAt: topUp.createdAt,
+    invoiceId: topUp.invoiceId,
+    receiptFileId: topUp.receiptFileId,
+    client: null,
+    customer: { ...topUp.customer, walletBalance: null },
+    dispute: null,
+    gateway: topUp.gateway,
+    reviewedBy: paid ? { id: null, name: 'System' } : null,
+    reviewedAt: paid ? topUp.createdAt : null,
+    note: topUp.status === 'pending' ? 'First top-up of this customer.' : null,
+  };
+}
+
 let store: Promise<Collection<Payment>> | undefined;
 
 /** The deposits, seeded from the demo on first use. Handlers change them in place. */
 export function paymentStore(): Promise<Collection<Payment>> {
-  store ??= loadDemoState().then((state) => {
+  store ??= Promise.all([loadDemoState(), customerTopUps()]).then(([state, topUps]) => {
     const merchants = new Map(demoRows<DemoMerchant>(state, 'merchants').map((m) => [m.id, m]));
-    return new Collection(demoRows<DemoPayment>(state, 'payments').map((p) => toPayment(p, merchants)));
+    return new Collection([
+      ...demoRows<DemoPayment>(state, 'payments').map((p) => toPayment(p, merchants)),
+      ...topUps.map(toCustomerPayment),
+    ]);
   });
   return store;
 }
 
 /**
- * The payments as the API sends them: each merchant's wallet is read from the books now (once for all of them), so it
- * follows every approval.
+ * The payments as the API sends them: each merchant's wallet is read from the books now (once for all of them), and each
+ * customer's balance from the customers mock, so both follow every approval.
  */
 export async function withWallets(payments: readonly Payment[]): Promise<Payment[]> {
   const wallets = await walletsOf();
-  return payments.map((payment) => {
-    const wallet = payment.client ? wallets.get(payment.client.id) : undefined;
-    if (!payment.client) return payment;
-    return {
-      ...payment,
-      client: { ...payment.client, walletBalance: wallet ? toMoney(wallet.balance / 10_000) : null },
-    };
-  });
+  return Promise.all(
+    payments.map(async (payment) => {
+      if (payment.customer) {
+        const balance = (await walletOf(payment.customer.id)).balance;
+        return { ...payment, customer: { ...payment.customer, walletBalance: balance } };
+      }
+      if (!payment.client) return payment;
+      const wallet = wallets.get(payment.client.id);
+      return {
+        ...payment,
+        client: { ...payment.client, walletBalance: wallet ? toMoney(wallet.balance / 10_000) : null },
+      };
+    }),
+  );
 }
 
 /** Drops the store so the next use re-seeds it (tests). */

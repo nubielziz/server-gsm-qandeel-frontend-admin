@@ -4,3 +4,4 @@ export * from './customers';
 export * from './dataRequests';
 export * from './privacy';
 export * from './resources';
+export * from './wallet';

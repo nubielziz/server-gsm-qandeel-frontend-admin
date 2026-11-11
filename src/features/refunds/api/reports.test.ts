@@ -10,9 +10,9 @@ beforeEach(async () => {
 });
 
 describe('getPaymentsReport', () => {
-  it('compares the three methods with the demo’s columns', async () => {
+  it('compares the four methods (the store balance too) with the demo’s columns', async () => {
     const { methods } = await getPaymentsReport({ start: 0, end: 1 });
-    expect(methods.map((row) => row.method)).toEqual(['card', 'wallet', 'crypto']);
+    expect(methods.map((row) => row.method)).toEqual(['card', 'wallet', 'crypto', 'balance']);
     for (const row of methods) {
       expect(row).toEqual({
         method: row.method,
@@ -45,7 +45,7 @@ describe('getPaymentsReport', () => {
     expect(crypto.payments.length).toBeGreaterThan(0);
     expect(crypto.payments.every((payment) => payment.method === 'crypto')).toBe(true);
     expect(crypto.total).toBe(crypto.payments.length);
-    expect(crypto.methods).toHaveLength(3);
+    expect(crypto.methods).toHaveLength(4);
   });
 
   it('sorts and pages on the server', async () => {

@@ -13,10 +13,13 @@ vi.setConfig({ testTimeout: 20_000 });
 
 describe('the list', () => {
   it('lists the newest invoices first with who they are billed to, their kind, total and status', async () => {
+    const user = userEvent.setup();
     await openFinance('/finance?tab=invoices');
     const table = await tableNamed('Invoices');
     expect(await table.findAllByRole('row')).toHaveLength(26);
-    expect(await screen.findByText('69 invoices')).toBeInTheDocument();
+    expect(await screen.findByText('71 invoices')).toBeInTheDocument();
+    // The customers' top-up invoices (feature 21) push the oldest manual invoice off the first page: find it by kind.
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by kind' }), 'manual');
     const manual = await rowWith('Invoices', '$900.00');
     expect(manual.getByText('Manual')).toBeInTheDocument();
     expect(manual.getByText('$900.00')).toBeInTheDocument();
@@ -37,23 +40,23 @@ describe('the list', () => {
   it('filters by status through the server and keeps it in the address', async () => {
     const user = userEvent.setup();
     const app = await openFinance('/finance?tab=invoices');
-    await screen.findByText('69 invoices');
+    await screen.findByText('71 invoices');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by status' }), 'void');
     expect(app.location()).toBe('/finance?tab=invoices&status=void');
     expect(await screen.findByText('2 invoices')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(app.location()).toBe('/finance?tab=invoices');
-    expect(await screen.findByText('69 invoices')).toBeInTheDocument();
+    expect(await screen.findByText('71 invoices')).toBeInTheDocument();
   });
 
   it('searches by number after a pause', async () => {
     const user = userEvent.setup();
     const app = await openFinance('/finance?tab=invoices');
-    await screen.findByText('69 invoices');
+    await screen.findByText('71 invoices');
     const box = screen.getByRole('searchbox', { name: 'Search number or merchant' });
     await user.type(box, 'Istanbul');
     await waitFor(() => expect(app.location()).toBe('/finance?tab=invoices&q=Istanbul'));
-    await waitFor(() => expect(screen.queryByText('69 invoices')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('71 invoices')).not.toBeInTheDocument());
     const rows = (await tableNamed('Invoices')).getAllByRole('row').slice(1);
     expect(rows.every((row) => row.textContent?.includes('Istanbul GSM Care'))).toBe(true);
 
@@ -101,7 +104,7 @@ describe('Issue manual invoice', () => {
       }),
     );
     await openFinance('/finance?tab=invoices');
-    await screen.findByText('69 invoices');
+    await screen.findByText('71 invoices');
     await user.click(screen.getByRole('button', { name: 'Issue manual invoice' }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
     await user.selectOptions(await dialog.findByLabelText('Merchant'), 'Zain Mobile Hub');
@@ -109,10 +112,10 @@ describe('Issue manual invoice', () => {
     await user.type(dialog.getByLabelText('What it is for'), 'Setup fee');
     await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
 
-    expect(await screen.findByText(/^Invoice INV-\d{4}-0070 issued$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Invoice INV-\d{4}-0072 issued$/)).toBeInTheDocument();
     expect(screen.getByText('$125.50 billed to Zain Mobile Hub.')).toBeInTheDocument();
     expect(body).toEqual({ clientId: 1, amount: '125.5000', description: 'Setup fee' });
-    expect(await screen.findByText('70 invoices')).toBeInTheDocument();
+    expect(await screen.findByText('72 invoices')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Issue manual invoice' })).not.toBeInTheDocument(),
     );

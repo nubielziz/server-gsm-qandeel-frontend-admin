@@ -5,16 +5,20 @@ import { useSearchParams } from 'react-router';
 import type { SortState } from '@/components/ui';
 import {
   DEFAULT_PAYMENT_FILTER,
+  DEFAULT_PAYMENT_OWNER,
   PAYMENT_DEFAULT_SORT,
   PAYMENT_SORT_FIELDS,
   parsePaymentFilter,
+  parsePaymentOwner,
   type PaymentFilter,
+  type PaymentOwnerFilter,
 } from '../lib/paymentView';
 import { parsePage, parseSort, withParams, writePage, writeSort } from '../lib/url';
 
 export function usePaymentView() {
   const [params, setParams] = useSearchParams();
   const filter = parsePaymentFilter(params);
+  const owner = parsePaymentOwner(params);
   const sort = useMemo(() => parseSort(params, PAYMENT_SORT_FIELDS, PAYMENT_DEFAULT_SORT), [params]);
   const page = parsePage(params);
 
@@ -28,6 +32,16 @@ export function usePaymentView() {
       ),
     [setParams],
   );
+  /** Picks whose top-ups to list (feature 21) and goes back to page 1; everyone is the default and leaves no trace. */
+  const setOwner = useCallback(
+    (next: PaymentOwnerFilter) =>
+      setParams(
+        (prev) =>
+          writePage(withParams(prev, { owner: next === DEFAULT_PAYMENT_OWNER ? undefined : next }), 1),
+        { replace: true },
+      ),
+    [setParams],
+  );
   const setPage = useCallback(
     (next: number) => setParams((prev) => writePage(prev, next), { replace: true }),
     [setParams],
@@ -37,5 +51,5 @@ export function usePaymentView() {
       setParams((prev) => writePage(writeSort(prev, next, PAYMENT_DEFAULT_SORT), 1), { replace: true }),
     [setParams],
   );
-  return { filter, page, sort, setFilter, setPage, setSort };
+  return { filter, owner, page, sort, setFilter, setOwner, setPage, setSort };
 }

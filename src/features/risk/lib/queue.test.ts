@@ -46,6 +46,7 @@ describe('amounts', () => {
   it('writes the payment method in lower case, as the demo does', () => {
     expect(methodText('card')).toBe('card (3ds)');
     expect(methodText('crypto')).toBe('crypto (usdt / btc)');
+    expect(methodText('balance')).toBe('store balance');
   });
 });
 
@@ -73,5 +74,9 @@ describe('refund wording', () => {
     expect(refundDestination('card')).toBe('card');
     expect(refundDestination('wallet')).toBe('card');
     expect(refundDestination('crypto')).toContain('by hand');
+  });
+
+  it('sends an order paid from the store balance back to the store balance (feature 21)', () => {
+    expect(refundDestination('balance')).toBe('store balance');
   });
 });

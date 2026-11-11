@@ -1,11 +1,12 @@
-// PaymentDetails: the facts of one deposit inside its dialog: a warning or the rejection reason, then merchant, dates,
-// reference, receipt and the amounts. Ports the body of payDialog in 45-p-finance.js. "Spend, 30 days" and the wallet-after
+// PaymentDetails: the facts of one deposit inside its dialog: a warning or the rejection reason, a chargeback note, then merchant
+// (or, since feature 21, the customer whose store balance it tops up), dates, reference, receipt and the amounts. Ports the body of payDialog in 45-p-finance.js. "Spend, 30 days" and the wallet-after
 // preview are not here (MISMATCHES M127): the deposit does not carry them and the server posts the credit.
 import { Link } from 'react-router';
 import { Icon, KeyValue } from '@/components/ui';
 import { ago, fmtDate, money } from '@/lib/format';
 import { fileDownloadUrl } from '../api/lookups';
-import { feeText } from '../lib/payments';
+import { PaymentDisputeChip } from './PaymentDisputeChip';
+import { customerWalletPath, disputeText, feeText } from '../lib/payments';
 import type { Payment } from '../types';
 
 export interface PaymentDetailsProps {
@@ -18,6 +19,8 @@ export interface PaymentDetailsProps {
 export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsProps) {
   const fresh = payment.status === 'pending';
   const client = payment.client;
+  const customer = payment.customer;
+  const dispute = payment.dispute;
   const reviewer = payment.reviewedBy?.name;
   return (
     <div className="space-y-3">
@@ -37,22 +40,48 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
           </span>
         </div>
       )}
+      {dispute && (
+        <div className="space-y-1 rounded-md bg-crit-bg p-2.5 text-sm text-crit-fg" role="note">
+          <p className="flex flex-wrap items-center gap-2">
+            <PaymentDisputeChip dispute={dispute} />
+            <span>
+              {money(dispute.amount)} disputed ({dispute.reasonCode}), fee {money(dispute.fee)}.
+            </span>
+          </p>
+          <p>{disputeText(payment)}</p>
+          <p className="text-xs">
+            {dispute.resolvedAt
+              ? `Decided ${fmtDate(dispute.resolvedAt)}.`
+              : `Evidence due ${fmtDate(dispute.evidenceDueAt)}.`}
+          </p>
+        </div>
+      )}
       <KeyValue
         className="!grid-cols-[120px_1fr]"
         rows={[
-          [
-            'Merchant',
-            client ? (
-              <>
-                <Link className="link" to={`/merchants/${client.id}`}>
-                  {client.name}
-                </Link>
-                {client.group && <span className="text-ink3"> · {client.group}</span>}
-              </>
-            ) : (
-              '–'
-            ),
-          ],
+          customer && !client
+            ? [
+                'Customer',
+                <>
+                  <Link className="link" to={customerWalletPath(customer.id)}>
+                    {customer.name}
+                  </Link>
+                  <span className="text-ink3"> · {customer.email}</span>
+                </>,
+              ]
+            : [
+                'Merchant',
+                client ? (
+                  <>
+                    <Link className="link" to={`/merchants/${client.id}`}>
+                      {client.name}
+                    </Link>
+                    {client.group && <span className="text-ink3"> · {client.group}</span>}
+                  </>
+                ) : (
+                  '–'
+                ),
+              ],
           ['Submitted', `${fmtDate(payment.createdAt)} (${ago(payment.createdAt, now)})`],
           payment.gatewayTxnId
             ? ['Reference', <span className="mono break-all">{payment.gatewayTxnId}</span>]
@@ -79,12 +108,14 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
           ['Amount paid', <span className="font-medium tabular-nums">{money(payment.amount)}</span>],
           ['Fee', <span className="tabular-nums">{feeText(payment)}</span>],
           [
-            'Credited to wallet',
+            customer && !client ? 'Credited to balance' : 'Credited to wallet',
             <span className="font-medium tabular-nums">{money(payment.netAmount)}</span>,
           ],
-          client?.walletBalance != null && [
-            'Wallet now',
-            <span className="tabular-nums">{money(client.walletBalance)}</span>,
+          (client?.walletBalance ?? customer?.walletBalance) != null && [
+            customer && !client ? 'Balance now' : 'Wallet now',
+            <span className="tabular-nums">
+              {money((client?.walletBalance ?? customer?.walletBalance) as string)}
+            </span>,
           ],
           payment.status === 'approved' && reviewer
             ? ['Approved by', `${reviewer}${payment.reviewedAt ? ` ${ago(payment.reviewedAt, now)}` : ''}`]
@@ -94,7 +125,7 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
       {fresh && (
         <p className="text-xs text-ink3">
           Check that the amount on the proof matches the amount above before approving. Approval credits the
-          wallet immediately.
+          {customer && !client ? ' customer’s store balance' : ' wallet'} immediately.
         </p>
       )}
     </div>

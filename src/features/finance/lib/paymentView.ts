@@ -1,7 +1,7 @@
 // The Deposits tab's status sub-tab and sort as address parameters, and the API filters for each sub-tab. Ports `st.payTab`
 // and the row filter of paymentsTab in 45-p-finance.js; the demo filtered in memory, the console asks the server.
 import type { SortState } from '@/components/ui';
-import type { PaymentStatus } from '../types';
+import type { PaymentOwner, PaymentStatus } from '../types';
 import type { ListFilters } from './refineFilters';
 
 /** The sub-tabs: one status each, and All. */
@@ -13,6 +13,24 @@ export const PAYMENT_FILTERS: readonly { id: PaymentFilter; label: string }[] = 
   { id: 'rejected', label: 'Rejected' },
   { id: 'all', label: 'All' },
 ];
+
+/** Whose top-ups the list shows: everyone's, merchants' deposits, or customers' store balance top-ups (feature 21). */
+export type PaymentOwnerFilter = PaymentOwner | 'all';
+
+export const PAYMENT_OWNERS: readonly { id: PaymentOwnerFilter; label: string }[] = [
+  { id: 'all', label: 'All payers' },
+  { id: 'merchant', label: 'Merchants' },
+  { id: 'customer', label: 'Customers' },
+];
+
+/** Everyone's top-ups are the default and leave no trace in the address. */
+export const DEFAULT_PAYMENT_OWNER: PaymentOwnerFilter = 'all';
+
+/** The owner in the address, or everyone. */
+export function parsePaymentOwner(params: URLSearchParams): PaymentOwnerFilter {
+  const value = params.get('owner');
+  return PAYMENT_OWNERS.find((owner) => owner.id === value)?.id ?? DEFAULT_PAYMENT_OWNER;
+}
 
 /** The demo opens on Pending: the deposits waiting for a decision. */
 export const DEFAULT_PAYMENT_FILTER: PaymentFilter = 'pending';
@@ -35,8 +53,16 @@ export function parsePaymentFilter(params: URLSearchParams): PaymentFilter {
 
 /**
  * The API filters of a sub-tab. The tab lists wallet top-ups only (`purpose=topup`): storefront order payments are not
- * deposits and never wait for review. The counts use the same filters, so each number is what its sub-tab lists.
+ * deposits and never wait for review. The counts use the same filters, so each number is what its sub-tab lists. `owner`
+ * keeps merchants' deposits or customers' top-ups only (feature 21).
  */
-export function paymentListFilters(filter: PaymentFilter): ListFilters {
-  return { purpose: 'topup', ...(filter === 'all' ? {} : { status: filter }) };
+export function paymentListFilters(
+  filter: PaymentFilter,
+  owner: PaymentOwnerFilter = DEFAULT_PAYMENT_OWNER,
+): ListFilters {
+  return {
+    purpose: 'topup',
+    ...(filter === 'all' ? {} : { status: filter }),
+    ...(owner === 'all' ? {} : { owner }),
+  };
 }

@@ -21,7 +21,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       'Finance',
       'Money',
       'wallet',
-      ['ledger:read', 'payments:read', 'invoices:read', 'reports:read', 'reports:finance'],
+      ['ledger:read', 'payments:read', 'wallet:read', 'invoices:read', 'reports:read', 'reports:finance'],
     ],
     ['commissions', 'Commissions', 'Money', 'percent', 'commissions:read'],
     ['refunds', 'Refunds & disputes', 'Money', 'undo', ['refunds:read', 'disputes:read', 'reports:finance']],

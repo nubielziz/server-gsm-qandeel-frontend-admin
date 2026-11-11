@@ -5,9 +5,17 @@ import { actionHandlers } from './actionHandlers';
 import { customerHandlers } from './customerHandlers';
 import { requestHandlers } from './requestHandlers';
 import { resetCustomerStore } from './store';
+import { walletHandlers } from './walletHandlers';
+import { resetWalletStore } from './walletStore';
 
 export const mocks: FeatureMocks = {
   // The action routes (`/:id/export`, `/:id/suspend`…) have more segments than `/:id`, so the order is free; they come first anyway.
-  handlers: [...actionHandlers, ...customerHandlers, ...requestHandlers],
-  reset: resetCustomerStore,
+  handlers: [...walletHandlers, ...actionHandlers, ...customerHandlers, ...requestHandlers],
+  reset: () => {
+    resetCustomerStore();
+    resetWalletStore();
+  },
 };
+
+// What the finance mocks read to list customer wallets and top-ups and to credit an approved one.
+export { creditTopUp, customerTopUps, markTopUp, walletOf, walletRows, type MockTopUp } from './walletStore';

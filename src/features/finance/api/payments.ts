@@ -15,8 +15,10 @@ import type { Payment, RejectPaymentBody } from '../types';
 /**
  * Payments, one page of them, with the total in `x-total-count`. The Deposits tab asks for `purpose=topup` and one
  * `status` (`pending`, `approved`, `rejected`); its sub-tab counts and the header's "waiting for review" figure are
- * this call with `_start=0&_end=1`. Sort with `_sort`/`_order` (`createdAt`, `id`, `amount`, `status`).
- * Assumed contract: rows carry the merchant (`client`) and the gateway as joins, and `netAmount`.
+ * this call with `_start=0&_end=1`. Sort with `_sort`/`_order` (`createdAt`, `id`, `amount`, `status`). Since feature 21
+ * the list also carries storefront customers' store balance top-ups: `owner=merchant|customer` keeps one kind and
+ * `customerId` one customer's; `q` searches the reference and the merchant's or the customer's name (and the customer's email).
+ * Assumed contract: rows carry the merchant (`client`) or the customer, the newest `dispute` and the gateway as joins, and `netAmount`.
  * @route GET /admin/payments
  */
 export function listPayments(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Payment>> {
@@ -26,7 +28,7 @@ export function listPayments(query: ListQuery = {}, init?: ApiInit): Promise<Lis
 /**
  * One payment, for the review dialog: it opens from a link (the audit log, a ledger entry) that has no list row, and
  * it asks again after a decision so the dialog shows what the server holds.
- * Assumed contract: same shape as a list row.
+ * Assumed contract: same shape as a list row (a customer's top-up has `customer` and no `client`).
  * @route GET /admin/payments/:id
  */
 export function getPayment(id: Id, init?: ApiInit): Promise<Payment> {
@@ -34,7 +36,7 @@ export function getPayment(id: Id, init?: ApiInit): Promise<Payment> {
 }
 
 /**
- * Approves a pending deposit: the server credits the merchant's wallet and posts the ledger entry. It is a decision
+ * Approves a pending deposit: the server credits the merchant's (or the customer's) wallet and posts the ledger entry. It is a decision
  * on real money, so the server checks the state and the permission; the console shows its answer, error included.
  * Assumed contract: no body; the answer is the updated payment.
  * @route POST /admin/payments/:id/approve

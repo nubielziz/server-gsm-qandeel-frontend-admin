@@ -109,7 +109,7 @@ describe('the page', () => {
       detailTabs()
         .getAllByRole('tab')
         .map((item) => item.textContent),
-    ).toEqual(['Orders4', 'Account', 'Support0', 'Consents and data', 'Risk']);
+    ).toEqual(['Orders4', 'Account', 'Wallet', 'Support0', 'Consents and data', 'Risk']);
     expect(tab(/^Orders/)).toHaveAttribute('aria-selected', 'true');
     await user.click(tab(/^Account/));
     expect(app.location()).toBe('/customers/1?tab=account');

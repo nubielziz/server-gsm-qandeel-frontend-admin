@@ -14,12 +14,13 @@ const ids = (granted: string[]) => visibleTabs(granted).map((tab) => tab.id);
 
 describe('visibleTabs', () => {
   it('gives every tab to a role with everything', () => {
-    expect(ids(['*'])).toEqual(['ledger', 'payments', 'accounts', 'invoices', 'reports']);
+    expect(ids(['*'])).toEqual(['ledger', 'payments', 'accounts', 'wallets', 'invoices', 'reports']);
   });
 
   it('gives each tab only to the permission it needs', () => {
     expect(ids(['payments:read'])).toEqual(['payments']);
     expect(ids(['ledger:read'])).toEqual(['ledger', 'accounts']);
+    expect(ids(['wallet:read'])).toEqual(['wallets']);
     expect(ids(['invoices:*'])).toEqual(['invoices']);
     expect(ids(['reports:finance'])).toEqual(['reports']);
     expect(ids(['orders:read'])).toEqual([]);

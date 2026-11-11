@@ -17,12 +17,17 @@ vi.setConfig({ testTimeout: 20_000 });
 const PAYMENTS = '/refunds?tab=payments';
 
 describe('by payment method', () => {
-  it('compares the three methods with the server’s volume, fees, fee rate, refunds and disputes', async () => {
+  it('compares the four methods (the store balance too) with the server’s volume, fees, fee rate, refunds and disputes', async () => {
     await openRefunds(PAYMENTS);
     const { methods } = await getPaymentsReport({ start: 0, end: 1 });
     const table = await tableNamed('Payment methods compared');
-    const labels = { card: 'Card (3DS)', wallet: 'Apple / Google Pay', crypto: 'Crypto (USDT / BTC)' };
-    expect(table.getAllByRole('row')).toHaveLength(4); // the header and three methods
+    const labels = {
+      card: 'Card (3DS)',
+      wallet: 'Apple / Google Pay',
+      crypto: 'Crypto (USDT / BTC)',
+      balance: 'Store balance',
+    };
+    expect(table.getAllByRole('row')).toHaveLength(5); // the header and four methods
     for (const row of methods) {
       const cells = within(table.getByText(labels[row.method]).closest('tr') as HTMLElement).getAllByRole(
         'cell',
@@ -101,7 +106,7 @@ describe('storefront payments', () => {
       expect(rows.length).toBe(Math.min(12, crypto.total));
       for (const row of rows) expect(row).toHaveTextContent('Crypto (USDT / BTC)');
     });
-    expect((await tableNamed('Payment methods compared')).getAllByRole('row')).toHaveLength(4);
+    expect((await tableNamed('Payment methods compared')).getAllByRole('row')).toHaveLength(5);
 
     await user.click(screen.getByRole('button', { name: 'All methods' }));
     expect(app.location()).toBe('/refunds?tab=payments');

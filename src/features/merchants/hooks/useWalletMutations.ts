@@ -6,11 +6,21 @@ import { adjustClientWallet, downloadClientStatement } from '../api';
 import type { AdjustWalletBody, Client } from '../types';
 import { STATEMENT_KEY, staleClient, WALLET_KEY } from './keys';
 
-/** Posts an adjustment. The toast ports the demo's "Credited $25.00 / balance is now…". */
+/**
+ * Posts an adjustment with the dialog's Idempotency-Key (made once per opening, so a retry never posts twice). The toast ports
+ * the demo's "Credited $25.00 / balance is now…".
+ */
 export function useAdjustWallet() {
   return useApiMutation({
-    mutationFn: ({ client, body }: { client: Pick<Client, 'id' | 'name'>; body: AdjustWalletBody }) =>
-      adjustClientWallet(client.id, body),
+    mutationFn: ({
+      client,
+      body,
+      key,
+    }: {
+      client: Pick<Client, 'id' | 'name'>;
+      body: AdjustWalletBody;
+      key: string;
+    }) => adjustClientWallet(client.id, body, key),
     invalidates: (_result, { client }) => staleClient(client.id),
     // The dashboard lists negative wallets, so it is refreshed too.
     invalidateKeys: [WALLET_KEY, STATEMENT_KEY, DASHBOARD_KEY],

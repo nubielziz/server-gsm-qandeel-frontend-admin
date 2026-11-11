@@ -1,7 +1,9 @@
 // Mock of the payment routes (`/admin/payments*`): the deposit list, one deposit, and the approve and reject decisions. An
 // approval posts the deposit's ledger entry and settles its invoice, so the trial balance, the ledger and the invoices follow.
+// A customer's top-up (feature 21) is credited to their store balance by the customers mock.
 // Mocks fake answers only (decision 014): the one rule kept is that a deposit is decided once.
 import { http, HttpResponse, type HttpHandler } from 'msw';
+import { creditTopUp, markTopUp } from '@/features/customers/mocks';
 import { applyListQuery } from '@/mocks/crud';
 import { bodyOf, invalid, notFound, textOf } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
@@ -14,6 +16,23 @@ import { invoiceStore } from './invoices';
 import { paymentStore, withWallets } from './paymentStore';
 
 const TOTAL_HEADERS = { 'access-control-expose-headers': 'x-total-count' };
+
+// The list filters the generic mock cannot read: `owner` (merchant or customer) is not a field of the row, and `customerId` is
+// the row's `customer.id`.
+function listFor(rows: Payment[], params: URLSearchParams): { rows: Payment[]; params: URLSearchParams } {
+  const next = new URLSearchParams(params);
+  const owner = next.get('owner');
+  next.delete('owner');
+  const customerId = next.get('customerId');
+  next.delete('customerId');
+  if (customerId) next.set('customer.id', customerId);
+  return {
+    rows: rows
+      .filter((row) => owner !== 'customer' || row.customer !== null)
+      .filter((row) => owner !== 'merchant' || row.client !== null),
+    params: next,
+  };
+}
 
 // The deposit's journal: the money in (the bank, or the gateway for card and USDT), the wallet credit and the fee income.
 async function postDeposit(payment: Payment, by: string): Promise<void> {
@@ -61,10 +80,13 @@ export const paymentHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
-    const rows = await withWallets((await paymentStore()).list());
-    const { page, total } = applyListQuery(rows, new URL(request.url).searchParams, [
+    const all = await withWallets((await paymentStore()).list());
+    const { rows, params } = listFor(all, new URL(request.url).searchParams);
+    const { page, total } = applyListQuery(rows, params, [
       'gatewayTxnId',
       'client.name',
+      'customer.name',
+      'customer.email',
     ]);
     return HttpResponse.json(page, { headers: { 'x-total-count': String(total), ...TOTAL_HEADERS } });
   }),
@@ -92,7 +114,9 @@ export const paymentHandlers: HttpHandler[] = [
       reviewedAt: now,
       reviewedBy: { id: staff?.id ?? null, name: by },
     }) as Payment;
-    await postDeposit(updated, by);
+    // A customer's top-up goes to their store balance (feature 21); a merchant's deposit posts its own journal.
+    if (updated.customer) await creditTopUp(updated.id, by);
+    else await postDeposit(updated, by);
     if (updated.invoiceId !== null) {
       (await invoiceStore()).patch(updated.invoiceId, { status: 'paid', paidAt: now });
     }
@@ -114,6 +138,7 @@ export const paymentHandlers: HttpHandler[] = [
       reviewedAt: new Date().toISOString(),
       reviewedBy: { id: staff?.id ?? null, name: staff?.name ?? 'Staff' },
     }) as Payment;
+    if (updated.customer) await markTopUp(updated.id, 'rejected');
     if (updated.invoiceId !== null) (await invoiceStore()).patch(updated.invoiceId, { status: 'void' });
     return HttpResponse.json((await withWallets([updated]))[0]);
   }),

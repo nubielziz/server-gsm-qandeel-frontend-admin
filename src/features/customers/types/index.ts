@@ -164,3 +164,5 @@ export type DataRequestFilters = {
   kind?: DataRequestKind;
   customerId?: Id;
 };
+
+export * from './wallet';

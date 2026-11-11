@@ -61,7 +61,11 @@ export function defaultRefundReason(signals: readonly string[]): string {
   return `Refunded after risk review: ${signals[0] ?? 'high risk score'}`;
 }
 
-/** Where the money goes back to; crypto cannot be reversed by the console, so the team does it by hand. */
+/**
+ * Where the money goes back to; crypto cannot be reversed by the console, so the team does it by hand, and an order paid from
+ * the store balance (feature 21) is refunded to that balance at once, so the sentence reads "…goes back to Sam’s store balance".
+ */
 export function refundDestination(method: PaymentMethod): string {
+  if (method === 'balance') return 'store balance';
   return method === 'crypto' ? 'wallet by hand (crypto can’t be reversed automatically)' : 'card';
 }

@@ -3,6 +3,7 @@
 import type { StatusBadge } from './payments';
 import { maskEmail } from '@/lib/format';
 import { plainWords } from './kinds';
+import { customerWalletPath } from './payments';
 import type { Invoice, InvoiceStatus } from '../types';
 
 /** The kinds of invoice by name. `receipt` is the tax receipt a storefront customer gets. */
@@ -31,10 +32,20 @@ export function invoiceStatusBadge(status: string): StatusBadge {
     : { tone: 'neutral', icon: 'info', label: plainWords(status, 'Unknown') };
 }
 
-/** Who the invoice is billed to: a merchant (linked to its page) or a storefront customer (email masked, as in Orders). */
-export function billedTo(invoice: Pick<Invoice, 'client' | 'customer'>): { name: string; href?: string } {
+/**
+ * Who the invoice is billed to: a merchant (linked to its page), a storefront customer who topped up their store balance (their
+ * name, linked to their wallet; feature 21), or a storefront customer's tax receipt (email masked, as in Orders).
+ */
+export function billedTo(invoice: Pick<Invoice, 'client' | 'customer'> & Partial<Pick<Invoice, 'kind'>>): {
+  name: string;
+  href?: string;
+} {
   if (invoice.client) return { name: invoice.client.name, href: `/merchants/${invoice.client.id}` };
-  if (invoice.customer) return { name: maskEmail(invoice.customer.email) };
+  if (invoice.customer) {
+    return invoice.kind === 'topup'
+      ? { name: invoice.customer.name, href: customerWalletPath(invoice.customer.id) }
+      : { name: maskEmail(invoice.customer.email) };
+  }
   return { name: '–' };
 }
 

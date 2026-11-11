@@ -49,15 +49,22 @@ export function listClientStatement(
  * Adds to or takes from the wallet by hand, with a reason that goes to the ledger and the audit log. The server posts
  * the balanced entries and refuses what it must (for example a debit that would pass the credit limit); the console
  * never works out a balance. Needs `wallet:adjust`.
+ * The `Idempotency-Key` header makes a retry of the same dialog opening post once: the server answers the first
+ * adjustment for the same key and body, and refuses the same key with another body (`IDEMPOTENCY_KEY_REUSED`). The
+ * header is optional on the server (feature 21, D5); the console always sends it.
  * Assumed contract: body `{ amount, direction, reason }` with a positive 4-decimal `amount`, answer `{ transactionId, wallet }`.
  * @route POST /admin/clients/:id/wallet/adjust
  */
 export function adjustClientWallet(
   id: Id,
   body: AdjustWalletBody,
+  idempotencyKey: string,
   init?: ApiInit,
 ): Promise<AdjustWalletResult> {
-  return apiPost<AdjustWalletResult>(pathOf('/admin/clients/:id/wallet/adjust', { id }), body, init);
+  return apiPost<AdjustWalletResult>(pathOf('/admin/clients/:id/wallet/adjust', { id }), body, {
+    ...init,
+    headers: { ...init?.headers, 'Idempotency-Key': idempotencyKey },
+  });
 }
 
 /**

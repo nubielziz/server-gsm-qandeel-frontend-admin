@@ -1,5 +1,5 @@
 // FinancePage: the Finance page (`/finance`, the demo's `pageFinance` in 45-p-finance.js). A header with the deposits waiting
-// and Run reconciliation, the strip of key figures, and tabs: Ledger, Deposits, Trial balance, Invoices and Reports. The tab
+// and Run reconciliation, the strip of key figures, and tabs: Ledger, Deposits, Trial balance, Customer wallets, Invoices and Reports. The tab
 // and each tab's filters, page and open record live in the address. The page only composes; the server owns every figure.
 import { useState } from 'react';
 import { Panel, SectionTabs, type TabItem } from '@/components/ui';
@@ -11,6 +11,7 @@ import { LedgerTab } from '../components/LedgerTab';
 import { ReconcileDialog } from '../components/ReconcileDialog';
 import { ReportsTab } from '../components/ReportsTab';
 import { TrialBalanceTab } from '../components/TrialBalanceTab';
+import { WalletsTab } from '../components/WalletsTab';
 import { useFinanceGrants } from '../hooks/useFinanceGrants';
 import { useFinanceStrip } from '../hooks/useFinanceStrip';
 import { useFinanceTab } from '../hooks/useFinanceTab';
@@ -46,6 +47,7 @@ export function FinancePage() {
         {tab === 'ledger' && <LedgerTab />}
         {tab === 'payments' && <DepositsTab grants={grants} />}
         {tab === 'accounts' && <TrialBalanceTab />}
+        {tab === 'wallets' && <WalletsTab grants={grants} />}
         {tab === 'invoices' && <InvoicesTab grants={grants} />}
         {tab === 'reports' && <ReportsTab grants={grants} />}
       </Panel>

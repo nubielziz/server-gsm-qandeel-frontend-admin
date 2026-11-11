@@ -3,7 +3,7 @@
 import type { BadgeTone, IconName } from '@/components/ui';
 import { money, pct } from '@/lib/format';
 import { plainWords } from './kinds';
-import type { Payment, PaymentStatus } from '../types';
+import type { Payment, PaymentDispute, PaymentStatus } from '../types';
 
 /** The four ways a merchant pays, as the demo names them (METHODS in 10-data.js). */
 export const METHOD_LABEL: Readonly<Record<string, string>> = {
@@ -71,4 +71,58 @@ export function feeText(payment: Pick<Payment, 'amount' | 'feeAmount'>): string 
   const paid = Number(payment.amount);
   if (!(fee > 0)) return 'None';
   return paid > 0 ? `${money(payment.feeAmount)} (${pct((fee / paid) * 100, 0)})` : money(payment.feeAmount);
+}
+
+/** The chip of a top-up's chargeback, in the words a reviewer needs: a word and an icon, never a colour alone. */
+export function disputeChip(dispute: Pick<PaymentDispute, 'status'>): StatusBadge {
+  switch (dispute.status) {
+    case 'needs_response':
+      return { tone: 'crit', icon: 'alert', label: 'Dispute: evidence needed' };
+    case 'under_review':
+      return { tone: 'warn', icon: 'clock', label: 'Dispute: with the card network' };
+    case 'won':
+      return { tone: 'good', icon: 'checkCircle', label: 'Dispute won' };
+    case 'lost':
+      return { tone: 'crit', icon: 'xCircle', label: 'Dispute lost' };
+    default:
+      return { tone: 'neutral', icon: 'info', label: 'Dispute' };
+  }
+}
+
+/** The link to a customer's wallet page (finance cannot import the customers feature: it already imports finance). */
+export function customerWalletPath(customerId: number): string {
+  return `/customers/${customerId}?tab=wallet`;
+}
+
+/** Who paid a deposit, for its dialog's subtitle and the table: the merchant, else the customer, else a plain word. */
+export function payerName(payment: Pick<Payment, 'client' | 'customer'>): string {
+  return payment.client?.name ?? payment.customer?.name ?? '–';
+}
+
+/**
+ * What a top-up's chargeback means for the money, in a sentence for the reviewer (the facts are in the dialog beside it).
+ * A customer's balance goes on hold when the dispute is raised and the credit is taken back when it is lost; a merchant's
+ * wallet is debited on a loss. A won dispute changes nothing: staff lift the hold themselves. The server does all of it.
+ */
+export function disputeText(payment: Pick<Payment, 'customer' | 'dispute'>): string | null {
+  const dispute = payment.dispute;
+  if (!dispute) return null;
+  const account = payment.customer ? 'The customer’s store balance' : 'The merchant’s wallet';
+  switch (dispute.status) {
+    case 'needs_response':
+    case 'under_review':
+      return payment.customer
+        ? `${account} is on hold while the dispute is open.`
+        : 'The card network is reviewing the chargeback of this top-up.';
+    case 'won':
+      return payment.customer
+        ? `Nothing was taken back. ${account} stays on hold until someone lifts it.`
+        : 'Nothing was taken back from the wallet.';
+    case 'lost':
+      return `The credit was taken back from ${account.charAt(0).toLowerCase()}${account.slice(1)}${
+        payment.customer ? ', which may now be below zero' : ''
+      }.`;
+    default:
+      return null;
+  }
 }

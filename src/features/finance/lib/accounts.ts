@@ -12,6 +12,7 @@ export const ACCOUNT_INFO: Readonly<Record<string, AccountInfo>> = {
   gateway_clearing: { name: 'Gateway clearing', type: 'Asset' },
   supplier_prepaid: { name: 'Supplier prepaid', type: 'Asset' },
   client_wallet: { name: 'Client wallets', type: 'Liability' },
+  customer_wallet: { name: 'Customer wallets', type: 'Liability' },
   client_hold: { name: 'Client holds', type: 'Liability' },
   customer_funds: { name: 'Customer funds', type: 'Liability' },
   vat_payable: { name: 'VAT payable', type: 'Liability' },

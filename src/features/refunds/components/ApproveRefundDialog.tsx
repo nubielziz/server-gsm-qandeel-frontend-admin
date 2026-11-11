@@ -99,7 +99,15 @@ export function ApproveRefundDialog({ refund: row, onClose, onShowEntries }: App
             you refund; the ledger entry shows the exact split.
           </p>
         )}
-        {payment.method === 'crypto' ? (
+        {payment.method === 'balance' ? (
+          <p className="flex gap-2 rounded-md bg-sunken p-2.5 text-sm text-ink2">
+            <Icon name="info" className="ic-sm mt-0.5 flex-none" />
+            <span>
+              This was paid from the customer’s store balance. The refund goes back to that balance at once,
+              with no gateway and no waiting.
+            </span>
+          </p>
+        ) : payment.method === 'crypto' ? (
           <p className="flex gap-2 rounded-md bg-sunken p-2.5 text-sm text-ink2">
             <Icon name="info" className="ic-sm mt-0.5 flex-none" />
             <span>

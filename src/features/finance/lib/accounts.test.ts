@@ -40,3 +40,16 @@ describe('helpers', () => {
     expect(balanceOf(rows, 'cogs')).toBeUndefined();
   });
 });
+
+describe('customer wallets (feature 21)', () => {
+  it('names the account kind and counts it as a liability', () => {
+    expect(accountName('customer_wallet')).toBe('Customer wallets');
+    const [line] = toTrialLines([{ kind: 'customer_wallet', balance: '-50.0000', accounts: 2 }]);
+    expect(line).toMatchObject({
+      name: 'Customer wallets',
+      type: 'Liability',
+      debit: null,
+      credit: '50.0000',
+    });
+  });
+});

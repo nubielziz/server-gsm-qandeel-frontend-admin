@@ -59,3 +59,4 @@ export * from './accounts';
 export * from './invoices';
 export * from './payments';
 export * from './reports';
+export * from './customerWallets';

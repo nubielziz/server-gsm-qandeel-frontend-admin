@@ -1,8 +1,9 @@
 // The tabs of the Finance page, what each needs, and the addresses that open them. Ports the `tabs` list of pageFinance in
-// 45-p-finance.js; Withdrawals stays out (MISMATCHES M3) and Invoices and Reports are new (MISMATCHES M123, MISMATCHES M124).
+// 45-p-finance.js; Withdrawals stays out (MISMATCHES M3), Invoices and Reports are new (MISMATCHES M123, MISMATCHES M124) and so is
+// Customer wallets (feature 21).
 import { hasPermission } from '@/lib/auth/permissions';
 
-export type FinanceTab = 'ledger' | 'payments' | 'accounts' | 'invoices' | 'reports';
+export type FinanceTab = 'ledger' | 'payments' | 'accounts' | 'wallets' | 'invoices' | 'reports';
 
 type TabSpec = { id: FinanceTab; label: string; permission: string | readonly string[] };
 
@@ -11,6 +12,7 @@ export const FINANCE_TABS: readonly TabSpec[] = [
   { id: 'ledger', label: 'Ledger', permission: 'ledger:read' },
   { id: 'payments', label: 'Deposits', permission: 'payments:read' },
   { id: 'accounts', label: 'Trial balance', permission: 'ledger:read' },
+  { id: 'wallets', label: 'Customer wallets', permission: 'wallet:read' },
   { id: 'invoices', label: 'Invoices', permission: 'invoices:read' },
   { id: 'reports', label: 'Reports', permission: ['reports:read', 'reports:finance'] },
 ];
@@ -19,6 +21,7 @@ export const FINANCE_TABS: readonly TabSpec[] = [
 export const FINANCE_PAGE_PERMISSION: readonly string[] = [
   'ledger:read',
   'payments:read',
+  'wallet:read',
   'invoices:read',
   'reports:read',
   'reports:finance',

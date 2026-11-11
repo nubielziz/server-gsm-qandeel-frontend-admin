@@ -51,7 +51,7 @@ export type DemoOrder = {
   reply: string | null;
   token: string;
   pay: {
-    method: 'card' | 'wallet' | 'crypto';
+    method: 'card' | 'wallet' | 'crypto' | 'balance';
     status: 'captured' | 'refunded' | 'partial_refund' | 'disputed' | 'chargeback';
     ref: string;
     threeDS: boolean;

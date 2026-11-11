@@ -6,7 +6,10 @@ import {
   DISPUTE_BADGE,
   isPaymentMethod,
   isRefundStatus,
+  METHOD_FILTERS,
+  METHOD_LABEL,
   PAYMENT_BADGE,
+  PAYMENT_METHODS,
   refundLabel,
   REFUND_BADGE,
   storefrontOrderLabel,
@@ -57,9 +60,18 @@ describe('badgeFor', () => {
   });
 });
 
+describe('the store balance (feature 21)', () => {
+  it('is the fourth way of paying, named Store balance in the table, the labels and the filter', () => {
+    expect(PAYMENT_METHODS).toEqual(['card', 'wallet', 'crypto', 'balance']);
+    expect(METHOD_LABEL.balance).toBe('Store balance');
+    expect(METHOD_FILTERS.map((filter) => filter.value)).toEqual(['', 'card', 'wallet', 'crypto', 'balance']);
+  });
+});
+
 describe('guards', () => {
   it('know the methods and statuses', () => {
     expect(isPaymentMethod('wallet')).toBe(true);
+    expect(isPaymentMethod('balance')).toBe(true);
     expect(isPaymentMethod('cash')).toBe(false);
     expect(isRefundStatus('failed')).toBe(true);
     expect(isRefundStatus('toString')).toBe(false);

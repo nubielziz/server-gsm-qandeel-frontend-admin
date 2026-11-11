@@ -51,11 +51,11 @@ describe('reconcileLedger', () => {
 describe('payments', () => {
   it('lists the deposits by status with the total in x-total-count', async () => {
     const pending = await listPayments({ filters: { purpose: 'topup', status: 'pending' } });
-    expect(pending.total).toBe(6);
+    expect(pending.total).toBe(7); // six merchant deposits and one customer top-up in review
     expect(pending.data.every((payment) => payment.status === 'pending')).toBe(true);
     const all = await listPayments({ filters: { purpose: 'topup' }, start: 0, end: 1 });
     expect(all.data).toHaveLength(1);
-    expect(all.total).toBe(54);
+    expect(all.total).toBe(56);
   });
 
   it('reads one deposit with its merchant, fee and net amount, and answers 404 for one that does not exist', async () => {
@@ -84,7 +84,7 @@ describe('payments', () => {
     expect(data[0].entries.reduce((sum, line) => sum + Number(line.amount), 0)).toBeCloseTo(0);
     const trial = await getTrialBalance();
     expect(trial.totalDebit).toBe(trial.totalCredit);
-    expect((await listPayments({ filters: { purpose: 'topup', status: 'pending' } })).total).toBe(5);
+    expect((await listPayments({ filters: { purpose: 'topup', status: 'pending' } })).total).toBe(6);
   });
 
   it('refuses a second decision on the same deposit with the server’s message', async () => {

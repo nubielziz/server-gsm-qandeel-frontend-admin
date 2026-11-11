@@ -13,6 +13,18 @@ export const TRIAL_BALANCE_KEY = ['api', 'finance', 'trial-balance'] as const;
 /** The three reports (the header's wallet figures read the wallet exposure one). */
 export const REPORT_KEY = ['api', 'finance', 'reports'] as const;
 
+/** The customer wallets list (feature 21), and what an approved customer top-up makes stale besides it. */
+export const CUSTOMER_WALLETS_KEY = ['api', 'finance', 'customer-wallets'] as const;
+
+/**
+ * The customers feature's balance reads (`['api', 'customers', 'wallet']`): finance cannot import them, so the prefix is written
+ * out here and kept in step with `CUSTOMER_WALLET_KEY` there.
+ */
+export const CUSTOMER_BALANCE_KEY = ['api', 'customers', 'wallet'] as const;
+
+/** The statement rows of each customer's balance (same note as above). */
+export const CUSTOMER_BALANCE_STATEMENT_KEY = ['api', 'customers', 'wallet-statement'] as const;
+
 /** The ledger entries posted for each deposit (its "View ledger entries" dialog). */
 export const PAYMENT_ENTRIES_KEY = ['api', 'finance', 'payment-entries'] as const;
 
@@ -32,18 +44,24 @@ export const APPROVE_STALE_KEYS: QueryKey[] = [
   REPORT_KEY,
   PAYMENT_ENTRIES_KEY,
   MERCHANT_WALLET_KEY,
+  // A customer's top-up credits their store balance (feature 21): the wallet figures, statement and list change.
+  CUSTOMER_WALLETS_KEY,
+  CUSTOMER_BALANCE_KEY,
+  CUSTOMER_BALANCE_STATEMENT_KEY,
 ];
 
 /**
  * The Refine targets of a decided deposit: its lists and record, plus the ledger entries and the invoices an approval
  * posts or settles (a rejection changes neither, but a refresh of two lists is cheap).
  */
-export function staleDeposit(payment: Pick<Payment, 'id' | 'client'>): InvalidateTarget[] {
+export function staleDeposit(payment: Pick<Payment, 'id' | 'client' | 'customer'>): InvalidateTarget[] {
   return [
     { resource: 'payments', id: payment.id },
     { resource: 'ledger/transactions' },
     { resource: 'invoices' },
     // The merchant's record carries its wallet figures, which an approval changes.
     { resource: 'clients', id: payment.client?.id },
+    // A customer's top-up credits their balance; their record lists the customer's counts.
+    ...(payment.customer ? [{ resource: 'customers', id: payment.customer.id }] : []),
   ];
 }

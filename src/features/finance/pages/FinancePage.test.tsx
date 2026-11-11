@@ -14,14 +14,21 @@ setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 
 describe('the page', () => {
-  it('opens on the Ledger with the five tabs and the number of deposits waiting', async () => {
+  it('opens on the Ledger with the six tabs and the number of deposits waiting', async () => {
     await openFinance();
     await waitFor(() =>
-      expect(tabTexts()).toEqual(['Ledger', 'Deposits6', 'Trial balance', 'Invoices', 'Reports']),
+      expect(tabTexts()).toEqual([
+        'Ledger',
+        'Deposits7',
+        'Trial balance',
+        'Customer wallets',
+        'Invoices',
+        'Reports',
+      ]),
     );
     expect(financeTabs().getByRole('tab', { name: 'Ledger' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByRole('tab', { name: /Withdrawals/ })).not.toBeInTheDocument();
-    expect(await screen.findByText('6 deposits need a decision.')).toBeInTheDocument();
+    expect(await screen.findByText('7 deposits need a decision.')).toBeInTheDocument();
   });
 
   it('shows the five key figures from the server', async () => {
@@ -31,7 +38,7 @@ describe('the page', () => {
     expect(strip().getByText('Held in open orders')).toBeInTheDocument();
     expect(strip().getByText('Supplier prepaid')).toBeInTheDocument();
     expect(await strip().findByText('deposits to approve or reject')).toBeInTheDocument();
-    expect(strip().getByText('Waiting for review').nextElementSibling).toHaveTextContent('6');
+    expect(strip().getByText('Waiting for review').nextElementSibling).toHaveTextContent('7');
   });
 
   it('keeps the tab in the address and drops the other tab’s parameters', async () => {
@@ -53,7 +60,7 @@ describe('the page', () => {
 
   it('shows only the tabs and figures a role may read', async () => {
     await openFinance('/finance?tab=invoices', { permissions: ['payments:read', 'invoices:read'] });
-    await waitFor(() => expect(tabTexts()).toEqual(['Deposits6', 'Invoices']));
+    await waitFor(() => expect(tabTexts()).toEqual(['Deposits7', 'Invoices']));
     // The address asked for a tab the role has, so it shows; the figures it may not read are left out.
     expect(financeTabs().getByRole('tab', { name: 'Invoices' })).toHaveAttribute('aria-selected', 'true');
     expect(strip().queryByText('Bank')).not.toBeInTheDocument();

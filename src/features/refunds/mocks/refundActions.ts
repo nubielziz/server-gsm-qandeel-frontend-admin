@@ -29,6 +29,8 @@ export async function completeRefundMock(
   const gross = Number(refund.payment.amount);
   const split = splitRefund(gross, Number(refund.payment.taxAmount), amount);
   const manual = refund.payment.method === 'crypto';
+  // Paid from the store balance: the refund goes back to it at once, with no gateway id (feature 21).
+  const balance = refund.payment.method === 'balance';
   const partial = split.total < gross - 0.005;
   gatewaySeq += 1;
   Object.assign(refund, {
@@ -48,12 +50,12 @@ export async function completeRefundMock(
   const order = (await orderStore()).find(refund.orderId);
   if (order) {
     const sum = lm(split.total, refund.currency, refund.fx);
-    addEvent(
-      order,
-      'refund',
-      `${partial ? 'Partial refund of ' : 'Refund of '}${sum}${manual ? ' paid out manually in USDT' : ' sent to the original payment method'}`,
-      actor,
-    );
+    const where = manual
+      ? ' paid out manually in USDT'
+      : balance
+        ? ' returned to the customer’s store balance at once'
+        : ' sent to the original payment method';
+    addEvent(order, 'refund', `${partial ? 'Partial refund of ' : 'Refund of '}${sum}${where}`, actor);
   }
   await postLedger({
     kind: 'refund',

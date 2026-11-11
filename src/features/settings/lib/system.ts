@@ -3,9 +3,10 @@
 import type { JsonValue } from '@/lib/api';
 import type { Settings } from '../types';
 import { POLICY_KEYS } from './policies';
+import { WALLET_SETTINGS } from './wallet';
 
-/** A setting the tab can edit with a typed field. */
-export type SettingSpec = {
+/** A whole-number setting the tab can edit with a number box. */
+export type NumberSetting = {
   key: string;
   label: string;
   type: 'integer';
@@ -14,10 +15,18 @@ export type SettingSpec = {
   /** The range the field accepts; a hint, the server decides. */
   min: number;
   max: number;
+  /** What the server uses while the key is not set; shown in the empty box. */
+  fallback?: number;
 };
 
+/** An on/off setting the tab edits with a switch (feature 21). Unset means off. */
+export type BooleanSetting = { key: string; label: string; type: 'boolean'; hint: string };
+
+/** A setting the tab can edit with a typed field. */
+export type SettingSpec = NumberSetting | BooleanSetting;
+
 /** The settings with a typed form. More keys are added here when the backend names them. */
-export const KNOWN_SETTINGS: readonly SettingSpec[] = [
+export const KNOWN_SETTINGS: readonly NumberSetting[] = [
   {
     key: 'imeiRetentionDays',
     label: 'IMEI retention',
@@ -47,6 +56,7 @@ const HANDLED_KEYS: readonly string[] = [
   ...KNOWN_SETTINGS.map((spec) => spec.key),
   ...LINKED_SETTINGS.map((setting) => setting.key),
   ...POLICY_KEYS,
+  ...WALLET_SETTINGS.map((spec) => spec.key),
 ];
 
 /** The keys nobody on this console edits, with their values, in key order (a key set to `undefined` is left out). */
@@ -59,13 +69,13 @@ export function unknownSettings(settings: Settings | undefined): [string, JsonVa
 }
 
 /** The value of a known setting as the text of its field; empty when the server has not set it. */
-export function fieldText(settings: Settings | undefined, spec: SettingSpec): string {
+export function fieldText(settings: Settings | undefined, spec: NumberSetting): string {
   const value = settings?.[spec.key];
   return typeof value === 'number' ? String(value) : '';
 }
 
 /** The message for a value outside the field's range or not a whole number, or null when it is fine. */
-export function settingProblem(spec: SettingSpec, text: string): string | null {
+export function settingProblem(spec: NumberSetting, text: string): string | null {
   const value = text.trim();
   if (!/^\d{1,7}$/.test(value)) return 'Enter a whole number.';
   const number = Number(value);

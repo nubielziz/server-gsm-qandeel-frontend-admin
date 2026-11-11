@@ -10,7 +10,7 @@ export type { NamedRef };
 // ---- Review queue ----
 
 /** How a storefront customer paid (the demo's `B2C_METHODS`). */
-export type PaymentMethod = 'card' | 'wallet' | 'crypto';
+export type PaymentMethod = 'card' | 'wallet' | 'crypto' | 'balance';
 
 /** The level the team gave a customer. */
 export type CustomerRisk = 'low' | 'medium' | 'high';

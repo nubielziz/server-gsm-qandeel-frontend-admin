@@ -6,7 +6,7 @@ import { money, useNow } from '@/lib/format';
 import type { FinanceGrants } from '../hooks/useFinanceGrants';
 import { useApprovePayment } from '../hooks/usePaymentMutations';
 import { usePayment } from '../hooks/usePayment';
-import { methodLabel, paymentLabel } from '../lib/payments';
+import { methodLabel, payerName, paymentLabel } from '../lib/payments';
 import type { Payment } from '../types';
 import { PaymentDetails } from './PaymentDetails';
 import { PaymentLedgerDialog } from './PaymentLedgerDialog';
@@ -59,7 +59,7 @@ export function PaymentDialog({ id, row, grants, onClose }: PaymentDialogProps) 
       open
       onClose={onClose}
       title={`${fresh ? 'Review deposit' : 'Deposit'} ${paymentLabel(payment.id)}`}
-      sub={`${payment.client?.name ?? 'Merchant'} · ${methodLabel(payment)}`}
+      sub={`${payerName(payment)} · ${methodLabel(payment)}`}
       dismissible={!approve.isPending}
       error={approve.error ? errorText(approve.error) : null}
       footer={
