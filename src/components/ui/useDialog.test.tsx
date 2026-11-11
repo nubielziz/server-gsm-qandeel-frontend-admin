@@ -1,7 +1,7 @@
 // Tests for useDialog in React Strict Mode: a dialog that is mounted already open (a parent that renders it only while
 // it is needed) must stay open in development, where React simulates an unmount and a re-mount.
-import { render, screen } from '@testing-library/react';
-import { StrictMode } from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { StrictMode, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Drawer } from './Drawer';
 import { Modal } from './Modal';
@@ -67,5 +67,61 @@ describe('a dialog mounted already open, in Strict Mode', () => {
     );
     screen.getByRole('dialog', { name: 'Add an admin' }).dispatchEvent(new Event('close'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** A drawer that opens a dialog from inside, like the campaign composer opening the people picker. */
+function DrawerWithPicker({ onDrawerClose }: { onDrawerClose: () => void }) {
+  const [picker, setPicker] = useState(false);
+  return (
+    <Drawer open onClose={onDrawerClose} title="New campaign">
+      <button type="button" onClick={() => setPicker(true)}>
+        Exclude people
+      </button>
+      {picker && (
+        <Modal open onClose={() => setPicker(false)} title="Leave out people">
+          <p>Picker</p>
+        </Modal>
+      )}
+    </Drawer>
+  );
+}
+
+// React passes a dialog's cancel and close events up its component tree, through portals, to the dialogs around it.
+describe('a dialog opened from inside a drawer', () => {
+  it('opens in Strict Mode and leaves the drawer open', async () => {
+    closeLikeABrowser();
+    const onDrawerClose = vi.fn();
+    render(
+      <StrictMode>
+        <DrawerWithPicker onDrawerClose={onDrawerClose} />
+      </StrictMode>,
+    );
+    await later();
+    fireEvent.click(screen.getByRole('button', { name: 'Exclude people' }));
+    await later();
+    expect(onDrawerClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: 'New campaign' })).toHaveAttribute('open');
+    expect(screen.getByRole('dialog', { name: 'Leave out people' })).toHaveAttribute('open');
+  });
+
+  it('closes alone on Escape: the drawer stays open', () => {
+    const onDrawerClose = vi.fn();
+    render(<DrawerWithPicker onDrawerClose={onDrawerClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Exclude people' }));
+    const escape = new Event('cancel', { cancelable: true });
+    fireEvent(screen.getByRole('dialog', { name: 'Leave out people' }), escape);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(screen.queryByRole('dialog', { name: 'Leave out people' })).not.toBeInTheDocument();
+    expect(onDrawerClose).not.toHaveBeenCalled();
+  });
+
+  it('closes alone when the browser closes it: the drawer stays open', () => {
+    const onDrawerClose = vi.fn();
+    render(<DrawerWithPicker onDrawerClose={onDrawerClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Exclude people' }));
+    fireEvent(screen.getByRole('dialog', { name: 'Leave out people' }), new Event('close'));
+    expect(screen.queryByRole('dialog', { name: 'Leave out people' })).not.toBeInTheDocument();
+    expect(onDrawerClose).not.toHaveBeenCalled();
   });
 });

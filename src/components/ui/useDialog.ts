@@ -44,13 +44,18 @@ export function useDialog({ open, onClose, dismissible = true, focusField = true
     };
   }, []);
 
+  // React passes a dialog's `cancel` and `close` events up its component tree, through portals, so a dialog opened
+  // from inside another one (the people picker inside the campaign drawer) would close the outer one too. Only events
+  // of this dialog itself count.
   const dialogProps = {
     onCancel(e: SyntheticEvent<HTMLDialogElement>) {
+      if (e.target !== e.currentTarget) return;
       e.preventDefault();
       if (dismissible) onClose();
     },
     // Safety net for a native close the parent did not ask for.
-    onClose() {
+    onClose(e: SyntheticEvent<HTMLDialogElement>) {
+      if (e.target !== e.currentTarget) return;
       if (closedByCleanup.current) {
         closedByCleanup.current = false;
         return;

@@ -107,7 +107,9 @@ describe('Issue manual invoice', () => {
     await screen.findByText('71 invoices');
     await user.click(screen.getByRole('button', { name: 'Issue manual invoice' }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    await user.selectOptions(await dialog.findByLabelText('Merchant'), 'Zain Mobile Hub');
+    // The merchant list loads after the dialog opens; under a full parallel run it can take a while.
+    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
+    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
     await user.type(dialog.getByLabelText('Amount (USD)'), '125.5');
     await user.type(dialog.getByLabelText('What it is for'), 'Setup fee');
     await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
