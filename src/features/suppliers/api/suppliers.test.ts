@@ -197,6 +197,9 @@ describe('supplier services and the import', () => {
     expect(items[0].suggestedPrice).not.toBeNull();
     expect(items[1].previousCost).not.toBe(items[1].cost);
     expect(items[2].suggestedPrice).toBeNull();
+    // The supplier's rule for a new item, and no difference for a service that states none.
+    expect(items[0]).toMatchObject({ minQty: 1, maxQty: 50, qtyOptions: [], quantityDiffers: false });
+    expect(items[2]).toMatchObject({ minQty: 1, maxQty: 1, qtyOptions: [], quantityDiffers: false });
 
     expect(await importServices(NORDIC, { supplierServiceIds: ids })).toEqual({
       created: 1,

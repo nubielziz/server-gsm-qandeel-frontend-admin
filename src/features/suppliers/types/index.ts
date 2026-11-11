@@ -161,7 +161,7 @@ export type ImportBody = { supplierServiceIds: Id[] };
 /** What the preview says will happen to one item: it is new, it matches a service already imported, or its cost changed. */
 export type ImportItemState = 'new' | 'matching' | 'changed';
 
-/** One line of the preview (assumed contract). `suggestedPrice` is the server's price for a new service. */
+/** One line of the preview (assumed contract). `suggestedPrice` is the server's price for a new service. The quantity keys follow backend B213. */
 export type ImportPreviewItem = {
   supplierServiceId: Id;
   name: string;
@@ -172,6 +172,12 @@ export type ImportPreviewItem = {
   cost: Money;
   previousCost: Money | null;
   suggestedPrice: Money | null;
+  /** The supplier's quantity rule as the server reads it; for a new item, what the service will get (feature 25). */
+  minQty: number;
+  maxQty: number;
+  qtyOptions: number[];
+  /** True when a linked service has a quantity rule other than the supplier's; the import never changes it. */
+  quantityDiffers: boolean;
 };
 
 /** Answer of `POST /admin/suppliers/:id/import/preview` (assumed contract). */

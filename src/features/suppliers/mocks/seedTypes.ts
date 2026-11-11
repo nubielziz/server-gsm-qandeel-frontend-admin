@@ -56,14 +56,23 @@ export type MockService = {
   status: string;
   slaMinutes: number;
   cost: string;
+  /** The quantity rule (feature 25): 1/1/[] unless the import copied a supplier's rule. */
+  minQty: number;
+  maxQty: number;
+  qtyOptions: number[];
 };
+/** A quantity rule as a Dhru supplier states it. */
+export type MockQuantity = { minQty: number; maxQty: number; qtyOptions: number[] };
 /** `service_supplier_links`: a service, the supplier service it uses and its place in the chain. */
 export type MockLink = { serviceId: number; supplierServiceId: number; priority: number };
 /** A call to a supplier with its bodies; the list leaves the bodies out. */
 export type MockLog = SupplierApiLog & { request: JsonValue; response: JsonValue };
 
-/** An item of a supplier's list; `previousCredit` is set while its cost has changed since the last import. */
-export type MockItem = SupplierService & { previousCredit: string | null };
+/**
+ * An item of a supplier's list; `previousCredit` is set while its cost has changed since the last import. `quantity` is the
+ * rule the supplier states (the real server reads it from the synced entry); leave it out for one per order. Neither shows in the list.
+ */
+export type MockItem = SupplierService & { previousCredit: string | null; quantity?: MockQuantity };
 
 /** Every table of the suppliers mock. */
 export type SuppliersState = {

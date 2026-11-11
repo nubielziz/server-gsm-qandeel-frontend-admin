@@ -23,9 +23,14 @@ export type ExecutionMode = 'auto' | 'manual';
  * One service, as `GET /admin/services` sends it (assumed contract). The price figures are worked out by the server:
  * `floorPrice` is the cost plus the minimum profit, `marginPct` the margin of the base price over the cost and
  * `belowFloor` says the base price is under the floor. The console never computes them. `code`, `slaMinutes` and
- * `executionMode` are the demo's columns; the supplier names are joins.
+ * `executionMode` are the demo's columns; the supplier names are joins. `minQty`, `maxQty` and `qtyOptions` are the quantity
+ * rule: with pack sizes the buyer picks one of them (and `minQty`/`maxQty` are the smallest and largest pack), without them any
+ * whole quantity from `minQty` to `maxQty`.
  */
-export type Service = Pick<ServiceRow, 'id' | 'name' | 'basePrice' | 'cost'> & {
+export type Service = Pick<
+  ServiceRow,
+  'id' | 'name' | 'basePrice' | 'cost' | 'minQty' | 'maxQty' | 'qtyOptions'
+> & {
   code: string;
   type: ServiceType;
   status: ServiceStatus;
@@ -83,6 +88,10 @@ export type CreateServiceBody = {
   type: ServiceType;
   slaMinutes: number;
   basePrice: Money;
+  /** The quantity rule; leave all three out for one per order. With `qtyOptions` the server derives the smallest and largest. */
+  minQty?: number;
+  maxQty?: number;
+  qtyOptions?: number[];
 };
 
 /** Body of `PATCH /admin/services/:id` (assumed contract): only the fields that change. */

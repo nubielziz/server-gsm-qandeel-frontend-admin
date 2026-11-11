@@ -4,3 +4,4 @@ export * from './money';
 export * from './number';
 export * from './text';
 export * from './useNow';
+export * from './quantity';

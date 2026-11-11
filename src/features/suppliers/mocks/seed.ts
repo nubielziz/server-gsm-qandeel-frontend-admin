@@ -115,6 +115,9 @@ export async function buildState(): Promise<SuppliersState> {
       status: service.status,
       slaMinutes: service.sla,
       cost,
+      minQty: 1,
+      maxQty: 1,
+      qtyOptions: [],
     });
     const chain = [service.sup, service.fb].filter((supplier): supplier is string => Boolean(supplier));
     chain.forEach((supplierId, index) => {
@@ -144,7 +147,17 @@ export async function buildState(): Promise<SuppliersState> {
   }
   for (const supplier of suppliers) {
     for (const [index, [name, group, type]] of (EXTRAS[supplier.id] ?? []).entries()) {
-      addItem(supplier.id, name, group, type, toMoney(2.5 + index * 1.75), `${(index + 1) * 2} hours`);
+      const item = addItem(
+        supplier.id,
+        name,
+        group,
+        type,
+        toMoney(2.5 + index * 1.75),
+        `${(index + 1) * 2} hours`,
+      );
+      // The first two new items state a quantity rule, so the import preview has one to show.
+      if (index === 0) item.quantity = { minQty: 1, maxQty: 50, qtyOptions: [] };
+      if (index === 1) item.quantity = { minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] };
     }
   }
 

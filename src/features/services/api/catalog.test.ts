@@ -143,6 +143,61 @@ describe('createService', () => {
   });
 });
 
+describe('the quantity keys', () => {
+  const body = {
+    name: 'Quantity Check',
+    code: 'QTY-API-1',
+    categoryId: APPLE,
+    type: 'imei' as const,
+    slaMinutes: 15,
+    basePrice: '2.5000',
+  };
+
+  it('sends every service as one per order unless told otherwise', async () => {
+    const created = await createService(body);
+    expect(created).toMatchObject({ minQty: 1, maxQty: 1, qtyOptions: [] });
+  });
+
+  it('stores packs sorted and takes the smallest and largest from them', async () => {
+    const created = await createService({ ...body, code: 'QTY-API-2', qtyOptions: [25, 5, 10] });
+    expect(created).toMatchObject({ minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] });
+  });
+
+  it('leaves the rule alone when a change does not send it, and clears the packs with an empty list', async () => {
+    await updateService(ATT, { qtyOptions: [10, 5] });
+    expect(await updateService(ATT, { status: 'disabled' })).toMatchObject({
+      minQty: 5,
+      qtyOptions: [5, 10],
+    });
+    expect(await updateService(ATT, { minQty: 1, maxQty: 9, qtyOptions: [] })).toMatchObject({
+      minQty: 1,
+      maxQty: 9,
+      qtyOptions: [],
+    });
+  });
+
+  it('refuses a largest quantity below the smallest, naming the key that was sent', async () => {
+    const error = await updateService(ATT, { minQty: 5, maxQty: 2 }).catch((e: unknown) => e);
+    expect((error as ApiError).fieldErrors.maxQty[0]).toBe(
+      'The largest quantity cannot be below the smallest (5).',
+    );
+    const only = await updateService(ATT, { minQty: 5 }).catch((e: unknown) => e);
+    expect(only).toMatchObject({ status: 422 });
+    expect((only as ApiError).fieldErrors.minQty[0]).toBe(
+      'The smallest quantity cannot be above the largest (1).',
+    );
+  });
+
+  it('refuses a smallest quantity that is not the smallest pack, and bad packs', async () => {
+    const error = await createService({ ...body, code: 'QTY-API-3', qtyOptions: [5, 10], minQty: 1 }).catch(
+      (e: unknown) => e,
+    );
+    expect((error as ApiError).fieldErrors.minQty[0]).toMatch(/^This service sells fixed packs/);
+    const repeated = await updateService(ATT, { qtyOptions: [5, 5] }).catch((e: unknown) => e);
+    expect((repeated as ApiError).fieldErrors.qtyOptions[0]).toBe('The pack size 5 is repeated.');
+  });
+});
+
 describe('updateService', () => {
   it('patches only the fields it is given', async () => {
     const requests = recordRequests();

@@ -1,7 +1,7 @@
 // ImportPreview: step 2 of "Import services…": what the server says each picked service would do: new, matching a service
 // already imported, or with a changed cost, with the price it suggests for a new one. Changes nothing until Import is pressed.
 import { Badge, TypeTag } from '@/components/ui';
-import { money } from '@/lib/format';
+import { money, quantityText } from '@/lib/format';
 import { countItems, IMPORT_BADGE, previewSummary } from '../lib/importPlan';
 import type { ImportPreviewItem } from '../types';
 
@@ -18,6 +18,7 @@ export function ImportPreview({ items }: { items: readonly ImportPreviewItem[] }
             <tr>
               <th scope="col">Service</th>
               <th scope="col">What happens</th>
+              <th scope="col">Quantity</th>
               <th scope="col" className="num">
                 Cost
               </th>
@@ -42,6 +43,12 @@ export function ImportPreview({ items }: { items: readonly ImportPreviewItem[] }
                     <Badge tone={badge.tone} icon={badge.icon}>
                       {badge.label}
                     </Badge>
+                  </td>
+                  <td>
+                    {quantityText(item)}
+                    {item.quantityDiffers && (
+                      <p className="text-2xs text-ink3">The service keeps its own rule.</p>
+                    )}
                   </td>
                   <td className="num">
                     {money(item.cost)}

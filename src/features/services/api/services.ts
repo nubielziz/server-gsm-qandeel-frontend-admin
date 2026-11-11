@@ -39,7 +39,9 @@ export function getService(id: Id, init?: ApiInit): Promise<ServiceDetail> {
 
 /**
  * Creates a service. The price figures come back worked out by the server. Supplier links are made on the Suppliers page.
- * Assumed contract: body `{ name, code, categoryId, type, slaMinutes, basePrice }`, answer the new service.
+ * Assumed contract: body `{ name, code, categoryId, type, slaMinutes, basePrice }` plus the optional quantity rule (`minQty`,
+ * `maxQty` or `qtyOptions`; all three left out means one per order; with packs the server stores the smallest and largest
+ * pack as `minQty` and `maxQty`), answer the new service.
  * @route POST /admin/services
  */
 export function createService(body: CreateServiceBody, init?: ApiInit): Promise<Service> {
@@ -50,6 +52,8 @@ export function createService(body: CreateServiceBody, init?: ApiInit): Promise<
  * Changes some fields of a service: the Enabled and Auto switches (`status`, `executionMode`), the price dialog
  * (`basePrice`, `minProfit`) and the edit dialog. Only the fields that change are sent. The answer has the floor and
  * the margin as the server now works them out.
+ * The quantity rule (`minQty`, `maxQty`, `qtyOptions`) changes with the keys that are sent; `qtyOptions: []` clears the packs, so a
+ * move from packs to a range sends all three.
  * Assumed contract: body is any of the fields of `UpdateServiceBody`, answer the updated service.
  * @route PATCH /admin/services/:id
  */

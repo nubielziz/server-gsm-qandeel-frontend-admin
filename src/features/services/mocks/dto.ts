@@ -28,6 +28,9 @@ export function toService(stores: Stores, row: MockService): Service {
     marginPct: toMoney(marginOf(row)),
     belowFloor: isBelowFloor(row),
     slaMinutes: row.slaMinutes,
+    minQty: row.minQty,
+    maxQty: row.maxQty,
+    qtyOptions: row.qtyOptions,
     supplier: row.supplierId !== null && supplier ? { id: row.supplierId, name: supplier } : null,
     fallbackSupplier: row.fallbackId !== null && fallback ? { id: row.fallbackId, name: fallback } : null,
   };

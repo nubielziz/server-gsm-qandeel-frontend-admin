@@ -24,6 +24,10 @@ export type MockService = {
   price: number;
   minProfit: number;
   slaMinutes: number;
+  /** The quantity rule: with packs, min and max are the smallest and largest pack. */
+  minQty: number;
+  maxQty: number;
+  qtyOptions: number[];
   supplierId: number | null;
   fallbackId: number | null;
   status: 'active' | 'disabled';

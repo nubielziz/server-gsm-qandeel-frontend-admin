@@ -1,18 +1,21 @@
 // ServiceFormDialog: "New service" and "Edit service" (`POST` and `PATCH /admin/services`). The demo had neither (its empty state only
-// offered "Import from supplier"); the map has both. A name, a code, a category, a type and the SLA; a new service also gets its
-// first price. Supplier links belong to the Suppliers page, so an edit shows the linked suppliers read-only with a link there.
-import { useForm } from 'react-hook-form';
+// offered "Import from supplier"); the map has both. A name, a code, a category, a type, the SLA and the quantity (one per order,
+// a range or packs); a new service also gets its first price. Supplier links belong to the Suppliers page, so an edit shows the
+// linked suppliers read-only with a link there.
+import { FormProvider, useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, SelectField, TextField, toast } from '@/components/ui';
 import { useCategories } from '../hooks/useChoices';
 import { useCreateService, useUpdateService } from '../hooks/useServiceMutations';
 import { isMoneyText, toMoneyText } from '../lib/money';
+import { quantityBody, quantityDefaults, type QuantityValues } from '../lib/quantity';
 import { withChosen } from '../lib/select';
 import { TYPE_OPTIONS } from '../lib/status';
 import type { CreateServiceBody, Service, ServiceType, UpdateServiceBody } from '../types';
 import { LinkedSuppliers } from './LinkedSuppliers';
 import { LookupNote } from './LookupNote';
+import { QuantityFields } from './QuantityFields';
 
-type Values = {
+type Values = QuantityValues & {
   name: string;
   code: string;
   categoryId: string;
@@ -40,6 +43,7 @@ export function ServiceFormDialog({ service, onClose }: ServiceFormDialogProps) 
       type: service?.type ?? 'imei',
       slaMinutes: String(service?.slaMinutes ?? 60),
       basePrice: '',
+      ...quantityDefaults(service),
     },
   });
   const {
@@ -59,7 +63,11 @@ export function ServiceFormDialog({ service, onClose }: ServiceFormDialogProps) 
         slaMinutes: Number(values.slaMinutes),
       };
       if (!service) {
-        const body: CreateServiceBody = { ...next, basePrice: toMoneyText(values.basePrice) };
+        const body: CreateServiceBody = {
+          ...next,
+          basePrice: toMoneyText(values.basePrice),
+          ...quantityBody(values),
+        };
         await create.mutateAsync(body);
         return;
       }
@@ -70,6 +78,7 @@ export function ServiceFormDialog({ service, onClose }: ServiceFormDialogProps) 
       if (next.categoryId !== service.categoryId) body.categoryId = next.categoryId;
       if (next.type !== service.type) body.type = next.type;
       if (next.slaMinutes !== service.slaMinutes) body.slaMinutes = next.slaMinutes;
+      Object.assign(body, quantityBody(values, service));
       if (Object.keys(body).length === 0) {
         toast({ kind: 'info', title: 'Nothing changed' });
         return;
@@ -78,7 +87,17 @@ export function ServiceFormDialog({ service, onClose }: ServiceFormDialogProps) 
     },
     // Every name here has an error line under its input; the price input exists only when creating.
     {
-      fields: ['name', 'code', 'categoryId', 'type', 'slaMinutes', ...(service ? [] : ['basePrice'])],
+      fields: [
+        'name',
+        'code',
+        'categoryId',
+        'type',
+        'slaMinutes',
+        'minQty',
+        'maxQty',
+        'qtyOptions',
+        ...(service ? [] : ['basePrice']),
+      ],
     },
   );
 
@@ -101,70 +120,75 @@ export function ServiceFormDialog({ service, onClose }: ServiceFormDialogProps) 
       onClose={onClose}
       onSubmit={submit}
     >
-      <div className="space-y-3">
-        <TextField
-          label="Name"
-          autoComplete="off"
-          maxLength={120}
-          autoFocus
-          error={errors.name}
-          {...register('name', { validate: (value) => value.trim() !== '' || 'Enter a name.' })}
-        />
-        <TextField
-          label="Code"
-          className="mono"
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={40}
-          hint="A short unique code, such as IMEI-ATT-USA."
-          error={errors.code}
-          {...register('code', { validate: (value) => value.trim() !== '' || 'Enter a code.' })}
-        />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SelectField
-            label="Category"
-            selectWrapClassName="w-full"
-            options={categoryOptions}
-            error={errors.categoryId}
-            {...register('categoryId', { validate: (value) => /^\d+$/.test(value) || 'Choose a category.' })}
-            value={watch('categoryId')}
-          />
-          <SelectField
-            label="Type"
-            selectWrapClassName="w-full"
-            options={TYPE_OPTIONS}
-            error={errors.type}
-            {...register('type')}
-          />
-        </div>
-        <LookupNote what="the categories" query={categories.query} />
-        <div className="grid gap-3 sm:grid-cols-2">
+      <FormProvider {...form}>
+        <div className="space-y-3">
           <TextField
-            label="SLA (minutes)"
-            inputMode="numeric"
+            label="Name"
             autoComplete="off"
-            hint="The target time to deliver an order."
-            error={errors.slaMinutes}
-            {...register('slaMinutes', {
-              validate: (value) =>
-                (/^\d+$/.test(value.trim()) && Number(value) >= 1) || 'Enter minutes, 1 or more.',
-            })}
+            maxLength={120}
+            autoFocus
+            error={errors.name}
+            {...register('name', { validate: (value) => value.trim() !== '' || 'Enter a name.' })}
           />
-          {!service && (
+          <TextField
+            label="Code"
+            className="mono"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={40}
+            hint="A short unique code, such as IMEI-ATT-USA."
+            error={errors.code}
+            {...register('code', { validate: (value) => value.trim() !== '' || 'Enter a code.' })}
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <SelectField
+              label="Category"
+              selectWrapClassName="w-full"
+              options={categoryOptions}
+              error={errors.categoryId}
+              {...register('categoryId', {
+                validate: (value) => /^\d+$/.test(value) || 'Choose a category.',
+              })}
+              value={watch('categoryId')}
+            />
+            <SelectField
+              label="Type"
+              selectWrapClassName="w-full"
+              options={TYPE_OPTIONS}
+              error={errors.type}
+              {...register('type')}
+            />
+          </div>
+          <LookupNote what="the categories" query={categories.query} />
+          <div className="grid gap-3 sm:grid-cols-2">
             <TextField
-              label="Base price (USD)"
-              inputMode="decimal"
+              label="SLA (minutes)"
+              inputMode="numeric"
               autoComplete="off"
-              error={errors.basePrice}
-              {...register('basePrice', {
+              hint="The target time to deliver an order."
+              error={errors.slaMinutes}
+              {...register('slaMinutes', {
                 validate: (value) =>
-                  (isMoneyText(value) && Number(value) > 0) || 'Enter a price greater than zero.',
+                  (/^\d+$/.test(value.trim()) && Number(value) >= 1) || 'Enter minutes, 1 or more.',
               })}
             />
-          )}
+            {!service && (
+              <TextField
+                label="Base price (USD)"
+                inputMode="decimal"
+                autoComplete="off"
+                error={errors.basePrice}
+                {...register('basePrice', {
+                  validate: (value) =>
+                    (isMoneyText(value) && Number(value) > 0) || 'Enter a price greater than zero.',
+                })}
+              />
+            )}
+          </div>
+          <QuantityFields />
+          {service && <LinkedSuppliers service={service} />}
         </div>
-        {service && <LinkedSuppliers service={service} />}
-      </div>
+      </FormProvider>
     </FormDialog>
   );
 }

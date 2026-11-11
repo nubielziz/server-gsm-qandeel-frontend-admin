@@ -209,6 +209,13 @@ describe('import services', () => {
     expect(rows['AT&T USA Premier Unlock'].getByText('Matches')).toBeInTheDocument();
     expect(rows['iCloud Clean / Lost Check'].getByText('Cost changed')).toBeInTheDocument();
     expect(rows['iCloud Clean / Lost Check'].getByText(/^was \$/)).toBeInTheDocument();
+    // The Quantity column: the supplier's own rule for a new item, one per order for a service that states none.
+    expect(preview.getByRole('columnheader', { name: 'Quantity' })).toBeInTheDocument();
+    expect(rows['Sprint USA Premium Unlock'].getByText('1–50')).toBeInTheDocument();
+    expect(rows['AT&T USA Premier Unlock'].getByText('1')).toBeInTheDocument();
+    expect(
+      rows['AT&T USA Premier Unlock'].queryByText('The service keeps its own rule.'),
+    ).not.toBeInTheDocument();
 
     // Back keeps the picks; the import sends the new and the changed one, not the one that already matches.
     await user.click(dialog.getByRole('button', { name: 'Back' }));
@@ -225,6 +232,56 @@ describe('import services', () => {
     const table = within(await detail.findByRole('table', { name: 'Services using Nordic GSM' }));
     await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(16));
     expect(table.getByText('Sprint USA Premium Unlock')).toBeInTheDocument();
+  });
+
+  it('lists packs, and says when a linked service keeps a rule of its own', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/suppliers/:id/import/preview', () =>
+        HttpResponse.json({
+          items: [
+            {
+              supplierServiceId: 2,
+              name: 'Telstra Australia Unlock',
+              type: 'imei',
+              state: 'new',
+              serviceId: null,
+              serviceName: null,
+              cost: '4.2500',
+              previousCost: null,
+              suggestedPrice: '6.8000',
+              minQty: 5,
+              maxQty: 100,
+              qtyOptions: [5, 10, 25, 50, 75, 100],
+              quantityDiffers: false,
+            },
+            {
+              supplierServiceId: 1,
+              name: 'AT&T USA Premier Unlock',
+              type: 'imei',
+              state: 'matching',
+              serviceId: 5,
+              serviceName: 'AT&T USA Premier Unlock',
+              cost: '13.5000',
+              previousCost: null,
+              suggestedPrice: null,
+              minQty: 1,
+              maxQty: 20,
+              qtyOptions: [],
+              quantityDiffers: true,
+            },
+          ],
+        }),
+      ),
+    );
+    const { dialog } = await openImport(user);
+    await user.click(pickerRow(dialog, 'Sprint USA Premium Unlock').getByRole('checkbox'));
+    await user.click(dialog.getByRole('button', { name: 'Preview (1)' }));
+    const preview = within(await dialog.findByRole('table', { name: 'Import preview' }));
+    expect(preview.getByText('Packs 5, 10, 25, 50, 75 +1')).toBeInTheDocument();
+    const kept = within(preview.getByText('AT&T USA Premier Unlock').closest('tr') as HTMLElement);
+    expect(kept.getByText('1–20')).toBeInTheDocument();
+    expect(kept.getByText('The service keeps its own rule.')).toBeInTheDocument();
   });
 
   it('has nothing to import when every picked service already matches', async () => {

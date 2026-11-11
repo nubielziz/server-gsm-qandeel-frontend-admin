@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi, signInAs } from '@/test/renderApp';
-import { createService, getService, listServices } from '../api';
+import { createService, getService, listServices, updateService } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
 import { dialogOf, openServices, pickFromRowMenu, serviceRow } from '../test/servicesPage';
 
@@ -243,6 +243,154 @@ describe('Edit service', () => {
     const dialog = within(await screen.findByRole('dialog', { name: 'Edit service' }));
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
+  });
+});
+
+describe('Quantity', () => {
+  /** Opens New service and fills what it needs besides the quantity. */
+  async function openNew(user: User, name: string, code: string) {
+    await openServices();
+    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
+    await dialog.findByRole('option', { name: 'Apple' });
+    await user.type(dialog.getByRole('textbox', { name: 'Name' }), name);
+    await user.type(dialog.getByRole('textbox', { name: 'Code' }), code);
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Category' }), 'Apple');
+    await user.type(dialog.getByRole('textbox', { name: 'Base price (USD)' }), '2.5');
+    return dialog;
+  }
+
+  /** Opens Edit service on EE UK Unlock (service 9) after giving it a quantity rule. */
+  async function openEdit(user: User, rule: Parameters<typeof updateService>[1]) {
+    await signInAs();
+    await updateService(9, rule);
+    await openServices();
+    await pickFromRowMenu(user, 'EE UK Unlock', 'Edit service…');
+    return within(await screen.findByRole('dialog', { name: 'Edit service' }));
+  }
+
+  it('starts a new service at one per order, with the note about the price', async () => {
+    const user = userEvent.setup();
+    const dialog = await openNew(user, 'Single Check', 'QTY-1');
+    expect(dialog.getByRole('radio', { name: /^One per order/ })).toBeChecked();
+    expect(dialog.queryByRole('textbox', { name: 'Smallest' })).not.toBeInTheDocument();
+    expect(
+      dialog.getByText('The price is for one unit. An order costs the price times its quantity.'),
+    ).toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await screen.findByText('Single Check created')).toBeInTheDocument();
+    const [created] = (await listServices({ q: 'QTY-1' })).data;
+    expect(created).toMatchObject({ minQty: 1, maxQty: 1, qtyOptions: [] });
+  });
+
+  it('creates a service that sells a range, and the table shows it', async () => {
+    const user = userEvent.setup();
+    const dialog = await openNew(user, 'Range Check', 'QTY-2');
+    await user.click(dialog.getByRole('radio', { name: /^A range/ }));
+    await user.type(dialog.getByRole('textbox', { name: 'Largest' }), '50');
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await screen.findByText('Range Check created')).toBeInTheDocument();
+    const [created] = (await listServices({ q: 'QTY-2' })).data;
+    expect(created).toMatchObject({ minQty: 1, maxQty: 50, qtyOptions: [] });
+    expect((await serviceRow('Range Check')).getByText('Qty 1–50')).toBeInTheDocument();
+  });
+
+  it('creates a service that sells packs, sorted, with the smallest and largest worked out', async () => {
+    const user = userEvent.setup();
+    const dialog = await openNew(user, 'Pack Check', 'QTY-3');
+    await user.click(dialog.getByRole('radio', { name: /^Fixed packs/ }));
+    await user.type(dialog.getByRole('textbox', { name: 'Pack sizes' }), '25, 5, 10');
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await screen.findByText('Pack Check created')).toBeInTheDocument();
+    const [created] = (await listServices({ q: 'QTY-3' })).data;
+    expect(created).toMatchObject({ minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] });
+    expect((await serviceRow('Pack Check')).getByText('Qty Packs 5, 10, 25')).toBeInTheDocument();
+  });
+
+  it('shows no quantity line for a service that sells one per order', async () => {
+    await openServices();
+    expect((await serviceRow('EE UK Unlock')).queryByText(/^Qty /)).not.toBeInTheDocument();
+  });
+
+  it('checks the range and the packs before it calls the server', async () => {
+    const user = userEvent.setup();
+    const dialog = await openNew(user, 'Bad Check', 'QTY-4');
+    await user.click(dialog.getByRole('radio', { name: /^A range/ }));
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await dialog.findByText('Enter a whole number from 1 to 100000.')).toBeInTheDocument();
+    await retype(user, dialog.getByRole('textbox', { name: 'Smallest' }), '10');
+    await user.type(dialog.getByRole('textbox', { name: 'Largest' }), '4');
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(
+      await dialog.findByText('The largest quantity cannot be below the smallest (10).'),
+    ).toBeInTheDocument();
+
+    await user.click(dialog.getByRole('radio', { name: /^Fixed packs/ }));
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await dialog.findByText('Enter at least one pack size.')).toBeInTheDocument();
+    await user.type(dialog.getByRole('textbox', { name: 'Pack sizes' }), '5, 5');
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await dialog.findByText('The pack size 5 is repeated.')).toBeInTheDocument();
+    expect((await listServices({ q: 'QTY-4' })).data).toHaveLength(0);
+  });
+
+  it('shows the server’s refusal of the packs under the Pack sizes box', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/services', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'qtyOptions', message: 'Use at most 50 pack sizes.' },
+        ]),
+      ),
+    );
+    const dialog = await openNew(user, 'Refused Check', 'QTY-5');
+    await user.click(dialog.getByRole('radio', { name: /^Fixed packs/ }));
+    await user.type(dialog.getByRole('textbox', { name: 'Pack sizes' }), '5, 10');
+    await user.click(dialog.getByRole('button', { name: 'Create service' }));
+    expect(await dialog.findByText('Use at most 50 pack sizes.')).toBeInTheDocument();
+    expect(dialog.getByRole('textbox', { name: 'Pack sizes' })).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('starts an edit in the way the service sells, and says nothing changed when it is left alone', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { qtyOptions: [10, 5] });
+    expect(dialog.getByRole('radio', { name: /^Fixed packs/ })).toBeChecked();
+    expect(dialog.getByRole('textbox', { name: 'Pack sizes' })).toHaveValue('5, 10');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
+    expect(await getService(9)).toMatchObject({ minQty: 5, maxQty: 10, qtyOptions: [5, 10] });
+  });
+
+  it('sends the new packs alone and the server works out the smallest and largest', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { qtyOptions: [5, 10] });
+    await retype(user, dialog.getByRole('textbox', { name: 'Pack sizes' }), '20, 5, 10');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('EE UK Unlock updated')).toBeInTheDocument();
+    expect(await getService(9)).toMatchObject({ minQty: 5, maxQty: 20, qtyOptions: [5, 10, 20] });
+  });
+
+  it('clears the packs when the service goes to a range', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { qtyOptions: [5, 10] });
+    await user.click(dialog.getByRole('radio', { name: /^A range/ }));
+    await retype(user, dialog.getByRole('textbox', { name: 'Smallest' }), '1');
+    await user.type(dialog.getByRole('textbox', { name: 'Largest' }), '50');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('EE UK Unlock updated')).toBeInTheDocument();
+    expect(await getService(9)).toMatchObject({ minQty: 1, maxQty: 50, qtyOptions: [] });
+  });
+
+  it('goes back to one per order with all three keys', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { minQty: 2, maxQty: 9 });
+    expect(dialog.getByRole('radio', { name: /^A range/ })).toBeChecked();
+    expect(dialog.getByRole('textbox', { name: 'Smallest' })).toHaveValue('2');
+    expect(dialog.getByRole('textbox', { name: 'Largest' })).toHaveValue('9');
+    await user.click(dialog.getByRole('radio', { name: /^One per order/ }));
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('EE UK Unlock updated')).toBeInTheDocument();
+    expect(await getService(9)).toMatchObject({ minQty: 1, maxQty: 1, qtyOptions: [] });
   });
 });
 

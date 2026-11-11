@@ -7,6 +7,7 @@ import { orderStore } from '@/mocks/orders';
 import { toDetail, toService } from './dto';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { floorOf, round } from './pricing';
+import { applyQuantity } from './quantityRule';
 import { servicesStore } from './store';
 import type { MockService } from './types';
 
@@ -62,6 +63,7 @@ function applyFields(row: MockService, body: Record<string, unknown>, problems: 
       draft.auto = body.executionMode === 'auto';
     else problems.push({ field: 'executionMode', message: 'Use auto or manual.' });
   }
+  Object.assign(draft, applyQuantity(draft, body, problems));
   return draft;
 }
 
@@ -106,6 +108,9 @@ export const serviceRoutes: HttpHandler[] = [
         price: 0,
         minProfit: 0,
         slaMinutes: 60,
+        minQty: 1,
+        maxQty: 1,
+        qtyOptions: [],
         supplierId: null,
         fallbackId: null,
         status: 'active',

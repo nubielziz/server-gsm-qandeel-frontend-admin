@@ -13,7 +13,7 @@ import {
   type RowSelection,
   type SortState,
 } from '@/components/ui';
-import { money, pct } from '@/lib/format';
+import { money, pct, quantityText } from '@/lib/format';
 import { slaText } from '../lib/sla';
 import { TYPE_LABEL } from '../lib/status';
 import type { Service } from '../types';
@@ -65,16 +65,23 @@ export function ServiceTable({
       key: 'name',
       label: 'Service',
       sortField: 'name',
-      render: (s) => (
-        <>
-          <span
-            className={cx('block max-w-[300px] truncate font-medium', s.status === 'disabled' && 'text-ink3')}
-          >
-            {s.name}
-          </span>
-          <span className="mono text-xs text-ink3">{s.code}</span>
-        </>
-      ),
+      render: (s) => {
+        const quantity = quantityText(s);
+        return (
+          <>
+            <span
+              className={cx(
+                'block max-w-[300px] truncate font-medium',
+                s.status === 'disabled' && 'text-ink3',
+              )}
+            >
+              {s.name}
+            </span>
+            <span className="mono text-xs text-ink3">{s.code}</span>
+            {quantity !== '1' && <span className="block text-xs text-ink3">Qty {quantity}</span>}
+          </>
+        );
+      },
     },
     {
       key: 'type',

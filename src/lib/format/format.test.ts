@@ -22,6 +22,7 @@ import {
   num,
   pct,
   price,
+  quantityText,
   round,
   sum,
   toAmount,
@@ -237,5 +238,27 @@ describe('ageText', () => {
     expect(ageText((3 * 24 + 4) * 3_600_000)).toBe('3d 4h');
     expect(ageText(-5)).toBe('<1m');
     expect(ageText(Number.NaN)).toBe('');
+  });
+});
+
+describe('quantityText', () => {
+  it('writes one per order as 1 and a fixed quantity as that number', () => {
+    expect(quantityText({ minQty: 1, maxQty: 1, qtyOptions: [] })).toBe('1');
+    expect(quantityText({ minQty: 5, maxQty: 5, qtyOptions: [] })).toBe('5');
+  });
+
+  it('writes a range with an en dash', () => {
+    expect(quantityText({ minQty: 1, maxQty: 50, qtyOptions: [] })).toBe('1–50');
+  });
+
+  it('lists packs, and counts the ones past the fifth', () => {
+    expect(quantityText({ minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] })).toBe('Packs 5, 10, 25');
+    expect(quantityText({ minQty: 1, maxQty: 7, qtyOptions: [1, 2, 3, 4, 5, 6, 7] })).toBe(
+      'Packs 1, 2, 3, 4, 5 +2',
+    );
+  });
+
+  it('shows packs even when min and max disagree with them', () => {
+    expect(quantityText({ minQty: 1, maxQty: 1, qtyOptions: [10, 20] })).toBe('Packs 10, 20');
   });
 });

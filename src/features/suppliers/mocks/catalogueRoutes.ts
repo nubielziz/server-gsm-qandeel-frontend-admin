@@ -6,6 +6,7 @@ import { applyListQuery } from '@/mocks/crud';
 import { invalid, notFound } from '@/mocks/handlers/accessShared';
 import { toMoney } from '@/mocks/seed';
 import { chainOf, type MockItem, type SuppliersState } from './seed';
+import type { MockQuantity } from './seedTypes';
 import { secured } from './secured';
 import type { ImportItemState, ImportPreviewItem } from '../types';
 
@@ -20,9 +21,17 @@ function stateOf(item: MockItem): ImportItemState {
   return item.previousCredit === null ? 'matching' : 'changed';
 }
 
+// The rule the supplier states for an item; one per order when it states none.
+const quantityOf = (item: MockItem): MockQuantity =>
+  item.quantity ?? { minQty: 1, maxQty: 1, qtyOptions: [] };
+
+const sameQuantity = (a: MockQuantity, b: MockQuantity): boolean =>
+  a.minQty === b.minQty && a.maxQty === b.maxQty && a.qtyOptions.join(',') === b.qtyOptions.join(',');
+
 function previewOf(data: SuppliersState, item: MockItem): ImportPreviewItem {
   const state = stateOf(item);
   const service = item.linkedServiceId === null ? undefined : data.services.find(item.linkedServiceId);
+  const rule = quantityOf(item);
   return {
     supplierServiceId: item.id,
     name: item.name,
@@ -33,6 +42,9 @@ function previewOf(data: SuppliersState, item: MockItem): ImportPreviewItem {
     cost: item.credit,
     previousCost: item.previousCredit,
     suggestedPrice: state === 'matching' ? null : suggestedPrice(item.credit),
+    ...rule,
+    // A linked service keeps its own rule; the preview only says when it is another one.
+    quantityDiffers: state !== 'new' && service !== undefined && !sameQuantity(service, rule),
   };
 }
 
@@ -55,7 +67,7 @@ export const catalogueHandlers: HttpHandler[] = [
       const rows = data.catalogue
         .list()
         .filter((item) => item.supplierId === supplier.id)
-        .map(({ previousCredit: _previous, ...item }) => item);
+        .map(({ previousCredit: _previous, quantity: _quantity, ...item }) => item);
       const { page, total } = applyListQuery(rows, new URL(request.url).searchParams, [
         'name',
         'remoteGroup',
@@ -103,6 +115,8 @@ export const catalogueHandlers: HttpHandler[] = [
             status: 'active',
             slaMinutes: 60,
             cost: item.credit,
+            // A new service gets the supplier's rule; a later import never changes it.
+            ...quantityOf(item),
           });
           data.links.push({ serviceId: service.id, supplierServiceId: item.id, priority: 1 });
           item.imported = true;
