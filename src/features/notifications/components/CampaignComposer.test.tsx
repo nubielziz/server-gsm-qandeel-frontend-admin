@@ -207,6 +207,11 @@ describe('the audience builder', () => {
       '/account/orders',
     );
     expect(composer.queryByRole('textbox', { name: 'Link for staff' })).not.toBeInTheDocument();
+    await user.click(composer.getByRole('button', { name: 'Merchants' }));
+    expect(composer.getByRole('textbox', { name: 'Link for merchants' })).toHaveAttribute(
+      'placeholder',
+      '/merchant/orders',
+    );
   });
 });
 

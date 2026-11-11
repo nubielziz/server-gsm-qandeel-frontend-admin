@@ -17,7 +17,8 @@ const LINKS: Record<
   { key: 'staff' | 'merchant' | 'customer'; label: string; placeholder: string }
 > = {
   staff: { key: 'staff', label: 'Link for staff', placeholder: '/orders' },
-  client: { key: 'merchant', label: 'Link for merchants', placeholder: '/orders' },
+  // A merchant link must be a page of the merchant portal: the server refuses anything outside /merchant.
+  client: { key: 'merchant', label: 'Link for merchants', placeholder: '/merchant/orders' },
   customer: { key: 'customer', label: 'Link for customers', placeholder: '/account/orders' },
 };
 
