@@ -160,7 +160,8 @@ describe('Edit payment method', () => {
     await user.click((await card('Card gateway')).getByRole('button', { name: 'Edit Card gateway' }));
     const dialog = dialogOf('Edit Card gateway');
     expect(dialog.getByRole('textbox', { name: 'Code' })).toHaveAttribute('readonly');
-    expect(dialog.getByText(/Stored \(••••/)).toBeInTheDocument();
+    // The API key and the webhook signing secret each say that one is stored.
+    expect(dialog.getAllByText(/Stored \(••••/)).toHaveLength(2);
     await user.clear(dialog.getByRole('textbox', { name: 'Fee (%)' }));
     await user.type(dialog.getByRole('textbox', { name: 'Fee (%)' }), '3.1');
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));

@@ -60,6 +60,19 @@ export function GatewayCard({
           gateway.audience !== 'b2c' && ['Merchant groups', groupsText(gateway.allowedGroupIds, groups)],
           gateway.holdHours > 0 && ['Held for', `${gateway.holdHours} hours`],
           ['Secret', gateway.secretHint ?? <span className="text-ink3">None stored</span>],
+          !gateway.isManual && [
+            'Webhook secret',
+            gateway.webhookSecretHint ? (
+              <>
+                {gateway.webhookSecretHint}
+                {gateway.secondaryWebhookSecretHint && (
+                  <span className="text-ink3"> + {gateway.secondaryWebhookSecretHint}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-ink3">None stored</span>
+            ),
+          ],
           [
             'Volume, 30 days',
             gateway.volume30d && Number(gateway.volume30d) > 0 ? (

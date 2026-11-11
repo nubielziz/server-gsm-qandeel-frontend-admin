@@ -1,9 +1,10 @@
-// GatewayFields: the inputs of the payment method dialog (name, code, fees, limits, switches, instructions, merchant groups and the
-// write-only secret). The dialog owns the form; this file only lays the fields out.
+// GatewayFields: the inputs of the payment method dialog (name, code, fees, limits, switches, instructions); the write-only secrets
+// are in GatewaySecretFields. The dialog owns the form; this file only lays the fields out.
 import type { UseFormReturn } from 'react-hook-form';
 import { CheckboxField, SelectField, TextareaField, TextField, type SelectOption } from '@/components/ui';
 import { isDecimalText } from '../lib/decimal';
 import type { GatewayAudience, PaymentGateway } from '../types';
+import { GatewaySecretFields } from './GatewaySecretFields';
 
 /** What the dialog's form holds; numbers stay text until they are sent. */
 export type GatewayValues = {
@@ -22,6 +23,12 @@ export type GatewayValues = {
   isActive: boolean;
   instructions: string;
   secret: string;
+  /** The key the gateway signs its webhooks with (write-only; empty = keep the stored one). */
+  webhookSecret: string;
+  /** The second signing key (write-only; empty = keep the stored one). */
+  secondaryWebhookSecret: string;
+  /** The "Remove" control was used: the stored second key goes when the form is saved. */
+  secondaryRemoved: boolean;
 };
 
 const AUDIENCES: readonly SelectOption[] = [
@@ -33,7 +40,7 @@ const AUDIENCES: readonly SelectOption[] = [
 const required = (message: string) => (value: string) => value.trim() !== '' || message;
 const amount = (value: string) => isDecimalText(value) || 'Enter an amount, such as 0.30.';
 
-/** The fields. `gateway` is set when editing: the code is then fixed and the secret field says one is stored. */
+/** The fields. `gateway` is set when editing: the code is then fixed and the secret fields say which are stored. */
 export function GatewayFields({
   form,
   gateway,
@@ -129,18 +136,7 @@ export function GatewayFields({
         error={errors.instructions}
         {...register('instructions')}
       />
-      <TextField
-        label="Secret (API key)"
-        type="password"
-        autoComplete="new-password"
-        hint={
-          gateway?.secretHint
-            ? `Stored (${gateway.secretHint}). Write-only: type a new one to replace it, or leave empty to keep it.`
-            : 'Write-only. The server stores it and never shows it again.'
-        }
-        error={errors.secret}
-        {...register('secret')}
-      />
+      <GatewaySecretFields form={form} gateway={gateway} />
       <div className="grid gap-2 sm:grid-cols-2">
         <CheckboxField
           label="Refunds go back automatically"

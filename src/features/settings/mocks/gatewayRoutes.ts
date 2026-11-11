@@ -1,5 +1,5 @@
 // Mock of the payment gateway routes (`/admin/payment-gateways*`). The mock checks the fields the way the real server would and refuses
-// to delete a gateway that took payments lately. A secret in a body is kept only as a hint and never sent back.
+// to delete a gateway that took payments lately. Secrets in a body are kept only as hints and never sent back; a second webhook secret needs a first (422 on its field).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { ProblemError } from '@/mocks/problem';
 import type { GatewayAudience, PaymentGateway } from '../types';
@@ -18,6 +18,35 @@ import { settingsFeatureStore } from './store';
 
 const AUDIENCES: GatewayAudience[] = ['b2c', 'b2b', 'both'];
 const MONEY_FIELDS = ['feeFixed', 'minAmount', 'maxAmount'] as const;
+
+/** The hint the server sends for a secret: `••••` and its last four characters. */
+const hintOf = (secret: string) => `••••${secret.slice(-4)}`;
+
+/**
+ * The write-only webhook secrets of a body, kept as hints like the server (24C): `webhookSecret` replaces the first and keeps the
+ * second; `secondaryWebhookSecret` sets (1 to 500 characters) or, as `null`, removes the second; a second needs a first (422).
+ */
+function applyWebhookSecrets(
+  draft: Omit<PaymentGateway, 'id'>,
+  body: Record<string, unknown>,
+  problems: ProblemError[],
+) {
+  const first = textOf(body.webhookSecret);
+  if (first) draft.webhookSecretHint = hintOf(first);
+  if ('secondaryWebhookSecret' in body) {
+    const second = body.secondaryWebhookSecret;
+    if (second === null) draft.secondaryWebhookSecretHint = null;
+    else if (typeof second === 'string' && second.trim() && second.trim().length <= 500)
+      draft.secondaryWebhookSecretHint = hintOf(second.trim());
+    else
+      problems.push({ field: 'secondaryWebhookSecret', message: 'Enter 1 to 500 characters, or remove it.' });
+  }
+  if (draft.secondaryWebhookSecretHint && !draft.webhookSecretHint)
+    problems.push({
+      field: 'secondaryWebhookSecret',
+      message: 'Set the webhook signing secret before a second one.',
+    });
+}
 
 /** Applies the fields of a body to a gateway, collecting the problems. */
 function applyFields(
@@ -67,6 +96,7 @@ function applyFields(
   if ('instructions' in body) draft.instructions = textOf(body.instructions) ?? '';
   const secret = textOf(body.secret);
   if (secret) draft.secretHint = `••••${secret.slice(-4)}`;
+  applyWebhookSecrets(draft, body, problems);
   return draft;
 }
 
@@ -88,6 +118,8 @@ const NEW_GATEWAY: Omit<PaymentGateway, 'id'> = {
   isActive: true,
   createdAt: new Date(0).toISOString(),
   secretHint: null,
+  webhookSecretHint: null,
+  secondaryWebhookSecretHint: null,
   volume30d: null,
 };
 

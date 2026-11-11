@@ -16,7 +16,7 @@ import type { CreateGatewayBody, PaymentGateway, UpdateGatewayBody } from '../ty
 
 /**
  * The payment gateways with their fees, limits and the merchant groups that may use them.
- * Assumed contract: rows never carry a secret, only `secretHint`.
+ * Rows never carry a secret, only the hints `secretHint`, `webhookSecretHint` and `secondaryWebhookSecretHint`.
  * @route GET /admin/payment-gateways
  */
 export function listGateways(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<PaymentGateway>> {
@@ -34,7 +34,7 @@ export function getGateway(id: Id, init?: ApiInit): Promise<PaymentGateway> {
 
 /**
  * Connects a new payment method. The secret (API key) is write-only: the server keeps it and never sends it back.
- * Assumed contract: body `CreateGatewayBody`, answer the new gateway.
+ * Body `CreateGatewayBody` (with the optional write-only `webhookSecret` and `secondaryWebhookSecret`), answer the new gateway.
  * @route POST /admin/payment-gateways
  */
 export function createGateway(body: CreateGatewayBody, init?: ApiInit): Promise<PaymentGateway> {
@@ -42,7 +42,8 @@ export function createGateway(body: CreateGatewayBody, init?: ApiInit): Promise<
 }
 
 /**
- * Changes a gateway; only the fields that change are sent. The on/off switch sends `{ isActive }`. A new `secret` replaces the stored one.
+ * Changes a gateway; only the fields that change are sent. The on/off switch sends `{ isActive }`. A new `secret` replaces the stored one;
+ * a new `webhookSecret` replaces the first webhook secret and keeps the second; `secondaryWebhookSecret` sets the second, `null` removes it.
  * Assumed contract: answer the updated gateway.
  * @route PATCH /admin/payment-gateways/:id
  */

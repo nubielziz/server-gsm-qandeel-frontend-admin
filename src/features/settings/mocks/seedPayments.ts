@@ -68,6 +68,8 @@ export function gatewayRows(rows: DemoGateway[]): PaymentGateway[] {
       isActive: row.on,
       createdAt: toIso(Date.now() - (30 - index) * 86_400_000),
       secretHint: row.mode === 'Manual' ? null : `••••${(4000 + index * 137).toString(16)}`,
+      webhookSecretHint: row.mode === 'Manual' ? null : `••••${(5000 + index * 211).toString(16)}`,
+      secondaryWebhookSecretHint: null,
       volume30d: row.volume ? toMoney(row.volume) : null,
     };
   });
