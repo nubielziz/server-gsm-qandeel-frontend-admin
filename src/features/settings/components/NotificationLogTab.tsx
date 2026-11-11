@@ -1,8 +1,12 @@
 // NotificationLogTab: the "Notification log" tab, one the demo lacks: every message the system sent or tried to send, newest first,
 // with the recipient as the server prints it (masked). Status and channel filters, a pager, and a drawer for a row. All of it lives in the address.
+// A message of a notification campaign links to the campaign, and `?campaignId=7` shows only that campaign's messages (a chip clears it).
+import { Link } from 'react-router';
 import {
+  Button,
   DataTable,
   EmptyState,
+  Icon,
   Panel,
   SelectField,
   TableToolbar,
@@ -37,6 +41,20 @@ const columns: DataTableColumn<NotificationLogEntry>[] = [
     label: 'Sent to',
     render: (row) => <span className="mono text-ink2">{row.recipient}</span>,
   },
+  {
+    key: 'campaign',
+    label: 'Campaign',
+    hide: 'lg',
+    render: (row) =>
+      row.campaignId ? (
+        // The Notifications page (a literal path: that feature imports this one, so this one does not import it back).
+        <Link to={`/notifications/${row.campaignId}`} className="text-accent-ink hover:underline">
+          Campaign #{row.campaignId}
+        </Link>
+      ) : (
+        <span className="text-ink3">–</span>
+      ),
+  },
   { key: 'status', label: 'Status', render: (row) => <StatusBadge look={NOTIFICATION_STATUS[row.status]} /> },
   {
     key: 'time',
@@ -49,9 +67,11 @@ const columns: DataTableColumn<NotificationLogEntry>[] = [
 /** The filters, the table and the open drawer. */
 export function NotificationLogTab() {
   const grants = useSettingsGrants();
-  const view = useListView(['status', 'channel'], 'notification');
+  const view = useListView(['status', 'channel', 'campaignId'], 'notification');
+  // A campaign filter from a bad address (`campaignId=abc`) is ignored: the server takes an id only.
+  const campaignId = /^\d+$/.test(view.filters.campaignId) ? view.filters.campaignId : '';
   const list = useNotificationList({
-    filters: view.filters,
+    filters: { ...view.filters, campaignId },
     page: view.page,
     enabled: grants.ready && grants.can('notifications:read'),
   });
@@ -62,7 +82,7 @@ export function NotificationLogTab() {
     settled: list.query.isSuccess && !list.query.isPlaceholderData,
     setPage: view.setPage,
   });
-  const filtered = Boolean(view.filters.status || view.filters.channel);
+  const filtered = Boolean(view.filters.status || view.filters.channel || campaignId);
 
   return (
     <>
@@ -78,6 +98,16 @@ export function NotificationLogTab() {
               : `${num(list.total)} ${list.total === 1 ? 'message' : 'messages'}`
           }
         >
+          {campaignId && (
+            <Button
+              size="sm"
+              aria-label={`Clear the filter: campaign ${campaignId}`}
+              onClick={() => view.setFilters({ campaignId: '' })}
+            >
+              Campaign #{campaignId}
+              <Icon name="x" className="ic-sm" />
+            </Button>
+          )}
           <SelectField
             aria-label="Filter by status"
             value={view.filters.status}

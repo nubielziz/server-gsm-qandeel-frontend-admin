@@ -27,7 +27,14 @@ describe('collectManifests', () => {
 describe('featureManifests', () => {
   it('finds the built features of this app', () => {
     expect(featureManifests.map((manifest) => manifest.id)).toEqual(
-      expect.arrayContaining(['access', 'finance', 'orders']),
+      expect.arrayContaining(['access', 'finance', 'orders', 'notifications']),
     );
+  });
+
+  it('gives the Notifications page a list and a detail view, and the staff bell to the top bar', () => {
+    const notifications = featureManifests.find((manifest) => manifest.id === 'notifications');
+    expect(notifications?.page).toMatchObject({ name: 'notifications', heading: 'Notifications' });
+    expect(notifications?.page?.detail).toBeTypeOf('function');
+    expect(notifications?.topbar).toBeTypeOf('function');
   });
 });

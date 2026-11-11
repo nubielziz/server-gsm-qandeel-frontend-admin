@@ -1,6 +1,6 @@
 // Tests for the Notification log tab, run through the whole app against the dev mock API: the page of messages with masked recipients, the
 // filters and pager kept in the address, the details drawer (also from a link), and the error and empty states.
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -76,6 +76,78 @@ describe('the filters', () => {
     await openSettings(`${LOG}&status=failed&page=1`);
     expect(await screen.findByText('7 messages')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Filter by status' })).toHaveValue('failed');
+  });
+});
+
+describe('the notification campaign filter', () => {
+  /** A log row of a campaign (7) and one of an event, served in place of the mock rows; the addresses asked are recorded. */
+  function serveLog() {
+    const asked: URL[] = [];
+    const row = (id: number, campaignId: number | null) => ({
+      id,
+      event: 'broadcast.announcement',
+      channel: 'email',
+      status: 'sent',
+      recipient: 'a***b@example.com',
+      recipientType: 'client',
+      recipientId: 1,
+      campaignId,
+      attempts: 1,
+      sentAt: '2026-11-10T09:00:00.000Z',
+      createdAt: '2026-11-10T09:00:00.000Z',
+      updatedAt: '2026-11-10T09:00:00.000Z',
+    });
+    mockServer.use(
+      http.get('*/admin/notifications', ({ request }) => {
+        asked.push(new URL(request.url));
+        return HttpResponse.json([row(2, 7), row(1, null)], { headers: { 'x-total-count': '2' } });
+      }),
+    );
+    return asked;
+  }
+
+  it('sends campaignId to the server, shows a chip, and clears it again from the chip', async () => {
+    const user = userEvent.setup();
+    const asked = serveLog();
+    const app = await openSettings(`${LOG}&campaignId=7`);
+    await dataRows();
+    expect(asked[0].searchParams.get('campaignId')).toBe('7');
+    expect(screen.getByRole('button', { name: 'Clear the filter: campaign 7' })).toHaveTextContent(
+      'Campaign #7',
+    );
+    await user.click(screen.getByRole('button', { name: 'Clear the filter: campaign 7' }));
+    expect(app.location()).toBe(LOG);
+    await waitFor(() => expect(asked.at(-1)?.searchParams.has('campaignId')).toBe(false));
+    expect(screen.queryByRole('button', { name: /Clear the filter/ })).not.toBeInTheDocument();
+  });
+
+  it("links a campaign's message to the campaign and shows a dash for an event's message", async () => {
+    serveLog();
+    await openSettings(LOG);
+    const [campaignRow, eventRow] = await dataRows();
+    expect(within(campaignRow).getByRole('link', { name: 'Campaign #7' })).toHaveAttribute(
+      'href',
+      '/notifications/7',
+    );
+    expect(within(eventRow).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(eventRow).getByText('–')).toBeInTheDocument();
+  });
+
+  it('keeps the campaign filter next to the other filters and ignores one that is not an id', async () => {
+    const asked = serveLog();
+    await openSettings(`${LOG}&status=sent&campaignId=abc`);
+    await dataRows();
+    expect(asked[0].searchParams.get('status')).toBe('sent');
+    expect(asked[0].searchParams.has('campaignId')).toBe(false);
+    expect(screen.queryByRole('button', { name: /Clear the filter/ })).not.toBeInTheDocument();
+  });
+
+  it('says no messages match when the campaign has none, instead of "No messages yet"', async () => {
+    mockServer.use(
+      http.get('*/admin/notifications', () => HttpResponse.json([], { headers: { 'x-total-count': '0' } })),
+    );
+    await openSettings(`${LOG}&campaignId=7`);
+    expect(await screen.findByText('No messages match')).toBeInTheDocument();
   });
 });
 

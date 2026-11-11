@@ -47,4 +47,9 @@ export type FeatureManifest = {
    * It renders nothing otherwise, and must not fetch without the permission it needs.
    */
   banner?: ComponentType;
+  /**
+   * A control the shell shows in the top bar on every page (Notifications: the staff bell). It must not fetch
+   * without a session.
+   */
+  topbar?: ComponentType;
 };

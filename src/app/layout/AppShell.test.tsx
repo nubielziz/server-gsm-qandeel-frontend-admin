@@ -22,6 +22,7 @@ const OWNER_PAGES = [
   'Support',
   'Risk & checks',
   'Abandoned checkouts',
+  'Notifications',
   'Services & pricing',
   'Suppliers',
   'Storefront',
@@ -43,7 +44,7 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 16 pages of the demo and System health in four groups, and marks the current one', async () => {
+  it('lists the 16 pages of the demo, Notifications and System health in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
@@ -54,6 +55,19 @@ describe('sidebar', () => {
     expect(nav.getByRole('link', { name: /^Orders/ })).toHaveAttribute('aria-current', 'page');
     expect(nav.getByRole('link', { name: /^Orders/ })).toHaveAttribute('href', '/orders');
     expect(nav.getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('links Notifications at /notifications', async () => {
+    mockMe({ permissions: ['*'] });
+    renderApp('/orders');
+    const nav = await primaryNav();
+    expect(nav.getByRole('link', { name: 'Notifications' })).toHaveAttribute('href', '/notifications');
+  });
+
+  it('shows Notifications to a staff member with broadcasts:read alone', async () => {
+    mockMe({ permissions: ['dashboard:read', 'broadcasts:read'] });
+    renderApp('/dashboard');
+    expect((await primaryNav()).getAllByRole('link').map(labelOf)).toEqual(['Dashboard', 'Notifications']);
   });
 
   it('hides the pages the staff member may not open, and the groups left empty', async () => {
@@ -89,6 +103,27 @@ describe('sidebar', () => {
     expect(account).toHaveTextContent('Rami K.');
     expect(account).toHaveTextContent('Owner');
     expect(screen.queryByText(/synthetic data/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('top bar slots', () => {
+  it('shows the feature controls (the staff bell) in the top bar before the display menu', async () => {
+    mockMe({ permissions: ['*'] });
+    renderApp('/dashboard');
+    const bell = await screen.findByRole('button', { name: /^Notifications/ });
+    const topbar = bell.closest('header') as HTMLElement;
+    expect(topbar).toHaveAttribute('id', 'topbar');
+    const buttons = within(topbar).getAllByRole('button');
+    const display = within(topbar).getByRole('button', { name: /^Display/ });
+    expect(buttons.indexOf(bell)).toBeGreaterThan(-1);
+    expect(buttons.indexOf(bell)).toBeLessThan(buttons.indexOf(display));
+  });
+
+  it('keeps the bell for a staff member who may not open the Notifications page: every staff member has an inbox', async () => {
+    mockMe({ permissions: ['dashboard:read'] });
+    renderApp('/dashboard');
+    expect(await screen.findByRole('button', { name: /^Notifications/ })).toBeInTheDocument();
+    expect((await primaryNav()).queryByRole('link', { name: /^Notifications/ })).not.toBeInTheDocument();
   });
 });
 
@@ -497,7 +532,7 @@ describe('account menu', () => {
     await signInAs();
     const user = userEvent.setup();
     renderApp('/dashboard');
-    expect((await primaryNav()).getAllByRole('link')).toHaveLength(17);
+    expect((await primaryNav()).getAllByRole('link')).toHaveLength(18);
     expect(await screen.findByRole('button', { name: 'Account menu for Rami K.' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Account menu for/ }));

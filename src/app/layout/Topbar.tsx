@@ -1,10 +1,11 @@
-// Topbar: the 48px sticky bar with the mobile menu button, breadcrumb, search, display menu and theme toggle.
+// Topbar: the 48px sticky bar with the mobile menu button, breadcrumb, search, feature controls (the bell), display menu and theme toggle.
 // Ports renderTopbar() of 90-app.js without the demo's data-state switcher.
 import type { RefObject } from 'react';
 import { Button, Icon, Kbd } from '@/components/ui';
 import { Breadcrumb } from './Breadcrumb';
 import { DisplayMenu } from './DisplayMenu';
 import { usePreferences } from './preferences';
+import { ShellTopbarSlots } from './ShellTopbarSlots';
 
 export interface TopbarProps {
   navOpen: boolean;
@@ -47,6 +48,7 @@ export function Topbar({ navOpen, onOpenNav, menuButtonRef, onOpenPalette }: Top
       <Button variant="ghost" icon className="md:hidden" aria-label="Search" onClick={onOpenPalette}>
         <Icon name="search" />
       </Button>
+      <ShellTopbarSlots />
       <DisplayMenu />
       <Button variant="ghost" icon aria-label="Toggle colour theme" onClick={toggleTheme}>
         <Icon name={isDark ? 'sun' : 'moon'} />

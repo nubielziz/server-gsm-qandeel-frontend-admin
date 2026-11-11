@@ -4,7 +4,7 @@ import { apiGet, apiList, pathOf, type ApiInit, type Id, type ListQuery, type Li
 import type { NotificationLogEntry } from '../types';
 
 /**
- * The notifications that were sent (or tried), newest first with `_sort=createdAt&_order=desc`. Filters: `status`, `channel`, `event`.
+ * The notifications that were sent (or tried), newest first with `_sort=createdAt&_order=desc`. Filters: `status`, `channel`, `event`, `campaignId` (the messages of one notification campaign).
  * Assumed contract: rows carry `recipient` already masked by the server.
  * @route GET /admin/notifications
  */

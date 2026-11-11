@@ -78,6 +78,7 @@ const CATALOG: Record<string, string> = {
   support: 'read create update delete reply',
   risk: 'read create delete decide',
   growth: 'read send',
+  broadcasts: 'read send',
   system: 'read manage',
   alerts: 'read create update delete',
   incidents: 'read create update',

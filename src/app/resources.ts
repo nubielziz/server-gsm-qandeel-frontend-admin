@@ -59,6 +59,12 @@ export const resources: ResourceProps[] = [
     icon: 'mail',
     permission: 'growth:read',
   }),
+  // Backend addition (feature 23): no demo page. Campaigns, with the detail at `/notifications/:id`.
+  page(
+    'notifications',
+    { label: 'Notifications', group: 'Operations', icon: 'bell', permission: 'broadcasts:read' },
+    true,
+  ),
   page('services', {
     label: 'Services & pricing',
     group: 'Catalog',

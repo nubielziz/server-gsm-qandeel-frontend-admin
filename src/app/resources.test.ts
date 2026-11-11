@@ -13,6 +13,8 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['support', 'Support', 'Operations', 'life', 'support:read'],
     ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
     ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
+    // No demo page (feature 23, backend addition): campaigns and their detail.
+    ['notifications', 'Notifications', 'Operations', 'bell', 'broadcasts:read'],
     ['services', 'Services & pricing', 'Catalog', 'tag', ['catalog:read', 'pricing:read', 'inventory:read']],
     ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
     ['storefront', 'Storefront', 'Catalog', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
@@ -46,7 +48,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
   ];
 
 describe('page resources', () => {
-  it('are the demo’s 16 pages, in its order, then System health', () => {
+  it('are the demo’s 16 pages, in its order, with Notifications after Abandoned checkouts and System health last', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
   });
 
@@ -56,13 +58,14 @@ describe('page resources', () => {
     expect(resource?.meta).toEqual({ label, group, icon, permission });
   });
 
-  it('have a detail route only for merchants and customers', () => {
+  it('have a detail route only for merchants, customers and notifications', () => {
     const withDetail = resources
       .filter((resource) => resource.show)
       .map((resource) => [resource.name, resource.show]);
     expect(withDetail).toEqual([
       ['merchants', '/merchants/:id'],
       ['customers', '/customers/:id'],
+      ['notifications', '/notifications/:id'],
     ]);
   });
 

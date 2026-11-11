@@ -53,7 +53,7 @@ export type NotificationStatus = 'queued' | 'sent' | 'failed';
 /**
  * One line of the notification log. Assumed contract: `recipient` is the address or chat as the server prints it, already
  * masked (for example `d***l@example.com`); the console shows it as it comes. `event` is the event key, a text (the map types the column as an id).
- * The detail adds `error` for a failed notification.
+ * The detail adds `error` for a failed notification. `campaignId` links a message to the campaign that made it.
  */
 export type NotificationLogEntry = Omit<NotificationRow, 'event' | 'status' | 'channel' | 'payload'> & {
   event: string;
@@ -62,4 +62,6 @@ export type NotificationLogEntry = Omit<NotificationRow, 'event' | 'status' | 'c
   recipient: string;
   payload?: JsonValue;
   error?: string | null;
+  /** The notification campaign (broadcast) this message belongs to; null for an event's message. The server always sends it. */
+  campaignId?: number | null;
 };

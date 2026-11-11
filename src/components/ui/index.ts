@@ -47,6 +47,7 @@ export * from './FormDialog';
 export * from './ConfirmDialog';
 export * from './Drawer';
 export * from './Menu';
+export * from './FloatingPanel';
 export * from './CommandPalette';
 export { usePopover } from './usePopover';
 export { submitUnlessInvalid } from './formSubmit';
