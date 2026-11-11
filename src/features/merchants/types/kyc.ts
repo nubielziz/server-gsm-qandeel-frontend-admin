@@ -1,6 +1,6 @@
 // Types for verification (KYC) requests (`/admin/kyc-submissions`) and a merchant's API keys (`/admin/clients/:id/api-keys`).
 // The map gives no bodies (MISMATCHES M10), so every shape below is an assumed contract built from the generated rows.
-import type { Id } from '@/lib/api';
+import type { Id, IsoDateTime } from '@/lib/api';
 import type { ApiKeyRow, KycSubmissionRow } from '@/lib/api/schema.gen';
 import type { ClientStatus, NamedRef } from './client';
 
@@ -62,7 +62,7 @@ export type CreateApiKeyBody = {
   name: string;
   scopes: string[];
   allowedIps?: string[];
-  expiresAt?: string;
+  expiresAt?: IsoDateTime;
   rateLimitPerMin?: number;
 };
 
