@@ -13,6 +13,7 @@ import type {
   MockItem,
   MockLink,
   MockLog,
+  MockRun,
   MockService,
   MockSupplier,
   SuppliersState,
@@ -186,8 +187,38 @@ export async function buildState(): Promise<SuppliersState> {
     services: new Collection(services),
     links,
     logs: new Collection(logs),
-    runs: [],
+    runs: seedRuns(now),
   };
+}
+
+/** One quick add Bosphorus Unlock finished two days ago, so the run route has a record to read and its groups show a last run. */
+function seedRuns(now: number): MockRun[] {
+  const at = toIso(now - 2 * DAY);
+  return [
+    {
+      reads: 2,
+      finished: {
+        id: 1,
+        supplierId: demoNumericId('sup6'),
+        scope: 'all',
+        groups: [],
+        serviceStatus: 'active',
+        status: 'succeeded',
+        total: 12,
+        processed: 12,
+        created: 12,
+        skipped: 0,
+        failed: 0,
+        categoriesCreated: 2,
+        failures: [],
+        error: null,
+        requestedBy: 1,
+        createdAt: at,
+        startedAt: at,
+        finishedAt: at,
+      },
+    },
+  ];
 }
 
 /** The steps of a service's chain, in priority order, with the supplier and supplier service named. */
