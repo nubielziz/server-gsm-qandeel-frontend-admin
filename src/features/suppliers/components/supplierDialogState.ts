@@ -10,5 +10,6 @@ export type SupplierDialogState =
   | { kind: 'disable'; supplier: Supplier; links: readonly SupplierLink[] | undefined }
   | { kind: 'delete'; supplier: Supplier }
   | { kind: 'import'; supplier: Supplier }
+  | { kind: 'quick-add'; supplier: Supplier }
   | { kind: 'links'; supplier: Supplier; link: SupplierLink }
   | { kind: 'reroute'; supplier: Supplier };

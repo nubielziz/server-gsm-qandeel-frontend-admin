@@ -1,6 +1,6 @@
 // SupplierServices: the "Services" panel of the detail: the services of the console that use this supplier, as primary or as
 // fallback, with the supplier's cost and the SLA. Ports `svcTbl` of supDetail in 44-p-suppliers.js, and adds the buttons
-// the API allows: "Import services…" and "Edit links…" for one service's chain.
+// the API allows: "Quick add…" and "Import services…" to bring services in, and "Edit links…" for one service's chain.
 import { Badge, Button, Count, EmptyState, ErrorState, Icon, SkeletonTable } from '@/components/ui';
 import { money } from '@/lib/format';
 import type { SupplierGrants } from '../hooks/useSupplierGrants';
@@ -17,10 +17,11 @@ export interface SupplierServicesProps {
   onRetry: () => void;
   grants: SupplierGrants;
   onImport: () => void;
+  onQuickAdd: () => void;
   onEditLinks: (link: SupplierLink) => void;
 }
 
-/** The services table with Import and Edit links, and its loading, failed and empty states. */
+/** The services table with Quick add, Import and Edit links, and its loading, failed and empty states. */
 export function SupplierServices({
   supplier,
   links,
@@ -29,6 +30,7 @@ export function SupplierServices({
   onRetry,
   grants,
   onImport,
+  onQuickAdd,
   onEditLinks,
 }: SupplierServicesProps) {
   const importLock = grants.needs('catalog:create');
@@ -36,11 +38,18 @@ export function SupplierServices({
   const rows = [...(links ?? [])].sort(
     (a, b) => a.priority - b.priority || a.serviceName.localeCompare(b.serviceName),
   );
-  const importButton = (
-    <Button size="sm" disabled={importLock.disabled} title={importLock.title} onClick={onImport}>
-      <Icon name="download" className="ic-sm" />
-      Import services…
-    </Button>
+  // Quick add creates services too, so it needs the same permission as the import.
+  const addButtons = (
+    <>
+      <Button size="sm" disabled={importLock.disabled} title={importLock.title} onClick={onQuickAdd}>
+        <Icon name="bolt" className="ic-sm" />
+        Quick add…
+      </Button>
+      <Button size="sm" disabled={importLock.disabled} title={importLock.title} onClick={onImport}>
+        <Icon name="download" className="ic-sm" />
+        Import services…
+      </Button>
+    </>
   );
 
   let body;
@@ -48,7 +57,7 @@ export function SupplierServices({
   else if (links === undefined) body = <SkeletonTable cols={4} rows={4} />;
   else if (rows.length === 0) {
     body = (
-      <EmptyState icon="tag" title="No services use this supplier" cta={importButton}>
+      <EmptyState icon="tag" title="No services use this supplier" cta={addButtons}>
         Import its catalog to start selling its services.
       </EmptyState>
     );
@@ -118,8 +127,8 @@ export function SupplierServices({
     <div className="border-b border-line xl:border-b-0 xl:border-e">
       <div className="panel-h !border-b-0">
         <h3 className="panel-t flex-1">Services {links !== undefined && <Count>{rows.length}</Count>}</h3>
-        {/* The empty state has its own Import button; every other state keeps it in the header. */}
-        {!(links !== undefined && rows.length === 0) && importButton}
+        {/* The empty state has its own buttons; every other state keeps them in the header. */}
+        {!(links !== undefined && rows.length === 0) && addButtons}
       </div>
       {body}
     </div>

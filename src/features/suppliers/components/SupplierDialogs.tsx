@@ -9,6 +9,7 @@ import { DisableDialog } from './DisableDialog';
 import { EditConnectionDialog } from './EditConnectionDialog';
 import { ImportDialog } from './ImportDialog';
 import { LinksDialog } from './LinksDialog';
+import { QuickAddDialog } from './QuickAddDialog';
 import { RerouteDialog } from './RerouteDialog';
 import type { SupplierDialogState } from './supplierDialogState';
 
@@ -59,6 +60,8 @@ export function SupplierDialogs({ dialog, onChange, onSelect, canTest }: Supplie
       );
     case 'import':
       return <ImportDialog supplier={dialog.supplier} onClose={close} />;
+    case 'quick-add':
+      return <QuickAddDialog supplier={dialog.supplier} onClose={close} />;
     case 'links':
       return <LinksDialog link={dialog.link} onClose={close} />;
     case 'reroute':

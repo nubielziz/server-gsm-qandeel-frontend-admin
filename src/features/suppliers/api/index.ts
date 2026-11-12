@@ -3,6 +3,7 @@ export * from './actions';
 export * from './catalogue';
 export * from './links';
 export * from './logs';
+export * from './quickAdd';
 export * from './reports';
 export * from './resources';
 export * from './suppliers';

@@ -327,4 +327,67 @@ describe('import services', () => {
     const dialog = within(await screen.findByRole('dialog', { name: 'Import services from Nordic GSM' }));
     expect(await dialog.findByText('Sync the supplier to copy its service list.')).toBeInTheDocument();
   });
+
+  it('narrows the list to one group, sending the type and the name, and goes back to the first page', async () => {
+    const user = userEvent.setup();
+    const asked: URLSearchParams[] = [];
+    const row = (id: number, group: string) => ({
+      id,
+      supplierId: 1,
+      remoteId: `R${id}`,
+      remoteGroup: group,
+      type: 'imei',
+      name: `Service ${id}`,
+      credit: '2.0000',
+      time: '1 hour',
+      isAvailable: true,
+      lastSeenAt: new Date().toISOString(),
+      priceChangedAt: null,
+      imported: false,
+      linkedServiceId: null,
+    });
+    mockServer.use(
+      http.get('*/admin/suppliers/:id/services', ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        asked.push(params);
+        const narrowed = params.has('remoteGroup');
+        const all = Array.from({ length: narrowed ? 3 : 60 }, (_, index) => row(index + 1, 'Australia'));
+        const page = all.slice(Number(params.get('_start')), Number(params.get('_end')));
+        return HttpResponse.json(page, { headers: { 'x-total-count': String(all.length) } });
+      }),
+    );
+    const { dialog } = await openImport(user);
+    const group = dialog.getByRole('combobox', { name: 'Group' });
+    // Every named group of the supplier, with its type; the group without a name is not offered.
+    expect(
+      within(group)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
+      'All groups',
+      'Apple (IMEI)',
+      'Australia (IMEI)',
+      'Canada (IMEI)',
+      'Carrier unlock (IMEI)',
+      'Generic (IMEI)',
+      'Samsung (IMEI)',
+      'USA (IMEI)',
+      'Xiaomi (IMEI)',
+    ]);
+
+    await user.click(dialog.getByRole('button', { name: 'Next page' }));
+    await waitFor(() => expect(asked.at(-1)?.get('_start')).toBe('25'));
+    expect(asked.at(-1)?.has('remoteGroup')).toBe(false);
+
+    await user.selectOptions(group, 'Australia (IMEI)');
+    await waitFor(() => expect(asked.at(-1)?.get('remoteGroup')).toBe('Australia'));
+    expect(asked.at(-1)?.get('type')).toBe('imei');
+    expect(asked.at(-1)?.get('_start')).toBe('0');
+    const table = within(await dialog.findByRole('table', { name: 'Supplier services' }));
+    await waitFor(() => expect(table.getAllByRole('row')).toHaveLength(4));
+
+    await user.selectOptions(group, 'All groups');
+    await waitFor(() => expect(asked.at(-1)?.has('remoteGroup')).toBe(false));
+    expect(asked.at(-1)?.has('type')).toBe(false);
+  });
 });

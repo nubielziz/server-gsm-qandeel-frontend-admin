@@ -1,7 +1,7 @@
 // Types of the suppliers mock: the shapes of the demo's rows it reads and the tables it keeps (decision 014).
 import type { JsonValue } from '@/lib/api';
 import type { Collection } from '@/mocks/db';
-import type { HourlyPoint, Supplier, SupplierApiLog, SupplierService } from '../types';
+import type { HourlyPoint, QuickAddRun, Supplier, SupplierApiLog, SupplierService } from '../types';
 
 /** A supplier of the demo seed (`S.suppliers`), with its 24 hours of history. */
 export type DemoSupplier = {
@@ -74,6 +74,12 @@ export type MockLog = SupplierApiLog & { request: JsonValue; response: JsonValue
  */
 export type MockItem = SupplierService & { previousCredit: string | null; quantity?: MockQuantity };
 
+/**
+ * A quick add run as the mock keeps it: the figures of the finished run, and how many times the console has read it. The mock
+ * creates the services when the run starts; the reads only play the progress (queued, then half done, then finished).
+ */
+export type MockRun = { finished: QuickAddRun; reads: number };
+
 /** Every table of the suppliers mock. */
 export type SuppliersState = {
   suppliers: Collection<MockSupplier>;
@@ -81,4 +87,6 @@ export type SuppliersState = {
   services: Collection<MockService>;
   links: MockLink[];
   logs: Collection<MockLog>;
+  /** The quick add runs, oldest first. */
+  runs: MockRun[];
 };

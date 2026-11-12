@@ -226,3 +226,5 @@ export type SupplierReportRow = {
   /** Average time from sending an order to its result, in seconds. */
   averageSeconds: number | null;
 };
+
+export * from './quickAdd';

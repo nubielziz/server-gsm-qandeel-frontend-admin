@@ -1,6 +1,6 @@
-// ImportPicker: step 1 of "Import services…": the supplier's own service list with a name search, a "not imported yet" filter
-// and a tick box per service. The ticks stay while the page, the search or the filter changes. Built in the demo's dialog and
-// table style (the demo has no import screen); the list is `GET /admin/suppliers/:id/services`.
+// ImportPicker: step 1 of "Import services…": the supplier's own service list with a name search, a group filter, a "not imported
+// yet" filter and a tick box per service. The ticks stay while the page, the search or a filter changes. Built in the demo's dialog
+// and table style (the demo has no import screen); the list is `GET /admin/suppliers/:id/services`.
 import { useState } from 'react';
 import {
   Badge,
@@ -8,14 +8,17 @@ import {
   DataTable,
   EmptyState,
   SearchInput,
+  SelectField,
   TypeTag,
   type DataTableColumn,
   type RowSelection,
 } from '@/components/ui';
 import { money } from '@/lib/format';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useServiceGroups } from '../hooks/useQuickAdd';
 import { useSupplierCatalogue } from '../hooks/useSupplierCatalogue';
-import type { SupplierService } from '../types';
+import { groupOption, groupValue } from '../lib/quickAdd';
+import type { QuickAddGroupRef, SupplierService } from '../types';
 
 /** Services per page of the picker. */
 export const PICKER_PAGE_SIZE = 25;
@@ -63,9 +66,12 @@ export function ImportPicker({ supplierId, selection }: ImportPickerProps) {
   const [text, setText] = useState('');
   const [page, setPage] = useState(1);
   const [onlyNew, setOnlyNew] = useState(false);
+  const [group, setGroup] = useState<QuickAddGroupRef | undefined>();
   const q = useDebouncedValue(text.trim());
-  const list = useSupplierCatalogue({ supplierId, page, pageSize: PICKER_PAGE_SIZE, q, onlyNew });
+  const list = useSupplierCatalogue({ supplierId, page, pageSize: PICKER_PAGE_SIZE, q, onlyNew, group });
   const page1 = () => setPage(1);
+  // A group without a name cannot be filtered on (the server skips an empty value), so it is not offered.
+  const named = (useServiceGroups(supplierId).data?.groups ?? []).filter((item) => item.remoteGroup !== '');
 
   return (
     <div className="space-y-3">
@@ -80,6 +86,20 @@ export function ImportPicker({ supplierId, selection }: ImportPickerProps) {
           // Enter must not submit the dialog's form (that would press Preview).
           onKeyDown={(event) => {
             if (event.key === 'Enter') event.preventDefault();
+          }}
+        />
+        <SelectField
+          aria-label="Group"
+          value={group ? groupValue(group) : ''}
+          options={[
+            { value: '', label: 'All groups' },
+            ...named.map((item) => ({ value: groupValue(item), label: groupOption(item) })),
+          ]}
+          onChange={(event) => {
+            // Only the group's identity goes into the query key, not its counts (they change after every import).
+            const found = named.find((item) => groupValue(item) === event.target.value);
+            setGroup(found && { type: found.type, remoteGroup: found.remoteGroup });
+            page1();
           }}
         />
         <CheckboxField
@@ -110,7 +130,7 @@ export function ImportPicker({ supplierId, selection }: ImportPickerProps) {
           skeletonRows={5}
           empty={
             <EmptyState icon="inbox" title="No services found">
-              {q || onlyNew
+              {q || onlyNew || group
                 ? 'No service matches. Change the search or the filter.'
                 : 'Sync the supplier to copy its service list.'}
             </EmptyState>

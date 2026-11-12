@@ -7,6 +7,12 @@ import { DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
 /** A supplier's own service list (the import dialog, the links editor). */
 export const SUPPLIER_CATALOGUE_KEY = ['api', 'suppliers', 'catalogue'] as const;
 
+/** A supplier's service groups with their counts and its newest quick add run (Quick add, and the import picker's Group filter). */
+export const SUPPLIER_GROUPS_KEY = ['api', 'suppliers', 'service-groups'] as const;
+
+/** One quick add run, asked again while it is going. */
+export const SUPPLIER_QUICK_ADD_KEY = ['api', 'suppliers', 'quick-add'] as const;
+
 /** The supplier report behind the figures under the stats. */
 export const SUPPLIER_REPORT_KEY = ['api', 'suppliers', 'report'] as const;
 

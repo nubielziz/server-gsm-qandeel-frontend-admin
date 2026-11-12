@@ -85,6 +85,7 @@ export function SupplierDetailPanel({ row, grants, onDialog }: SupplierDetailPan
           onRetry={() => void query.refetch()}
           grants={grants}
           onImport={() => onDialog({ kind: 'import', supplier })}
+          onQuickAdd={() => onDialog({ kind: 'quick-add', supplier })}
           onEditLinks={(link) => onDialog({ kind: 'links', supplier, link })}
         />
         <SupplierConnection supplier={supplier} />

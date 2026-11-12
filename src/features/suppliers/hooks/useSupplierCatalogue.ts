@@ -15,6 +15,8 @@ export type CatalogueArgs = {
   q?: string;
   /** Only the services that no service of the console uses yet. */
   onlyNew?: boolean;
+  /** Only the services of one supplier group, as the groups listing names it (exact text). */
+  group?: { type: string; remoteGroup: string };
   enabled?: boolean;
 };
 
@@ -25,10 +27,11 @@ export function useSupplierCatalogue({
   pageSize,
   q = '',
   onlyNew = false,
+  group,
   enabled = true,
 }: CatalogueArgs) {
   return useApiQuery({
-    queryKey: [...SUPPLIER_CATALOGUE_KEY, supplierId, { page, pageSize, q, onlyNew }],
+    queryKey: [...SUPPLIER_CATALOGUE_KEY, supplierId, { page, pageSize, q, onlyNew, group }],
     queryFn: ({ signal }) =>
       listSupplierServices(
         supplierId as Id,
@@ -38,7 +41,10 @@ export function useSupplierCatalogue({
           q,
           sort: ['name'],
           order: ['asc'],
-          ...(onlyNew ? { filters: { imported: false } } : {}),
+          filters: {
+            ...(onlyNew ? { imported: false } : {}),
+            ...(group ? { remoteGroup: group.remoteGroup, type: group.type } : {}),
+          },
         },
         { signal },
       ),

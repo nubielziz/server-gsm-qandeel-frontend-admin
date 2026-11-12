@@ -5,7 +5,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { applyListQuery } from '@/mocks/crud';
 import { invalid, notFound } from '@/mocks/handlers/accessShared';
 import { toMoney } from '@/mocks/seed';
-import { chainOf, type MockItem, type SuppliersState } from './seed';
+import { chainOf, type MockItem, type MockService, type SuppliersState } from './seed';
 import type { MockQuantity } from './seedTypes';
 import { secured } from './secured';
 import type { ImportItemState, ImportPreviewItem } from '../types';
@@ -27,6 +27,26 @@ const quantityOf = (item: MockItem): MockQuantity =>
 
 const sameQuantity = (a: MockQuantity, b: MockQuantity): boolean =>
   a.minQty === b.minQty && a.maxQty === b.maxQty && a.qtyOptions.join(',') === b.qtyOptions.join(',');
+
+/**
+ * Creates the console service for a supplier item that is not imported yet, links it as the primary supplier and marks the item
+ * imported. The import and Quick add share it, so both name, price and number a new service the same way.
+ */
+export function createFromItem(data: SuppliersState, item: MockItem, status = 'active'): MockService {
+  const service = data.services.insert({
+    name: item.name,
+    code: `IMP-${item.id}`,
+    status,
+    slaMinutes: 60,
+    cost: item.credit,
+    // A new service gets the supplier's rule; a later import never changes it.
+    ...quantityOf(item),
+  });
+  data.links.push({ serviceId: service.id, supplierServiceId: item.id, priority: 1 });
+  item.imported = true;
+  item.linkedServiceId = service.id;
+  return service;
+}
 
 function previewOf(data: SuppliersState, item: MockItem): ImportPreviewItem {
   const state = stateOf(item);
@@ -109,18 +129,7 @@ export const catalogueHandlers: HttpHandler[] = [
           item.priceChangedAt = null;
           result.updated += 1;
         } else {
-          const service = data.services.insert({
-            name: item.name,
-            code: `IMP-${item.id}`,
-            status: 'active',
-            slaMinutes: 60,
-            cost: item.credit,
-            // A new service gets the supplier's rule; a later import never changes it.
-            ...quantityOf(item),
-          });
-          data.links.push({ serviceId: service.id, supplierServiceId: item.id, priority: 1 });
-          item.imported = true;
-          item.linkedServiceId = service.id;
+          createFromItem(data, item);
           result.created += 1;
         }
       }

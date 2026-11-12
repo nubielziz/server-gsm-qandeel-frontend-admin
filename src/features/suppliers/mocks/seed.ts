@@ -158,6 +158,8 @@ export async function buildState(): Promise<SuppliersState> {
       // The first two new items state a quantity rule, so the import preview has one to show.
       if (index === 0) item.quantity = { minQty: 1, maxQty: 50, qtyOptions: [] };
       if (index === 1) item.quantity = { minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] };
+      // Nordic's third new item is no longer listed by the supplier, so Quick add counts its group as "Cannot add".
+      if (supplier.id === 1 && index === 2) item.isAvailable = false;
     }
   }
 
@@ -184,6 +186,7 @@ export async function buildState(): Promise<SuppliersState> {
     services: new Collection(services),
     links,
     logs: new Collection(logs),
+    runs: [],
   };
 }
 
