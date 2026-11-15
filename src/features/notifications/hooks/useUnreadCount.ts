@@ -2,6 +2,8 @@
 // `notification.read` set the number at once, and a new item shows a toast). Without the stream it asks every 60 seconds while the tab is visible; with
 // it open it asks every 5 minutes as a safety net. It also asks when the window is focused again and after a read action (the actions invalidate
 // `UNREAD_KEY`). It never asks before `me` is known: without a session it would be a 401.
+// It also gives the bell's animation its cues (useBellMotion.ts), each before its number reaches the cache: a created item (it rings only when `live`, in a
+// visible tab, at most once every 3 s) and a read (the number rolls down).
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { toast } from '@/components/ui';
@@ -12,6 +14,7 @@ import { getUnreadCount } from '../api';
 import { toastBody } from '../lib/inbox';
 import type { InboxItem, UnreadCount } from '../types';
 import { INBOX_KEY, LIVE_UNREAD_REFRESH_MS, UNREAD_KEY, UNREAD_REFRESH_MS } from './keys';
+import { bellMotion } from './useBellMotion';
 
 export function useUnreadCount() {
   const { data: me } = useMe();
@@ -37,10 +40,12 @@ export function useUnreadCount() {
     refreshList();
   });
   useStreamEvent('notification.read', ({ unread }) => {
+    bellMotion.read(unread);
     setUnread(unread);
     refreshList();
   });
   useStreamEvent('notification.created', ({ item, unread, live: isLive }) => {
+    bellMotion.arrival(unread, isLive);
     setUnread(unread);
     refreshList();
     // Only an item that arrived now (not one the server replayed after a reconnect), and only in a tab someone is looking at.

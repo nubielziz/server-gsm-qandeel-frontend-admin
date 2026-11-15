@@ -319,6 +319,21 @@ describe('marking read', () => {
     await waitFor(async () => expect(await bell()).toHaveAccessibleName('Notifications, 1 unread'));
   });
 
+  it('rolls the number down after a read in the panel, without the live stream', async () => {
+    const user = userEvent.setup();
+    await openShell();
+    const button = await bell();
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+    await user.click(button);
+    const panel = within(await screen.findByRole('dialog', { name: 'Notifications' }));
+    await user.click(await panel.findByRole('button', { name: /An order needs attention/ }));
+    await waitFor(async () => expect(await bell()).toHaveAccessibleName('Notifications, 1 unread'));
+    const badge = (await bell()).querySelector('.count') as HTMLElement;
+    expect(badge.querySelector('.count-out-down')).toHaveTextContent('2');
+    expect(badge.querySelector('.count-in-down')).toHaveTextContent('1');
+    expect((await bell()).querySelector('svg')).not.toHaveClass('bell-ring');
+  });
+
   it('keeps the panel open for an item with no link, and marks nothing for one already read', async () => {
     const user = userEvent.setup();
     const sent = recordRequests('/admin/inbox/');
@@ -539,5 +554,113 @@ describe('the live stream', () => {
     push('notification.created', { item: { id: 1 } });
     expect(button).toHaveAccessibleName('Notifications, 2 unread');
     expect(getToasts()).toEqual([]);
+  });
+
+  describe('the arrival animation', () => {
+    const icon = (button: HTMLElement) => button.querySelector('svg') as SVGElement;
+    const setVisibility = (state: 'visible' | 'hidden') =>
+      act(() => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+    /** The ring window (3 s) lives as long as the module: each test jumps an hour past the one before, so no earlier ring counts. */
+    let hours = 0;
+    const freshClock = () => {
+      hours += 1;
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      vi.setSystemTime(Date.now() + hours * 3_600_000);
+    };
+
+    it('swings the bell, pops the badge and rolls the number for a live item only, at most once every 3 s', async () => {
+      freshClock();
+      await openShell();
+      const button = await bell();
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+      await streamOpen();
+      expect(icon(button)).not.toHaveClass('bell-ring');
+
+      push('notification.created', created(liveItem(50), 3, false), 'i50');
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 3 unread'));
+      expect(icon(button)).not.toHaveClass('bell-ring');
+      expect(button.querySelector('.count-out-up')).toBeNull();
+
+      push('notification.created', created(liveItem(51), 4), 'i51');
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 4 unread'));
+      expect(icon(button)).toHaveClass('bell-ring');
+      expect(button.querySelector('.count')).toHaveClass('badge-pop');
+      expect(button.querySelector('.count-out-up')).toHaveTextContent('3');
+      expect(button.querySelector('.count-in-up')).toHaveTextContent('4');
+
+      // A second item inside the window: the number rolls again, the badge does not pop and the bell keeps its one swing.
+      const swinging = icon(button);
+      push('notification.created', created(liveItem(52), 5), 'i52');
+      await waitFor(() => expect(button.querySelector('.count-in-up')).toHaveTextContent('5'));
+      expect(icon(button)).toBe(swinging);
+      // A read rolls it down.
+      push('notification.read', { ids: [52], all: false, upToId: null, unread: 4 });
+      await waitFor(() => expect(button.querySelector('.count-in-down')).toHaveTextContent('4'));
+      expect(button).toHaveAccessibleName('Notifications, 4 unread');
+    });
+
+    it('pops the badge in from nothing for the first unread', async () => {
+      freshClock();
+      serveInbox([], 0);
+      await openShell();
+      const button = await bell();
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 0 unread'));
+      await streamOpen();
+      push('notification.created', created(liveItem(53), 1), 'i53');
+      await waitFor(() => expect(button.querySelector('.count')).toHaveClass('badge-in'));
+      expect(button.querySelector('.count-out-up')).toBeNull();
+    });
+
+    it('plays nothing with reduced motion: the number just changes', async () => {
+      freshClock();
+      const media = vi.spyOn(window, 'matchMedia').mockImplementation(
+        (query: string) =>
+          ({
+            matches: query.includes('reduced-motion'),
+            media: query,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }) as unknown as MediaQueryList,
+      );
+      try {
+        await openShell();
+        const button = await bell();
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+        await streamOpen();
+        push('notification.created', created(liveItem(54), 3), 'i54');
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 3 unread'));
+        expect(icon(button)).not.toHaveClass('bell-ring');
+        expect(button.querySelector('.badge-pop, .count-out-up, .count-in-up')).toBeNull();
+      } finally {
+        media.mockRestore();
+      }
+    });
+
+    it("puts the number in a hidden tab's title, keeps it across a title change, and rings once on return", async () => {
+      freshClock();
+      await openShell();
+      const button = await bell();
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+      await streamOpen();
+      act(() => {
+        document.title = 'Somewhere · GSM Supply';
+      });
+      setVisibility('hidden');
+      await waitFor(() => expect(document.title).toBe('(2) Somewhere · GSM Supply'));
+      push('notification.created', created(liveItem(55), 3), 'i55');
+      await waitFor(() => expect(document.title).toBe('(3) Somewhere · GSM Supply'));
+      expect(icon(button)).not.toHaveClass('bell-ring');
+      // The shell writes the title of another page: the prefix comes back, once.
+      act(() => {
+        document.title = 'Orders · GSM Supply';
+      });
+      await waitFor(() => expect(document.title).toBe('(3) Orders · GSM Supply'));
+      setVisibility('visible');
+      expect(document.title).toBe('Orders · GSM Supply');
+      await waitFor(() => expect(icon(button)).toHaveClass('bell-ring'));
+    });
   });
 });

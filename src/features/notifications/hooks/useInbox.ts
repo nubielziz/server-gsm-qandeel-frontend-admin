@@ -1,11 +1,12 @@
 // The bell's list: the newest 20 items, 20 more on each "Load more", with an "Unread only" switch. It asks only while the panel is open. The two actions
-// (mark one read, mark all read) refresh the list and the bell's number.
+// (mark one read, mark all read) refresh the list and the bell's number, after telling the bell that its next lower number is a read (it rolls down).
 import { useOnError } from '@refinedev/core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useApiMutation } from '@/lib/query';
 import { listInbox, markAllInboxRead, markInboxRead } from '../api';
 import { INBOX_KEY, INBOX_PAGE_SIZE, UNREAD_KEY } from './keys';
+import { bellMotion } from './useBellMotion';
 
 /** The items loaded so far (newest first), whether more exist, and the controls of the list. Pass `open` so a closed bell asks nothing. */
 export function useInbox(options: { open: boolean; unreadOnly: boolean }) {
@@ -39,7 +40,11 @@ export function useInbox(options: { open: boolean; unreadOnly: boolean }) {
 /** Marks one item read; the bell's number and the list refresh. */
 export function useMarkRead() {
   return useApiMutation({
-    mutationFn: (id: number) => markInboxRead(id),
+    mutationFn: async (id: number) => {
+      await markInboxRead(id);
+      // Before the refetch: the stream's own read event may come before or after it.
+      bellMotion.read(null);
+    },
     invalidateKeys: [UNREAD_KEY, INBOX_KEY],
     errorNotification: (error) => ({
       message: 'Could not mark it read',
@@ -51,7 +56,11 @@ export function useMarkRead() {
 /** Marks every item read up to the newest one the panel showed, so one that arrives during the click stays unread. */
 export function useMarkAllRead() {
   return useApiMutation({
-    mutationFn: (upToId: number | undefined) => markAllInboxRead(upToId === undefined ? {} : { upToId }),
+    mutationFn: async (upToId: number | undefined) => {
+      const result = await markAllInboxRead(upToId === undefined ? {} : { upToId });
+      bellMotion.read(null);
+      return result;
+    },
     invalidateKeys: [UNREAD_KEY, INBOX_KEY],
     errorNotification: (error) => ({
       message: 'Could not mark them read',

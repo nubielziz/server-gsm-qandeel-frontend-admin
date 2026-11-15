@@ -736,3 +736,133 @@
     transform: translateX(-16px);
   }
 }
+
+/*
+ * Motion tokens (the website's names: app/globals.css of the storefront) and the notification bell's arrival (owner, 2026-11-15; NotificationBell.tsx):
+ * the icon swings from its top in decaying swings, the badge pops with a little overshoot, and its number rolls (up for a new item, down for a read).
+ * Transform and opacity only. The animations exist only for `no-preference`, so reduced motion plays none of them; the leaving number is invisible at rest.
+ */
+:root {
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* A long, soft ease-out for things that travel. */
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
+  /* A pendulum: slow at each end of a swing. */
+  --ease-swing: cubic-bezier(0.37, 0, 0.63, 1);
+  --duration-slow: 300ms;
+  --duration-ring: 600ms;
+  --duration-count: 250ms;
+}
+
+/* Symmetric swings, so the same keyframes serve both writing directions. */
+@keyframes bell-ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  15% {
+    transform: rotate(14deg);
+  }
+  37% {
+    transform: rotate(-12deg);
+  }
+  59% {
+    transform: rotate(8deg);
+  }
+  80% {
+    transform: rotate(-5deg);
+  }
+}
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  55% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes badge-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* The rolling number travels vertically only, so it needs no mirroring. */
+@keyframes count-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes count-out-up {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+@keyframes count-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes count-out-down {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+.count-out {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bell-ring {
+    transform-origin: 50% 0;
+    animation: bell-ring var(--duration-ring) var(--ease-swing);
+  }
+  .badge-pop {
+    animation: badge-pop var(--duration-slow) var(--ease-standard);
+  }
+  .badge-in {
+    animation: badge-in var(--duration-slow) var(--ease-standard);
+  }
+  .count-in-up {
+    animation: count-in-up var(--duration-count) var(--ease-glide) both;
+  }
+  .count-out-up {
+    animation: count-out-up var(--duration-count) var(--ease-glide) both;
+  }
+  .count-in-down {
+    animation: count-in-down var(--duration-count) var(--ease-glide) both;
+  }
+  .count-out-down {
+    animation: count-out-down var(--duration-count) var(--ease-glide) both;
+  }
+}
