@@ -1,6 +1,7 @@
 // TicketRow: one ticket in the inbox list: who wrote (a Merchant tag for a merchant), when, the subject, the number, the status
 // badge, High priority and how long the reply is overdue. Ports ticketRow() of 49-p-support.js. The whole row opens the thread.
-import { Badge, cx, Icon, TypeTag } from '@/components/ui';
+// Feature 28 adds a dot while the requester's newest message is not seen by the team, and a pencil while the requester is typing.
+import { Badge, cx, Icon, StatusDot, TypeTag } from '@/components/ui';
 import { ageText, ago } from '@/lib/format';
 import { overdueMs } from '../lib/sla';
 import { requesterLabel } from '../lib/status';
@@ -11,10 +12,12 @@ export interface TicketRowProps {
   ticket: SupportTicket;
   selected: boolean;
   now: number;
+  /** The requester is typing on this ticket right now. */
+  typing: boolean;
   onSelect: (id: number) => void;
 }
 
-export function TicketRow({ ticket, selected, now, onSelect }: TicketRowProps) {
+export function TicketRow({ ticket, selected, now, typing, onSelect }: TicketRowProps) {
   const overdue = overdueMs(ticket, now);
   return (
     <li>
@@ -29,8 +32,14 @@ export function TicketRow({ ticket, selected, now, onSelect }: TicketRowProps) {
       >
         <div className="flex items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium">
+            {ticket.hasUnread && <StatusDot tone="accent" label="Unread message" className="flex-none" />}
             {ticket.requesterType === 'client' && <TypeTag>Merchant</TypeTag>}
             <span className="truncate">{requesterLabel(ticket)}</span>
+            {typing && (
+              <span className="flex-none text-accent" role="img" aria-label="Typing">
+                <Icon name="edit" className="ic-xs" />
+              </span>
+            )}
           </span>
           <span className="flex-1" />
           <span className={cx('flex-none text-xs', ticket.late ? 'font-medium text-crit-fg' : 'text-ink3')}>

@@ -11,6 +11,7 @@ import {
   type BellMotionEnv,
   type BellView,
 } from '../lib/bellMotion';
+import { sharedAudioContext } from '@/lib/sharedAudio';
 import { createChime } from '../lib/chime';
 import { createTitleBadge } from '../lib/titleBadge';
 
@@ -27,7 +28,7 @@ const LISTEN = { capture: true, passive: true } as const;
 
 /** The page's chime: the bell arms it, the bell's rules play it. */
 export const notificationChime = createChime({
-  createContext: () => (typeof window.AudioContext === 'function' ? new window.AudioContext() : null),
+  createContext: sharedAudioContext,
   hadGesture: () => navigator.userActivation?.hasBeenActive === true,
   onGesture(listener) {
     for (const type of GESTURES) window.addEventListener(type, listener, LISTEN);

@@ -25,6 +25,9 @@ export type RequesterType = 'customer' | 'client';
 /** The ways a reply can go out. */
 export type ReplyChannel = 'email' | 'telegram';
 
+/** What the staff member is writing: a public reply or an internal note (the live "is typing" line shows only the first to the requester). */
+export type TypingMode = 'reply' | 'note';
+
 // ---- Tickets ----
 
 /** The person or company behind a ticket, joined so the inbox needs no second request. */
@@ -38,6 +41,9 @@ export type StaffRef = { id: Id; name: string };
  * narrowed, the joined `requester` and `assignee`, and the three timers the server works out so the console only formats
  * them: `lastPublicAt` (when the last message the customer could see was written), `slaDueAt` (when the next reply is due,
  * null when nobody waits for one) and `late` (a reply is waiting and `slaDueAt` has passed).
+ * Feature 28 (backend B219, always sent) adds the seen marks: `hasUnread` (a requester message staff have not seen),
+ * and the highest message each side has seen with the moment, `requesterSeen*` (the requester saw our public replies up to
+ * there) and `staffSeen*` (the team saw the requester's messages up to there; staff are one party).
  */
 export type SupportTicket = Omit<
   SupportTicketRow,
@@ -64,19 +70,41 @@ export type SupportTicket = Omit<
   lastPublicAt: IsoDateTime | null;
   late: boolean;
   updatedAt: IsoDateTime;
+  hasUnread: boolean;
+  requesterSeenMessageId: Id | null;
+  requesterSeenAt: IsoDateTime | null;
+  staffSeenMessageId: Id | null;
+  staffSeenAt: IsoDateTime | null;
 };
 
 /** Who wrote a message. `client` is a merchant; both sit on the customer's side of the thread. */
 export type MessageAuthorType = 'customer' | 'client' | 'staff' | 'system';
 
 /**
+ * A file on a message (feature 28, backend B218): PDF, JPEG or PNG, at most 5 MiB. Staff download it through
+ * `ticketFileUrl`; the requester's files are not virus-scanned.
+ */
+export type Attachment = { id: Id; filename: string; mime: string; size: number };
+
+/**
  * One message of a thread (assumed contract). `isInternal` marks a note the customer never sees; the author's name is joined
- * so the thread needs no lookup.
+ * so the thread needs no lookup. `attachments` (feature 28, always sent) are the files behind `fileIds`.
  */
 export type TicketMessage = Omit<TicketMessageRow, 'authorType' | 'authorId' | 'updatedAt'> & {
   authorType: MessageAuthorType;
   authorId: Id | null;
   authorName: string;
+  attachments: Attachment[];
+};
+
+/** The answer of `POST /admin/support-tickets/:id/files`: the stored file, whose `id` goes into `fileIds` of a reply or note. */
+export type StoredTicketFile = {
+  id: Id;
+  filename: string;
+  size: number;
+  mime: string;
+  sha256: string;
+  createdAt: IsoDateTime;
 };
 
 /**
@@ -100,11 +128,14 @@ export type TicketListFilters = {
 
 // ---- Action bodies ----
 
-/** Body of `POST /admin/support-tickets/:id/reply` (assumed contract): the text and, when the ticket allows more than one, the channel. */
-export type ReplyBody = { body: string; channel?: ReplyChannel };
+/**
+ * Body of `POST /admin/support-tickets/:id/reply` (assumed contract): the text, the channel when the ticket allows more than
+ * one, and the files uploaded before (at most 5). The text may be empty only when `fileIds` has an entry.
+ */
+export type ReplyBody = { body: string; channel?: ReplyChannel; fileIds?: Id[] };
 
-/** Body of `POST /admin/support-tickets/:id/note` (assumed contract). */
-export type NoteBody = { body: string };
+/** Body of `POST /admin/support-tickets/:id/note` (assumed contract): the text and the files uploaded before (the text may be empty with a file). */
+export type NoteBody = { body: string; fileIds?: Id[] };
 
 /** Body of `PATCH /admin/support-tickets/:id` (assumed contract): only what changes. Resolve and Reopen are `status`. */
 export type UpdateTicketBody = {

@@ -27,7 +27,43 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 
 ## Tags that match no manifest endpoint
 
-- none
+- `GET /admin/customers/:id/wallet` at src/features/customers/api/wallet.ts:31
+- `GET /admin/customers/:id/wallet/statement` at src/features/customers/api/wallet.ts:41
+- `POST /admin/customers/:id/wallet/adjust` at src/features/customers/api/wallet.ts:60
+- `POST /admin/customers/:id/wallet/freeze` at src/features/customers/api/wallet.ts:78
+- `POST /admin/customers/:id/wallet/unfreeze` at src/features/customers/api/wallet.ts:96
+- `GET /admin/customer-wallets` at src/features/finance/api/customerWallets.ts:11
+- `POST /admin/clients/:id/api-keys` at src/features/merchants/api/apiKeys.ts:32
+- `PATCH /admin/api-keys/:id` at src/features/merchants/api/apiKeys.ts:45
+- `POST /admin/clients/:id/password` at src/features/merchants/api/security.ts:12
+- `POST /admin/clients/:id/reset-2fa` at src/features/merchants/api/security.ts:25
+- `POST /admin/clients/:id/sessions/revoke` at src/features/merchants/api/security.ts:34
+- `POST /admin/clients/:id/verify-email/resend` at src/features/merchants/api/security.ts:43
+- `GET /admin/notification-campaigns` at src/features/notifications/api/campaigns.ts:40
+- `GET /admin/notification-campaigns/:id` at src/features/notifications/api/campaigns.ts:48
+- `POST /admin/notification-campaigns` at src/features/notifications/api/campaigns.ts:57
+- `PATCH /admin/notification-campaigns/:id` at src/features/notifications/api/campaigns.ts:65
+- `DELETE /admin/notification-campaigns/:id` at src/features/notifications/api/campaigns.ts:73
+- `POST /admin/notification-campaigns/audience-preview` at src/features/notifications/api/campaigns.ts:82
+- `POST /admin/notification-campaigns/:id/preview` at src/features/notifications/api/campaigns.ts:91
+- `POST /admin/notification-campaigns/:id/test` at src/features/notifications/api/campaigns.ts:100
+- `POST /admin/notification-campaigns/:id/send` at src/features/notifications/api/campaigns.ts:114
+- `POST /admin/notification-campaigns/:id/schedule` at src/features/notifications/api/campaigns.ts:123
+- `POST /admin/notification-campaigns/:id/cancel` at src/features/notifications/api/campaigns.ts:136
+- `GET /admin/notification-campaigns/:id/recipients` at src/features/notifications/api/campaigns.ts:145
+- `GET /admin/inbox` at src/features/notifications/api/inbox.ts:21
+- `GET /admin/inbox/unread-count` at src/features/notifications/api/inbox.ts:37
+- `POST /admin/inbox/:id/read` at src/features/notifications/api/inbox.ts:45
+- `POST /admin/inbox/read-all` at src/features/notifications/api/inbox.ts:54
+- `POST /admin/service-listings/:id/image` at src/features/storefront/api/listings.ts:66
+- `DELETE /admin/service-listings/:id/image` at src/features/storefront/api/listings.ts:76
+- `GET /admin/suppliers/:id/service-groups` at src/features/suppliers/api/quickAdd.ts:12
+- `POST /admin/suppliers/:id/quick-add` at src/features/suppliers/api/quickAdd.ts:23
+- `GET /admin/suppliers/:id/quick-add/:runId` at src/features/suppliers/api/quickAdd.ts:33
+- `POST /admin/support-tickets/:id/read` at src/features/support/api/tickets.ts:87
+- `POST /admin/support-tickets/:id/typing` at src/features/support/api/tickets.ts:97
+- `POST /admin/support-tickets/:id/files` at src/features/support/api/tickets.ts:108
+- `GET /admin/support-tickets/:id/files/:fileId` at src/features/support/api/tickets.ts:120
 
 ## Endpoints tagged more than once
 
@@ -73,11 +109,11 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/clients` | merchants | src/features/merchants/api/clients.ts:23 |
 | covered | `GET /admin/clients/:id` | merchants | src/features/merchants/api/clients.ts:32 |
 | covered | `POST /admin/clients` | merchants | src/features/merchants/api/clients.ts:42 |
-| covered | `PATCH /admin/clients/:id` | merchants | src/features/merchants/api/clients.ts:53 |
+| covered | `PATCH /admin/clients/:id` | merchants | src/features/merchants/api/clients.ts:56 |
 | covered | `GET /admin/clients/:id/wallet` | merchants | src/features/merchants/api/wallet.ts:28 |
 | covered | `GET /admin/clients/:id/statement` | merchants | src/features/merchants/api/wallet.ts:38 |
-| covered | `POST /admin/clients/:id/wallet/adjust` | merchants | src/features/merchants/api/wallet.ts:53 |
-| covered | `PATCH /admin/clients/:id/credit-limit` | merchants | src/features/merchants/api/wallet.ts:66 |
+| covered | `POST /admin/clients/:id/wallet/adjust` | merchants | src/features/merchants/api/wallet.ts:56 |
+| covered | `PATCH /admin/clients/:id/credit-limit` | merchants | src/features/merchants/api/wallet.ts:73 |
 | covered | `GET /admin/ledger/transactions` | finance | src/features/finance/api/ledger.ts:13 |
 | covered | `GET /admin/ledger/transactions/:id` | finance | src/features/finance/api/ledger.ts:25 |
 | covered | `GET /admin/ledger/accounts` | finance | src/features/finance/api/accounts.ts:11 |
@@ -86,8 +122,8 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/currencies/:id` | settings | src/features/settings/api/currencies.ts:27 |
 | covered | `POST /admin/currencies` | settings | src/features/settings/api/currencies.ts:35 |
 | covered | `PATCH /admin/currencies/:id` | settings | src/features/settings/api/currencies.ts:44 |
-| covered | `GET /admin/clients/:id/api-keys` | merchants | src/features/merchants/api/apiKeys.ts:10 |
-| covered | `DELETE /admin/api-keys/:id` | merchants | src/features/merchants/api/apiKeys.ts:20 |
+| covered | `GET /admin/clients/:id/api-keys` | merchants | src/features/merchants/api/apiKeys.ts:11 |
+| covered | `DELETE /admin/api-keys/:id` | merchants | src/features/merchants/api/apiKeys.ts:21 |
 | covered | `GET /admin/client-groups` | merchants | src/features/merchants/api/groups.ts:22 |
 | covered | `GET /admin/client-groups/:id` | merchants | src/features/merchants/api/groups.ts:31 |
 | covered | `POST /admin/client-groups` | merchants | src/features/merchants/api/groups.ts:40 |
@@ -100,9 +136,9 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `DELETE /admin/service-categories/:id` | services | src/features/services/api/categories.ts:56 |
 | covered | `GET /admin/services` | services | src/features/services/api/services.ts:24 |
 | covered | `GET /admin/services/:id` | services | src/features/services/api/services.ts:34 |
-| covered | `POST /admin/services` | services | src/features/services/api/services.ts:43 |
-| covered | `PATCH /admin/services/:id` | services | src/features/services/api/services.ts:54 |
-| covered | `DELETE /admin/services/:id` | services | src/features/services/api/services.ts:64 |
+| covered | `POST /admin/services` | services | src/features/services/api/services.ts:45 |
+| covered | `PATCH /admin/services/:id` | services | src/features/services/api/services.ts:58 |
+| covered | `DELETE /admin/services/:id` | services | src/features/services/api/services.ts:68 |
 | covered | `PUT /admin/services/:id/fields` | services | src/features/services/api/serviceParts.ts:18 |
 | covered | `PUT /admin/services/:id/options` | services | src/features/services/api/serviceParts.ts:31 |
 | covered | `PUT /admin/services/:id/group-prices` | services | src/features/services/api/serviceParts.ts:44 |
@@ -154,15 +190,15 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:20 |
 | covered | `GET /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:29 |
 | covered | `POST /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:38 |
-| covered | `PATCH /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:47 |
-| covered | `DELETE /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:56 |
+| covered | `PATCH /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:48 |
+| covered | `DELETE /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:57 |
 | covered | `GET /admin/invoices` | finance | src/features/finance/api/invoices.ts:19 |
 | covered | `GET /admin/invoices/:id` | finance | src/features/finance/api/invoices.ts:28 |
 | covered | `POST /admin/invoices` | finance | src/features/finance/api/invoices.ts:38 |
-| covered | `GET /admin/payments` | finance | src/features/finance/api/payments.ts:20 |
-| covered | `GET /admin/payments/:id` | finance | src/features/finance/api/payments.ts:30 |
-| covered | `POST /admin/payments/:id/approve` | finance | src/features/finance/api/payments.ts:40 |
-| covered | `POST /admin/payments/:id/reject` | finance | src/features/finance/api/payments.ts:49 |
+| covered | `GET /admin/payments` | finance | src/features/finance/api/payments.ts:22 |
+| covered | `GET /admin/payments/:id` | finance | src/features/finance/api/payments.ts:32 |
+| covered | `POST /admin/payments/:id/approve` | finance | src/features/finance/api/payments.ts:42 |
+| covered | `POST /admin/payments/:id/reject` | finance | src/features/finance/api/payments.ts:51 |
 | covered | `GET /admin/kyc-submissions` | merchants | src/features/merchants/api/kyc.ts:20 |
 | covered | `GET /admin/kyc-submissions/:id` | merchants | src/features/merchants/api/kyc.ts:32 |
 | covered | `POST /admin/kyc-submissions/:id/decide` | merchants | src/features/merchants/api/kyc.ts:42 |
@@ -183,7 +219,7 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/reports/wallet-exposure` | finance | src/features/finance/api/reports.ts:25 |
 | covered | `GET /admin/reports/suppliers` | suppliers | src/features/suppliers/api/reports.ts:10 |
 | covered | `GET /admin/reports/top-clients` | dashboard | src/features/dashboard/api/dashboard.ts:22 |
-| covered | `GET /admin/reports/client-statement/:clientId` | merchants | src/features/merchants/api/wallet.ts:76 |
+| covered | `GET /admin/reports/client-statement/:clientId` | merchants | src/features/merchants/api/wallet.ts:83 |
 | covered | `GET /admin/dashboard` | dashboard | src/features/dashboard/api/dashboard.ts:12 |
 | covered | `GET /admin/queues` | dashboard | src/features/dashboard/api/dashboard.ts:35 |
 | covered | `GET /admin/webhook-deliveries` | settings | src/features/settings/api/webhooks.ts:19 |
@@ -221,9 +257,9 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `POST /admin/tac-catalog` | storefront | src/features/storefront/api/tacCatalog.ts:37 |
 | covered | `PATCH /admin/tac-catalog/:id` | storefront | src/features/storefront/api/tacCatalog.ts:46 |
 | covered | `POST /admin/currencies/refresh-fx` | settings | src/features/settings/api/currencies.ts:54 |
-| covered | `GET /admin/service-listings` | storefront | src/features/storefront/api/listings.ts:22 |
+| covered | `GET /admin/service-listings` | storefront | src/features/storefront/api/listings.ts:23 |
 | covered | `GET /admin/service-listings/:id` | storefront | src/features/storefront/api/listings.ts:31 |
-| covered | `POST /admin/service-listings` | storefront | src/features/storefront/api/listings.ts:41 |
+| covered | `POST /admin/service-listings` | storefront | src/features/storefront/api/listings.ts:40 |
 | covered | `PATCH /admin/service-listings/:id` | storefront | src/features/storefront/api/listings.ts:51 |
 | covered | `GET /admin/content-pages` | storefront | src/features/storefront/api/contentPages.ts:29 |
 | covered | `GET /admin/content-pages/:id` | storefront | src/features/storefront/api/contentPages.ts:38 |
@@ -251,11 +287,11 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/reports/vat` | finance | src/features/finance/api/reports.ts:35 |
 | covered | `GET /admin/reports/payments` | refunds | src/features/refunds/api/reports.ts:14 |
 | covered | `PATCH /admin/storefront/settings` | settings | src/features/settings/api/storefront.ts:10 |
-| covered | `GET /admin/support-tickets` | support | src/features/support/api/tickets.ts:29 |
-| covered | `GET /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:42 |
-| covered | `PATCH /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:52 |
-| covered | `POST /admin/support-tickets/:id/reply` | support | src/features/support/api/tickets.ts:62 |
-| covered | `POST /admin/support-tickets/:id/note` | support | src/features/support/api/tickets.ts:72 |
+| covered | `GET /admin/support-tickets` | support | src/features/support/api/tickets.ts:32 |
+| covered | `GET /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:45 |
+| covered | `PATCH /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:55 |
+| covered | `POST /admin/support-tickets/:id/reply` | support | src/features/support/api/tickets.ts:66 |
+| covered | `POST /admin/support-tickets/:id/note` | support | src/features/support/api/tickets.ts:76 |
 | covered | `GET /admin/reply-templates` | support | src/features/support/api/templates.ts:22 |
 | covered | `GET /admin/reply-templates/:id` | support | src/features/support/api/templates.ts:33 |
 | covered | `POST /admin/reply-templates` | support | src/features/support/api/templates.ts:42 |

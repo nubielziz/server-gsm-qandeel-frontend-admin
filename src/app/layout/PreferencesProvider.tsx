@@ -1,17 +1,32 @@
-// PreferencesProvider: keeps the theme and row density in React state, on <html> and in localStorage, and the notification sound in state and storage.
+// PreferencesProvider: keeps the theme, row density, the support alerts and the notification sound in React state, on <html> and in localStorage.
 // Ports setTheme/setDense of 90-app.js; decision 015 (no client-state library).
-import { useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
 import {
   applyDense,
   applyTheme,
+  askDesktopPermission,
   DARK_QUERY,
   PreferencesContext,
   readDense,
+  readDesktopAlerts,
   readNotificationSound,
+  readSupportSound,
   readTheme,
   saveDense,
+  saveDesktopAlerts,
   saveNotificationSound,
+  saveSupportSound,
   saveTheme,
+  SUPPORT_DESKTOP_KEY,
+  SUPPORT_SOUND_KEY,
   type Preferences,
   type Theme,
 } from './preferences';
@@ -34,6 +49,8 @@ function systemPrefersDark(): boolean {
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [dense, setDenseState] = useState<boolean>(readDense);
+  const [supportSound, setSupportSoundState] = useState<boolean>(readSupportSound);
+  const [desktopAlerts, setDesktopAlertsState] = useState<boolean>(readDesktopAlerts);
   const [notificationSound, setNotificationSoundState] = useState<boolean>(readNotificationSound);
   const systemDark = useSyncExternalStore(subscribeSystemTheme, systemPrefersDark, () => false);
   const isDark = theme === 'dark' || (theme === 'system' && systemDark);
@@ -56,6 +73,27 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     saveNotificationSound(next);
   }, []);
   const toggleTheme = useCallback(() => setTheme(isDark ? 'light' : 'dark'), [isDark, setTheme]);
+  const setSupportSound = useCallback((next: boolean) => {
+    setSupportSoundState(next);
+    saveSupportSound(next);
+  }, []);
+  const setDesktopAlerts = useCallback(async (next: boolean) => {
+    // Switching on asks the browser; only a "granted" answer turns it on, so the switch never says "on" for alerts that cannot show.
+    const on = next && (await askDesktopPermission()) === 'granted';
+    setDesktopAlertsState(on);
+    saveDesktopAlerts(on);
+    return on;
+  }, []);
+
+  // Another tab of this browser changed an alert switch: follow it, because the tab that holds the live stream is the one that alerts.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SUPPORT_SOUND_KEY) setSupportSoundState(readSupportSound());
+      if (event.key === SUPPORT_DESKTOP_KEY) setDesktopAlertsState(readDesktopAlerts());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const value = useMemo<Preferences>(
     () => ({
@@ -67,8 +105,25 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       toggleTheme,
       setDense,
       setNotificationSound,
+      supportSound,
+      desktopAlerts,
+      setSupportSound,
+      setDesktopAlerts,
     }),
-    [theme, isDark, dense, notificationSound, setTheme, toggleTheme, setDense, setNotificationSound],
+    [
+      theme,
+      isDark,
+      dense,
+      notificationSound,
+      setTheme,
+      toggleTheme,
+      setDense,
+      setNotificationSound,
+      supportSound,
+      desktopAlerts,
+      setSupportSound,
+      setDesktopAlerts,
+    ],
   );
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

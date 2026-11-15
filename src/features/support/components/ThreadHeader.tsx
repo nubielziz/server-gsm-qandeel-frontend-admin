@@ -1,25 +1,30 @@
 // ThreadHeader: the top of the thread pane: the subject, the number, how it arrived, its category, when it was opened and its status;
 // the controls; and, for a ticket past its reply target, how long the customer has waited. Ports the first block of threadView
-// (49-p-support.js). The back arrow only shows on a phone, where the thread replaces the list.
+// (49-p-support.js). The back arrow only shows on a phone, where the thread replaces the list. A colleague who is writing a reply or a note
+// on this ticket shows under the controls (feature 28).
 import { Button, Icon } from '@/components/ui';
 import { ageText, ago } from '@/lib/format';
 import { targetMs, waitingMs } from '../lib/sla';
 import { CATEGORY_LABEL, CHANNEL_LABEL } from '../lib/status';
 import type { SelectOption } from '@/components/ui';
 import type { SupportGrants } from '../hooks/useSupportGrants';
+import type { StaffTyping } from '../hooks/useTypingBoard';
 import type { SupportTicketDetail } from '../types';
 import { TicketControls } from './TicketControls';
 import { TicketStatusBadge } from './TicketStatusBadge';
+import { StaffTypingLine } from './TypingLine';
 
 export interface ThreadHeaderProps {
   ticket: SupportTicketDetail;
   grants: SupportGrants;
   assignees: readonly SelectOption[];
   now: number;
+  /** The other staff members who are writing on this ticket right now. */
+  staffTyping: readonly StaffTyping[];
   onBack: () => void;
 }
 
-export function ThreadHeader({ ticket, grants, assignees, now, onBack }: ThreadHeaderProps) {
+export function ThreadHeader({ ticket, grants, assignees, now, staffTyping, onBack }: ThreadHeaderProps) {
   const waiting = waitingMs(ticket, now);
   const target = targetMs(ticket);
   return (
@@ -45,6 +50,7 @@ export function ThreadHeader({ ticket, grants, assignees, now, onBack }: ThreadH
         <TicketStatusBadge status={ticket.status} />
       </div>
       <TicketControls ticket={ticket} grants={grants} assignees={assignees} />
+      <StaffTypingLine staff={staffTyping} />
       {waiting !== null && (
         <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-crit-fg">
           <Icon name="clock" className="ic-sm" />

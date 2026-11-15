@@ -1,19 +1,27 @@
 // Tests for the support inbox, run through the whole app against the dev mock API: the figures, the list and its order, each filter
 // kept in the address (including a customer's tickets and the overdue link), search, the open thread, and the empty and error states.
-import { screen, waitFor, within } from '@testing-library/react';
+// The live part (feature 28) runs on the dev stand-in for the stream: the unread dot, the list and the figures following ticket events.
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { getSupportTicket, markTicketRead, replyToTicket } from '../api';
 import {
+  customerWrites,
   figures,
   openSupport,
   pressed,
+  push,
+  recordRequests,
+  rowFrame,
+  streamOpen,
   subjects,
   threadTitle,
   ticketRow,
+  useMockStream,
   waitForSubjects,
 } from '../test/supportPage';
 
@@ -334,5 +342,107 @@ describe('paging and focus', () => {
     await threadTitle('Phone still locked after unlock (SF-20471)');
     expect(await screen.findByRole('textbox', { name: 'Reply' })).not.toHaveFocus();
     wide.mockRestore();
+  });
+});
+
+describe('the live inbox', () => {
+  useMockStream();
+  const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 200)));
+  /** The reads of the list page itself and of the four figures (everything on `GET /admin/support-tickets`). */
+  const listReads = (sent: ReturnType<typeof recordRequests>) =>
+    sent.filter((request) => request.method === 'GET' && request.url.pathname === '/admin/support-tickets');
+
+  it('shows a dot on a ticket whose requester message the team has not seen, and not on one it has', async () => {
+    await openSupport();
+    const late = await ticketRow('Phone still locked after unlock (SF-20471)');
+    expect(late.getByRole('img', { name: 'Unread message' })).toBeInTheDocument();
+    const answered = await ticketRow('Charged twice for SF-20442');
+    expect(answered.queryByRole('img', { name: 'Unread message' })).not.toBeInTheDocument();
+  });
+
+  it('takes the dot away when the team’s mark moves, without a reload', async () => {
+    await openSupport();
+    await streamOpen();
+    const late = await ticketRow('Phone still locked after unlock (SF-20471)');
+    expect(late.getByRole('img', { name: 'Unread message' })).toBeInTheDocument();
+    // The newest requester message of ticket 4202 has id 3. Another window of the team marks it seen.
+    await markTicketRead(4202, 3);
+    await waitFor(async () =>
+      expect(
+        (await ticketRow('Phone still locked after unlock (SF-20471)')).queryByRole('img', {
+          name: 'Unread message',
+        }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('puts a ticket the customer just wrote on back among the first and shows its dot', async () => {
+    await openSupport();
+    await waitForSubjects(OPEN_ORDER);
+    await streamOpen();
+    await customerWrites(4206, 'It is still not fixed.');
+    const moved = 'Charged twice for SF-20442';
+    // The four late tickets stay first; then the most recently active.
+    await waitForSubjects([
+      ...LATE_ORDER,
+      moved,
+      ...OPEN_ORDER.slice(4).filter((subject) => subject !== moved),
+    ]);
+    expect((await ticketRow(moved)).getByRole('img', { name: 'Unread message' })).toBeInTheDocument();
+  });
+
+  it('refreshes the figures when a ticket changes', async () => {
+    await openSupport();
+    await streamOpen();
+    await waitFor(() => expect(figures().getByText('4 new, not yet answered')).toBeInTheDocument());
+    // Someone else answers the new ticket 4201: the server tells the console and the figure follows.
+    await replyToTicket(4201, { body: 'We are on it.' });
+    expect(await figures().findByText('3 new, not yet answered')).toBeInTheDocument();
+    expect(figures().getByText('Open tickets').parentElement).toHaveTextContent('10');
+  });
+
+  it('asks the server once for a burst of ticket events, not once for each', async () => {
+    const sent = recordRequests('/admin/support-tickets');
+    await openSupport();
+    await waitForSubjects(OPEN_ORDER);
+    await streamOpen();
+    await settle();
+    const before = listReads(sent).length;
+    const row = await getSupportTicket(4202);
+    for (let i = 0; i < 10; i += 1) {
+      push(
+        'ticket.updated',
+        rowFrame(row, { subject: `Subject ${i}`, updatedAt: new Date(Date.now() + i).toISOString() }),
+      );
+    }
+    await settle();
+    // One refresh at once (the list and the four figures); the rest of the burst waits for the end of the 5 second window.
+    expect(listReads(sent).length - before).toBe(5);
+  });
+
+  it('shows a pencil on the row of a ticket whose requester is typing', async () => {
+    await openSupport();
+    await streamOpen();
+    push('ticket.typing', { ticketId: 4201, by: 'requester', staffId: null, staffName: null, mode: null });
+    const row = await ticketRow('Order SF-20487 is taking longer than expected');
+    expect(row.getByRole('img', { name: 'Typing' })).toBeInTheDocument();
+    expect(
+      (await ticketRow('Phone still locked after unlock (SF-20471)')).queryByRole('img', { name: 'Typing' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('keeps the inbox working with no stream: it asks every 30 seconds as before', async () => {
+    vi.useFakeTimers({
+      toFake: ['setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'Date'],
+      shouldAdvanceTime: true,
+    });
+    const { uninstallMockEventSource } = await import('@/mocks/stream');
+    uninstallMockEventSource();
+    const sent = recordRequests('/admin/support-tickets');
+    await openSupport();
+    await waitForSubjects(OPEN_ORDER);
+    const before = listReads(sent).length;
+    await act(() => vi.advanceTimersByTimeAsync(31_000));
+    await waitFor(() => expect(listReads(sent).length).toBeGreaterThan(before));
   });
 });

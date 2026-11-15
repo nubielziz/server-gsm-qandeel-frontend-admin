@@ -15,10 +15,14 @@ import {
   getSupportTicket,
   listReplyTemplates,
   listSupportTickets,
+  markTicketRead,
   replyToTicket,
+  sendTicketTyping,
   supportResources,
+  ticketFileUrl,
   updateReplyTemplate,
   updateSupportTicket,
+  uploadTicketFile,
 } from '.';
 
 setupMockApi();
@@ -124,6 +128,71 @@ describe('what each function sends', () => {
       path: '/admin/support-tickets/7/note',
       body: { body: 'Only us' },
     });
+  });
+
+  it('sends the files of a reply and a note as `fileIds`', async () => {
+    const reply = recording('post', '*/admin/support-tickets/:id/reply', () =>
+      HttpResponse.json({ id: 1 }, { status: 201 }),
+    );
+    const note = recording('post', '*/admin/support-tickets/:id/note', () =>
+      HttpResponse.json({ id: 2 }, { status: 201 }),
+    );
+    await replyToTicket(7, { body: '', fileIds: [3, 4] });
+    await addTicketNote(7, { body: 'See the file', fileIds: [5] });
+    expect(reply[0].body).toEqual({ body: '', fileIds: [3, 4] });
+    expect(note[0].body).toEqual({ body: 'See the file', fileIds: [5] });
+  });
+
+  it('marks a ticket read up to a message, with the id in the body (feature 28, B218)', async () => {
+    const read = recording(
+      'post',
+      '*/admin/support-tickets/:id/read',
+      () => new HttpResponse(null, { status: 204 }),
+    );
+    await expect(markTicketRead(7, 31)).resolves.toBeUndefined();
+    expect(read[0]).toMatchObject({
+      method: 'POST',
+      path: '/admin/support-tickets/7/read',
+      body: { upToMessageId: 31 },
+    });
+  });
+
+  it('tells the server the staff member is typing a reply or a note', async () => {
+    const typing = recording(
+      'post',
+      '*/admin/support-tickets/:id/typing',
+      () => new HttpResponse(null, { status: 204 }),
+    );
+    await sendTicketTyping(7, 'reply');
+    await sendTicketTyping(7, 'note');
+    expect(typing.map((call) => [call.path, call.body])).toEqual([
+      ['/admin/support-tickets/7/typing', { mode: 'reply' }],
+      ['/admin/support-tickets/7/typing', { mode: 'note' }],
+    ]);
+  });
+
+  it('uploads one file as multipart with the part named `file`, and gives the link of a download without asking', async () => {
+    let contentType = '';
+    mockServer.use(
+      http.post('*/admin/support-tickets/:id/files', ({ request }) => {
+        contentType = request.headers.get('content-type') ?? '';
+        return HttpResponse.json(
+          {
+            id: 9,
+            filename: 'a.pdf',
+            size: 3,
+            mime: 'application/pdf',
+            sha256: '0'.repeat(64),
+            createdAt: '2026-11-15T10:00:00.000Z',
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    const stored = await uploadTicketFile(7, new File(['abc'], 'a.pdf', { type: 'application/pdf' }));
+    expect(stored.id).toBe(9);
+    expect(contentType).toMatch(/^multipart\/form-data; boundary=/);
+    expect(ticketFileUrl(7, 9)).toBe('http://api.test/admin/support-tickets/7/files/9');
   });
 
   it('lists, reads, adds, edits and deletes reply templates', async () => {
@@ -334,6 +403,75 @@ describe('answering a ticket', () => {
   it('answers 404 for a ticket that does not exist', async () => {
     const error = await replyToTicket(9999, { body: 'Hi' }).catch((caught: unknown) => caught);
     expect(isApiError(error) && error.status).toBe(404);
+  });
+});
+
+describe('the live routes of the mock (feature 28)', () => {
+  it('moves the team’s seen mark forward only, to the newest requester message up to the one given', async () => {
+    const before = await getSupportTicket(LATE);
+    expect(before).toMatchObject({ staffSeenMessageId: null, hasUnread: true });
+    await markTicketRead(LATE, 3);
+    const after = await getSupportTicket(LATE);
+    expect(after).toMatchObject({ staffSeenMessageId: 3, hasUnread: false });
+    // A lower message id changes nothing.
+    await markTicketRead(LATE, 2);
+    expect((await getSupportTicket(LATE)).staffSeenMessageId).toBe(3);
+  });
+
+  it('refuses a message that is not part of the ticket, and a typing mode it does not know', async () => {
+    const read = await markTicketRead(LATE, 9999).catch((caught: unknown) => caught);
+    expect(isApiError(read) && [read.status, Object.keys(read.fieldErrors)]).toEqual([
+      422,
+      ['upToMessageId'],
+    ]);
+    const typing = await sendTicketTyping(LATE, 'shout' as never).catch((caught: unknown) => caught);
+    expect(isApiError(typing) && typing.fieldErrors.mode).toBeTruthy();
+    const missing = await markTicketRead(9999, 1).catch((caught: unknown) => caught);
+    expect(isApiError(missing) && missing.status).toBe(404);
+  });
+
+  it('keeps an uploaded file for the reply that names it, once', async () => {
+    const stored = await uploadTicketFile(
+      NEW_ONE,
+      new File(['abc'], 'proof.pdf', { type: 'application/pdf' }),
+    );
+    expect(stored).toMatchObject({ mime: 'application/pdf' });
+    const message = await replyToTicket(NEW_ONE, { body: '', fileIds: [stored.id] });
+    expect(message.fileIds).toEqual([stored.id]);
+    expect(message.attachments.map((file) => file.id)).toEqual([stored.id]);
+    // The file belongs to that message now.
+    const again = await replyToTicket(NEW_ONE, { body: 'x', fileIds: [stored.id] }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(isApiError(again) && again.fieldErrors.fileIds).toBeTruthy();
+    // And a file of another ticket is not available.
+    const other = await uploadTicketFile(LATE, new File(['abc'], 'other.png', { type: 'image/png' }));
+    const foreign = await replyToTicket(NEW_ONE, { body: 'x', fileIds: [other.id] }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(isApiError(foreign) && foreign.fieldErrors.fileIds).toBeTruthy();
+  });
+
+  it('refuses a file that is not a PDF, JPEG or PNG, six files, and an empty reply with no file', async () => {
+    const exe = await uploadTicketFile(
+      LATE,
+      new File(['abc'], 'tool.exe', { type: 'application/x-msdownload' }),
+    ).catch((caught: unknown) => caught);
+    expect(isApiError(exe) && exe.fieldErrors.file).toBeTruthy();
+    const six = await replyToTicket(LATE, { body: 'x', fileIds: [1, 2, 3, 4, 5, 6] }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(isApiError(six) && six.fieldErrors.fileIds).toEqual(['Attach at most 5 files.']);
+    const empty = await replyToTicket(LATE, { body: ' ', fileIds: [] }).catch((caught: unknown) => caught);
+    expect(isApiError(empty) && empty.fieldErrors.body).toBeTruthy();
+  });
+
+  it('sends the seen marks and the attachments the screens read', async () => {
+    const ticket = await getSupportTicket(LATE);
+    expect(ticket.requesterSeenMessageId).toBe(2);
+    expect(ticket.messages.every((message) => Array.isArray(message.attachments))).toBe(true);
+    const list = await listSupportTickets({ q: 'T-4202' });
+    expect(list.data[0]).toMatchObject({ hasUnread: true, staffSeenMessageId: null });
   });
 });
 

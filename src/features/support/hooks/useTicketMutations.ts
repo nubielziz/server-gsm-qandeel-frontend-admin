@@ -14,8 +14,23 @@ const staleTicket = (id: number): InvalidateTarget[] => [{ resource: 'support-ti
 /** Sends a reply to the customer. The server moves a new or open ticket to "Waiting on customer". */
 export function useReplyToTicket() {
   return useApiMutation({
-    mutationFn: ({ ticketId, body, channel }: { ticketId: number; body: string; channel?: ReplyChannel }) =>
-      replyToTicket(ticketId, channel ? { body, channel } : { body }),
+    mutationFn: ({
+      ticketId,
+      body,
+      channel,
+      fileIds,
+    }: {
+      ticketId: number;
+      body: string;
+      channel?: ReplyChannel;
+      /** Files uploaded with `uploadTicketFile` (feature 28); the key is left out when there are none. */
+      fileIds?: readonly number[];
+    }) =>
+      replyToTicket(ticketId, {
+        body,
+        ...(channel ? { channel } : {}),
+        ...(fileIds && fileIds.length > 0 ? { fileIds: [...fileIds] } : {}),
+      }),
     invalidates: (_message, { ticketId }) => staleTicket(ticketId),
     invalidateKeys: TICKET_STALE_KEYS,
     successNotification: () => ({ message: 'Reply sent', description: 'Status is now Waiting on customer.' }),
@@ -26,7 +41,16 @@ export function useReplyToTicket() {
 /** Adds an internal note; the customer never sees it and the status stays. */
 export function useAddTicketNote() {
   return useApiMutation({
-    mutationFn: ({ ticketId, body }: { ticketId: number; body: string }) => addTicketNote(ticketId, { body }),
+    mutationFn: ({
+      ticketId,
+      body,
+      fileIds,
+    }: {
+      ticketId: number;
+      body: string;
+      fileIds?: readonly number[];
+    }) =>
+      addTicketNote(ticketId, { body, ...(fileIds && fileIds.length > 0 ? { fileIds: [...fileIds] } : {}) }),
     invalidates: (_message, { ticketId }) => staleTicket(ticketId),
     invalidateKeys: TICKET_STALE_KEYS,
     successNotification: () => ({ message: 'Note added', description: 'Only your team sees it.' }),

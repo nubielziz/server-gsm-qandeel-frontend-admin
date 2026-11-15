@@ -17,10 +17,17 @@ function lastPublic(messages: readonly TicketMessage[]): TicketMessage | undefin
   return messages.findLast((message) => !message.isInternal);
 }
 
-/** The list row: the stored fields without the thread, plus the three timers. */
+const isRequester = (message: TicketMessage): boolean =>
+  message.authorType === 'customer' || message.authorType === 'client';
+
+/** The list row: the stored fields without the thread, plus the three timers and `hasUnread` (a requester message the team has not seen). */
 export function toTicket(row: MockTicket, now = Date.now()): SupportTicket {
   const { messages, replyChannels: _channels, ...rest } = row;
   const last = lastPublic(messages);
+  const newestRequester = messages.reduce(
+    (max, message) => (isRequester(message) ? Math.max(max, message.id) : max),
+    0,
+  );
   const waiting =
     row.status !== 'resolved' &&
     last !== undefined &&
@@ -28,6 +35,7 @@ export function toTicket(row: MockTicket, now = Date.now()): SupportTicket {
   const due = waiting && last ? Date.parse(last.createdAt) + TARGET_MS[row.priority] : null;
   return {
     ...rest,
+    hasUnread: newestRequester > (row.staffSeenMessageId ?? 0),
     lastPublicAt: last?.createdAt ?? null,
     slaDueAt: due === null ? null : toIso(due),
     late: due !== null && now > due,
@@ -38,7 +46,7 @@ export function toTicket(row: MockTicket, now = Date.now()): SupportTicket {
 export function toDetail(row: MockTicket): SupportTicketDetail {
   return {
     ...toTicket(row),
-    messages: row.messages.map((message) => ({ ...message })),
+    messages: row.messages.map((message) => ({ ...message, attachments: [...message.attachments] })),
     replyChannels: row.replyChannels,
   };
 }

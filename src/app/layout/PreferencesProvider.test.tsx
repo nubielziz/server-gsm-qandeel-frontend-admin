@@ -1,4 +1,5 @@
-// Tests for the display preferences: reading what was saved, saving choices, the system theme and blocked storage.
+// Tests for the display preferences: reading what was saved, saving choices, the system theme and blocked storage; and the two support alert switches
+// (sound on by default, desktop off by default, and turning desktop on asks the browser).
 import { act, render, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -104,6 +105,92 @@ describe('PreferencesProvider', () => {
     act(() => result.current.setTheme('dark'));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(result.current.isDark).toBe(true);
+  });
+
+  it('has the support sound on and the desktop alerts off until the staff member chooses', () => {
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    expect(result.current).toMatchObject({ supportSound: true, desktopAlerts: false });
+    localStorage.setItem('gsm-support-sound', '0');
+    localStorage.setItem('gsm-support-desktop', '1');
+    const saved = renderHook(() => usePreferences(), { wrapper });
+    expect(saved.result.current).toMatchObject({ supportSound: false, desktopAlerts: true });
+  });
+
+  it('saves the sound switch as 1 or 0', () => {
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    act(() => result.current.setSupportSound(false));
+    expect(result.current.supportSound).toBe(false);
+    expect(localStorage.getItem('gsm-support-sound')).toBe('0');
+    act(() => result.current.setSupportSound(true));
+    expect(localStorage.getItem('gsm-support-sound')).toBe('1');
+  });
+
+  describe('desktop alerts', () => {
+    function fakeNotification(
+      permission: NotificationPermission,
+      answer: NotificationPermission = permission,
+    ) {
+      const request = vi.fn(() => Promise.resolve(answer));
+      vi.stubGlobal('Notification', { permission, requestPermission: request });
+      return request;
+    }
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('asks the browser when turned on, and is on only when it says yes', async () => {
+      const request = fakeNotification('default', 'granted');
+      const { result } = renderHook(() => usePreferences(), { wrapper });
+      let on = false;
+      await act(async () => {
+        on = await result.current.setDesktopAlerts(true);
+      });
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(on).toBe(true);
+      expect(result.current.desktopAlerts).toBe(true);
+      expect(localStorage.getItem('gsm-support-desktop')).toBe('1');
+    });
+
+    it('stays off when the browser says no or has been blocked, and says so', async () => {
+      const request = fakeNotification('default', 'denied');
+      const { result } = renderHook(() => usePreferences(), { wrapper });
+      await act(async () => expect(await result.current.setDesktopAlerts(true)).toBe(false));
+      expect(request).toHaveBeenCalledTimes(1);
+      expect(result.current.desktopAlerts).toBe(false);
+      expect(localStorage.getItem('gsm-support-desktop')).toBe('0');
+
+      fakeNotification('denied');
+      await act(async () => expect(await result.current.setDesktopAlerts(true)).toBe(false));
+      expect(result.current.desktopAlerts).toBe(false);
+    });
+
+    it('does not ask again when the browser already allowed it, and never asks to turn off', async () => {
+      const request = fakeNotification('granted');
+      const { result } = renderHook(() => usePreferences(), { wrapper });
+      await act(async () => expect(await result.current.setDesktopAlerts(true)).toBe(true));
+      await act(async () => expect(await result.current.setDesktopAlerts(false)).toBe(false));
+      expect(request).not.toHaveBeenCalled();
+      expect(result.current.desktopAlerts).toBe(false);
+    });
+
+    it('stays off in a browser with no notifications', async () => {
+      vi.stubGlobal('Notification', undefined);
+      const { result } = renderHook(() => usePreferences(), { wrapper });
+      await act(async () => expect(await result.current.setDesktopAlerts(true)).toBe(false));
+      expect(result.current.desktopAlerts).toBe(false);
+    });
+  });
+
+  it('follows a switch another tab of the browser changed', () => {
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    act(() => {
+      localStorage.setItem('gsm-support-sound', '0');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'gsm-support-sound', newValue: '0' }));
+    });
+    expect(result.current.supportSound).toBe(false);
+    act(() => {
+      localStorage.setItem('gsm-support-desktop', '1');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'gsm-support-desktop', newValue: '1' }));
+    });
+    expect(result.current.desktopAlerts).toBe(true);
   });
 
   it('has the notification sound on by default, saves it as 1 or 0, and the chime reads the same', () => {

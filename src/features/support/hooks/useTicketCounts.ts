@@ -5,7 +5,8 @@ import { useQueries } from '@tanstack/react-query';
 import { listSupportTickets } from '../api';
 import { toListQuery, UNRESOLVED } from '../lib/filters';
 import type { TicketListFilters } from '../types';
-import { REFRESH_MS, SUPPORT_COUNTS_KEY } from './keys';
+import { SUPPORT_COUNTS_KEY } from './keys';
+import { useRefreshInterval } from './useRefreshInterval';
 
 export type TicketCounts = {
   open: number | undefined;
@@ -24,13 +25,14 @@ const SPECS: readonly { id: keyof TicketCounts; filters: TicketListFilters }[] =
 
 /** `enabled` is false until the staff member's permissions are known. */
 export function useTicketCounts(enabled = true): TicketCounts {
+  const refetchInterval = useRefreshInterval();
   const results = useQueries({
     queries: SPECS.map((spec) => ({
       queryKey: [...SUPPORT_COUNTS_KEY, spec.id],
       queryFn: async ({ signal }: { signal: AbortSignal }) =>
         (await listSupportTickets(toListQuery(spec.filters, { start: 0, end: 1 }), { signal })).total,
       enabled,
-      refetchInterval: REFRESH_MS,
+      refetchInterval,
     })),
   });
   const countOf = (id: keyof TicketCounts): number | undefined =>

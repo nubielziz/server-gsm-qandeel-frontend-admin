@@ -1,16 +1,23 @@
-// Composer: the reply box under a thread: the reply-template picker, the "Internal note" switch, the text box and the footer. Ports
-// the composer of threadView and the tk-send, tk-macro and tk-internal actions (49-p-support.js). A reply or a note is sent to the
-// server; if the server refuses, its message shows under the text and the draft stays so nothing typed is lost.
+// Composer: the reply box under a thread: the reply-template picker, the "Internal note" switch, the text box, the files on the message
+// and the footer. Ports the composer of threadView and the tk-send, tk-macro and tk-internal actions (49-p-support.js). A reply or a note
+// is sent to the server; if the server refuses, its message shows under the text and the draft stays so nothing typed is lost.
+// Feature 28 adds: a throttled "I am typing" while the draft changes, files (uploaded when picked, sent as `fileIds`; a message may be
+// files only) and the warning that a colleague just replied.
 import { useEffect, useRef, useState } from 'react';
 import { CheckboxField, cx, errorText, toast } from '@/components/ui';
 import { orderLabel, type Order } from '@/features/orders';
 import { isApiError } from '@/lib/api';
+import { useAttachments } from '../hooks/useAttachments';
 import type { ComposerState } from '../hooks/useComposerState';
 import type { SupportGrants } from '../hooks/useSupportGrants';
+import type { Collision } from '../hooks/useTicketLive';
 import { useAddTicketNote, useReplyToTicket } from '../hooks/useTicketMutations';
+import { useTypingPing } from '../hooks/useTypingPing';
 import { fillTemplate, ticketValues } from '../lib/macros';
 import { firstName, requesterLabel } from '../lib/status';
 import type { ReplyChannel, ReplyTemplate, SupportTicketDetail } from '../types';
+import { CollisionNotice } from './CollisionNotice';
+import { ComposerFiles } from './ComposerFiles';
 import { ComposerFooter } from './ComposerFooter';
 import { MacroPicker } from './MacroPicker';
 
@@ -25,6 +32,8 @@ export interface ComposerProps {
   /** Focus the box when it appears (the staff member just chose this ticket on a wide screen). */
   focusOnMount: boolean;
   onOpenOrder: (orderId: number) => void;
+  /** A colleague answered this ticket a moment ago (from the live stream), or null. */
+  collision: Collision | null;
 }
 
 // The message the composer shows: a field error on the text first, else the server's sentence.
@@ -41,6 +50,7 @@ export function Composer({
   state,
   focusOnMount,
   onOpenOrder,
+  collision,
 }: ComposerProps) {
   const reply = useReplyToTicket();
   const note = useAddTicketNote();
@@ -55,6 +65,9 @@ export function Composer({
   const draft = state.draftOf(ticket.id);
   const active = internal ? note : reply;
   const name = firstName(ticket.requester.name);
+  const files = useAttachments(ticket.id);
+  // Tell the other side (at most every 3 s, only while the text changes) that a reply or a note is being written.
+  useTypingPing({ ticketId: ticket.id, mode: internal ? 'note' : 'reply', draft, enabled: !lock.disabled });
 
   // A wide screen puts the cursor in the box as soon as a ticket is chosen, like the demo.
   useEffect(() => {
@@ -72,7 +85,9 @@ export function Composer({
 
   async function send() {
     const text = draft.trim();
-    if (!text) {
+    const fileIds = files.fileIds;
+    // A message may be files only; with neither text nor a file there is nothing to send.
+    if (!text && fileIds.length === 0) {
       box.current?.focus();
       toast({
         kind: 'error',
@@ -83,14 +98,16 @@ export function Composer({
       return;
     }
     try {
-      if (internal) await note.mutateAsync({ ticketId: ticket.id, body: text });
+      if (internal) await note.mutateAsync({ ticketId: ticket.id, body: text, fileIds });
       else
         await reply.mutateAsync({
           ticketId: ticket.id,
           body: text,
           channel: channels.length > 1 ? channel : undefined,
+          fileIds,
         });
       state.setDraft(ticket.id, '');
+      files.clear();
     } catch {
       // The mutation holds the error; it shows under the text.
     }
@@ -98,6 +115,7 @@ export function Composer({
 
   return (
     <div className="border-t border-line p-3.5">
+      <CollisionNotice collision={collision} hasDraft={draft.trim() !== ''} />
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <MacroPicker templates={templates} disabled={lock.disabled} onPick={insert} />
         <span className="flex-1" />
@@ -129,10 +147,22 @@ export function Composer({
           {failureText(active.error)}
         </p>
       )}
+      <div className="mt-2 flex flex-wrap items-center gap-2 empty:hidden">
+        <ComposerFiles
+          chips={files.chips}
+          onPick={files.add}
+          onRemove={files.remove}
+          disabled={lock.disabled}
+        />
+      </div>
       <ComposerFooter
         internal={internal}
         sending={active.isPending}
-        lock={lock}
+        lock={
+          files.uploading && !lock.disabled
+            ? { disabled: true, title: 'Wait for the files to finish uploading.' }
+            : lock
+        }
         channels={channels}
         channel={channel}
         onChannel={setChannel}

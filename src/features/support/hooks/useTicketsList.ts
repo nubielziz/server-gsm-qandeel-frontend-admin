@@ -3,7 +3,7 @@
 import { useList } from '@refinedev/core';
 import { inboxSort, toRefineFilters, type TicketFilter } from '../lib/filters';
 import type { SupportTicket, TicketListFilters } from '../types';
-import { REFRESH_MS } from './keys';
+import { useRefreshInterval } from './useRefreshInterval';
 
 export type TicketsListArgs = {
   filters: TicketListFilters;
@@ -16,12 +16,13 @@ export type TicketsListArgs = {
 
 /** `tickets` is the page, `total` what the server counted for the whole filter; `query` carries loading, error and refetch. */
 export function useTicketsList({ filters, filter, page, pageSize, enabled = true }: TicketsListArgs) {
+  const refetchInterval = useRefreshInterval();
   const { result, query } = useList<SupportTicket>({
     resource: 'support-tickets',
     pagination: { currentPage: page, pageSize },
     sorters: inboxSort(filter),
     filters: toRefineFilters(filters),
-    queryOptions: { enabled, refetchInterval: REFRESH_MS },
+    queryOptions: { enabled, refetchInterval },
     // The inbox shows its own error state with Retry, so Refine's default error toast would only repeat it.
     errorNotification: false,
   });

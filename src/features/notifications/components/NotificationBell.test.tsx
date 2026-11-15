@@ -19,6 +19,7 @@ import {
   uninstallMockEventSource,
 } from '@/mocks/stream';
 import { mockMe, renderShell, setupMockApi, signInAs } from '@/test/renderApp';
+import { resetSharedAudioContext } from '@/lib/sharedAudio';
 import { FakeAudioContext } from '../test/fakeAudio';
 import { inboxItem } from '../test/fixtures';
 import { recordRequests } from '../test/notificationsPage';
@@ -716,6 +717,7 @@ describe('the live stream', () => {
 
     describe('the arrival sound', () => {
       beforeEach(() => {
+        resetSharedAudioContext();
         FakeAudioContext.made = [];
         window.AudioContext = FakeAudioContext as unknown as typeof AudioContext;
       });

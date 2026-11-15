@@ -1,16 +1,18 @@
 // One ticket with its thread, and the order it is about. The thread is read by id (not taken from the list), so a link to a
-// ticket works whatever the filters say, and it is read again after every reply so the new message shows.
+// ticket works whatever the filters say, and it is read again after every reply so the new message shows. While the live stream is
+// open the thread follows it (`useTicketLive`) and this read only repeats every 5 minutes as a safety net, else every 30 seconds.
 import { useOne } from '@refinedev/core';
 import type { Order } from '@/features/orders';
 import type { SupportTicketDetail } from '../types';
-import { REFRESH_MS } from './keys';
+import { useRefreshInterval } from './useRefreshInterval';
 
 /** `ticket` is the thread once it has loaded; `query` carries loading, error (a 404 for an unknown id) and refetch. */
 export function useTicket(id: number | null) {
+  const refetchInterval = useRefreshInterval();
   const { result, query } = useOne<SupportTicketDetail>({
     resource: 'support-tickets',
     id: id ?? 0,
-    queryOptions: { enabled: id !== null, refetchInterval: REFRESH_MS },
+    queryOptions: { enabled: id !== null, refetchInterval },
     // The pane shows its own error state with Retry, so Refine's default error toast would only repeat it.
     errorNotification: false,
   });

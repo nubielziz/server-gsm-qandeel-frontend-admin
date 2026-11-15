@@ -69,13 +69,43 @@ function build(demo: DemoState): SupportState {
       body: message.text,
       isInternal: message.by === 'note',
       fileIds: [],
+      attachments: [],
       createdAt: toIso(message.ts),
+    };
+  };
+
+  /**
+   * The seen marks a ticket of the demo seed starts with. The team has seen everything of the requester's once it answered after it (or the ticket is
+   * resolved); the requester has seen a reply once they wrote again after it (or the ticket is resolved). A requester message with no answer is unread.
+   */
+  const marksOf = (messages: TicketMessage[], resolved: boolean, resolvedAt: string) => {
+    const isRequester = (message: TicketMessage) =>
+      message.authorType === 'customer' || message.authorType === 'client';
+    const publicStaff = messages.filter((message) => message.authorType === 'staff' && !message.isInternal);
+    const requesters = messages.filter(isRequester);
+    const newestRequester = requesters.at(-1);
+    const lastStaff = publicStaff.at(-1);
+    const answered =
+      newestRequester && lastStaff && lastStaff.id > newestRequester.id ? lastStaff : undefined;
+    const staffSeen = resolved || answered ? newestRequester : undefined;
+    // The newest reply that a later requester message follows was seen by them.
+    const requesterSeen = resolved
+      ? lastStaff
+      : publicStaff.findLast((reply) => requesters.some((message) => message.id > reply.id));
+    return {
+      staffSeenMessageId: staffSeen?.id ?? null,
+      staffSeenAt: staffSeen ? (resolved ? resolvedAt : (answered?.createdAt ?? null)) : null,
+      requesterSeenMessageId: requesterSeen?.id ?? null,
+      requesterSeenAt: requesterSeen
+        ? (requesters.find((message) => message.id > requesterSeen.id)?.createdAt ?? resolvedAt)
+        : null,
     };
   };
 
   const tickets = demoRows<DemoTicket>(demo, 'tickets').map((ticket): MockTicket => {
     const party = (ticket.who.type === 'customer' ? customers : merchants).get(ticket.who.id);
     const assigneeId = ticket.assignee ? (staff.get(ticket.assignee) ?? null) : null;
+    const messages = ticket.msgs.map((message) => messageOf(ticket, message));
     return {
       id: demoNumericId(ticket.id),
       number: ticket.id,
@@ -97,7 +127,8 @@ function build(demo: DemoState): SupportState {
       updatedAt: toIso(ticket.updated),
       // A ticket that came in on Telegram can be answered there too.
       replyChannels: ticket.channel === 'telegram' ? ['email', 'telegram'] : ['email'],
-      messages: ticket.msgs.map((message) => messageOf(ticket, message)),
+      ...marksOf(messages, ticket.status === 'resolved', toIso(ticket.updated)),
+      messages,
     };
   });
 
@@ -114,7 +145,13 @@ function build(demo: DemoState): SupportState {
     updatedAt: toIso(Date.now() - 60 * DAY_MS),
   }));
 
-  return { tickets: new Collection(tickets), templates: new Collection(templates), nextMessageId };
+  return {
+    tickets: new Collection(tickets),
+    templates: new Collection(templates),
+    files: new Map(),
+    nextMessageId,
+    nextFileId: 1,
+  };
 }
 
 let state: Promise<SupportState> | undefined;

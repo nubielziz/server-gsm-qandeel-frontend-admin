@@ -1,6 +1,7 @@
 // TicketList: the left column of the inbox: the toolbar, the ticket rows (loading, error and empty states included) and the
 // pager. Ports the `list` panel of pageSupport (49-p-support.js). On a phone it hides while a thread is open.
 import { cx, Pager, QueryState, SkeletonTable } from '@/components/ui';
+import type { TypingBoard } from '../hooks/useTypingBoard';
 import { PAGE_SIZE, type SupportFilters } from '../lib/filters';
 import { requesterLabel } from '../lib/status';
 import type { SupportTicket } from '../types';
@@ -16,6 +17,8 @@ export interface TicketListProps {
   page: number;
   selectedId: number | null;
   now: number;
+  /** Who is typing, for the pencil on a row. */
+  typing: TypingBoard;
   /** A phone shows the thread alone while one is open. */
   hiddenOnPhone: boolean;
   /** No ticket exists at all. */
@@ -35,6 +38,7 @@ export function TicketList({
   page,
   selectedId,
   now,
+  typing,
   hiddenOnPhone,
   inboxEmpty,
   filtersOn,
@@ -70,6 +74,7 @@ export function TicketList({
               ticket={ticket}
               selected={ticket.id === selectedId}
               now={now}
+              typing={typing.requesterTyping(ticket.id)}
               onSelect={onSelect}
             />
           ))}
