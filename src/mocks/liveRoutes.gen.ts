@@ -254,6 +254,7 @@ export const LIVE_ROUTE_KEYS: readonly string[] = [
   'POST /admin/staff/:id/sessions/revoke',
   'POST /admin/staff/:id/suspend',
   'PATCH /admin/storefront/settings',
+  'GET /admin/stream',
   'GET /admin/supplier-api-logs',
   'GET /admin/supplier-api-logs/:id',
   'GET /admin/suppliers',
