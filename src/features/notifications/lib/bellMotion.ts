@@ -33,6 +33,8 @@ export interface BellMotionEnv {
   reducedMotion(): boolean;
   /** Calls `listener` whenever the tab's visibility changes; returns the function that stops it. */
   onVisibilityChange(listener: () => void): () => void;
+  /** Plays the arrival sound: called for each ring taken, with reduced motion too. */
+  chime(): void;
 }
 
 export interface BellMotion {
@@ -61,7 +63,9 @@ function clamp(count: number): number {
  *   arrived rings once when the staff member comes back;
  * - a read rolls the number down and never rings: the stream's `notification.read` says the new number, a read action of this tab says "the next lower
  *   number" (its own refetch and the stream's event may land in either order);
- * - reduced motion: no cue at all, the number just changes (the CSS plays nothing either).
+ * - reduced motion: no cue at all, the number just changes (the CSS plays nothing either);
+ * - the arrival sound (lib/chime.ts) plays with every ring taken, by the same rules, and with reduced motion too: a sound is not motion (the chime itself
+ *   stays silent when muted or not unlocked yet).
  */
 export function createBellMotion(env: BellMotionEnv): BellMotion {
   let snapshot = IDLE_MOTION;
@@ -92,8 +96,9 @@ export function createBellMotion(env: BellMotionEnv): BellMotion {
   function onVisibility() {
     if (!env.isVisible() || !missed) return;
     missed = false;
-    if (env.reducedMotion() || !takeRing()) return;
-    publish({ ...snapshot, rings: snapshot.rings + 1 });
+    if (!takeRing()) return;
+    if (!env.reducedMotion()) publish({ ...snapshot, rings: snapshot.rings + 1 });
+    env.chime();
   }
 
   return {
@@ -115,9 +120,12 @@ export function createBellMotion(env: BellMotionEnv): BellMotion {
         missed = true;
         return;
       }
-      if (env.reducedMotion()) return;
+      // The window is taken with reduced motion too: the sound keeps the ring's rules.
       const ring = takeRing();
-      publish({ rings: snapshot.rings + (ring ? 1 : 0), change: nextChange(unread, ring) });
+      if (!env.reducedMotion()) {
+        publish({ rings: snapshot.rings + (ring ? 1 : 0), change: nextChange(unread, ring) });
+      }
+      if (ring) env.chime();
     },
     read(unread) {
       // Everything was read meanwhile (in another tab): there is nothing to ring for on return.
@@ -136,7 +144,7 @@ export interface BellView {
   /** The cue counters already played (or skipped): a bell never plays a cue older than itself. */
   rings: number;
   seq: number;
-  /** The icon swings. Its key is `rings`, so a new ring starts it again. */
+  /** The icon swings (NotificationBell plays it on the same element whenever `rings` grows). */
   ring: boolean;
   /** The badge pops ('pop') or pops in from nothing ('in'). `popKey` restarts it. */
   pop: 'pop' | 'in' | null;

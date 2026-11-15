@@ -753,7 +753,8 @@
   --duration-count: 250ms;
 }
 
-/* Symmetric swings, so the same keyframes serve both writing directions. */
+/* Symmetric swings, so the same keyframes serve both writing directions. The bell plays them with the Web Animations API (lib/bellRing.ts mirrors these
+   frames and reads the two tokens above), so a ring never remounts its icon. */
 @keyframes bell-ring {
   0%,
   100% {
@@ -843,10 +844,6 @@
   opacity: 0;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .bell-ring {
-    transform-origin: 50% 0;
-    animation: bell-ring var(--duration-ring) var(--ease-swing);
-  }
   .badge-pop {
     animation: badge-pop var(--duration-slow) var(--ease-standard);
   }

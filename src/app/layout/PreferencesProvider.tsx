@@ -1,4 +1,4 @@
-// PreferencesProvider: keeps the theme and row density in React state, on <html> and in localStorage.
+// PreferencesProvider: keeps the theme and row density in React state, on <html> and in localStorage, and the notification sound in state and storage.
 // Ports setTheme/setDense of 90-app.js; decision 015 (no client-state library).
 import { useCallback, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
@@ -7,8 +7,10 @@ import {
   DARK_QUERY,
   PreferencesContext,
   readDense,
+  readNotificationSound,
   readTheme,
   saveDense,
+  saveNotificationSound,
   saveTheme,
   type Preferences,
   type Theme,
@@ -32,6 +34,7 @@ function systemPrefersDark(): boolean {
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(readTheme);
   const [dense, setDenseState] = useState<boolean>(readDense);
+  const [notificationSound, setNotificationSoundState] = useState<boolean>(readNotificationSound);
   const systemDark = useSyncExternalStore(subscribeSystemTheme, systemPrefersDark, () => false);
   const isDark = theme === 'dark' || (theme === 'system' && systemDark);
 
@@ -48,11 +51,24 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setDenseState(next);
     saveDense(next);
   }, []);
+  const setNotificationSound = useCallback((next: boolean) => {
+    setNotificationSoundState(next);
+    saveNotificationSound(next);
+  }, []);
   const toggleTheme = useCallback(() => setTheme(isDark ? 'light' : 'dark'), [isDark, setTheme]);
 
   const value = useMemo<Preferences>(
-    () => ({ theme, isDark, dense, setTheme, toggleTheme, setDense }),
-    [theme, isDark, dense, setTheme, toggleTheme, setDense],
+    () => ({
+      theme,
+      isDark,
+      dense,
+      notificationSound,
+      setTheme,
+      toggleTheme,
+      setDense,
+      setNotificationSound,
+    }),
+    [theme, isDark, dense, notificationSound, setTheme, toggleTheme, setDense, setNotificationSound],
   );
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

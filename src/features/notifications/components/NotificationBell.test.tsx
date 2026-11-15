@@ -1,8 +1,8 @@
 // Tests for the staff bell in the top bar, run inside the real shell against the dev mock API: the badge and its label (99+ at the cap), asking only with a signed-in
 // staff member, polling that pauses while the tab is hidden, the live stream (an event changes the badge with no request, a toast for a new item, the poll slows
 // while the stream is open and runs as before when it is closed, a resync refetches), the panel (newest first, unread marked, "Unread only", Load more), marking
-// read, links and keyboard.
-import { act, screen, waitFor, within } from '@testing-library/react';
+// read, links and keyboard, the arrival animation (one icon element, swung in place) and the arrival sound (after a first press, never when turned off).
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route } from 'react-router';
@@ -19,6 +19,7 @@ import {
   uninstallMockEventSource,
 } from '@/mocks/stream';
 import { mockMe, renderShell, setupMockApi, signInAs } from '@/test/renderApp';
+import { FakeAudioContext } from '../test/fakeAudio';
 import { inboxItem } from '../test/fixtures';
 import { recordRequests } from '../test/notificationsPage';
 import type { InboxItem } from '../types';
@@ -29,6 +30,33 @@ afterEach(() => {
   vi.useRealTimers();
   mockServer.events.removeAllListeners();
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+});
+
+/** jsdom has no Web Animations API: this stand-in records each swing of the bell (the element it moves) and whether it was stopped. */
+interface Swing {
+  el: Element;
+  stopped: boolean;
+  finish(): void;
+}
+const swings: Swing[] = [];
+const playing = () => swings.filter((swing) => !swing.stopped);
+const nativeAnimate = Element.prototype.animate;
+beforeEach(() => {
+  swings.length = 0;
+  Element.prototype.animate = function (this: Element) {
+    const animation = {
+      onfinish: null as null | (() => void),
+      cancel: () => {
+        swing.stopped = true;
+      },
+    };
+    const swing: Swing = { el: this, stopped: false, finish: () => animation.onfinish?.() };
+    swings.push(swing);
+    return animation as unknown as Animation;
+  };
+});
+afterEach(() => {
+  Element.prototype.animate = nativeAnimate;
 });
 
 const page = (
@@ -331,7 +359,7 @@ describe('marking read', () => {
     const badge = (await bell()).querySelector('.count') as HTMLElement;
     expect(badge.querySelector('.count-out-down')).toHaveTextContent('2');
     expect(badge.querySelector('.count-in-down')).toHaveTextContent('1');
-    expect((await bell()).querySelector('svg')).not.toHaveClass('bell-ring');
+    expect(swings).toEqual([]);
   });
 
   it('keeps the panel open for an item with no link, and marks nothing for one already read', async () => {
@@ -577,16 +605,17 @@ describe('the live stream', () => {
       const button = await bell();
       await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
       await streamOpen();
-      expect(icon(button)).not.toHaveClass('bell-ring');
+      expect(swings).toEqual([]);
 
       push('notification.created', created(liveItem(50), 3, false), 'i50');
       await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 3 unread'));
-      expect(icon(button)).not.toHaveClass('bell-ring');
+      expect(swings).toEqual([]);
       expect(button.querySelector('.count-out-up')).toBeNull();
 
       push('notification.created', created(liveItem(51), 4), 'i51');
       await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 4 unread'));
-      expect(icon(button)).toHaveClass('bell-ring');
+      await waitFor(() => expect(playing()).toHaveLength(1));
+      expect(playing()[0].el).toBe(icon(button));
       expect(button.querySelector('.count')).toHaveClass('badge-pop');
       expect(button.querySelector('.count-out-up')).toHaveTextContent('3');
       expect(button.querySelector('.count-in-up')).toHaveTextContent('4');
@@ -596,6 +625,7 @@ describe('the live stream', () => {
       push('notification.created', created(liveItem(52), 5), 'i52');
       await waitFor(() => expect(button.querySelector('.count-in-up')).toHaveTextContent('5'));
       expect(icon(button)).toBe(swinging);
+      expect(swings).toHaveLength(1);
       // A read rolls it down.
       push('notification.read', { ids: [52], all: false, upToId: null, unread: 4 });
       await waitFor(() => expect(button.querySelector('.count-in-down')).toHaveTextContent('4'));
@@ -632,7 +662,7 @@ describe('the live stream', () => {
         await streamOpen();
         push('notification.created', created(liveItem(54), 3), 'i54');
         await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 3 unread'));
-        expect(icon(button)).not.toHaveClass('bell-ring');
+        expect(swings).toEqual([]);
         expect(button.querySelector('.badge-pop, .count-out-up, .count-in-up')).toBeNull();
       } finally {
         media.mockRestore();
@@ -652,7 +682,7 @@ describe('the live stream', () => {
       await waitFor(() => expect(document.title).toBe('(2) Somewhere · GSM Supply'));
       push('notification.created', created(liveItem(55), 3), 'i55');
       await waitFor(() => expect(document.title).toBe('(3) Somewhere · GSM Supply'));
-      expect(icon(button)).not.toHaveClass('bell-ring');
+      expect(swings).toEqual([]);
       // The shell writes the title of another page: the prefix comes back, once.
       act(() => {
         document.title = 'Orders · GSM Supply';
@@ -660,7 +690,78 @@ describe('the live stream', () => {
       await waitFor(() => expect(document.title).toBe('(3) Orders · GSM Supply'));
       setVisibility('visible');
       expect(document.title).toBe('Orders · GSM Supply');
-      await waitFor(() => expect(icon(button)).toHaveClass('bell-ring'));
+      await waitFor(() => expect(playing()).toHaveLength(1));
+      expect(playing()[0].el).toBe(icon(button));
+    });
+
+    it('keeps exactly one bell icon after three live arrivals, each one swinging that same icon', async () => {
+      freshClock();
+      await openShell();
+      const button = await bell();
+      await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+      await streamOpen();
+      const first = icon(button);
+      for (const [index, id] of [56, 57, 58].entries()) {
+        // Past the 3 s window, so each arrival rings.
+        if (index > 0) vi.setSystemTime(Date.now() + 3_100);
+        push('notification.created', created(liveItem(id), 3 + index), `i${id}`);
+        await waitFor(() => expect(button).toHaveAccessibleName(`Notifications, ${3 + index} unread`));
+        await waitFor(() => expect(swings).toHaveLength(index + 1));
+        act(() => swings[index].finish());
+      }
+      expect(button.querySelectorAll('svg')).toHaveLength(1);
+      expect(icon(button)).toBe(first);
+      expect(swings.map((swing) => swing.el)).toEqual([first, first, first]);
+    });
+
+    describe('the arrival sound', () => {
+      beforeEach(() => {
+        FakeAudioContext.made = [];
+        window.AudioContext = FakeAudioContext as unknown as typeof AudioContext;
+      });
+      afterEach(() => {
+        delete (window as { AudioContext?: unknown }).AudioContext;
+      });
+
+      it('chimes with a ring once a first press unlocked it, never for a count change alone, and not once it is off in the Display menu', async () => {
+        freshClock();
+        await openShell();
+        const button = await bell();
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+        await streamOpen();
+        // Before any press the browser would not start audio: the ring swings, the chime plays nothing and makes no context.
+        push('notification.created', created(liveItem(60), 3), 'i60');
+        await waitFor(() => expect(swings).toHaveLength(1));
+        expect(FakeAudioContext.made).toEqual([]);
+
+        fireEvent.pointerDown(document.body);
+        expect(FakeAudioContext.made).toHaveLength(1);
+        const [context] = FakeAudioContext.made;
+        await waitFor(() => expect(context.state).toBe('running'));
+        // A count that changes without a live item (a poll, a resync) is silent.
+        push('unread.changed', { unread: 7 });
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 7 unread'));
+        expect(context.notes()).toEqual([]);
+
+        vi.setSystemTime(Date.now() + 3_100);
+        push('notification.created', created(liveItem(61), 8), 'i61');
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 8 unread'));
+        expect(context.notes()).toEqual([880, 1320]);
+
+        const user = userEvent.setup();
+        await user.click(screen.getByRole('button', { name: 'Display' }));
+        const sound = screen.getByRole('menuitemradio', { name: 'Notification sound' });
+        expect(sound).toHaveAttribute('aria-checked', 'true');
+        await user.click(sound);
+        expect(localStorage.getItem('gsm-notification-sound')).toBe('0');
+
+        vi.setSystemTime(Date.now() + 3_100);
+        push('notification.created', created(liveItem(62), 9), 'i62');
+        await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 9 unread'));
+        await waitFor(() => expect(swings).toHaveLength(3));
+        expect(context.notes()).toHaveLength(2);
+        expect(FakeAudioContext.made).toHaveLength(1);
+      });
     });
   });
 });

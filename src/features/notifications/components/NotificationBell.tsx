@@ -4,12 +4,14 @@
 // focus back to the button.
 // Arrival animation (owner, 2026-11-15; rules in lib/bellMotion.ts): a live item swings the icon from its top, pops the badge and rolls the number; a read
 // rolls it down; reduced motion plays nothing. It is decoration only: the button's name stays "Notifications, 3 unread". While the tab is hidden the title
-// carries "(n) " (lib/titleBadge.ts).
-import { useState } from 'react';
+// carries "(n) " (lib/titleBadge.ts). Each ring also plays a soft chime (lib/chime.ts), unless "Notification sound" is off in the Display menu; it is extra
+// feedback only.
+import { useEffect, useRef, useState } from 'react';
 import { Button, Count, cx, FloatingPanel, Icon, usePopover } from '@/components/ui';
 import { useMe } from '@/features/auth';
-import { useBellMotion, useTitleBadge } from '../hooks/useBellMotion';
+import { notificationChime, useBellMotion, useTitleBadge } from '../hooks/useBellMotion';
 import { useUnreadCount } from '../hooks/useUnreadCount';
+import { playRing } from '../lib/bellRing';
 import { badgeText, bellLabel } from '../lib/inbox';
 import { InboxPanel } from './InboxPanel';
 
@@ -19,8 +21,16 @@ export function NotificationBell() {
   const pop = usePopover();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const badge = badgeText(unread);
-  const { view, onAnimationEnd } = useBellMotion(unread ?? 0, badge ?? '');
+  const { view, onAnimationEnd, settle } = useBellMotion(unread ?? 0, badge ?? '');
   useTitleBadge(unread ?? 0, badge ?? '');
+  const iconRef = useRef<SVGSVGElement>(null);
+  // The swing is played on the same icon element each time (lib/bellRing.ts): never a remount.
+  useEffect(() => {
+    if (!view.ring || !iconRef.current) return;
+    return playRing(iconRef.current, () => settle('bell-ring'));
+  }, [view.ring, view.rings, settle]);
+  // Browsers play sound only after a gesture: the chime starts listening for the first one (once per page).
+  useEffect(() => notificationChime.arm(), []);
   // No session, no bell: the shell only renders it for a signed-in staff member, and this keeps it from drawing before `me` is known.
   if (!me) return null;
 
@@ -37,8 +47,9 @@ export function NotificationBell() {
         onClick={pop.toggle}
         onAnimationEnd={onAnimationEnd}
       >
-        {/* A new ring gets a new key, so the swing starts again from rest. It pivots on the top centre: symmetric, so RTL needs nothing. */}
-        <Icon key={view.rings} name="bell" className={view.ring ? 'bell-ring' : undefined} />
+        {/* One icon element for good: the swing is played on it (playRing), never by a remount. It pivots on the top centre: symmetric, so RTL needs
+            nothing. */}
+        <Icon ref={iconRef} name="bell" className="origin-top" />
         {badge && (
           <Count
             key={view.popKey}

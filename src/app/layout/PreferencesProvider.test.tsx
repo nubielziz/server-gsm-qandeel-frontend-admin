@@ -3,7 +3,7 @@ import { act, render, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PreferencesProvider } from './PreferencesProvider';
-import { usePreferences } from './preferences';
+import { readNotificationSound, usePreferences } from './preferences';
 
 function wrapper({ children }: { children: ReactNode }) {
   return <PreferencesProvider>{children}</PreferencesProvider>;
@@ -104,6 +104,41 @@ describe('PreferencesProvider', () => {
     act(() => result.current.setTheme('dark'));
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark');
     expect(result.current.isDark).toBe(true);
+  });
+
+  it('has the notification sound on by default, saves it as 1 or 0, and the chime reads the same', () => {
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    expect(result.current.notificationSound).toBe(true);
+    expect(readNotificationSound()).toBe(true);
+    act(() => result.current.setNotificationSound(false));
+    expect(result.current.notificationSound).toBe(false);
+    expect(localStorage.getItem('gsm-notification-sound')).toBe('0');
+    expect(readNotificationSound()).toBe(false);
+    act(() => result.current.setNotificationSound(true));
+    expect(localStorage.getItem('gsm-notification-sound')).toBe('1');
+    expect(readNotificationSound()).toBe(true);
+  });
+
+  it('reads a saved "off" for the notification sound', () => {
+    localStorage.setItem('gsm-notification-sound', '0');
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    expect(result.current.notificationSound).toBe(false);
+  });
+
+  it('keeps the notification sound off for the page when storage is blocked', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const { result } = renderHook(() => usePreferences(), { wrapper });
+    expect(result.current.notificationSound).toBe(true);
+    act(() => result.current.setNotificationSound(false));
+    expect(result.current.notificationSound).toBe(false);
+    expect(readNotificationSound()).toBe(false);
+    act(() => result.current.setNotificationSound(true));
+    expect(readNotificationSound()).toBe(true);
   });
 
   it('refuses to be used without the provider', () => {

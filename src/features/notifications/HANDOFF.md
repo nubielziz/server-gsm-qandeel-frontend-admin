@@ -38,6 +38,9 @@ Also changed, not named in the plan, each one line:
 
 - `src/components/ui/index.ts` exports `FloatingPanel` (the plan's bell opens a `FloatingPanel`; it was internal to the kit).
 - `src/features/customers/pages/CustomersPage.test.tsx`: formatting only (prettier), it failed `npm run lint` on the base commit.
+- Bell sound and one-icon swing (owner, 2026-11-15, branch `feat/console-sound`): `src/app/layout/preferences.ts`, `PreferencesProvider.tsx` and
+  `DisplayMenu.tsx` gain "Notification sound" (key `gsm-notification-sound`, on by default; the chime reads it through `readNotificationSound`), and
+  `src/styles/index.css` drops the unused `.bell-ring` class (the swing is played with the Web Animations API, `lib/bellRing.ts`).
 
 For the lead after the backend branch merges:
 

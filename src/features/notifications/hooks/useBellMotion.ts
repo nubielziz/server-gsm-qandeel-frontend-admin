@@ -1,6 +1,8 @@
-// The bell's arrival animation and the hidden tab's title prefix, in the browser (owner, 2026-11-15). The rules are pure (lib/bellMotion.ts,
-// lib/titleBadge.ts); this file gives them the real clock, visibility, motion preference and <title>, and the two hooks the bell uses.
+// The bell's arrival animation, its sound and the hidden tab's title prefix, in the browser (owner, 2026-11-15). The rules are pure (lib/bellMotion.ts,
+// lib/chime.ts, lib/titleBadge.ts); this file gives them the real clock, visibility, motion preference, Web Audio, the "Notification sound" setting and
+// <title>, and the two hooks the bell uses.
 import { useCallback, useEffect, useState, useSyncExternalStore, type AnimationEvent } from 'react';
+import { readNotificationSound } from '@/app/layout/preferences';
 import {
   createBellMotion,
   initialBellView,
@@ -9,6 +11,7 @@ import {
   type BellMotionEnv,
   type BellView,
 } from '../lib/bellMotion';
+import { createChime } from '../lib/chime';
 import { createTitleBadge } from '../lib/titleBadge';
 
 function onVisibilityChange(listener: () => void): () => void {
@@ -18,12 +21,32 @@ function onVisibilityChange(listener: () => void): () => void {
 
 const isVisible = () => document.visibilityState === 'visible';
 
+/** A touch counts as a gesture only when the finger lifts (`pointerup`); a mouse press on `pointerdown`. */
+const GESTURES = ['pointerdown', 'pointerup', 'keydown'] as const;
+const LISTEN = { capture: true, passive: true } as const;
+
+/** The page's chime: the bell arms it, the bell's rules play it. */
+export const notificationChime = createChime({
+  createContext: () => (typeof window.AudioContext === 'function' ? new window.AudioContext() : null),
+  hadGesture: () => navigator.userActivation?.hasBeenActive === true,
+  onGesture(listener) {
+    for (const type of GESTURES) window.addEventListener(type, listener, LISTEN);
+    return () => {
+      for (const type of GESTURES) window.removeEventListener(type, listener, LISTEN);
+    };
+  },
+  enabled: readNotificationSound,
+});
+
 const browserMotion: BellMotionEnv = {
   now: () => Date.now(),
   isVisible,
   reducedMotion: () =>
     typeof window.matchMedia !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   onVisibilityChange,
+  chime: () => {
+    notificationChime.play();
+  },
 };
 
 /** The cues the live stream gives (useUnreadCount) and the bell plays: one per page, like the stream. */
@@ -52,7 +75,12 @@ export const titleBadge = createTitleBadge({
 export function useBellMotion(
   count: number,
   text: string,
-): { view: BellView; onAnimationEnd: (event: AnimationEvent<HTMLElement>) => void } {
+): {
+  view: BellView;
+  onAnimationEnd: (event: AnimationEvent<HTMLElement>) => void;
+  /** Sets one motion at rest by its name (the swing is played with the Web Animations API, which fires no animationend). */
+  settle: (name: string) => void;
+} {
   const motion = useSyncExternalStore(bellMotion.subscribe, bellMotion.getSnapshot);
   const [view, setView] = useState(() => initialBellView(count, text, motion));
   // The previous render's view is kept in state and moved on during render (React's "storing information from previous renders"): only when something
@@ -63,7 +91,8 @@ export function useBellMotion(
     const name = event.animationName;
     setView((current) => settleBellView(current, name));
   }, []);
-  return { view: next, onAnimationEnd };
+  const settle = useCallback((name: string) => setView((current) => settleBellView(current, name)), []);
+  return { view: next, onAnimationEnd, settle };
 }
 
 /** Registers this bell's number for the hidden tab's title prefix; the registration ends with the bell. */
