@@ -4,10 +4,21 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { applyListQuery } from '@/mocks/crud';
 import { bodyOf, invalid, notFound } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
+import { pushMockStreamEvent } from '@/mocks/stream';
 import { denied } from './access';
 import { notificationsState } from './store';
 
 const CAP = 100;
+
+/** The unread count as the server sends it: capped at 100. */
+function unreadNow(): number {
+  return Math.min(
+    CAP,
+    notificationsState()
+      .inbox.list()
+      .filter((item) => item.readAt === null).length,
+  );
+}
 
 /** A route body behind the session check and the delay. */
 function session(
@@ -24,12 +35,7 @@ function session(
 export const inboxRoutes: HttpHandler[] = [
   http.get(
     '*/admin/inbox/unread-count',
-    session(() => {
-      const unread = notificationsState()
-        .inbox.list()
-        .filter((item) => item.readAt === null).length;
-      return HttpResponse.json({ unread: Math.min(CAP, unread) });
-    }),
+    session(() => HttpResponse.json({ unread: unreadNow() })),
   ),
 
   http.get(
@@ -72,6 +78,14 @@ export const inboxRoutes: HttpHandler[] = [
           updated += 1;
         }
       }
+      // The real server tells every open stream of this staff member (this tab included) that the items were read.
+      if (updated > 0)
+        pushMockStreamEvent('notification.read', {
+          ids: [],
+          all: true,
+          upToId: upTo ?? null,
+          unread: unreadNow(),
+        });
       return HttpResponse.json({ updated });
     }),
   ),
@@ -82,7 +96,15 @@ export const inboxRoutes: HttpHandler[] = [
       const store = notificationsState();
       const item = store.inbox.find(id);
       if (!item) return notFound('notification', id);
-      if (item.readAt === null) store.inbox.patch(id, { readAt: new Date().toISOString() });
+      if (item.readAt === null) {
+        store.inbox.patch(id, { readAt: new Date().toISOString() });
+        pushMockStreamEvent('notification.read', {
+          ids: [id],
+          all: false,
+          upToId: null,
+          unread: unreadNow(),
+        });
+      }
       return new HttpResponse(null, { status: 204 });
     }),
   ),

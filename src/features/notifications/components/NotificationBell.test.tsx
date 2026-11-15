@@ -1,12 +1,23 @@
 // Tests for the staff bell in the top bar, run inside the real shell against the dev mock API: the badge and its label (99+ at the cap), asking only with a signed-in
-// staff member, polling that pauses while the tab is hidden, the panel (newest first, unread marked, "Unread only", Load more), marking read, links and keyboard.
+// staff member, polling that pauses while the tab is hidden, the live stream (an event changes the badge with no request, a toast for a new item, the poll slows
+// while the stream is open and runs as before when it is closed, a resync refetches), the panel (newest first, unread marked, "Unread only", Load more), marking
+// read, links and keyboard.
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route } from 'react-router';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getToasts } from '@/components/ui';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
+import {
+  failMockStreams,
+  installMockEventSource,
+  MockEventSource,
+  openMockStreamCount,
+  pushMockStreamEvent,
+  uninstallMockEventSource,
+} from '@/mocks/stream';
 import { mockMe, renderShell, setupMockApi, signInAs } from '@/test/renderApp';
 import { inboxItem } from '../test/fixtures';
 import { recordRequests } from '../test/notificationsPage';
@@ -362,5 +373,171 @@ describe('the keyboard', () => {
     await screen.findByRole('dialog', { name: 'Notifications' });
     await user.click(screen.getByText('Somewhere page'));
     expect(screen.queryByRole('dialog', { name: 'Notifications' })).not.toBeInTheDocument();
+  });
+});
+
+describe('the live stream', () => {
+  beforeEach(() => {
+    MockEventSource.readyDelayMs = 0;
+    MockEventSource.heartbeatMs = 0;
+    installMockEventSource();
+  });
+  afterEach(() => {
+    uninstallMockEventSource();
+    MockEventSource.readyDelayMs = 20;
+    MockEventSource.heartbeatMs = 15_000;
+  });
+
+  const liveItem = (id: number, change: Partial<InboxItem> = {}) =>
+    inboxItem({ id, title: `Live ${id}`, body: 'Order 1042 timed out.\nCheck it.', readAt: null, ...change });
+  const push = (name: string, data: unknown, id?: string) => act(() => pushMockStreamEvent(name, data, id));
+  const created = (item: InboxItem, unread: number, live = true) => ({ item, unread, live });
+  /** Waits until the stream is open and has told the bell so (the stream's `ready` has been handled). */
+  const streamOpen = () => waitFor(() => expect(openMockStreamCount()).toBe(1));
+
+  it('opens one stream once the staff member is known and closes it when the shell goes away', async () => {
+    mockServer.use(
+      http.get('*/admin/auth/me', async () => {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        return HttpResponse.json({
+          id: 1,
+          email: 'r@x.example',
+          name: 'Rami K.',
+          status: 'active',
+          role: { id: 1, name: 'Owner' },
+          permissions: ['*'],
+          twofaEnabled: true,
+          mustChangePassword: false,
+          lastLoginAt: null,
+          lastLoginIp: null,
+        });
+      }),
+    );
+    await signInAs();
+    const app = renderShell('/somewhere', page);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(openMockStreamCount()).toBe(0);
+    await screen.findByText(/page$/);
+    await streamOpen();
+    app.unmount();
+    expect(openMockStreamCount()).toBe(0);
+  });
+
+  it('changes the badge from unread.changed and notification.read without asking the server', async () => {
+    const asked = recordRequests('/admin/inbox/unread-count');
+    await openShell();
+    const button = await bell();
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+    await streamOpen();
+    const before = asked.length;
+    push('unread.changed', { unread: 7 });
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 7 unread'));
+    push('notification.read', { ids: [5], all: false, upToId: null, unread: 6 });
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 6 unread'));
+    push('notification.read', { ids: [], all: true, upToId: 9, unread: 0 });
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 0 unread'));
+    expect(asked.length).toBe(before);
+  });
+
+  it('shows a new item at once: the badge, a toast with its title and the start of its text, and the open list asks again', async () => {
+    const user = userEvent.setup();
+    const lists = serveInbox([inboxItem({ id: 1, title: 'Old', readAt: null })], 1);
+    await openShell();
+    const button = await bell();
+    await user.click(button);
+    await screen.findByText('Old');
+    await streamOpen();
+    const before = lists.length;
+    push('notification.created', created(liveItem(40), 2), 'i40');
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+    expect(getToasts()).toEqual([
+      expect.objectContaining({
+        id: 'notification-40',
+        kind: 'info',
+        title: 'Live 40',
+        body: 'Order 1042 timed out. Check it.',
+      }),
+    ]);
+    await waitFor(() => expect(lists.length).toBeGreaterThan(before));
+  });
+
+  it('shows no toast for an item the server replayed or in a hidden tab, and counts an item once', async () => {
+    await openShell();
+    const button = await bell();
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+    await streamOpen();
+    push('notification.created', created(liveItem(41), 3, false), 'i41');
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 3 unread'));
+    expect(getToasts()).toEqual([]);
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    push('notification.created', created(liveItem(42), 4), 'i42');
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 4 unread'));
+    expect(getToasts()).toEqual([]);
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    // The same item again (a replay, a second window): ignored, so the number from the repeat is not used.
+    push('notification.created', created(liveItem(42), 9), 'i42');
+    push('unread.changed', { unread: 4 });
+    expect(button).toHaveAccessibleName('Notifications, 4 unread');
+    expect(getToasts()).toEqual([]);
+  });
+
+  it('asks every 5 minutes instead of every 60 seconds while the stream is open, and every 60 seconds again once it is closed', async () => {
+    let reads = 0;
+    mockServer.use(http.get('*/admin/inbox/unread-count', () => HttpResponse.json({ unread: ++reads })));
+    // The mock stream beats like the server (every 15 s), or the client's 45 s watchdog would reconnect it and refetch.
+    MockEventSource.heartbeatMs = 15_000;
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await openShell();
+    await waitFor(() => expect(reads).toBe(1));
+    await streamOpen();
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(240_000);
+    expect(reads).toBe(1);
+    await vi.advanceTimersByTimeAsync(60_500);
+    await waitFor(() => expect(reads).toBe(2));
+    // The stream drops and cannot come back (no EventSource): the old 60 s poll is back.
+    act(() => {
+      failMockStreams();
+      uninstallMockEventSource();
+    });
+    await vi.advanceTimersByTimeAsync(61_000);
+    await waitFor(() => expect(reads).toBeGreaterThanOrEqual(3));
+    await vi.advanceTimersByTimeAsync(61_000);
+    await waitFor(() => expect(reads).toBeGreaterThanOrEqual(4));
+  });
+
+  it('refetches the number and the open list on a resync, and when the stream comes back', async () => {
+    const user = userEvent.setup();
+    const lists = serveInbox([inboxItem({ id: 1, title: 'Old' })], 0);
+    const asked = recordRequests('/admin/inbox/unread-count');
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await openShell();
+    await user.click(await bell());
+    await screen.findByText('Old');
+    await streamOpen();
+    await vi.advanceTimersByTimeAsync(0);
+    let reads = asked.length;
+    let listed = lists.length;
+    push('resync', { topics: ['inbox'] });
+    await waitFor(() => expect(asked.length).toBeGreaterThan(reads));
+    await waitFor(() => expect(lists.length).toBeGreaterThan(listed));
+    reads = asked.length;
+    listed = lists.length;
+    // The stream drops and reconnects: the second ready of the page load asks again.
+    act(() => failMockStreams());
+    await vi.advanceTimersByTimeAsync(6_000);
+    await waitFor(() => expect(asked.length).toBeGreaterThan(reads));
+    await waitFor(() => expect(lists.length).toBeGreaterThan(listed));
+  });
+
+  it('ignores a frame with the wrong shape', async () => {
+    await openShell();
+    const button = await bell();
+    await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
+    await streamOpen();
+    push('unread.changed', { unread: 'many' });
+    push('notification.created', { item: { id: 1 } });
+    expect(button).toHaveAccessibleName('Notifications, 2 unread');
+    expect(getToasts()).toEqual([]);
   });
 });

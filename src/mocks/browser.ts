@@ -6,14 +6,17 @@ import { handlers } from './handlers';
 import { isUnbuiltMode, withLivePassthrough } from './live';
 import { LIVE_ROUTE_KEYS } from './liveRoutes.gen';
 import { mountScenarioSwitcher } from './scenarioSwitcher';
+import { installMockEventSource } from './stream';
 
 /**
  * Registers the worker (served at /mockServiceWorker.js by the dev server) and resolves when it is ready, then shows
  * the scenario switcher (`?mock=`). In unbuilt mode the live routes get passthrough handlers placed before every mock
- * (first match wins), so they reach the real API through the dev proxy and the mocks answer the rest.
+ * (first match wins), so they reach the real API through the dev proxy and the mocks answer the rest. With every route mocked, the live stream is
+ * mocked too (`stream.ts`); in unbuilt mode the real backend serves it through the same proxy.
  */
 export async function startMockWorker(): Promise<void> {
   const unbuilt = isUnbuiltMode();
+  if (!unbuilt) installMockEventSource();
   const worker = setupWorker(...(unbuilt ? withLivePassthrough(handlers) : handlers));
   await worker.start({
     serviceWorker: { url: '/mockServiceWorker.js' },

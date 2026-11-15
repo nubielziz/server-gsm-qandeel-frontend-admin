@@ -7,6 +7,7 @@ import { bodyOf, invalid, notFound } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
 import { problem } from '@/mocks/problem';
 import { currentStaff } from '@/mocks/session';
+import { pushMockStreamEvent } from '@/mocks/stream';
 import {
   CAMPAIGN_CHANNELS,
   CAMPAIGN_PURPOSES,
@@ -256,7 +257,7 @@ export const campaignRoutes: HttpHandler[] = [
         const locale: CampaignLocale = body.locale === 'ar' && campaign.content.ar ? 'ar' : 'en';
         const text = (locale === 'ar' ? campaign.content.ar : null) ?? campaign.content.en;
         const store = notificationsState();
-        store.inbox.insert({
+        const item = store.inbox.insert({
           category: campaign.purpose === 'marketing' ? 'marketing' : 'announcement',
           title: text.title,
           body: text.body.replaceAll('{{name}}', SAMPLE_NAME),
@@ -267,6 +268,13 @@ export const campaignRoutes: HttpHandler[] = [
           campaignId: campaign.id,
           event: null,
         });
+        // The real server rings the test's recipient (this staff member) the moment the item is made.
+        const unread = store.inbox.list().filter((row) => row.readAt === null).length;
+        pushMockStreamEvent(
+          'notification.created',
+          { item, unread: Math.min(100, unread), live: true },
+          `i${item.id}`,
+        );
       }
       return HttpResponse.json({ queued }, { status: 202 });
     }),

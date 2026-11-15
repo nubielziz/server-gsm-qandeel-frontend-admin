@@ -2,6 +2,7 @@
 // schedule bounds), the send that moves on as time passes, and the inbox actions. The mock is the reference behaviour of the UI tests.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { isApiError } from '@/lib/api';
+import { MockEventSource, openMockStreamCount, resetMockStreams } from '@/mocks/stream';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import {
   createCampaign,
@@ -292,5 +293,57 @@ describe('the inbox', () => {
     expect(await markAllInboxRead({ upToId: 2 })).toEqual({ updated: 0 });
     expect(await markAllInboxRead()).toEqual({ updated: 1 });
     expect(await getUnreadCount()).toEqual({ unread: 0 });
+  });
+});
+
+describe('the live events of the mock stream', () => {
+  /** Opens one mock stream and records the events it gets. */
+  async function listen() {
+    MockEventSource.readyDelayMs = 0;
+    MockEventSource.heartbeatMs = 0;
+    const source = new MockEventSource('/admin/stream');
+    const seen: { name: string; data: unknown; id: string }[] = [];
+    for (const name of ['notification.read', 'notification.created']) {
+      source.addEventListener(name, (event) =>
+        seen.push({ name, data: JSON.parse(String(event.data)), id: event.lastEventId ?? '' }),
+      );
+    }
+    await vi.waitFor(() => expect(openMockStreamCount()).toBe(1));
+    return seen;
+  }
+  afterEach(() => {
+    resetMockStreams();
+    MockEventSource.heartbeatMs = 15_000;
+    MockEventSource.readyDelayMs = 20;
+  });
+
+  it('sends notification.read after marking one read, once, with the new count', async () => {
+    const seen = await listen();
+    await markInboxRead(5);
+    await markInboxRead(5);
+    expect(seen).toEqual([
+      { name: 'notification.read', data: { ids: [5], all: false, upToId: null, unread: 1 }, id: '' },
+    ]);
+  });
+
+  it('sends notification.read for read-all only when something was marked', async () => {
+    const seen = await listen();
+    await markAllInboxRead({ upToId: 2 });
+    expect(seen).toEqual([]);
+    await markAllInboxRead();
+    expect(seen).toEqual([
+      { name: 'notification.read', data: { ids: [], all: true, upToId: null, unread: 0 }, id: '' },
+    ]);
+  });
+
+  it('sends notification.created to the signed-in staff member for an in-app test send, and nothing for email only', async () => {
+    const seen = await listen();
+    await sendCampaignTest(3, { channels: ['email'] });
+    expect(seen).toEqual([]);
+    await sendCampaignTest(3, { channels: ['in_app'], locale: 'en' });
+    expect(seen).toHaveLength(1);
+    expect(seen[0].name).toBe('notification.created');
+    expect(seen[0].data).toMatchObject({ unread: 3, live: true, item: { campaignId: 3, readAt: null } });
+    expect(seen[0].id).toMatch(/^i\d+$/);
   });
 });

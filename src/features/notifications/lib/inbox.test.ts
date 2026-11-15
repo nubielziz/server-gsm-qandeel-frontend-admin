@@ -1,7 +1,7 @@
 // Tests for the bell's small rules: the badge text and label, which links the router may open, and the newest id.
 import { describe, expect, it } from 'vitest';
 import { inboxItem } from '../test/fixtures';
-import { badgeText, bellLabel, consolePath, newestId } from './inbox';
+import { badgeText, bellLabel, consolePath, newestId, toastBody, TOAST_BODY_LIMIT } from './inbox';
 
 describe('the badge', () => {
   it('shows nothing for zero, the number below the cap and 99+ at the cap', () => {
@@ -33,5 +33,20 @@ describe('links', () => {
   it('finds the newest id of the items on screen', () => {
     expect(newestId([])).toBeUndefined();
     expect(newestId([inboxItem({ id: 4 }), inboxItem({ id: 9 }), inboxItem({ id: 2 })])).toBe(9);
+  });
+});
+
+describe('the toast text', () => {
+  it('collapses line breaks and extra spaces into one line', () => {
+    expect(toastBody('Order 1042 timed out.\n\nCheck   it.')).toBe('Order 1042 timed out. Check it.');
+    expect(toastBody('')).toBe('');
+  });
+
+  it('keeps a short text and cuts a long one at 120 characters with an ellipsis', () => {
+    const exact = 'a'.repeat(TOAST_BODY_LIMIT);
+    expect(toastBody(exact)).toBe(exact);
+    const cut = toastBody('word '.repeat(60));
+    expect(cut.length).toBeLessThanOrEqual(TOAST_BODY_LIMIT);
+    expect(cut.endsWith('…')).toBe(true);
   });
 });

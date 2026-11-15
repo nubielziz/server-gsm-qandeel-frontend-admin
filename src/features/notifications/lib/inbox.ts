@@ -36,6 +36,15 @@ export function consolePath(link: string | null): string | null {
   return link;
 }
 
+/** How much of an item's text a live toast shows. */
+export const TOAST_BODY_LIMIT = 120;
+
+/** The start of a notification's text for a toast: whitespace collapsed into single spaces, at most 120 characters, "…" when cut. Plain text. */
+export function toastBody(body: string): string {
+  const text = body.replace(/\s+/g, ' ').trim();
+  return text.length <= TOAST_BODY_LIMIT ? text : `${text.slice(0, TOAST_BODY_LIMIT - 1).trimEnd()}…`;
+}
+
 /** The newest id of the items on screen (what "Mark all read" sends as `upToId`), or undefined for an empty list. */
 export function newestId(items: readonly InboxItem[]): number | undefined {
   return items.length === 0 ? undefined : Math.max(...items.map((item) => item.id));

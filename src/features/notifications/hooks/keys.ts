@@ -9,8 +9,10 @@ export const UNREAD_KEY = ['api', 'notifications', 'unread'] as const;
 
 /** How often a campaign that is still being sent asks for news (the plan says every 5 seconds). */
 export const CAMPAIGN_REFRESH_MS = 5_000;
-/** How often the bell asks for the unread count while the tab is visible. */
+/** How often the bell asks for the unread count while the tab is visible and the live stream is not open (the stream is the fallback's reason to be). */
 export const UNREAD_REFRESH_MS = 60_000;
+/** The same, while the live stream is open: a slow safety net (5 minutes) for an event that never came. */
+export const LIVE_UNREAD_REFRESH_MS = 300_000;
 /** The bell's list shows this many items at first and this many more on each "Load more". */
 export const INBOX_PAGE_SIZE = 20;
 

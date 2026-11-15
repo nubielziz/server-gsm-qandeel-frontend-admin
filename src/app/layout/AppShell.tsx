@@ -2,6 +2,7 @@
 // shortcut list. Ports the frame of reference/gsm-admin/src/index.html and the shell parts of 90-app.js.
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { StreamProvider } from '@/lib/realtime';
 import { AppErrorBoundary } from '../AppErrorBoundary';
 import { AppCommandPalette } from '../palette';
 import { BreadcrumbTitleContext } from './breadcrumbTitle';
@@ -17,10 +18,19 @@ import { useNavCounts } from './useNavCounts';
 import { usePermittedPages } from './usePages';
 
 /**
- * `children` is the routed page (an <Outlet/>). A page that crashes shows an error state inside <main> and the
- * shell stays usable; the error clears when the path changes.
+ * `children` is the routed page (an <Outlet/>). The live stream (feature 27) starts here, once the staff member is
+ * known, and every screen under the shell can listen to it.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <StreamProvider>
+      <ShellFrame>{children}</ShellFrame>
+    </StreamProvider>
+  );
+}
+
+/** The frame itself. A page that crashes shows an error state inside <main> and the shell stays usable; the error clears when the path changes. */
+function ShellFrame({ children }: { children: ReactNode }) {
   const nav = useMobileNav();
   const pages = usePermittedPages();
   const counts = useNavCounts();
