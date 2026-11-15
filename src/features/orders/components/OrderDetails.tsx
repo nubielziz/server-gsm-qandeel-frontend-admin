@@ -4,7 +4,7 @@
 import { Link } from 'react-router';
 import { CopyButton, Icon, KeyValue, TypeTag } from '@/components/ui';
 import type { Id } from '@/lib/api';
-import { dur, fmtImei, maskEmail } from '@/lib/format';
+import { dur, fmtImei, hasCustomerName, maskedCustomerLabel, maskEmail } from '@/lib/format';
 import { orderFileUrl } from '../api';
 import type { OrderGrants } from '../hooks/useOrderGrants';
 import { ageText, slaMs, slaView } from '../lib/sla';
@@ -56,10 +56,12 @@ export function OrderDetails({ order, now, grants }: OrderDetailsProps) {
               'Customer',
               <>
                 <Link className="link" to={`/customers/${customer.id}`}>
-                  {customer.name}
+                  {maskedCustomerLabel(customer)}
                 </Link>{' '}
                 <span className="text-ink3">· storefront</span>
-                <p className="text-xs text-ink3">{maskEmail(customer.email)}</p>
+                {hasCustomerName(customer) && (
+                  <p className="text-xs text-ink3">{maskEmail(customer.email)}</p>
+                )}
               </>,
             ]
           : client && [

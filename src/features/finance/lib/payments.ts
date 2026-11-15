@@ -1,7 +1,7 @@
 // What the Deposits tab says about a payment: the method names, the status badges, the reasons a deposit can be rejected and
 // how they become the one reason the server stores. Ports METHODS, payBadge and the reject dialog of 45-p-finance.js.
 import type { BadgeTone, IconName } from '@/components/ui';
-import { money, pct } from '@/lib/format';
+import { maskedCustomerLabel, money, pct } from '@/lib/format';
 import { plainWords } from './kinds';
 import type { Payment, PaymentDispute, PaymentStatus } from '../types';
 
@@ -96,7 +96,8 @@ export function customerWalletPath(customerId: number): string {
 
 /** Who paid a deposit, for its dialog's subtitle and the table: the merchant, else the customer, else a plain word. */
 export function payerName(payment: Pick<Payment, 'client' | 'customer'>): string {
-  return payment.client?.name ?? payment.customer?.name ?? '–';
+  if (payment.client) return payment.client.name;
+  return payment.customer ? maskedCustomerLabel(payment.customer) : '–';
 }
 
 /**

@@ -127,6 +127,44 @@ describe('the Customer wallets tab', () => {
   });
 });
 
+describe('a customer with no name', () => {
+  const wallet = (id: number, name: string, email: string) => ({
+    customer: { id, name, email, status: 'active' },
+    balance: '12.0000',
+    frozen: null,
+    updatedAt: '2026-11-01T10:00:00.000Z',
+  });
+
+  it('is shown by the masked email, as a link to their wallet, with "No name" under it', async () => {
+    mockServer.use(
+      http.get('*/admin/customer-wallets', () =>
+        HttpResponse.json(
+          [wallet(5, '', 'maya@example.com'), wallet(6, 'Daniel Whitmore', 'daniel@example.com')],
+          {
+            headers: { 'x-total-count': '2', 'access-control-expose-headers': 'x-total-count' },
+          },
+        ),
+      ),
+    );
+    await openFinance('/finance?tab=wallets');
+    const table = await tableNamed('Customer wallets');
+    const nameless = within(
+      (await table.findByRole('link', { name: 'ma•••@example.com' })).closest('tr') as HTMLElement,
+    );
+    expect(nameless.getByRole('link', { name: 'ma•••@example.com' })).toHaveAttribute(
+      'href',
+      '/customers/5?tab=wallet',
+    );
+    expect(nameless.getByText('No name')).toBeInTheDocument();
+    expect(nameless.queryByText('maya@example.com')).not.toBeInTheDocument();
+
+    // A customer who has a name keeps it, with the masked email under it.
+    const named = within(table.getByRole('link', { name: 'Daniel Whitmore' }).closest('tr') as HTMLElement);
+    expect(named.getByText('da•••@example.com')).toBeInTheDocument();
+    expect(named.queryByText('No name')).not.toBeInTheDocument();
+  });
+});
+
 describe('the trial balance', () => {
   it('names the customer wallets account as a liability', async () => {
     mockServer.use(

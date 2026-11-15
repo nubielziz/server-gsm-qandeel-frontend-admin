@@ -4,7 +4,7 @@
 // only says that VAT goes back in proportion and then shows what the server answered.
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, Icon, TextField } from '@/components/ui';
-import { lm, money } from '@/lib/format';
+import { customerLabel, lm, money } from '@/lib/format';
 import { useRefund } from '../hooks/useRefund';
 import { useApproveRefund } from '../hooks/useRefundMutations';
 import { compareMoney, editableAmount, isPositive, parseAmount } from '../lib/amount';
@@ -51,7 +51,7 @@ export function ApproveRefundDialog({ refund: row, onClose, onShowEntries }: App
     <FormDialog
       open
       title={`Approve ${refundLabel(refund.id)}`}
-      sub={`${refund.customer?.name ?? 'Unknown customer'} · ${storefrontOrderLabel(order.id)} · paid ${paid}${refund.currency !== 'USD' ? ` (${money(payment.amount)})` : ''}`}
+      sub={`${customerLabel(refund.customer)} · ${storefrontOrderLabel(order.id)} · paid ${paid}${refund.currency !== 'USD' ? ` (${money(payment.amount)})` : ''}`}
       confirm="Refund now"
       onClose={onClose}
       onSubmit={submit}

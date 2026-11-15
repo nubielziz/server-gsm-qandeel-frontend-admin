@@ -1,7 +1,7 @@
 // WalletJournalDialog: one journal entry behind a statement line (the "View journal" button): its kind, time, author, memo and lines.
 // The lines come from the finance feature's ledger route and `JournalLines`, so the staff member needs `ledger:read`.
 import { Modal, QueryState, TypeTag } from '@/components/ui';
-import { journalLabel, JournalLines, ledgerKindLabel } from '@/features/finance';
+import { journalLabel, JournalLines, ledgerKindLabel, postedBy } from '@/features/finance';
 import { fmtDate } from '@/lib/format';
 import { useCustomerJournal } from '../hooks/useCustomerWallet';
 
@@ -36,7 +36,7 @@ export function WalletJournalDialog({
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <TypeTag>{ledgerKindLabel(entry.kind)}</TypeTag>
               <span className="text-xs text-ink3">
-                {fmtDate(entry.createdAt)} · by {entry.createdBy.name ?? 'System'}
+                {fmtDate(entry.createdAt)} · by {postedBy(entry.createdBy)}
               </span>
             </div>
             <JournalLines entries={entry.entries} />

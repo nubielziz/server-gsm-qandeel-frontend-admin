@@ -3,14 +3,16 @@
 import { Link } from 'react-router';
 import type { NamedRef } from '@/features/orders';
 import { useCanOpenPage } from '@/lib/auth/useCanOpenPage';
+import { customerLabel } from '@/lib/format';
 
 export function CustomerLink({ customer }: { customer: NamedRef | null }) {
   const canOpen = useCanOpenPage('customers');
+  const label = customerLabel(customer);
   if (!customer) return <span className="text-ink3">Unknown</span>;
-  if (canOpen === false) return <span>{customer.name}</span>;
+  if (canOpen === false) return <span>{label}</span>;
   return (
     <Link className="link" to={`/customers/${customer.id}`}>
-      {customer.name}
+      {label}
     </Link>
   );
 }

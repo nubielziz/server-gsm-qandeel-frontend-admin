@@ -9,7 +9,7 @@ import type { ComposerState } from '../hooks/useComposerState';
 import type { SupportGrants } from '../hooks/useSupportGrants';
 import { useAddTicketNote, useReplyToTicket } from '../hooks/useTicketMutations';
 import { fillTemplate, ticketValues } from '../lib/macros';
-import { firstName } from '../lib/status';
+import { firstName, requesterLabel } from '../lib/status';
 import type { ReplyChannel, ReplyTemplate, SupportTicketDetail } from '../types';
 import { ComposerFooter } from './ComposerFooter';
 import { MacroPicker } from './MacroPicker';
@@ -113,7 +113,9 @@ export function Composer({
         className={cx('input', internal && '!border-warn-dot !bg-warn-bg')}
         rows={4}
         aria-label={internal ? 'Internal note' : 'Reply'}
-        placeholder={internal ? 'Write a note for your team' : `Write a reply to ${name}`}
+        placeholder={
+          internal ? 'Write a note for your team' : `Write a reply to ${name || requesterLabel(ticket)}`
+        }
         value={draft}
         disabled={lock.disabled}
         aria-invalid={active.isError ? true : undefined}

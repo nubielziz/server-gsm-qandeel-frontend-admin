@@ -10,6 +10,7 @@ import {
 import { useAnonymizeCustomer, useExportCustomerData } from '../hooks/usePrivacyMutations';
 import { devicesText } from '../lib/text';
 import type { CustomerDetail } from '../types';
+import { customerLabel } from '@/lib/format';
 
 export interface CustomerConfirmDialogProps {
   kind: 'signout' | 'reactivate' | 'unblock' | 'export' | 'anonymize';
@@ -30,7 +31,7 @@ export function CustomerConfirmDialog({ kind, customer, onClose }: CustomerConfi
     return (
       <ConfirmDialog
         open
-        title={`Sign ${customer.name} out everywhere?`}
+        title={`Sign ${customerLabel(customer)} out everywhere?`}
         body={
           <p>They are signed out of {devicesText(devices)}. They can sign in again with their password.</p>
         }
@@ -44,7 +45,7 @@ export function CustomerConfirmDialog({ kind, customer, onClose }: CustomerConfi
     return (
       <ConfirmDialog
         open
-        title={`Reactivate ${customer.name}?`}
+        title={`Reactivate ${customerLabel(customer)}?`}
         body={<p>They can sign in and order again. They will need to sign in again on their devices.</p>}
         confirm="Reactivate"
         onClose={onClose}
@@ -56,7 +57,7 @@ export function CustomerConfirmDialog({ kind, customer, onClose }: CustomerConfi
     return (
       <ConfirmDialog
         open
-        title={`Unblock ${customer.name}?`}
+        title={`Unblock ${customerLabel(customer)}?`}
         body={<p>They can order again. Their email stays on the blocklist until you remove it there.</p>}
         confirm="Unblock"
         onClose={onClose}
@@ -68,7 +69,7 @@ export function CustomerConfirmDialog({ kind, customer, onClose }: CustomerConfi
     return (
       <ConfirmDialog
         open
-        title={`Export ${customer.name}’s data?`}
+        title={`Export ${customerLabel(customer)}’s data?`}
         body={
           <p>
             Their data downloads as a JSON file named customer-{customer.id}.json. Their open export request,
@@ -84,7 +85,7 @@ export function CustomerConfirmDialog({ kind, customer, onClose }: CustomerConfi
   return (
     <ConfirmDialog
       open
-      title={`Anonymise ${customer.name}?`}
+      title={`Anonymise ${customerLabel(customer)}?`}
       body={
         <>
           <p>

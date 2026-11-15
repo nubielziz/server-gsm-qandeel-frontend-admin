@@ -10,7 +10,7 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { ago, maskEmail, money, toAmount } from '@/lib/format';
+import { ago, hasCustomerName, maskedCustomerLabel, maskEmail, money, toAmount } from '@/lib/format';
 import { customerWalletPath } from '../lib/payments';
 import { walletStateOf } from '../lib/walletView';
 import type { CustomerWalletRow } from '../types';
@@ -74,9 +74,11 @@ export function WalletsTable({
       render: (row) => (
         <>
           <Link className="link font-medium" to={customerWalletPath(row.customer.id)}>
-            {row.customer.name}
+            {maskedCustomerLabel(row.customer)}
           </Link>
-          <p className="text-xs text-ink3">{maskEmail(row.customer.email)}</p>
+          <p className="text-xs text-ink3">
+            {hasCustomerName(row.customer) ? maskEmail(row.customer.email) : 'No name'}
+          </p>
         </>
       ),
     },

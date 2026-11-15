@@ -5,7 +5,7 @@ import { Link } from 'react-router';
 import { Drawer, ErrorState, SkeletonTable, TypeTag } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import { useLedgerTransaction } from '../hooks/useLedgerTransaction';
-import { journalLabel, ledgerKindLabel } from '../lib/kinds';
+import { journalLabel, ledgerKindLabel, postedBy } from '../lib/kinds';
 import { referenceLink } from '../lib/refs';
 import type { LedgerTransaction } from '../types';
 import { JournalLines } from './JournalLines';
@@ -44,7 +44,7 @@ export function JournalDrawer({ id, row, onClose }: JournalDrawerProps) {
       title={journalLabel(entry.id)}
       titleClassName="mono"
       badges={<TypeTag>{ledgerKindLabel(entry.kind)}</TypeTag>}
-      sub={`${fmtDate(entry.createdAt)} · posted by ${entry.createdBy.name ?? 'System'}`}
+      sub={`${fmtDate(entry.createdAt)} · posted by ${postedBy(entry.createdBy)}`}
     >
       <p className="mb-3 text-sm text-ink2">{entry.memo}</p>
       <JournalLines entries={entry.entries} />

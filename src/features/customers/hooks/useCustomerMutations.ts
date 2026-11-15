@@ -20,6 +20,7 @@ import type {
   UpdateCustomerBody,
 } from '../types';
 import { CUSTOMER_COUNTS_KEY } from './keys';
+import { customerLabel } from '@/lib/format';
 
 const NO_ERROR_TOAST = () => false as const;
 
@@ -38,7 +39,7 @@ export function useCreateCustomer() {
     invalidates: staleCustomer(),
     invalidateKeys: [CUSTOMER_COUNTS_KEY],
     successNotification: (created, body) => ({
-      message: `${created.name} added`,
+      message: `${customerLabel(created)} added`,
       description:
         body.password.mode === 'reset_link'
           ? `An invitation to choose a password was sent to ${created.email}.`
@@ -96,7 +97,7 @@ export function useSetCustomerPassword() {
         ? { message: 'Reset link sent', description: `Sent to ${customer.email}. It works for 1 hour.` }
         : {
             message: 'Temporary password set',
-            description: `${customer.name} must change it at next sign-in.`,
+            description: `${customerLabel(customer)} must change it at next sign-in.`,
           },
     errorNotification: NO_ERROR_TOAST,
   });
@@ -120,7 +121,11 @@ export function useSuspendCustomer() {
     invalidates: (_result, { customer }) => staleCustomer(customer.id),
     invalidateKeys: [CUSTOMER_COUNTS_KEY],
     onSuccess: (_result, { customer }) => {
-      toast({ kind: 'info', title: `${customer.name} suspended`, body: 'Signed out of all devices.' });
+      toast({
+        kind: 'info',
+        title: `${customerLabel(customer)} suspended`,
+        body: 'Signed out of all devices.',
+      });
     },
     errorNotification: NO_ERROR_TOAST,
   });
@@ -132,7 +137,7 @@ export function useReactivateCustomer() {
     mutationFn: (customer: Who) => reactivateCustomer(customer.id),
     invalidates: (_result, customer) => staleCustomer(customer.id),
     invalidateKeys: [CUSTOMER_COUNTS_KEY],
-    successNotification: (_result, customer) => ({ message: `${customer.name} reactivated` }),
+    successNotification: (_result, customer) => ({ message: `${customerLabel(customer)} reactivated` }),
     errorNotification: NO_ERROR_TOAST,
   });
 }
@@ -145,7 +150,7 @@ export function useBlockCustomer() {
     invalidates: (_result, { customer }) => staleCustomer(customer.id),
     invalidateKeys: [CUSTOMER_COUNTS_KEY],
     onSuccess: (_result, { customer }) => {
-      toast({ kind: 'info', title: `${customer.name} blocked`, body: 'Added to the blocklist.' });
+      toast({ kind: 'info', title: `${customerLabel(customer)} blocked`, body: 'Added to the blocklist.' });
     },
     errorNotification: NO_ERROR_TOAST,
   });
@@ -157,7 +162,7 @@ export function useUnblockCustomer() {
     mutationFn: (customer: Who) => blockCustomer(customer.id, { blocked: false }),
     invalidates: (_result, customer) => staleCustomer(customer.id),
     invalidateKeys: [CUSTOMER_COUNTS_KEY],
-    successNotification: (_result, customer) => ({ message: `${customer.name} unblocked` }),
+    successNotification: (_result, customer) => ({ message: `${customerLabel(customer)} unblocked` }),
     errorNotification: NO_ERROR_TOAST,
   });
 }

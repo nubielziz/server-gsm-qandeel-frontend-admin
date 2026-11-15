@@ -5,6 +5,7 @@ import type { PaletteSource } from '@/app/palette';
 import { listCustomers } from '../api';
 import { countryName } from './countries';
 import { customerPath } from './detailTabs';
+import { customerLabel } from '@/lib/format';
 
 /** Most customers the palette lists (the demo's limit). */
 export const PALETTE_CUSTOMER_LIMIT = 4;
@@ -21,7 +22,7 @@ export const customersPaletteSource: PaletteSource = {
     );
     return data.map((customer) => ({
       id: `customer:${customer.id}`,
-      label: customer.name,
+      label: customerLabel(customer),
       hint: countryName(customer.country),
       icon: 'user' as const,
       run: () => go(customerPath(customer.id)),

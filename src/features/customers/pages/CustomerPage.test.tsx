@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { NAMELESS_CUSTOMER } from '../mocks/store';
 import { detailTabs, openCustomer } from '../test/customersPage';
 import { customerDetail } from '../test/fixtures';
 
@@ -65,6 +66,26 @@ describe('the page', () => {
     expect(within(crumb).getByRole('link', { name: 'Customers' })).toHaveAttribute('href', '/customers');
     expect(within(crumb).getByText('Tyler Brooks')).toBeInTheDocument();
     await waitFor(() => expect(document.title).toContain('Tyler Brooks'));
+  });
+
+  it('names a customer with no name by their email in the heading, the breadcrumb and the tab title', async () => {
+    const email = new RegExp(NAMELESS_CUSTOMER.email.replaceAll('.', '\\.'));
+    await openCustomer(NAMELESS_CUSTOMER.id, email);
+    const title = screen.getByRole('heading', { level: 1, name: email });
+    expect(within(title).getByText('Active')).toBeInTheDocument();
+    const crumb = screen.getByRole('navigation', { name: 'Breadcrumb' });
+    expect(within(crumb).getByText(NAMELESS_CUSTOMER.email)).toBeInTheDocument();
+    await waitFor(() => expect(document.title).toContain(NAMELESS_CUSTOMER.email));
+  });
+
+  it('falls back to the customer number when the name and the email are both empty', async () => {
+    mockServer.use(
+      http.get('*/admin/customers/:id', () =>
+        HttpResponse.json(customerDetail({ id: 77, name: '', email: '' })),
+      ),
+    );
+    await openCustomer(77, /Customer #77/);
+    expect(screen.getByRole('heading', { level: 1, name: /Customer #77/ })).toBeInTheDocument();
   });
 
   it('shows a risk or status it does not know as it is, in a neutral badge, instead of failing', async () => {

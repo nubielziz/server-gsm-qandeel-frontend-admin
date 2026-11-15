@@ -1,14 +1,14 @@
 // The wallet actions on a customer: a manual adjustment, freeze and unfreeze. Each takes the dialog's Idempotency-Key, made once per
 // dialog opening, so a retry of the same opening can never post twice. The dialogs show a failed call themselves (under the
 // field the server named, or in the error slot), so none of these toasts an error.
-import { money } from '@/lib/format';
+import { customerLabel, money } from '@/lib/format';
 import { DASHBOARD_KEY, useApiMutation } from '@/lib/query';
 import { adjustCustomerWallet, freezeCustomerWallet, unfreezeCustomerWallet } from '../api';
 import type { AdjustWalletBody, Customer, FreezeWalletBody } from '../types';
 import { CUSTOMER_STATEMENT_KEY, CUSTOMER_WALLET_KEY } from './keys';
 
 /** The part of a customer the toasts and requests need. */
-type Who = Pick<Customer, 'id' | 'name'>;
+type Who = Pick<Customer, 'id' | 'name' | 'email'>;
 
 // An adjustment moves the figures and the statement; every wallet action changes what the dialog above it shows.
 const WALLET_KEYS = [CUSTOMER_WALLET_KEY, CUSTOMER_STATEMENT_KEY, DASHBOARD_KEY];
@@ -21,7 +21,7 @@ export function useAdjustCustomerWallet() {
     invalidateKeys: [...WALLET_KEYS],
     successNotification: (result, { customer, body }) => ({
       message: `${body.direction === 'credit' ? 'Credited' : 'Debited'} ${money(body.amount)}`,
-      description: `${customer.name} balance is now ${money(result.wallet.balance)}.`,
+      description: `${customerLabel(customer)} balance is now ${money(result.wallet.balance)}.`,
     }),
     errorNotification: () => false as const,
   });
@@ -35,7 +35,7 @@ export function useFreezeCustomerWallet() {
     invalidateKeys: [...WALLET_KEYS],
     successNotification: (_wallet, { customer }) => ({
       message: 'Balance put on hold',
-      description: `${customer.name} cannot pay from it until you lift the hold.`,
+      description: `${customerLabel(customer)} cannot pay from it until you lift the hold.`,
     }),
     errorNotification: () => false as const,
   });
@@ -49,7 +49,7 @@ export function useUnfreezeCustomerWallet() {
     invalidateKeys: [...WALLET_KEYS],
     successNotification: (_wallet, { customer }) => ({
       message: 'Hold lifted',
-      description: `${customer.name} can pay from the balance again.`,
+      description: `${customerLabel(customer)} can pay from the balance again.`,
     }),
     errorNotification: () => false as const,
   });

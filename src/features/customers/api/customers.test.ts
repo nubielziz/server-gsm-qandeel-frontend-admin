@@ -212,8 +212,8 @@ describe('listing customers', () => {
     (await listCustomers(toListQuery(filters, { start: 0, end: 1 }))).total;
 
   it('counts every tab with a one-row call and reads the total from the header', async () => {
-    expect(await total(tabFilters('all'))).toBe(30);
-    expect(await total(tabFilters('active'))).toBe(28);
+    expect(await total(tabFilters('all'))).toBe(31);
+    expect(await total(tabFilters('active'))).toBe(29);
     expect(await total(tabFilters('flagged'))).toBe(3);
     expect(await total(tabFilters('suspended'))).toBe(1);
     expect(await total(tabFilters('blocked'))).toBe(1);
@@ -249,7 +249,7 @@ describe('listing customers', () => {
 
   it('pages, sorts by spend and searches name and email on the server', async () => {
     const page = await listCustomers({ start: 0, end: 3, sort: ['totalSpent'], order: ['desc'] });
-    expect(page.total).toBe(30);
+    expect(page.total).toBe(31);
     const spend = page.data.map((row) => Number(row.totalSpent));
     expect(spend).toEqual([...spend].sort((a, b) => b - a));
     expect((await listCustomers({ q: 'WHITMORE' })).data.map((row) => row.id)).toEqual([DANIEL]);
@@ -309,17 +309,17 @@ describe('creating and editing', () => {
   it('adds a customer with an account and a link, and counts them', async () => {
     const created = await createCustomer(body);
     expect(created).toMatchObject({
-      id: 31,
+      id: 32,
       name: 'Pat Example',
       hasAccount: true,
       status: 'active',
       riskLevel: 'low',
     });
     expect(created).not.toHaveProperty('temporaryPassword');
-    const detail = await getCustomer(31);
+    const detail = await getCustomer(32);
     expect(detail.account).toMatchObject({ emailVerified: false, mustChangePassword: false });
     expect(detail.account?.resetSentAt).toBeTruthy();
-    expect((await listCustomers({ start: 0, end: 1 })).total).toBe(31);
+    expect((await listCustomers({ start: 0, end: 1 })).total).toBe(32);
   });
 
   it('returns a temporary password once, only for that mode', async () => {

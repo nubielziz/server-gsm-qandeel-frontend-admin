@@ -4,6 +4,7 @@ import { keepPreviousData } from '@tanstack/react-query';
 import { listStaff } from '@/features/access';
 import { listCustomers } from '@/features/customers';
 import { listClients } from '@/features/merchants';
+import { customerLabel, hasCustomerName } from '@/lib/format';
 import { useApiQuery } from '@/lib/query';
 import type { ListQuery, ListResult } from '@/lib/api';
 import type { PickedPerson } from '../lib/spec';
@@ -35,7 +36,17 @@ async function load(
     };
   }
   const { data, total } = await listCustomers(query, init);
-  return { total, data: data.map((row) => ({ type, id: row.id, name: row.name, detail: row.email })) };
+  return {
+    total,
+    // A customer can have an empty name: the picker and the audience list show the email (or Customer #id) instead.
+    data: data.map((row) => ({
+      type,
+      id: row.id,
+      name: customerLabel(row),
+      // The email is already the name for a customer without one, so it is not said twice.
+      detail: hasCustomerName(row) ? row.email : undefined,
+    })),
+  };
 }
 
 export type PeopleArgs = { type: PersonType; q: string; page: number; enabled?: boolean };

@@ -3,7 +3,7 @@
 // IMEI as stored (digits, or a hash after the retention period), the result, where it came from, the cost and what it returned.
 import { Link } from 'react-router';
 import { CopyButton, Drawer, ErrorState, KeyValue, SkeletonTable, TypeTag } from '@/components/ui';
-import { ago, fmtDate, fmtImei, money, useNow } from '@/lib/format';
+import { ago, customerLabel, fmtDate, fmtImei, money, useNow } from '@/lib/format';
 import { useImeiCheck } from '../hooks/useImeiChecks';
 import { CHECK_KIND_LABEL, CHECK_SOURCE_LABEL, labelOf } from '../lib/labels';
 import type { ImeiCheck } from '../types';
@@ -42,7 +42,7 @@ function CheckFacts({ check, now }: { check: ImeiCheck; now: number }) {
           ? [
               'Customer',
               <Link key="customer" className="link" to={`/customers/${check.customer.id}`}>
-                {check.customer.name}
+                {customerLabel(check.customer)}
               </Link>,
             ]
           : null,

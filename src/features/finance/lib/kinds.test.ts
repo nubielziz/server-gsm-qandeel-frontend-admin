@@ -1,6 +1,6 @@
 // Tests for the names of ledger entry kinds and the entry number.
 import { describe, expect, it } from 'vitest';
-import { journalLabel, ledgerKindLabel, plainWords } from './kinds';
+import { journalLabel, ledgerKindLabel, plainWords, postedBy } from './kinds';
 
 describe('ledgerKindLabel', () => {
   it('uses the demo’s names', () => {
@@ -27,5 +27,20 @@ describe('plainWords', () => {
     expect(plainWords('gift_cards')).toBe('Gift cards');
     expect(plainWords('chargeback-reserve')).toBe('Chargeback reserve');
     expect(plainWords('__', 'Account')).toBe('Account');
+  });
+});
+
+describe('postedBy', () => {
+  it('says "Customer #id" for a customer actor with no name, never "System"', () => {
+    expect(postedBy({ type: 'customer', id: 31, name: null })).toBe('Customer #31');
+    expect(postedBy({ type: 'customer', id: 31, name: '   ' })).toBe('Customer #31');
+    expect(postedBy({ type: 'customer', id: 31, name: 'Layla Haddad' })).toBe('Layla Haddad');
+  });
+
+  it('keeps the staff, merchant and system cases as they were', () => {
+    expect(postedBy({ type: 'staff', id: 2, name: 'Omar' })).toBe('Omar');
+    expect(postedBy({ type: 'client', id: 9, name: 'Acme' })).toBe('Acme');
+    expect(postedBy({ type: 'staff', id: 2, name: null })).toBe('System');
+    expect(postedBy({ type: 'system', id: null, name: null })).toBe('System');
   });
 });

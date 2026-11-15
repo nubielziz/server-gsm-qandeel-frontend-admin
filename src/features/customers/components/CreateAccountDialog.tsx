@@ -6,6 +6,7 @@ import { FormDialog, RadioGroup, dialogSubmit } from '@/components/ui';
 import { useCreateCustomerAccount } from '../hooks/useCustomerMutations';
 import type { CustomerDetail, PasswordMode } from '../types';
 import { PASSWORD_MODES } from './passwordModes';
+import { customerLabel } from '@/lib/format';
 
 type Values = { mode: PasswordMode };
 
@@ -35,10 +36,10 @@ export function CreateAccountDialog({ customer, onClose, onReveal }: CreateAccou
   return (
     <FormDialog
       open
-      title={`Create an account for ${customer.name}`}
+      title={`Create an account for ${customerLabel(customer)}`}
       sub="They bought as a guest. Their past orders will show in the new account."
       confirm="Create account"
-      onClose={() => (revealed.current ? onReveal(customer.name, revealed.current) : onClose())}
+      onClose={() => (revealed.current ? onReveal(customerLabel(customer), revealed.current) : onClose())}
       onSubmit={submit}
     >
       <div className="space-y-3">

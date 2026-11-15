@@ -5,6 +5,7 @@ import { FormDialog, TextareaField, dialogSubmit } from '@/components/ui';
 import { useUpdateDataRequest } from '../hooks/usePrivacyMutations';
 import { requestKindLabel, requestNumber } from '../lib/requests';
 import type { DataRequest } from '../types';
+import { customerLabel } from '@/lib/format';
 
 type Values = { note: string };
 
@@ -34,7 +35,7 @@ export function RejectRequestDialog({ request, onClose }: RejectRequestDialogPro
     <FormDialog
       open
       title={`Reject ${requestNumber(request.id)}?`}
-      sub={`${request.customerName}’s ${requestKindLabel(request.kind).toLowerCase()} request.`}
+      sub={`${customerLabel({ id: request.customerId, name: request.customerName })}’s ${requestKindLabel(request.kind).toLowerCase()} request.`}
       confirm="Reject request"
       kind="danger"
       onClose={onClose}

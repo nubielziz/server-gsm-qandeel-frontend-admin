@@ -1,4 +1,6 @@
 // The names of ledger entry kinds. Ports KIND_LABEL of 10-data.js (used by the ledger table and the order drawer's money trail).
+import { customerLabel } from '@/lib/format';
+import type { LedgerActor } from '../types';
 
 /** Entry kind to the words the console shows. */
 export const LEDGER_KIND_LABEL: Readonly<Record<string, string>> = {
@@ -33,4 +35,13 @@ export function ledgerKindLabel(kind: string): string {
 /** An entry's number as the demo wrote it: 25 is "JRN-00025". Display only. */
 export function journalLabel(id: number): string {
   return `JRN-${String(id).padStart(5, '0')}`;
+}
+
+/**
+ * Who posted a ledger entry, as the console says it. A customer can have an empty name and the backend then sends
+ * `name: null` (its owner lookup skips empty names), so a customer actor reads "Customer #31", never "System". Staff and
+ * merchants keep their name; an actor with no name at all is the system.
+ */
+export function postedBy(actor: LedgerActor): string {
+  return actor.type === 'customer' ? customerLabel(actor) : (actor.name ?? 'System');
 }

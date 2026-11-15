@@ -2,6 +2,7 @@
 // pager. Ports the `list` panel of pageSupport (49-p-support.js). On a phone it hides while a thread is open.
 import { cx, Pager, QueryState, SkeletonTable } from '@/components/ui';
 import { PAGE_SIZE, type SupportFilters } from '../lib/filters';
+import { requesterLabel } from '../lib/status';
 import type { SupportTicket } from '../types';
 import { TicketRow } from './TicketRow';
 import { TicketsEmpty } from './TicketsEmpty';
@@ -47,7 +48,7 @@ export function TicketList({
       <TicketToolbar
         filters={filters}
         onChange={onFiltersChange}
-        customerName={filters.customerId === null ? undefined : tickets[0]?.requester.name}
+        customerName={filters.customerId === null || !tickets[0] ? undefined : requesterLabel(tickets[0])}
       />
       <QueryState
         isLoading={state.isLoading}

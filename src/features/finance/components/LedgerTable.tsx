@@ -10,7 +10,7 @@ import {
   type SortState,
 } from '@/components/ui';
 import { fmtDate, money, sum, toAmount } from '@/lib/format';
-import { journalLabel, ledgerKindLabel } from '../lib/kinds';
+import { journalLabel, ledgerKindLabel, postedBy } from '../lib/kinds';
 import type { LedgerTransaction } from '../types';
 
 export interface LedgerTableProps {
@@ -92,7 +92,7 @@ export function LedgerTable({
       label: 'By',
       hide: 'xl',
       render: (entry) => {
-        const by = entry.createdBy.name ?? 'System';
+        const by = postedBy(entry.createdBy);
         return (
           <span className="inline-flex items-center gap-1.5">
             <Avatar name={by} />

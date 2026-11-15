@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextField, dialogSubmit } from '@/components/ui';
-import { money } from '@/lib/format';
+import { customerLabel, money } from '@/lib/format';
 import { useAdjustCustomerWallet } from '../hooks/useWalletMutations';
 import { cleanReason, newIdempotencyKey, parseWalletAmount } from '../lib/walletInput';
 import type { Customer, CustomerWallet, WalletDirection } from '../types';
@@ -18,7 +18,7 @@ const DIRECTIONS = [
 ];
 
 export interface AdjustWalletDialogProps {
-  customer: Pick<Customer, 'id' | 'name'>;
+  customer: Pick<Customer, 'id' | 'name' | 'email'>;
   /** The figures, for the subtitle and the approval limit. */
   wallet: CustomerWallet;
   onClose: () => void;
@@ -57,7 +57,7 @@ export function AdjustWalletDialog({ customer, wallet, onClose }: AdjustWalletDi
     <FormDialog
       open
       title="Adjust balance"
-      sub={`${customer.name} · balance ${money(wallet.balance)}`}
+      sub={`${customerLabel(customer)} · balance ${money(wallet.balance)}`}
       confirm="Post adjustment"
       onClose={onClose}
       onSubmit={submit}

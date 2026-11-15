@@ -9,6 +9,7 @@ import type { CustomerDetail } from '../types';
 import type { CustomerDialogKind } from './customerDialogState';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
 import { RiskBadge } from './RiskBadge';
+import { customerLabel } from '@/lib/format';
 
 export interface CustomerHeaderProps {
   customer: CustomerDetail;
@@ -26,7 +27,7 @@ export function CustomerHeader({ customer, grants, onAction }: CustomerHeaderPro
     <PageHeader
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
-          {customer.name} <CustomerStatusBadge status={customer.status} />
+          {customerLabel(customer)} <CustomerStatusBadge status={customer.status} />
           {customer.riskLevel !== 'low' && <RiskBadge level={customer.riskLevel} suffix=" risk" />}
         </span>
       }

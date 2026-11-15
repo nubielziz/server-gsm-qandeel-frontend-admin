@@ -4,6 +4,7 @@
 import type { PaletteSource } from '@/app/palette';
 import { listSupportTickets } from '../api';
 import { supportTicketPath } from './filters';
+import { requesterLabel } from './status';
 
 /** Most tickets the palette lists (the demo's limit). */
 export const PALETTE_TICKET_LIMIT = 3;
@@ -20,7 +21,7 @@ export const supportPaletteSource: PaletteSource = {
     return data.map((ticket) => ({
       id: `ticket:${ticket.id}`,
       label: `${ticket.number}  ${ticket.subject}`,
-      hint: ticket.requester.name,
+      hint: requesterLabel(ticket),
       icon: 'life' as const,
       // The demo showed All tickets so the one opened is in the list whatever its status.
       run: () => go(supportTicketPath(ticket.id, 'all')),

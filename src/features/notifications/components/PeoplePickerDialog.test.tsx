@@ -2,7 +2,9 @@
 // and tab changes, the picked people shown as removable rows with a count, and "Exclude people".
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
+import { mockServer } from '@/mocks/node';
 import { setupMockApi } from '@/test/renderApp';
 import { openNotifications, recordRequests } from '../test/notificationsPage';
 
@@ -61,6 +63,32 @@ describe('the tabs', () => {
         expect.stringMatching(/staff:read, clients:read or customers:read/),
       );
     }
+  });
+});
+
+describe('a customer with no name', () => {
+  it('is listed by their email, said once, so the row is never blank', async () => {
+    mockServer.use(
+      http.get('*/admin/customers', () =>
+        HttpResponse.json(
+          [
+            { id: 5, name: '', email: 'maya@example.com' },
+            { id: 6, name: 'Daniel Whitmore', email: 'daniel@example.com' },
+          ],
+          { headers: { 'x-total-count': '2', 'access-control-expose-headers': 'x-total-count' } },
+        ),
+      ),
+    );
+    const session = await openComposer();
+    const picker = await openPicker(session);
+    await session.user.click(picker.getByRole('tab', { name: /Customers/ }));
+    const table = within(await picker.findByRole('table', { name: 'Customers' }));
+    const nameless = within((await table.findAllByText('maya@example.com'))[0].closest('tr') as HTMLElement);
+    expect(nameless.getAllByText('maya@example.com')).toHaveLength(1);
+    expect(nameless.getByText('maya@example.com')).toHaveClass('font-medium');
+    // A customer with a name keeps the name and shows the email in its own column.
+    const named = within(table.getByText('Daniel Whitmore').closest('tr') as HTMLElement);
+    expect(named.getByText('daniel@example.com')).toBeInTheDocument();
   });
 });
 

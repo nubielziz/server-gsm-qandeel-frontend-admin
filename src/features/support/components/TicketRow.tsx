@@ -3,6 +3,7 @@
 import { Badge, cx, Icon, TypeTag } from '@/components/ui';
 import { ageText, ago } from '@/lib/format';
 import { overdueMs } from '../lib/sla';
+import { requesterLabel } from '../lib/status';
 import type { SupportTicket } from '../types';
 import { TicketStatusBadge } from './TicketStatusBadge';
 
@@ -29,7 +30,7 @@ export function TicketRow({ ticket, selected, now, onSelect }: TicketRowProps) {
         <div className="flex items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium">
             {ticket.requesterType === 'client' && <TypeTag>Merchant</TypeTag>}
-            <span className="truncate">{ticket.requester.name}</span>
+            <span className="truncate">{requesterLabel(ticket)}</span>
           </span>
           <span className="flex-1" />
           <span className={cx('flex-none text-xs', ticket.late ? 'font-medium text-crit-fg' : 'text-ink3')}>

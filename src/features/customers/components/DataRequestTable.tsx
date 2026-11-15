@@ -11,7 +11,7 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { ago, fmtDay } from '@/lib/format';
+import { ago, customerLabel, fmtDay } from '@/lib/format';
 import { customerPath } from '../lib/detailTabs';
 import {
   dueOf,
@@ -75,7 +75,7 @@ export function DataRequestTable({
       label: 'Customer',
       render: (request) => (
         <Link className="link" to={customerPath(request.customerId)}>
-          {request.customerName}
+          {customerLabel({ id: request.customerId, name: request.customerName })}
         </Link>
       ),
     },

@@ -5,6 +5,7 @@ import { FormDialog, SelectField, dialogSubmit } from '@/components/ui';
 import { useBlockCustomer } from '../hooks/useCustomerMutations';
 import { BLOCK_REASONS } from '../lib/status';
 import type { CustomerDetail } from '../types';
+import { customerLabel } from '@/lib/format';
 
 type Values = { reason: string };
 
@@ -38,7 +39,7 @@ export function BlockDialog({ customer, onClose }: BlockDialogProps) {
   return (
     <FormDialog
       open
-      title={`Block ${customer.name}?`}
+      title={`Block ${customerLabel(customer)}?`}
       sub="They can’t place new orders. Existing orders finish normally."
       confirm="Block customer"
       kind="danger"

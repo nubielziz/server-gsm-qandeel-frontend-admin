@@ -7,6 +7,7 @@ import { countryOptions } from '../lib/countries';
 import { changedFields, cleanName, validEmail, type EditValues } from '../lib/input';
 import { LOCALES } from '../lib/status';
 import type { CustomerDetail } from '../types';
+import { customerLabel } from '@/lib/format';
 
 const FIELDS = ['name', 'email', 'country', 'locale', 'phone', 'internalNotes'] as const;
 
@@ -49,7 +50,7 @@ export function EditCustomerDialog({ customer, onClose }: EditCustomerDialogProp
   return (
     <FormDialog
       open
-      title={`Edit ${customer.name}`}
+      title={`Edit ${customerLabel(customer)}`}
       sub="Changes are written to the audit log."
       confirm="Save changes"
       onClose={onClose}

@@ -1,6 +1,6 @@
 // Tests for the words of the Deposits tab: methods, status badges, the reject reason and the fee text.
 import { describe, expect, it } from 'vitest';
-import { feeText, methodLabel, paymentLabel, paymentStatusBadge, rejectReason } from './payments';
+import { feeText, methodLabel, payerName, paymentLabel, paymentStatusBadge, rejectReason } from './payments';
 import { paymentListFilters, parsePaymentFilter } from './paymentView';
 
 describe('rejectReason', () => {
@@ -53,5 +53,21 @@ describe('the sub-tabs', () => {
     expect(parsePaymentFilter(new URLSearchParams('status=bogus'))).toBe('pending');
     expect(paymentListFilters('rejected')).toEqual({ purpose: 'topup', status: 'rejected' });
     expect(paymentListFilters('all')).toEqual({ purpose: 'topup' });
+  });
+});
+
+describe('payerName', () => {
+  const customer = { id: 5, name: '', email: 'maya@example.com', walletBalance: null };
+
+  it('names a merchant by its company, a customer by their name, else by the masked email', () => {
+    expect(
+      payerName({
+        client: { id: 3, name: 'Phone Doctor FZE', group: null, walletBalance: null },
+        customer: null,
+      }),
+    ).toBe('Phone Doctor FZE');
+    expect(payerName({ client: null, customer: { ...customer, name: 'Maya Haddad' } })).toBe('Maya Haddad');
+    expect(payerName({ client: null, customer })).toBe('ma•••@example.com');
+    expect(payerName({ client: null, customer: null })).toBe('–');
   });
 });

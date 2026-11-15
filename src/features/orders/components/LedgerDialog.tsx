@@ -1,6 +1,6 @@
 // LedgerDialog: "Ledger entries for <order>", the order's money trail. Ports showJournals('order', id) of 20-ui.js: each entry
 // with its kind, time, author, memo and lines. The entries come from the finance feature's ledger route.
-import { ledgerKindLabel, journalLabel } from '@/features/finance';
+import { ledgerKindLabel, journalLabel, postedBy } from '@/features/finance';
 import { Modal, QueryState, TypeTag } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import { useLedgerTrail } from '../hooks/useLedgerTrail';
@@ -39,7 +39,7 @@ export function LedgerDialog({ order, onClose }: { order: Order; onClose: () => 
               <span className="mono font-medium">{journalLabel(entry.id)}</span>
               <TypeTag>{ledgerKindLabel(entry.kind)}</TypeTag>
               <span className="text-xs text-ink3">
-                {fmtDate(entry.createdAt)} · by {entry.createdBy.name ?? 'System'}
+                {fmtDate(entry.createdAt)} · by {postedBy(entry.createdBy)}
               </span>
             </div>
             <p className="mb-1 text-sm text-ink2">{entry.memo}</p>

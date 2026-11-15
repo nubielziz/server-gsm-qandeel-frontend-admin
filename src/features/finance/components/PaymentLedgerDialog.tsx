@@ -3,7 +3,7 @@
 import { Button, Modal, QueryState, TypeTag } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import { usePaymentEntries } from '../hooks/usePaymentEntries';
-import { journalLabel, ledgerKindLabel } from '../lib/kinds';
+import { journalLabel, ledgerKindLabel, postedBy } from '../lib/kinds';
 import { paymentLabel } from '../lib/payments';
 import type { Payment } from '../types';
 import { JournalLines } from './JournalLines';
@@ -43,7 +43,7 @@ export function PaymentLedgerDialog({ payment, onClose }: { payment: Payment; on
               <span className="mono font-medium">{journalLabel(entry.id)}</span>
               <TypeTag>{ledgerKindLabel(entry.kind)}</TypeTag>
               <span className="text-xs text-ink3">
-                {fmtDate(entry.createdAt)} · by {entry.createdBy.name ?? 'System'}
+                {fmtDate(entry.createdAt)} · by {postedBy(entry.createdBy)}
               </span>
             </div>
             <p className="mb-1 text-sm text-ink2">{entry.memo}</p>

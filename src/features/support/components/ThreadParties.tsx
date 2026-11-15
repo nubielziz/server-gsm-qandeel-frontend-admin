@@ -6,7 +6,8 @@ import { Link } from 'react-router';
 import { customerPath } from '@/features/customers';
 import { merchantPath } from '@/features/merchants';
 import { OrderStatusBadge, orderLabel, orderPath, useOrderDrawer, type Order } from '@/features/orders';
-import { maskEmail, money } from '@/lib/format';
+import { hasCustomerName, maskEmail, money } from '@/lib/format';
+import { requesterLabel } from '../lib/status';
 import type { SupportTicketDetail } from '../types';
 
 export interface ThreadPartiesProps {
@@ -72,10 +73,12 @@ export function ThreadParties({ ticket, order }: ThreadPartiesProps) {
         <p className="text-xs text-ink3">{merchant ? 'Merchant' : 'Customer'}</p>
         <p className="truncate font-medium">
           <Link className="link" to={to}>
-            {ticket.requester.name}
+            {requesterLabel(ticket)}
           </Link>
         </p>
-        {email && <p className="truncate text-xs text-ink3">{merchant ? email : maskEmail(email)}</p>}
+        {email && (merchant || hasCustomerName(ticket.requester)) && (
+          <p className="truncate text-xs text-ink3">{merchant ? email : maskEmail(email)}</p>
+        )}
       </div>
       <div className="min-w-0">
         <OrderBlock orderId={ticket.orderId} order={order} />

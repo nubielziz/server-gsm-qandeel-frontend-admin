@@ -9,6 +9,7 @@ import type { CustomerDialogState } from './customerDialogState';
 import { EditCustomerDialog } from './EditCustomerDialog';
 import { PasswordDialog } from './PasswordDialog';
 import { SuspendDialog } from './SuspendDialog';
+import { customerLabel } from '@/lib/format';
 
 export interface CustomerDialogsProps {
   dialog: CustomerDialogState | null;
@@ -43,7 +44,7 @@ export function CustomerDialogs({ dialog, onChange }: CustomerDialogsProps) {
         <BlockIpDialog
           ip={lastSeenIp(dialog.customer) ?? ''}
           scope="store"
-          who={dialog.customer.name}
+          who={customerLabel(dialog.customer)}
           onClose={close}
         />
       );

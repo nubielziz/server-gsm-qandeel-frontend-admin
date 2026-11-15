@@ -1,7 +1,7 @@
 // What the Invoices tab says about an invoice: kind names, status badges, who it is billed to, and the amount typed in the
 // issue dialog. New in the console (MISMATCHES M123), so there is no demo function to port.
 import type { StatusBadge } from './payments';
-import { maskEmail } from '@/lib/format';
+import { maskedCustomerLabel, maskEmail } from '@/lib/format';
 import { plainWords } from './kinds';
 import { customerWalletPath } from './payments';
 import type { Invoice, InvoiceStatus } from '../types';
@@ -43,7 +43,7 @@ export function billedTo(invoice: Pick<Invoice, 'client' | 'customer'> & Partial
   if (invoice.client) return { name: invoice.client.name, href: `/merchants/${invoice.client.id}` };
   if (invoice.customer) {
     return invoice.kind === 'topup'
-      ? { name: invoice.customer.name, href: customerWalletPath(invoice.customer.id) }
+      ? { name: maskedCustomerLabel(invoice.customer), href: customerWalletPath(invoice.customer.id) }
       : { name: maskEmail(invoice.customer.email) };
   }
   return { name: '–' };

@@ -7,6 +7,7 @@ import { ErrorState, PageHeader, Panel, SkeletonStat, SkeletonTable } from '@/co
 import { useBreadcrumbTitle } from '@/app/layout/breadcrumbTitle';
 import { CustomerNotFound } from '../components/CustomerNotFound';
 import { useCustomer } from '../hooks/useCustomer';
+import { customerLabel } from '@/lib/format';
 
 // The customer view brings the orders table and drawer, every dialog and the access feature's dialogs. It loads on its own,
 // started as soon as the page opens, so the list page does not carry that code and the view arrives while the customer is read.
@@ -30,7 +31,7 @@ export function CustomerPage() {
   const params = useParams();
   const id = params.id && /^\d+$/.test(params.id) ? Number(params.id) : undefined;
   const { customer, notFound, query } = useCustomer(id);
-  useBreadcrumbTitle(customer?.name);
+  useBreadcrumbTitle(customer ? customerLabel(customer) : undefined);
   useEffect(() => {
     void loadView();
   }, []);

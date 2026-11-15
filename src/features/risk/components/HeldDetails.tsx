@@ -2,7 +2,7 @@
 // customer, their masked email, country and history). Ports the second block of `heldCard` in 54-p-risk.js.
 import { Link } from 'react-router';
 import { Badge, Icon, KeyValue } from '@/components/ui';
-import { maskEmail } from '@/lib/format';
+import { maskedCustomerLabel, maskEmail } from '@/lib/format';
 import { countryName } from '../lib/countries';
 import { riskLevel } from '../lib/labels';
 import { historyText } from '../lib/queue';
@@ -36,7 +36,7 @@ export function HeldDetails({ order }: { order: HeldOrder }) {
               'Customer',
               <>
                 <Link className="link" to={`/customers/${customer.id}`}>
-                  {customer.name}
+                  {maskedCustomerLabel(customer)}
                 </Link>{' '}
                 <Badge tone={level.tone}>{level.label} risk</Badge>
               </>,

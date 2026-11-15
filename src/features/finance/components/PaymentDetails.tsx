@@ -3,7 +3,7 @@
 // preview are not here (MISMATCHES M127): the deposit does not carry them and the server posts the credit.
 import { Link } from 'react-router';
 import { Icon, KeyValue } from '@/components/ui';
-import { ago, fmtDate, money } from '@/lib/format';
+import { ago, customerLabel, fmtDate, hasCustomerName, money } from '@/lib/format';
 import { fileDownloadUrl } from '../api/lookups';
 import { PaymentDisputeChip } from './PaymentDisputeChip';
 import { customerWalletPath, disputeText, feeText } from '../lib/payments';
@@ -64,9 +64,9 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
                 'Customer',
                 <>
                   <Link className="link" to={customerWalletPath(customer.id)}>
-                    {customer.name}
+                    {customerLabel(customer)}
                   </Link>
-                  <span className="text-ink3"> · {customer.email}</span>
+                  {hasCustomerName(customer) && <span className="text-ink3"> · {customer.email}</span>}
                 </>,
               ]
             : [

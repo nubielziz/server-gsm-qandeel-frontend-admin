@@ -1,7 +1,7 @@
 // TopCustomersPanel: "Top customers", the storefront's best five by spend over the period. The list comes with the dashboard
 // payload. Ports topCustomersPanel() of 40-p-dashboard.js.
 import { EmptyState, Panel, SkeletonTable } from '@/components/ui';
-import { money0, num } from '@/lib/format';
+import { customerLabel, money0, num } from '@/lib/format';
 import { useCanOpenPage } from '@/lib/auth/useCanOpenPage';
 import { customerTarget } from '../lib/links';
 import { periodWords } from '../lib/labels';
@@ -48,7 +48,7 @@ export function TopCustomersPanel({ customers, days }: TopCustomersPanelProps) {
                 return (
                   <LinkedRow key={customer.id} to={to}>
                     <td>
-                      <NameLink to={to}>{customer.name}</NameLink>{' '}
+                      <NameLink to={to}>{customerLabel(customer)}</NameLink>{' '}
                       <span className="mono text-2xs text-ink3">{customer.country}</span>
                     </td>
                     <td className="num">{num(customer.orders)}</td>

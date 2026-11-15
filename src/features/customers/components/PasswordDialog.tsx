@@ -6,6 +6,7 @@ import { CheckboxField, FormDialog, RadioGroup, dialogSubmit } from '@/component
 import { useSetCustomerPassword } from '../hooks/useCustomerMutations';
 import type { CustomerDetail, PasswordMode } from '../types';
 import { PASSWORD_MODES } from './passwordModes';
+import { customerLabel } from '@/lib/format';
 
 type Values = { mode: PasswordMode; revokeSessions: boolean };
 
@@ -38,10 +39,10 @@ export function PasswordDialog({ customer, onClose, onReveal }: PasswordDialogPr
   return (
     <FormDialog
       open
-      title={`Password for ${customer.name}`}
+      title={`Password for ${customerLabel(customer)}`}
       sub="You can replace it but never read it."
       confirm="Continue"
-      onClose={() => (revealed.current ? onReveal(customer.name, revealed.current) : onClose())}
+      onClose={() => (revealed.current ? onReveal(customerLabel(customer), revealed.current) : onClose())}
       onSubmit={submit}
     >
       <div className="space-y-3">

@@ -41,6 +41,12 @@ describe('labels', () => {
     ).toBe('da•••@mail.example');
     expect(billedTo({ client: null, customer: null })).toEqual({ name: '–' });
   });
+
+  it('names a top-up customer with no name by the masked email, still linked to their wallet', () => {
+    expect(
+      billedTo({ kind: 'topup', client: null, customer: { id: 5, name: '', email: 'maya@example.com' } }),
+    ).toEqual({ name: 'ma•••@example.com', href: '/customers/5?tab=wallet' });
+  });
 });
 
 describe('the list filters', () => {

@@ -5,6 +5,7 @@ import { FormDialog, SelectField, TextareaField, dialogSubmit } from '@/componen
 import { useSuspendCustomer } from '../hooks/useCustomerMutations';
 import { SUSPEND_REASONS } from '../lib/status';
 import type { CustomerDetail } from '../types';
+import { customerLabel } from '@/lib/format';
 
 type Values = { reason: string; note: string };
 
@@ -38,7 +39,7 @@ export function SuspendDialog({ customer, onClose }: SuspendDialogProps) {
   return (
     <FormDialog
       open
-      title={`Suspend ${customer.name}?`}
+      title={`Suspend ${customerLabel(customer)}?`}
       sub="They can’t sign in or place new orders. Orders already in progress finish normally."
       confirm="Suspend account"
       kind="danger"

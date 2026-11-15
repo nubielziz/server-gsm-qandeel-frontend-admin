@@ -10,7 +10,7 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { ago, money } from '@/lib/format';
+import { ago, customerLabel, hasCustomerName, money } from '@/lib/format';
 import { customerPath } from '../lib/detailTabs';
 import { isZeroMoney } from '../lib/text';
 import type { Customer } from '../types';
@@ -33,6 +33,13 @@ export interface CustomerTableProps {
 
 const dash = <span className="text-ink3">–</span>;
 
+// The line under the customer's link. A customer with no name is shown by the email (see `customerLabel`), so the email is
+// not printed twice: the line says "No name" instead. A removed customer keeps the demo's "Removed".
+function subLine(customer: Customer): string {
+  if (customer.status === 'anonymized') return 'Removed';
+  return hasCustomerName(customer) ? customer.email : 'No name';
+}
+
 export function CustomerTable({
   rows,
   state,
@@ -53,11 +60,9 @@ export function CustomerTable({
       render: (customer) => (
         <>
           <Link className="link font-medium" to={customerPath(customer.id)}>
-            {customer.name}
+            {customerLabel(customer)}
           </Link>
-          <p className="text-2xs text-ink3">
-            {customer.status === 'anonymized' ? 'Removed' : customer.email}
-          </p>
+          <p className="text-2xs text-ink3">{subLine(customer)}</p>
         </>
       ),
     },

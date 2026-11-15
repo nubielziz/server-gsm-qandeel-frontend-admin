@@ -1,7 +1,15 @@
 // How the screen names a ticket: status badges, categories, channels and priorities. Ports TICKET_STATUS, TICKET_CATS and
 // CHANNEL_LABEL of 12-state-b2c.js / 49-p-support.js. These are words only; the server owns every state change.
 import type { BadgeTone, IconName, SelectOption } from '@/components/ui';
-import type { ReplyChannel, TicketCategory, TicketChannel, TicketPriority, TicketStatus } from '../types';
+import { maskedCustomerLabel } from '@/lib/format';
+import type {
+  ReplyChannel,
+  SupportTicket,
+  TicketCategory,
+  TicketChannel,
+  TicketPriority,
+  TicketStatus,
+} from '../types';
 
 /** The badge of each status: word, tone and icon (status is never colour alone). */
 export const STATUS_BADGE: Readonly<
@@ -60,4 +68,16 @@ export const LOCALE_OPTIONS: readonly SelectOption[] = [
 /** The first word of a name, for "Write a reply to Jessica" and the `{{name}}` variable. */
 export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? '';
+}
+
+/**
+ * Who wrote the ticket, as the inbox shows them. A merchant is its company name; a customer can have an empty name, so
+ * the label falls back to the masked email (the inbox masks customer emails) and then to `Customer #id`.
+ */
+export function requesterLabel(
+  ticket: Pick<SupportTicket, 'requesterType' | 'requesterId' | 'requester'>,
+): string {
+  const { requester } = ticket;
+  if (ticket.requesterType === 'client') return requester.name;
+  return maskedCustomerLabel({ id: ticket.requesterId, name: requester.name, email: requester.email });
 }

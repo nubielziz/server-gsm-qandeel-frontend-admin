@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { DataTable, type DataTableColumn, type PaginationState, type SortState } from '@/components/ui';
-import { ago, maskEmail, money, toAmount } from '@/lib/format';
+import { ago, hasCustomerName, maskedCustomerLabel, maskEmail, money, toAmount } from '@/lib/format';
 import { customerWalletPath, methodLabel, paymentLabel } from '../lib/payments';
 import type { Payment } from '../types';
 import { PaymentDisputeChip } from './PaymentDisputeChip';
@@ -69,9 +69,13 @@ export function PaymentTable({
           ) : (
             <>
               <Link className="link font-medium" to={customerWalletPath(payment.customer.id)}>
-                {payment.customer.name}
+                {maskedCustomerLabel(payment.customer)}
               </Link>
-              <span className="text-xs text-ink3"> · customer · {maskEmail(payment.customer.email)}</span>
+              <span className="text-xs text-ink3">
+                {' '}
+                · customer
+                {hasCustomerName(payment.customer) && ` · ${maskEmail(payment.customer.email)}`}
+              </span>
             </>
           )}
           {payment.dispute && (

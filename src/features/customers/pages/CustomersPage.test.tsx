@@ -18,7 +18,10 @@ import {
   requestsTable,
   tabTexts,
 } from '../test/customersPage';
+import { NAMELESS_CUSTOMER } from '../mocks/store';
 import { customer, dataRequest } from '../test/fixtures';
+
+const NAMELESS_EMAIL = NAMELESS_CUSTOMER.email;
 
 setupMockApi();
 // The page is a lazy chunk: the first test of a run waits for its modules to load, which is slow while the whole suite runs
@@ -38,8 +41,8 @@ describe('tabs and counts', () => {
     await openCustomers();
     await waitFor(() =>
       expect(tabTexts()).toEqual([
-        'All30',
-        'Active28',
+        'All31',
+        'Active29',
         'Flagged3',
         'Suspended1',
         'Blocked1',
@@ -47,7 +50,7 @@ describe('tabs and counts', () => {
       ]),
     );
     expect(
-      screen.getByText('30 customers on the storefront. 10 have an account, the rest are guests.'),
+      screen.getByText('31 customers on the storefront. 10 have an account, the rest are guests.'),
     ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
   });
@@ -77,7 +80,7 @@ describe('tabs and counts', () => {
       permissions: ['customers:read'],
     });
     await waitFor(() =>
-      expect(tabTexts()).toEqual(['All30', 'Active28', 'Flagged3', 'Suspended1', 'Blocked1']),
+      expect(tabTexts()).toEqual(['All31', 'Active29', 'Flagged3', 'Suspended1', 'Blocked1']),
     );
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
     expect(await customerRow('Daniel Whitmore')).toBeTruthy();
@@ -142,6 +145,26 @@ describe('the table', () => {
     expect(mia.getAllByText('–')).toHaveLength(2);
   });
 
+  it('lists a customer with no name by their email, as a link to their page, and does not print the email twice', async () => {
+    const user = userEvent.setup();
+    // Searched, because a customer who never bought comes after the first page of the active tab.
+    const app = await openCustomers('/customers?tab=active&q=no.name');
+    const row = await customerRow(NAMELESS_EMAIL);
+    const link = row.getByRole('link', { name: NAMELESS_EMAIL });
+    expect(link).toHaveAttribute('href', `/customers/${NAMELESS_CUSTOMER.id}`);
+    expect(row.getAllByText(NAMELESS_EMAIL)).toHaveLength(1);
+    expect(row.getByText('No name')).toBeInTheDocument();
+    await user.click(link);
+    await waitFor(() => expect(app.location()).toBe(`/customers/${NAMELESS_CUSTOMER.id}`));
+  });
+
+  it('keeps the email under the name for a customer who has one', async () => {
+    await openCustomers('/customers?q=whitmore');
+    const row = await customerRow('Daniel Whitmore');
+    expect(row.getByText('daniel.whitmore@mail.example')).toBeInTheDocument();
+    expect(row.queryByText('No name')).not.toBeInTheDocument();
+  });
+
   it('starts with the biggest spender and sorts by a column header, keeping the sort in the address', async () => {
     const user = userEvent.setup();
     const app = await openCustomers();
@@ -151,7 +174,8 @@ describe('the table', () => {
 
     await user.click(table.getByRole('button', { name: 'Customer' }));
     expect(app.location()).toBe('/customers?sort=name&dir=asc');
-    await waitFor(async () => expect((await customerNames())[0]).toBe('Ana Costa'));
+    // A customer with no name sorts first (empty text) and is listed by their email.
+    await waitFor(async () => expect((await customerNames())[0]).toBe(NAMELESS_EMAIL));
     await user.click(table.getByRole('button', { name: 'Customer' }));
     expect(app.location()).toBe('/customers?sort=name&dir=desc');
     await waitFor(async () => expect((await customerNames())[0]).toBe('Victor Silva'));
@@ -166,16 +190,16 @@ describe('the table', () => {
   it('pages 25 at a time and keeps the page in the address', async () => {
     const user = userEvent.setup();
     const app = await openCustomers();
-    expect(await screen.findByText('1–25 of 30')).toBeInTheDocument();
+    expect(await screen.findByText('1–25 of 31')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
     expect(app.location()).toBe('/customers?page=2');
-    expect(await screen.findByText('26–30 of 30')).toBeInTheDocument();
-    expect(await customerNames()).toHaveLength(5);
+    expect(await screen.findByText('26–31 of 31')).toBeInTheDocument();
+    expect(await customerNames()).toHaveLength(6);
   });
 
   it('goes back to the last page when the address names a page past the end', async () => {
     const app = await openCustomers('/customers?page=9');
-    expect(await screen.findByText('26–30 of 30')).toBeInTheDocument();
+    expect(await screen.findByText('26–31 of 31')).toBeInTheDocument();
     await waitFor(() => expect(app.location()).toBe('/customers?page=2'));
   });
 
@@ -211,7 +235,7 @@ describe('filters', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(app.location()).toBe('/customers');
     expect(screen.getByRole('searchbox', { name: 'Search name, email' })).toHaveValue('');
-    await waitFor(() => expect(screen.getByText('30 customers')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('31 customers')).toBeInTheDocument());
   });
 
   it('filters by country and puts it in the address', async () => {
@@ -227,9 +251,10 @@ describe('filters', () => {
         'Harry Patel',
         'Jack Turner',
         'Samira Khan',
+        NAMELESS_EMAIL,
       ]),
     );
-    expect(screen.getByText('5 customers')).toBeInTheDocument();
+    expect(screen.getByText('6 customers')).toBeInTheDocument();
   });
 
   it('says nothing matches, with a Clear filters button, when the filters leave no customer', async () => {
@@ -513,7 +538,7 @@ describe('adding a customer', () => {
       },
     ]);
     expect(await screen.findByRole('heading', { level: 1, name: /Pat Example/ }, SLOW)).toBeInTheDocument();
-    expect(app.location()).toBe('/customers/31?tab=account');
+    expect(app.location()).toBe('/customers/32?tab=account');
     expect(await screen.findByText(/Invite link sent/)).toBeInTheDocument();
   });
 
@@ -534,7 +559,7 @@ describe('adding a customer', () => {
     expect(app.location()).toBe('/customers');
     await user.click(within(reveal).getByRole('button', { name: 'Done' }));
     expect(await screen.findByRole('heading', { level: 1, name: /Tara Temp/ }, SLOW)).toBeInTheDocument();
-    expect(app.location()).toBe('/customers/31?tab=account');
+    expect(app.location()).toBe('/customers/32?tab=account');
     expect(await screen.findByText('Temporary, they must change it at next sign-in')).toBeInTheDocument();
   });
 

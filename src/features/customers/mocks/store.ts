@@ -102,6 +102,46 @@ function fromDemoCustomer(c: DemoCustomer): MockCustomer {
   };
 }
 
+/** The extra customer's id (the demo seed ends at c30) and email: the list and the page show the email for it. */
+export const NAMELESS_CUSTOMER = { id: 31, email: 'no.name@mail.example' } as const;
+
+/**
+ * An active guest with an EMPTY name, as the backend creates one for an emailed sign-in link or a checkout that gave no
+ * name. The demo has no such customer, so the mock adds one: the console must still list it and let staff open it.
+ */
+function nameless(): MockCustomer {
+  const created = toIso(Date.now() - 5 * 86_400_000);
+  return {
+    id: NAMELESS_CUSTOMER.id,
+    email: NAMELESS_CUSTOMER.email,
+    emailVerifiedAt: created,
+    name: '',
+    phone: '',
+    country: 'GB',
+    locale: 'en',
+    currency: currencyId('GBP'),
+    currencyCode: 'GBP',
+    hasAccount: false,
+    createdBy: null,
+    marketingOptIn: false,
+    riskLevel: 'low',
+    status: 'active',
+    suspendedAt: null,
+    suspendedReason: null,
+    suspendedBy: null,
+    internalNotes: '',
+    lastLoginAt: null,
+    anonymizedAt: null,
+    createdAt: created,
+    mustChangePassword: false,
+    passwordChangedAt: null,
+    resetSentAt: null,
+    activeSessions: 0,
+    lastIp: null,
+    checkoutIp: '203.0.113.31',
+  };
+}
+
 function fromDemoRequest(d: DemoRequest): MockRequest {
   return {
     id: demoNumericId(d.id),
@@ -153,7 +193,7 @@ function build(demo: DemoState): CustomerState {
     if (doc.current && doc.lang === 'EN') legal.set(doc.type, `${doc.type} v${doc.version}`);
   }
 
-  const customers = demoRows<DemoCustomer>(demo, 'customers').map(fromDemoCustomer);
+  const customers = [...demoRows<DemoCustomer>(demo, 'customers').map(fromDemoCustomer), nameless()];
   return {
     customers: new Collection(customers),
     requests: new Collection(demoRows<DemoRequest>(demo, 'dsr').map(fromDemoRequest)),

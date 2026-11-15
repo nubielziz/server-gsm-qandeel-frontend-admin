@@ -6,6 +6,7 @@ import { useApiMutation } from '@/lib/query';
 import { approveHeldOrder, refundHeldOrder } from '../api';
 import type { HeldOrder, RefundHeldBody } from '../types';
 import { DECISION_STALE_KEYS } from './keys';
+import { maskedCustomerLabel } from '@/lib/format';
 
 const label = (order: HeldOrder) => orderLabel({ id: order.orderId, channel: 'b2c' });
 
@@ -43,7 +44,7 @@ export function useRefundHeldOrder() {
         title: `${label(order)} refunded`,
         body:
           body.blockEmail || body.blockDevice
-            ? `${order.customer.name} is blocked.`
+            ? `${maskedCustomerLabel(order.customer)} is blocked.`
             : 'The customer was told by email.',
         ttl: 3000,
       });

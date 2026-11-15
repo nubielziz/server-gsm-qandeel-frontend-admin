@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { RevealPasswordDialog } from '@/features/access';
+import { customerLabel } from '@/lib/format';
 import { customerPath } from '../lib/detailTabs';
 import type { CreateCustomerResult } from '../types';
 import { AddCustomerDialog } from './AddCustomerDialog';
@@ -17,7 +18,7 @@ export function AddCustomerFlow({ onClose }: { onClose: () => void }) {
   if (shown?.temporaryPassword) {
     return (
       <RevealPasswordDialog
-        name={shown.name}
+        name={customerLabel(shown)}
         password={shown.temporaryPassword}
         onClose={() => open(shown)}
       />
