@@ -157,7 +157,9 @@ describe('Issue manual invoice', () => {
     await openFinance('/finance?tab=invoices');
     await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    await user.selectOptions(await dialog.findByLabelText('Merchant'), 'Zain Mobile Hub');
+    // The merchant list loads after the dialog opens (slow under a full parallel run): wait for it, as the test above does.
+    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
+    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
     await user.type(dialog.getByLabelText('Amount (USD)'), '99999999');
     await user.type(dialog.getByLabelText('What it is for'), 'Too much');
     await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));

@@ -137,6 +137,15 @@ export type ReplyBody = { body: string; channel?: ReplyChannel; fileIds?: Id[] }
 /** Body of `POST /admin/support-tickets/:id/note` (assumed contract): the text and the files uploaded before (the text may be empty with a file). */
 export type NoteBody = { body: string; fileIds?: Id[] };
 
+/** Body of `POST /admin/support-tickets/:id/read` (backend B218): the newest requester message on screen; the team's seen mark moves up to it. */
+export type MarkReadBody = { upToMessageId: Id };
+
+/** Body of `POST /admin/support-tickets/:id/typing` (backend B218): which tab of the composer is being written in. */
+export type TypingBody = { mode: TypingMode };
+
+/** Body of `POST /admin/support-tickets/:id/files` (backend B218): one file, sent as the `multipart/form-data` part `file`. */
+export type TicketFileUpload = { file: File };
+
 /** Body of `PATCH /admin/support-tickets/:id` (assumed contract): only what changes. Resolve and Reopen are `status`. */
 export type UpdateTicketBody = {
   priority?: TicketPriority;

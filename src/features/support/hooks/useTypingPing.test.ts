@@ -26,7 +26,7 @@ describe('useTypingPing', () => {
     const view = start();
     view.rerender({ ticketId: 7, mode: 'reply', draft: 'H', enabled: true });
     expect(sendTicketTyping).toHaveBeenCalledTimes(1);
-    expect(sendTicketTyping).toHaveBeenLastCalledWith(7, 'reply');
+    expect(sendTicketTyping).toHaveBeenLastCalledWith(7, { mode: 'reply' });
     for (const [index, draft] of ['He', 'Hel', 'Hell', 'Hello'].entries()) {
       act(() => void vi.advanceTimersByTime(500 * (index + 1)));
       view.rerender({ ticketId: 7, mode: 'reply', draft, enabled: true });
@@ -61,7 +61,7 @@ describe('useTypingPing', () => {
     view.rerender({ ticketId: 7, mode: 'note', draft: 'abc', enabled: true });
     expect(sendTicketTyping).not.toHaveBeenCalled();
     view.rerender({ ticketId: 7, mode: 'note', draft: 'abcd', enabled: true });
-    expect(sendTicketTyping).toHaveBeenLastCalledWith(7, 'note');
+    expect(sendTicketTyping).toHaveBeenLastCalledWith(7, { mode: 'note' });
   });
 
   it('ignores a failed signal', async () => {

@@ -366,7 +366,7 @@ describe('the live inbox', () => {
     const late = await ticketRow('Phone still locked after unlock (SF-20471)');
     expect(late.getByRole('img', { name: 'Unread message' })).toBeInTheDocument();
     // The newest requester message of ticket 4202 has id 3. Another window of the team marks it seen.
-    await markTicketRead(4202, 3);
+    await markTicketRead(4202, { upToMessageId: 3 });
     await waitFor(async () =>
       expect(
         (await ticketRow('Phone still locked after unlock (SF-20471)')).queryByRole('img', {

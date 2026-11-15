@@ -37,6 +37,7 @@ const WAITING = 4206; // Victor Silva, pending: the team wrote last
 const RESOLVED = 4209; // Kevin Doyle
 const NEW_ONE = 4201; // Jessica Moore, nobody answered
 const MERCHANT = 4213; // Cairo GSM Lab
+const RECEIPT = 4208; // Oscar, resolved: the team's reply carries the seeded receipt (file 1)
 
 type Seen = { method: string; path: string; params: URLSearchParams; body: unknown };
 
@@ -149,7 +150,7 @@ describe('what each function sends', () => {
       '*/admin/support-tickets/:id/read',
       () => new HttpResponse(null, { status: 204 }),
     );
-    await expect(markTicketRead(7, 31)).resolves.toBeUndefined();
+    await expect(markTicketRead(7, { upToMessageId: 31 })).resolves.toBeUndefined();
     expect(read[0]).toMatchObject({
       method: 'POST',
       path: '/admin/support-tickets/7/read',
@@ -163,8 +164,8 @@ describe('what each function sends', () => {
       '*/admin/support-tickets/:id/typing',
       () => new HttpResponse(null, { status: 204 }),
     );
-    await sendTicketTyping(7, 'reply');
-    await sendTicketTyping(7, 'note');
+    await sendTicketTyping(7, { mode: 'reply' });
+    await sendTicketTyping(7, { mode: 'note' });
     expect(typing.map((call) => [call.path, call.body])).toEqual([
       ['/admin/support-tickets/7/typing', { mode: 'reply' }],
       ['/admin/support-tickets/7/typing', { mode: 'note' }],
@@ -189,7 +190,9 @@ describe('what each function sends', () => {
         );
       }),
     );
-    const stored = await uploadTicketFile(7, new File(['abc'], 'a.pdf', { type: 'application/pdf' }));
+    const stored = await uploadTicketFile(7, {
+      file: new File(['abc'], 'a.pdf', { type: 'application/pdf' }),
+    });
     expect(stored.id).toBe(9);
     expect(contentType).toMatch(/^multipart\/form-data; boundary=/);
     expect(ticketFileUrl(7, 9)).toBe('http://api.test/admin/support-tickets/7/files/9');
@@ -410,31 +413,32 @@ describe('the live routes of the mock (feature 28)', () => {
   it('moves the team’s seen mark forward only, to the newest requester message up to the one given', async () => {
     const before = await getSupportTicket(LATE);
     expect(before).toMatchObject({ staffSeenMessageId: null, hasUnread: true });
-    await markTicketRead(LATE, 3);
+    await markTicketRead(LATE, { upToMessageId: 3 });
     const after = await getSupportTicket(LATE);
     expect(after).toMatchObject({ staffSeenMessageId: 3, hasUnread: false });
     // A lower message id changes nothing.
-    await markTicketRead(LATE, 2);
+    await markTicketRead(LATE, { upToMessageId: 2 });
     expect((await getSupportTicket(LATE)).staffSeenMessageId).toBe(3);
   });
 
   it('refuses a message that is not part of the ticket, and a typing mode it does not know', async () => {
-    const read = await markTicketRead(LATE, 9999).catch((caught: unknown) => caught);
+    const read = await markTicketRead(LATE, { upToMessageId: 9999 }).catch((caught: unknown) => caught);
     expect(isApiError(read) && [read.status, Object.keys(read.fieldErrors)]).toEqual([
       422,
       ['upToMessageId'],
     ]);
-    const typing = await sendTicketTyping(LATE, 'shout' as never).catch((caught: unknown) => caught);
+    const typing = await sendTicketTyping(LATE, { mode: 'shout' as never }).catch(
+      (caught: unknown) => caught,
+    );
     expect(isApiError(typing) && typing.fieldErrors.mode).toBeTruthy();
-    const missing = await markTicketRead(9999, 1).catch((caught: unknown) => caught);
+    const missing = await markTicketRead(9999, { upToMessageId: 1 }).catch((caught: unknown) => caught);
     expect(isApiError(missing) && missing.status).toBe(404);
   });
 
   it('keeps an uploaded file for the reply that names it, once', async () => {
-    const stored = await uploadTicketFile(
-      NEW_ONE,
-      new File(['abc'], 'proof.pdf', { type: 'application/pdf' }),
-    );
+    const stored = await uploadTicketFile(NEW_ONE, {
+      file: new File(['abc'], 'proof.pdf', { type: 'application/pdf' }),
+    });
     expect(stored).toMatchObject({ mime: 'application/pdf' });
     const message = await replyToTicket(NEW_ONE, { body: '', fileIds: [stored.id] });
     expect(message.fileIds).toEqual([stored.id]);
@@ -445,7 +449,9 @@ describe('the live routes of the mock (feature 28)', () => {
     );
     expect(isApiError(again) && again.fieldErrors.fileIds).toBeTruthy();
     // And a file of another ticket is not available.
-    const other = await uploadTicketFile(LATE, new File(['abc'], 'other.png', { type: 'image/png' }));
+    const other = await uploadTicketFile(LATE, {
+      file: new File(['abc'], 'other.png', { type: 'image/png' }),
+    });
     const foreign = await replyToTicket(NEW_ONE, { body: 'x', fileIds: [other.id] }).catch(
       (caught: unknown) => caught,
     );
@@ -453,10 +459,9 @@ describe('the live routes of the mock (feature 28)', () => {
   });
 
   it('refuses a file that is not a PDF, JPEG or PNG, six files, and an empty reply with no file', async () => {
-    const exe = await uploadTicketFile(
-      LATE,
-      new File(['abc'], 'tool.exe', { type: 'application/x-msdownload' }),
-    ).catch((caught: unknown) => caught);
+    const exe = await uploadTicketFile(LATE, {
+      file: new File(['abc'], 'tool.exe', { type: 'application/x-msdownload' }),
+    }).catch((caught: unknown) => caught);
     expect(isApiError(exe) && exe.fieldErrors.file).toBeTruthy();
     const six = await replyToTicket(LATE, { body: 'x', fileIds: [1, 2, 3, 4, 5, 6] }).catch(
       (caught: unknown) => caught,
@@ -464,6 +469,29 @@ describe('the live routes of the mock (feature 28)', () => {
     expect(isApiError(six) && six.fieldErrors.fileIds).toEqual(['Attach at most 5 files.']);
     const empty = await replyToTicket(LATE, { body: ' ', fileIds: [] }).catch((caught: unknown) => caught);
     expect(isApiError(empty) && empty.fieldErrors.body).toBeTruthy();
+  });
+
+  it('seeds the receipt the demo’s reply on T-4208 speaks of, and serves it as a download', async () => {
+    const ticket = await getSupportTicket(RECEIPT);
+    const reply = ticket.messages.find((message) => message.attachments.length > 0);
+    expect(reply).toMatchObject({ authorType: 'staff', fileIds: [1] });
+    expect(reply?.attachments).toEqual([
+      { id: 1, filename: 'receipt-SF-20421.pdf', mime: 'application/pdf', size: 48_213 },
+    ]);
+    const download = await fetch(ticketFileUrl(RECEIPT, 1));
+    expect([download.status, download.headers.get('content-disposition')]).toEqual([
+      200,
+      'attachment; filename="receipt-SF-20421.pdf"',
+    ]);
+    // The seeded file is taken: a reply cannot attach it again, and the next upload gets the next id.
+    const again = await addTicketNote(RECEIPT, { body: 'x', fileIds: [1] }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(isApiError(again) && again.fieldErrors.fileIds).toBeTruthy();
+    const next = await uploadTicketFile(RECEIPT, {
+      file: new File(['abc'], 'b.pdf', { type: 'application/pdf' }),
+    });
+    expect(next.id).toBe(2);
   });
 
   it('sends the seen marks and the attachments the screens read', async () => {

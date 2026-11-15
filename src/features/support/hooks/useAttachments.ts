@@ -65,7 +65,7 @@ export function useAttachments(ticketId: number) {
         added.push({ key, name: file.name, size: file.size, state: 'uploading' });
         const controller = new AbortController();
         uploads.current.set(key, controller);
-        uploadTicketFile(ticketId, file, { signal: controller.signal }).then(
+        uploadTicketFile(ticketId, { file }, { signal: controller.signal }).then(
           (stored) => {
             uploads.current.delete(key);
             patch(key, { state: 'ready', fileId: stored.id });

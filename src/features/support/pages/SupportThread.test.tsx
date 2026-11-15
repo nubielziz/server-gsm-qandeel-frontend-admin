@@ -990,7 +990,8 @@ describe('attaching files', () => {
     expect(uploads).toHaveLength(1);
     await user.click(screen.getByRole('button', { name: 'Send reply' }));
     await screen.findByText('Reply sent');
-    expect(bodies).toEqual([{ body: 'Here is the proof.', fileIds: [1] }]);
+    // File 1 is the receipt of the mock seed (T-4208), so the first upload is file 2.
+    expect(bodies).toEqual([{ body: 'Here is the proof.', fileIds: [2] }]);
     // The chips go once the reply is sent, and the reply shows its file.
     await waitFor(() =>
       expect(screen.queryByRole('list', { name: 'Files on this message' })).not.toBeInTheDocument(),
@@ -1009,14 +1010,14 @@ describe('attaching files', () => {
     await waitFor(() => expect(screen.queryByText('Uploading…')).not.toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Send reply' }));
     await screen.findByText('Reply sent');
-    expect(replies).toEqual([{ body: '', fileIds: [1] }]);
+    expect(replies).toEqual([{ body: '', fileIds: [2] }]);
 
     await user.click(screen.getByRole('checkbox', { name: 'Internal note, customer won’t see it' }));
     await upload([file('b.jpg', 'image/jpeg')]);
     await waitFor(() => expect(screen.queryByText('Uploading…')).not.toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'Add note' }));
     await screen.findByText('Note added');
-    expect(notes).toEqual([{ body: '', fileIds: [2] }]);
+    expect(notes).toEqual([{ body: '', fileIds: [3] }]);
   });
 
   it('removes a chip and sends the reply without it', async () => {

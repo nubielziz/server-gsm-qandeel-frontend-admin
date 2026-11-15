@@ -1,4 +1,4 @@
-// Tells the server the team has seen the requester's messages (feature 28, rule 3). The thread calls `markTicketRead(id, newest)` only when all of this holds: the
+// Tells the server the team has seen the requester's messages (feature 28, rule 3). The thread calls `markTicketRead` for the newest one only when all of this holds: the
 // thread is on screen, the tab is visible and focused, and the newest requester message is newer than the mark the ticket already has. Each message is marked once:
 // the highest id sent is remembered, so a re-render, a refetch or a second event never repeats the call. A failed call is forgotten so a later change can try again,
 // and is never shown (a missed mark only means "Sent" stays a little longer for the customer).
@@ -34,7 +34,7 @@ export function useMarkRead(id: number, ticket: SupportTicketDetail | undefined,
     if (newest <= seen || newest <= (sent.current.get(id) ?? 0)) return;
     sent.current.set(id, newest);
     const upToMessageId = newest;
-    markTicketRead(id, upToMessageId).then(
+    markTicketRead(id, { upToMessageId }).then(
       () => {
         // The server moved the mark: show it on the thread and the row now, with no refetch.
         const read: TicketRead = { ticketId: id, by: 'staff', upToMessageId, at: new Date().toISOString() };
