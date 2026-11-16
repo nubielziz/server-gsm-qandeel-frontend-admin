@@ -7,6 +7,7 @@ import { isApiError } from '@/lib/api';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { mocks, suppliersState } from '../mocks';
+import { addNotImported } from '../test/bigCatalogue';
 import {
   createSupplier,
   deleteSupplier,
@@ -212,6 +213,40 @@ describe('supplier services and the import', () => {
     expect((await listSupplierServices(NORDIC, { filters: { imported: false } })).total).toBe(2);
     expect((await getSupplier(NORDIC)).links).toHaveLength(15);
     await expect(previewImport(NORDIC, { supplierServiceIds: [] })).rejects.toMatchObject({ status: 422 });
+  });
+});
+
+describe('the limits of a long supplier list', () => {
+  it('sends at most 1000 rows per call, with the real total, and the filters of the select-all read together', async () => {
+    await addNotImported(NORDIC, 1_200);
+    const page = await listSupplierServices(NORDIC, { start: 0, end: 5_000 });
+    expect(page.data).toHaveLength(1_000);
+    expect(page.total).toBe(1_217);
+    // Not imported, a search and a group together, a page of 500 after the first: what the picker's box asks for.
+    const filters = { imported: false, remoteGroup: 'Bulk', type: 'imei' };
+    expect((await listSupplierServices(NORDIC, { q: 'Bulk 01', filters })).total).toBe(100);
+    const second = await listSupplierServices(NORDIC, {
+      start: 500,
+      end: 1_000,
+      sort: ['name'],
+      order: ['asc'],
+      filters,
+    });
+    expect(second.total).toBe(1_200);
+    expect(second.data).toHaveLength(500);
+    expect(second.data[0].name).toBe('Bulk 0501');
+  });
+
+  it('takes at most 500 ids per call to the preview and to the import, as the real server', async () => {
+    const ids = await addNotImported(NORDIC, 501);
+    await expect(previewImport(NORDIC, { supplierServiceIds: ids })).rejects.toMatchObject({ status: 422 });
+    await expect(importServices(NORDIC, { supplierServiceIds: ids })).rejects.toMatchObject({ status: 422 });
+    expect((await previewImport(NORDIC, { supplierServiceIds: ids.slice(0, 500) })).items).toHaveLength(500);
+    expect(await importServices(NORDIC, { supplierServiceIds: ids.slice(0, 500) })).toEqual({
+      created: 500,
+      updated: 0,
+      unchanged: 0,
+    });
   });
 });
 

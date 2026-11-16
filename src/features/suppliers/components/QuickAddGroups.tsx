@@ -1,5 +1,5 @@
-// QuickAddGroups: step 1 of "Quick add…": the supplier's service groups with what each can add, a tick box per group, a search
-// and the choice of adding them on sale or switched off. Built in the demo's dialog and table style (the demo has no such
+// QuickAddGroups: step 1 of "Quick add…": the supplier's service groups with what each can add, a tick box per group, a box that
+// ticks every group, a search and the choice of adding them on sale or switched off. Built in the demo's dialog and table style (the demo has no such
 // screen); the list is `GET /admin/suppliers/:id/service-groups`.
 import { useState } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -12,9 +12,17 @@ import {
   type RadioOption,
   type RowSelection,
 } from '@/components/ui';
-import { groupsText, lastRunLine, matchesSearch, MAX_QUICK_ADD_GROUPS, servicesText } from '../lib/quickAdd';
+import {
+  allPickable,
+  groupsText,
+  lastRunLine,
+  matchesSearch,
+  MAX_QUICK_ADD_GROUPS,
+  servicesText,
+} from '../lib/quickAdd';
 import type { QuickAddServiceStatus, ServiceGroups } from '../types';
 import { QuickAddGroupTable } from './QuickAddGroupTable';
+import { SelectAllBox } from './SelectAllBox';
 
 const STATUS_OPTIONS: readonly RadioOption[] = [
   {
@@ -38,7 +46,7 @@ export interface QuickAddGroupsProps {
   onServiceStatus: (status: QuickAddServiceStatus) => void;
 }
 
-/** Step 1: search and tick groups; "Select all groups" ticks every shown group that has something to add. */
+/** Step 1: search and tick groups. "Select all groups" ticks every group with something to add, whatever the search shows. */
 export function QuickAddGroups({
   groups,
   selection,
@@ -85,6 +93,8 @@ export function QuickAddGroups({
   }
 
   const shown = data.groups.filter((group) => matchesSearch(group, text));
+  const every = allPickable(data.groups);
+  const everyState = picked.groups === 0 ? 'none' : picked.groups === every.groups ? 'all' : 'some';
 
   return (
     <div className="space-y-3">
@@ -96,6 +106,12 @@ export function QuickAddGroups({
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.preventDefault();
         }}
+      />
+      <SelectAllBox
+        label={`Select all groups (${groupsText(every.groups)}, ${servicesText(every.services)} to add)`}
+        state={everyState}
+        disabled={every.groups === 0}
+        onChange={(on) => selection.setMany(every.keys, on)}
       />
       <QuickAddGroupTable rows={shown} selection={selection} />
       <p className="text-xs text-ink3" aria-live="polite">

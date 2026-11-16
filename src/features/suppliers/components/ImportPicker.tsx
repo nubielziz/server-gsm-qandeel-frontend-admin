@@ -1,7 +1,6 @@
-// ImportPicker: step 1 of "Import services…": the supplier's own service list with a name search, a group filter, a "not imported
-// yet" filter and a tick box per service. The ticks stay while the page, the search or a filter changes. Built in the demo's dialog
-// and table style (the demo has no import screen); the list is `GET /admin/suppliers/:id/services`.
-import { useState } from 'react';
+// ImportPicker: step 1 of "Import services…": the supplier's own service list (`GET /admin/suppliers/:id/services`) with a search, a
+// group filter, a "not imported yet" filter, a tick box per service and one that ticks every service not imported yet on all pages.
+// The ticks stay while the page, the search or a filter changes. Built in the demo's dialog and table style (no import screen there).
 import {
   Badge,
   CheckboxField,
@@ -13,12 +12,15 @@ import {
   type DataTableColumn,
   type RowSelection,
 } from '@/components/ui';
-import { money } from '@/lib/format';
-import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { money, num } from '@/lib/format';
+import type { ImportFilter } from '../hooks/useImportFilter';
 import { useServiceGroups } from '../hooks/useQuickAdd';
+import type { SelectAllNotImported } from '../hooks/useSelectAllNotImported';
 import { useSupplierCatalogue } from '../hooks/useSupplierCatalogue';
+import { BATCH_SIZE } from '../lib/batches';
 import { groupOption, groupValue } from '../lib/quickAdd';
-import type { QuickAddGroupRef, SupplierService } from '../types';
+import type { SupplierService } from '../types';
+import { SelectAllNotImportedBox } from './SelectAllNotImportedBox';
 
 /** Services per page of the picker. */
 export const PICKER_PAGE_SIZE = 25;
@@ -59,29 +61,30 @@ const COLUMNS: DataTableColumn<SupplierService>[] = [
 export interface ImportPickerProps {
   supplierId: number;
   selection: RowSelection<number>;
+  /** The search, group, "only not imported" and page: the dialog keeps them so the select-all box reads the same search. */
+  filter: ImportFilter;
+  /** The "Select all not imported" box, worked out by the dialog (its Preview button waits while the box reads). */
+  all: SelectAllNotImported;
+  /**
+   * A preview is running (several calls for more than 500 picks): the picker cannot be used, so the picks stay the ones being
+   * previewed.
+   */
+  locked?: boolean;
 }
 
 /** Step 1: search and tick services. `selection` belongs to the dialog, so ticks stay across pages and filters. */
-export function ImportPicker({ supplierId, selection }: ImportPickerProps) {
-  const [text, setText] = useState('');
-  const [page, setPage] = useState(1);
-  const [onlyNew, setOnlyNew] = useState(false);
-  const [group, setGroup] = useState<QuickAddGroupRef | undefined>();
-  const q = useDebouncedValue(text.trim());
+export function ImportPicker({ supplierId, selection, filter, all, locked = false }: ImportPickerProps) {
+  const { text, q, page, onlyNew, group, setPage } = filter;
   const list = useSupplierCatalogue({ supplierId, page, pageSize: PICKER_PAGE_SIZE, q, onlyNew, group });
-  const page1 = () => setPage(1);
   // A group without a name cannot be filtered on (the server skips an empty value), so it is not offered.
   const named = (useServiceGroups(supplierId).data?.groups ?? []).filter((item) => item.remoteGroup !== '');
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" inert={locked} aria-busy={locked || undefined}>
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           value={text}
-          onChange={(value) => {
-            setText(value);
-            page1();
-          }}
+          onChange={filter.setText}
           placeholder="Search the supplier's services"
           // Enter must not submit the dialog's form (that would press Preview).
           onKeyDown={(event) => {
@@ -98,22 +101,24 @@ export function ImportPicker({ supplierId, selection }: ImportPickerProps) {
           onChange={(event) => {
             // Only the group's identity goes into the query key, not its counts (they change after every import).
             const found = named.find((item) => groupValue(item) === event.target.value);
-            setGroup(found && { type: found.type, remoteGroup: found.remoteGroup });
-            page1();
+            filter.setGroup(found && { type: found.type, remoteGroup: found.remoteGroup });
           }}
         />
         <CheckboxField
           label="Only services not imported yet"
           checked={onlyNew}
-          onChange={(event) => {
-            setOnlyNew(event.target.checked);
-            page1();
-          }}
+          onChange={(event) => filter.setOnlyNew(event.target.checked)}
         />
+        <SelectAllNotImportedBox all={all} />
         <span className="ms-auto text-xs text-ink3" aria-live="polite">
-          {selection.selected.size} picked
+          {num(selection.selected.size)} picked
         </span>
       </div>
+      {selection.selected.size > BATCH_SIZE && (
+        <p className="text-xs text-ink3">
+          More than {BATCH_SIZE} picked: they are previewed and imported {BATCH_SIZE} at a time.
+        </p>
+      )}
       <div className="max-h-[360px] overflow-auto rounded-md border border-line">
         <DataTable
           caption="Supplier services"

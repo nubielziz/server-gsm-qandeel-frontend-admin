@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { QuickAddRun, ServiceGroup } from '../types';
 import {
+  allPickable,
   groupKey,
   groupName,
   groupOption,
@@ -96,6 +97,18 @@ describe('what the picks add up to', () => {
       services: 0,
     });
     expect(pickedGroups(GROUPS, keys(GROUPS[3], GROUPS[0])).map(groupName)).toEqual(['Apple', 'No group']);
+  });
+});
+
+describe('what "Select all groups" stands for', () => {
+  it('is every group with something to add, how many they are and what they add, whatever the search shows', () => {
+    expect(allPickable(GROUPS)).toEqual({
+      keys: [GROUPS[0], GROUPS[1], GROUPS[3]].map(groupKey),
+      groups: 3,
+      services: 10,
+    });
+    expect(allPickable([GROUPS[2]])).toEqual({ keys: [], groups: 0, services: 0 });
+    expect(allPickable([])).toEqual({ keys: [], groups: 0, services: 0 });
   });
 });
 

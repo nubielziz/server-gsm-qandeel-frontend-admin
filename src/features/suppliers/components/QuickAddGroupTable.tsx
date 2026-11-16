@@ -1,5 +1,5 @@
 // QuickAddGroupTable: the table of step 1 of "Quick add…": one row per supplier group with what it can add, a tick box per row (off
-// for a group with nothing to add) and "Select all groups" for the rows shown. Built in the demo's table style.
+// for a group with nothing to add) and a header box for the rows shown. Built in the demo's table style.
 import { IndeterminateCheckbox, TypeTag, type RowSelection } from '@/components/ui';
 import { num } from '@/lib/format';
 import { groupKey, groupName, pickable } from '../lib/quickAdd';
@@ -25,7 +25,7 @@ function CannotAdd({ group }: { group: ServiceGroup }) {
   );
 }
 
-/** The groups table. "Select all groups" ticks every shown row that has something to add, and shows a dash when only some are ticked. */
+/** The groups table. The header box ticks every shown row that has something to add, and shows a dash when only some are ticked. */
 export function QuickAddGroupTable({ rows, selection }: QuickAddGroupTableProps) {
   const shownKeys = pickable(rows).map(groupKey);
   const pickedShown = shownKeys.filter((key) => selection.has(key)).length;
@@ -38,7 +38,7 @@ export function QuickAddGroupTable({ rows, selection }: QuickAddGroupTableProps)
           <tr>
             <th className="w-9 !ps-3.5 !pe-0" scope="col">
               <IndeterminateCheckbox
-                aria-label="Select all groups"
+                aria-label="Select the groups shown"
                 checked={allShownPicked}
                 indeterminate={pickedShown > 0 && !allShownPicked}
                 disabled={shownKeys.length === 0}

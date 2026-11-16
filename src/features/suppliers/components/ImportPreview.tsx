@@ -1,12 +1,14 @@
 // ImportPreview: step 2 of "Import services…": what the server says each picked service would do: new, matching a service
 // already imported, or with a changed cost, with the price it suggests for a new one. Changes nothing until Import is pressed.
+// The summary counts every item; the table draws only the first rows, so a list of thousands stays usable.
 import { Badge, TypeTag } from '@/components/ui';
 import { money, quantityText } from '@/lib/format';
-import { countItems, IMPORT_BADGE, previewSummary } from '../lib/importPlan';
+import { countItems, hiddenRowsText, IMPORT_BADGE, PREVIEW_ROWS, previewSummary } from '../lib/importPlan';
 import type { ImportPreviewItem } from '../types';
 
-/** Step 2: the server's answer for each picked service, with the price it suggests for a new one. */
+/** Step 2: the server's answer for each picked service (the first 200 rows), with the price it suggests for a new one. */
 export function ImportPreview({ items }: { items: readonly ImportPreviewItem[] }) {
+  const hidden = hiddenRowsText(PREVIEW_ROWS, items.length);
   return (
     <div className="space-y-3">
       <p className="text-sm text-ink2" aria-live="polite">
@@ -28,7 +30,7 @@ export function ImportPreview({ items }: { items: readonly ImportPreviewItem[] }
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => {
+            {items.slice(0, PREVIEW_ROWS).map((item) => {
               const badge = IMPORT_BADGE[item.state];
               return (
                 <tr key={item.supplierServiceId}>
@@ -63,6 +65,7 @@ export function ImportPreview({ items }: { items: readonly ImportPreviewItem[] }
           </tbody>
         </table>
       </div>
+      {hidden && <p className="text-xs text-ink3">{hidden}</p>}
     </div>
   );
 }

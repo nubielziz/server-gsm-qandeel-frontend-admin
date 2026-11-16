@@ -176,7 +176,7 @@ describe('the groups', () => {
   it('ticks only the shown groups that have something to add, with a dash when some are ticked', async () => {
     const user = userEvent.setup();
     const { dialog } = await openGroups(user);
-    const all = dialog.getByRole('checkbox', { name: 'Select all groups' }) as HTMLInputElement;
+    const all = dialog.getByRole('checkbox', { name: 'Select the groups shown' }) as HTMLInputElement;
     await tick(user, dialog, 'Select USA (IMEI)');
     expect(all.indeterminate).toBe(true);
     expect(dialog.getByText('1 group picked, 1 service to add')).toBeInTheDocument();
@@ -187,9 +187,103 @@ describe('the groups', () => {
     await user.click(all);
     expect(dialog.getByText('0 groups picked, 0 services to add')).toBeInTheDocument();
   });
+
+  it('names the two boxes apart: the header one is for the groups shown, the other counts every group to add', async () => {
+    const user = userEvent.setup();
+    const { dialog } = await openGroups(user);
+    expect(dialog.getByRole('checkbox', { name: 'Select the groups shown' })).toBeInTheDocument();
+    expect(dialog.queryByRole('checkbox', { name: 'Select all groups' })).not.toBeInTheDocument();
+    const all = dialog.getByRole('checkbox', { name: 'Select all groups (2 groups, 2 services to add)' });
+    // It sits above the table, not in it.
+    expect(
+      within(dialog.getByRole('table', { name: 'Supplier groups' })).queryByRole('checkbox', {
+        name: /^Select all groups/,
+      }),
+    ).toBeNull();
+    expect(all.compareDocumentPosition(dialog.getByRole('table', { name: 'Supplier groups' }))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('ticks every group with something to add whatever the search shows, and the header box only the shown ones', async () => {
+    const user = userEvent.setup();
+    const { dialog } = await openGroups(user);
+    const table = within(dialog.getByRole('table', { name: 'Supplier groups' }));
+    await user.type(dialog.getByRole('searchbox', { name: 'Search groups' }), 'aus');
+    expect(table.getAllByRole('row')).toHaveLength(2); // the header and Australia
+    const header = dialog.getByRole('checkbox', { name: 'Select the groups shown' }) as HTMLInputElement;
+    const all = dialog.getByRole('checkbox', {
+      name: 'Select all groups (2 groups, 2 services to add)',
+    }) as HTMLInputElement;
+
+    // The header box takes the group on screen; the other box shows that this is only some of them.
+    await user.click(header);
+    expect(dialog.getByText('1 group picked, 1 service to add')).toBeInTheDocument();
+    expect(header.checked).toBe(true);
+    expect(all.indeterminate).toBe(true);
+    expect(all.checked).toBe(false);
+
+    // The other box takes all of them, USA too, which the search hides.
+    await user.click(all);
+    expect(dialog.getByText('2 groups picked, 2 services to add')).toBeInTheDocument();
+    expect(all.checked).toBe(true);
+    expect(all.indeterminate).toBe(false);
+    await user.clear(dialog.getByRole('searchbox', { name: 'Search groups' }));
+    expect(dialog.getByRole('checkbox', { name: 'Select USA (IMEI)' })).toBeChecked();
+    expect(dialog.getByRole('checkbox', { name: 'Select Australia (IMEI)' })).toBeChecked();
+    expect(dialog.getByRole('checkbox', { name: 'Select Canada (IMEI)' })).not.toBeChecked();
+
+    // Ticked again it takes all of them out, also the ones the search hides.
+    await user.type(dialog.getByRole('searchbox', { name: 'Search groups' }), 'usa');
+    await user.click(all);
+    expect(dialog.getByText('0 groups picked, 0 services to add')).toBeInTheDocument();
+    expect(all.checked).toBe(false);
+    expect(all.indeterminate).toBe(false);
+  });
+
+  it('shows a dash for some picks, ticks the rest from there, and counts groups and services in its words', async () => {
+    const user = userEvent.setup();
+    stubGroups([group('imei', 'Apple', 5), group('server', 'Apple', 3), group('imei', 'Samsung', 0, 4)]);
+    const { dialog } = await openGroups(user);
+    const all = dialog.getByRole('checkbox', {
+      name: 'Select all groups (2 groups, 8 services to add)',
+    }) as HTMLInputElement;
+    await tick(user, dialog, 'Select Apple (SERVER)');
+    expect(all.indeterminate).toBe(true);
+    await user.click(all);
+    expect(dialog.getByText('2 groups picked, 8 services to add')).toBeInTheDocument();
+    expect(all.checked).toBe(true);
+    expect(dialog.getByRole('checkbox', { name: 'Select Samsung (IMEI)' })).toBeDisabled();
+  });
+
+  it('is off when no group has anything to add', async () => {
+    const user = userEvent.setup();
+    stubGroups([group('imei', 'Apple', 0, 4), group('imei', 'Samsung', 0, 1)]);
+    await openQuickAdd(user);
+    expect(await screen.findByText('Nothing to add')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /^Select all groups/ })).not.toBeInTheDocument();
+  });
 });
 
 describe('what the picks send', () => {
+  it('sends the scope all when the box above the table picks every group, even with a search that hides some', async () => {
+    const user = userEvent.setup();
+    let sent: unknown;
+    mockServer.use(
+      http.post('*/admin/suppliers/:id/quick-add', async ({ request }) => {
+        sent = await request.clone().json();
+        return undefined;
+      }),
+    );
+    const { dialog } = await openGroups(user);
+    await user.type(dialog.getByRole('searchbox', { name: 'Search groups' }), 'aus');
+    await tick(user, dialog, 'Select all groups (2 groups, 2 services to add)');
+    await press(user, dialog, 'Review');
+    expect(dialog.getByText('This adds 2 services from all groups of Nordic GSM.')).toBeInTheDocument();
+    await press(user, dialog, 'Add 2 services');
+    await waitFor(() => expect(sent).toEqual({ scope: 'all' }));
+  });
+
   it('sends the scope all when every group with something to add is picked, then follows the run to its end', async () => {
     const user = userEvent.setup();
     let sent: unknown;
@@ -201,7 +295,7 @@ describe('what the picks send', () => {
       }),
     );
     const { detail, dialog } = await openGroups(user);
-    await user.click(dialog.getByRole('checkbox', { name: 'Select all groups' }));
+    await user.click(dialog.getByRole('checkbox', { name: 'Select the groups shown' }));
     await press(user, dialog, 'Review');
 
     expect(dialog.getByText('This adds 2 services from all groups of Nordic GSM.')).toBeInTheDocument();
@@ -304,7 +398,7 @@ describe('what the picks send', () => {
     );
     stubGroups(many);
     const { dialog } = await openGroups(user);
-    await user.click(dialog.getByRole('checkbox', { name: 'Select all groups' }));
+    await user.click(dialog.getByRole('checkbox', { name: 'Select the groups shown' }));
     await tick(user, dialog, 'Select G000 (IMEI)');
     expect(dialog.getByText('501 groups picked, 501 services to add')).toBeInTheDocument();
     expect(dialog.getByText('Pick at most 500 groups, or select all.')).toBeInTheDocument();

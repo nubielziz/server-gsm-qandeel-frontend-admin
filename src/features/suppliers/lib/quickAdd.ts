@@ -61,6 +61,20 @@ export function pickable(groups: readonly ServiceGroup[]): ServiceGroup[] {
   return groups.filter((group) => group.addable > 0);
 }
 
+/** What "Select all groups" stands for: the keys of every group that has something to add, how many they are, and what they add. */
+export function allPickable(groups: readonly ServiceGroup[]): {
+  keys: string[];
+  groups: number;
+  services: number;
+} {
+  const chosen = pickable(groups);
+  return {
+    keys: chosen.map(groupKey),
+    groups: chosen.length,
+    services: chosen.reduce((total, group) => total + group.addable, 0),
+  };
+}
+
 /** The picked groups that still have something to add, in the order of the list. A pick of a group that has vanished or emptied is ignored. */
 export function pickedGroups(groups: readonly ServiceGroup[], picked: ReadonlySet<string>): ServiceGroup[] {
   return pickable(groups).filter((group) => picked.has(groupKey(group)));

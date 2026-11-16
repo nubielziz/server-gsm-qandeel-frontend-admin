@@ -1,6 +1,6 @@
-// Mock routes of a supplier's service list and of the work done with it: `GET /admin/suppliers/:id/services`, the import preview,
-// the import, and `PUT /admin/services/:id/supplier-links`. The classification (new, matching, changed) and the suggested price
-// are plain fakes; the real server decides both (decision 014).
+// Mock routes of a supplier's service list and of the work done with it: `GET /admin/suppliers/:id/services` (at most 1000 rows per
+// call), the import preview and the import (at most 500 ids per call, as the real server: a longer request is refused), and
+// `PUT /admin/services/:id/supplier-links`. The classification and the suggested price are plain fakes (decision 014).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { applyListQuery } from '@/mocks/crud';
 import { invalid, notFound } from '@/mocks/handlers/accessShared';
@@ -12,6 +12,19 @@ import type { ImportItemState, ImportPreviewItem } from '../types';
 
 /** The mock's price rule for a new service: cost plus 60%. */
 const suggestedPrice = (credit: string): string => toMoney(Number(credit) * 1.6);
+
+/** The most rows one call of the service list sends. */
+const LIST_PAGE_CAP = 1000;
+/** The most ids one call of the preview or of the import takes. */
+const IMPORT_BATCH_CAP = 500;
+
+const tooManyIds = () =>
+  invalid([
+    {
+      field: 'supplierServiceIds',
+      message: `Send at most ${IMPORT_BATCH_CAP} services in one call.`,
+    },
+  ]);
 
 const idsOf = (body: Record<string, unknown>): number[] =>
   Array.isArray(body.supplierServiceIds) ? body.supplierServiceIds.map(Number).filter(Number.isFinite) : [];
@@ -93,7 +106,7 @@ export const catalogueHandlers: HttpHandler[] = [
         'remoteGroup',
         'remoteId',
       ]);
-      return HttpResponse.json(page, {
+      return HttpResponse.json(page.slice(0, LIST_PAGE_CAP), {
         headers: { 'x-total-count': String(total), 'access-control-expose-headers': 'x-total-count' },
       });
     }),
@@ -104,7 +117,9 @@ export const catalogueHandlers: HttpHandler[] = [
     secured(async ({ params, data, body }) => {
       const supplier = data.suppliers.find(String(params.id));
       if (!supplier) return notFound('supplier', params.id);
-      const items = pickedItems(data, supplier.id, await body());
+      const input = await body();
+      if (idsOf(input).length > IMPORT_BATCH_CAP) return tooManyIds();
+      const items = pickedItems(data, supplier.id, input);
       if (items.length === 0)
         return invalid([{ field: 'supplierServiceIds', message: 'Pick at least one service.' }]);
       return HttpResponse.json({ items: items.map((item) => previewOf(data, item)) });
@@ -116,7 +131,9 @@ export const catalogueHandlers: HttpHandler[] = [
     secured(async ({ params, data, body }) => {
       const supplier = data.suppliers.find(String(params.id));
       if (!supplier) return notFound('supplier', params.id);
-      const items = pickedItems(data, supplier.id, await body());
+      const input = await body();
+      if (idsOf(input).length > IMPORT_BATCH_CAP) return tooManyIds();
+      const items = pickedItems(data, supplier.id, input);
       if (items.length === 0)
         return invalid([{ field: 'supplierServiceIds', message: 'Pick at least one service.' }]);
       const result = { created: 0, updated: 0, unchanged: 0 };
