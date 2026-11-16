@@ -181,11 +181,11 @@ describe('report, preview and index', () => {
   });
 
   it('previews a query: pinned services first, with the pinned mark', async () => {
-    const preview = await getSearchPreview('unlock');
+    const preview = await getSearchPreview({ q: 'unlock' });
     expect(preview.engine).toBe('typesense');
     expect(preview.hits[0]).toMatchObject({ position: 1, pinned: true });
     expect(preview.hits.length).toBeLessThanOrEqual(10);
-    const plain = await getSearchPreview('zzz nothing like this');
+    const plain = await getSearchPreview({ q: 'zzz nothing like this' });
     expect(plain.hits).toEqual([]);
   });
 
@@ -195,7 +195,7 @@ describe('report, preview and index', () => {
         problem(503, 'UNAVAILABLE', 'Unavailable', 'The search engine is not answering.'),
       ),
     );
-    const error = (await failure(getSearchPreview('unlock'))) as ApiError;
+    const error = (await failure(getSearchPreview({ q: 'unlock' }))) as ApiError;
     expect([error.status, error.code]).toEqual([503, 'UNAVAILABLE']);
   });
 

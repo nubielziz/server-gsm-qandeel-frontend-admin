@@ -101,6 +101,9 @@ export type SearchReport = {
 /** A hit of the preview: where it stands and whether a pin put it there. */
 export type PreviewHit = { serviceId: Id; title: string; position: number; pinned: boolean };
 
+/** The query of `GET /admin/search/preview`: the text to rank, 1 to 200 characters. */
+export type SearchPreviewQuery = { q: string };
+
 /** `GET /admin/search/preview?q=`: the top 10 for a query as the shop would show them now, and the ids a rule hides. */
 export type SearchPreview = {
   engine: 'typesense' | 'fallback';

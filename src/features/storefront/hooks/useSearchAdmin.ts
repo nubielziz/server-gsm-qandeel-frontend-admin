@@ -31,7 +31,7 @@ export function useSearchPreview(q: string, enabled = true) {
   const text = q.trim();
   return useApiQuery({
     queryKey: searchPreviewKey(text),
-    queryFn: ({ signal }) => getSearchPreview(text, { signal }),
+    queryFn: ({ signal }) => getSearchPreview({ q: text }, { signal }),
     enabled: enabled && text !== '',
     retry: false,
     staleTime: 0,

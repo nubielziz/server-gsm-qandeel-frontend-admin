@@ -22,6 +22,7 @@ import type {
   SearchIndexStatus,
   SearchPin,
   SearchPreview,
+  SearchPreviewQuery,
   SearchReport,
   SearchSynonym,
   UpdatePinBody,
@@ -141,11 +142,12 @@ export function getSearchReport(days: ReportDays, init?: ApiInit): Promise<Searc
 
 /**
  * The top 10 services for a query as the shop would show them now, with the pinned ones marked and the ids a rule hides. Only
- * saved rules count. The server answers 503 `UNAVAILABLE` while the engine does not answer.
+ * saved rules count. `query.q` is the text to rank (1 to 200 characters). The server answers 503 `UNAVAILABLE` while the engine
+ * does not answer.
  * @route GET /admin/search/preview
  */
-export function getSearchPreview(q: string, init?: ApiInit): Promise<SearchPreview> {
-  return apiGet<SearchPreview>('/admin/search/preview', { q }, init);
+export function getSearchPreview(query: SearchPreviewQuery, init?: ApiInit): Promise<SearchPreview> {
+  return apiGet<SearchPreview>('/admin/search/preview', query, init);
 }
 
 /**
