@@ -1,7 +1,7 @@
 # Storefront: handoff
 
 Page `/storefront` ("Storefront"), 22 of 22 routes of `docs/slices/storefront.json`. Demo: `50-p-storefront.js` (Live preview excluded) with the helpers in
-`12-state-b2c.js` and `13-b2c-ui.js`. Tabs, in the address as `?tab=`: Services on sale, Landing pages, Content and legal, Help centre, TAC catalogue (new).
+`12-state-b2c.js` and `13-b2c-ui.js`. Tabs, in the address as `?tab=`: Services on sale, Landing pages, Content and legal, Help centre, TAC catalogue (new), Search (new, feature 29).
 
 ## Mismatches
 
@@ -77,3 +77,14 @@ Links out: "Open the storefront" in the header, to `VITE_STOREFRONT_URL` (new ta
 7. TAC: can `tac` be edited after creation? Which `source` values exist? Are `marketingName` and `releaseYear` optional, and what does the server send for an unknown year?
 8. Can the API send a page's public address (`path` or `url`), so the table can offer "Open the page" again?
 9. When a slug is left empty on create, does the server make it from the title (listings, pages)?
+
+## Feature 29 (Search tab)
+
+The sixth tab, **Search** (`storefront:read`), tunes the shop's English search box (backend feature 29, plan `../backend/docs/briefs/29-search-typesense.md` §5.1 and §6; MISMATCHES M263). Four sections, kept in the address as `?tab=search&section=synonyms|pins|report|index` (Synonyms is the default and has no parameter). Files: `components/SearchTab.tsx` and `components/search/*`, `api/search.ts`, `hooks/useSearchAdmin.ts` (reads) and `hooks/useSearchMutations.ts` (writes), `types/search.ts`, `lib/search.ts` (pure helpers), `mocks/search{Routes,Seed,Report}.ts`.
+
+- **Synonyms**: table (terms, kind, On switch, why, changed), Add and Edit dialog (terms as chips, kind multi or one-way with a root, a "Why" note), Delete behind a confirmation. Search `q`, status filter `state=on|off` (sent as `isEnabled`), sort `updatedAt`.
+- **Pinned results**: "Test a search" box (`GET /admin/search/preview?q=`, saved rules only), table (query and match, pinned services by position, hidden count, Live / Scheduled / Ended / Off with the dates, On switch), Add and Edit dialog with a picker over `GET /admin/service-listings?locale=en&isListed=true&q=` (up to 10 pinned, 50 hidden, optional dates in the staff member's time zone). A refused service shows on its own row (`pinned.<i>.serviceId`, `hidden.<i>`); a twin query and match is `409 CONFLICT` under the words.
+- **Report**: 7, 30 or 90 days; totals, top terms, searches that found nothing (row actions **Add synonym…**, **Pin services…**, **Hide from popular**), and the hidden terms with **Show again**. A term that looks like personal data (an `@`, a link, a leading `+`, more than five digits or a run of five) is never printed and has no actions; the server does not store those either.
+- **Index**: engine state, documents against what the database expects, queued and failed updates, the last run of each job, the last error. **Rebuild index…** (`storefront:publish`) asks for confirmation; while `rebuild.running` the status is read every 5 seconds and the button waits.
+
+Assumed contracts (the plan fixes every answer shape, not the bodies; `api/search.ts` is the one place to change): `POST` and `PATCH /admin/search/synonyms` take `{ kind, root?, terms, isEnabled?, note? }`; `POST` and `PATCH /admin/search/pins` take `{ query, match, pinned: [{ serviceId, position }], hidden: [serviceId], startsAt?, endsAt?, isEnabled?, note? }` (the answer carries titles); `POST /admin/search/hidden-terms` takes `{ term, note? }`; `GET /admin/search/report` takes `days` (7, 30 or 90); the three rule lists take `q`, `isEnabled`, `_sort` (`updatedAt`, and `query` for pins) and answer `x-total-count`; `POST /admin/search/index/rebuild` answers 202 with no body the console reads. Synonyms hold 2 to 20 terms of at most 60 characters whatever the kind (plan §4.6).

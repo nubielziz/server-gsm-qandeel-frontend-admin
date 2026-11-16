@@ -11,7 +11,7 @@ vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe('the tab strip', () => {
-  it('shows the demo’s four tabs and the TAC catalogue, and no Live preview tab', async () => {
+  it('shows the demo’s four tabs, the TAC catalogue and Search, and no Live preview tab', async () => {
     await openStorefront();
     await waitFor(() =>
       expect(tabTexts()).toEqual([
@@ -20,6 +20,7 @@ describe('the tab strip', () => {
         'Content and legal',
         'Help centre',
         'TAC catalogue',
+        'Search',
       ]),
     );
     expect(screen.queryByRole('tab', { name: /preview/i })).not.toBeInTheDocument();
@@ -64,10 +65,16 @@ describe('Open the storefront', () => {
 describe('a reader of the storefront', () => {
   const READER = ['storefront:read'];
 
-  it('sees four tabs and no TAC catalogue', async () => {
+  it('sees four tabs, Search, and no TAC catalogue', async () => {
     await openStorefront('/storefront', { permissions: READER });
     await waitFor(() =>
-      expect(tabTexts()).toEqual(['Services on sale11', 'Landing pages', 'Content and legal', 'Help centre']),
+      expect(tabTexts()).toEqual([
+        'Services on sale11',
+        'Landing pages',
+        'Content and legal',
+        'Help centre',
+        'Search',
+      ]),
     );
   });
 

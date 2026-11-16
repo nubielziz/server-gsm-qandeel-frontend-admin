@@ -1,7 +1,16 @@
 // What the storefront mock server keeps. Content pages, help articles, legal documents and TAC entries are stored in the shape the
 // API sends them (the console types), the listings as rows that are joined with their service when they are read.
 import type { Collection } from '@/mocks/db';
-import type { ContentPage, HelpArticle, LegalDocument, TacEntry } from '../types';
+import type {
+  ContentPage,
+  HelpArticle,
+  HiddenTerm,
+  LegalDocument,
+  PinMatch,
+  SearchIndexStatus,
+  SearchSynonym,
+  TacEntry,
+} from '../types';
 
 /** A service the listings point at: the fields the listings table joins. Prices are in dollars, as the demo kept them. */
 export type MockService = {
@@ -45,6 +54,38 @@ export type MockListing = {
 /** Orders from the storefront in the last 30 days, per service. */
 export type MockSales = { orders: number; revenue: number };
 
+/** A pinned-results rule as the mock keeps it: ids only, the titles are read from the listings when the rule is sent. */
+export type MockPin = {
+  id: number;
+  query: string;
+  match: PinMatch;
+  pinned: { serviceId: number; position: number }[];
+  hidden: number[];
+  startsAt: string | null;
+  endsAt: string | null;
+  isEnabled: boolean;
+  note: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * The search engine's state in the mock: the status the index route sends, plus when the running rebuild started (a number, so
+ * the route can tell when it is over). `status` of the engine can be switched by a test.
+ */
+export type MockIndex = {
+  status: SearchIndexStatus;
+  rebuildStartedAt: number | null;
+};
+
+/** What the Search tab's mock routes keep. */
+export type SearchStores = {
+  synonyms: Collection<SearchSynonym>;
+  pins: Collection<MockPin>;
+  hidden: Collection<HiddenTerm>;
+  index: MockIndex;
+};
+
 /** Everything the mock server keeps for this feature. */
 export type Stores = {
   listings: Collection<MockListing>;
@@ -56,4 +97,5 @@ export type Stores = {
   help: Collection<HelpArticle>;
   legal: Collection<LegalDocument>;
   tac: Collection<TacEntry>;
+  search: SearchStores;
 };

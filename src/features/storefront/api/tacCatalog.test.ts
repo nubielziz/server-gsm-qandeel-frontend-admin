@@ -63,16 +63,21 @@ describe('createTacEntry and updateTacEntry', () => {
 });
 
 describe('storefrontResources', () => {
-  it('registers the five resources with the operations their endpoints offer', () => {
+  it('registers the eight resources with the operations their endpoints offer', () => {
     expect(Object.keys(storefrontResources).sort()).toEqual([
       'content-pages',
       'help-articles',
       'legal-documents',
+      'search-hidden-terms',
+      'search-pins',
+      'search-synonyms',
       'service-listings',
       'tac-catalog',
     ]);
     // Legal documents are written and published, never changed.
     expect(storefrontResources['legal-documents'].update).toBeUndefined();
     expect(storefrontResources['tac-catalog'].update).toBe(updateTacEntry);
+    // The search rules are listed through Refine; their writes use the typed functions.
+    expect(storefrontResources['search-pins'].create).toBeUndefined();
   });
 });

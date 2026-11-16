@@ -5,4 +5,5 @@ export * from './helpArticles';
 export * from './legalDocuments';
 export * from './listings';
 export * from './resources';
+export * from './search';
 export * from './tacCatalog';

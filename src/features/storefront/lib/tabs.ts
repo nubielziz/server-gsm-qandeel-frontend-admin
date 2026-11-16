@@ -1,8 +1,8 @@
-// The five tabs of the Storefront page and the permissions each one needs. Ports the `tabs` of pageStorefront in
-// 50-p-storefront.js (Services on sale, Landing pages, Content and legal, Help centre) and swaps the demo's Live preview for
-// the TAC catalogue the map adds (MISMATCHES M4 has the preview).
+// The six tabs of the Storefront page and the permissions each one needs. Ports the `tabs` of pageStorefront in
+// 50-p-storefront.js (Services on sale, Landing pages, Content and legal, Help centre), swaps the demo's Live preview for
+// the TAC catalogue the map adds (MISMATCHES M4 has the preview) and ends with the Search tab of the shop's search engine.
 
-export type StorefrontTab = 'listings' | 'landing' | 'content' | 'help' | 'tac';
+export type StorefrontTab = 'listings' | 'landing' | 'content' | 'help' | 'tac' | 'search';
 
 /** The tab the page opens on. It is left out of the address, as the demo's default tab is. */
 export const DEFAULT_TAB: StorefrontTab = 'listings';
@@ -20,6 +20,8 @@ export const STOREFRONT_TABS: readonly TabSpec[] = [
   { id: 'content', label: 'Content and legal', anyOf: ['storefront:read', 'legal:read'] },
   { id: 'help', label: 'Help centre', anyOf: ['storefront:read'] },
   { id: 'tac', label: 'TAC catalogue', anyOf: ['catalog:read'] },
+  // Backend feature 29 (no demo tab): synonyms, pinned results, the report and the index of the shop's search.
+  { id: 'search', label: 'Search', anyOf: ['storefront:read'] },
 ];
 
 /** Any one of these opens the page; each tab then shows only what the role may read (MISMATCHES M19 has the same shape). */

@@ -4,6 +4,7 @@
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
 import type { ContentPage, HelpArticle, LegalDocument, PageKind, PageStatus, TacEntry } from '../types';
+import { buildSearchStores } from './searchSeed';
 import type { MockListing, MockSales, MockService, Stores } from './types';
 
 const DAY = 86_400_000;
@@ -204,5 +205,6 @@ export function buildStores(state: DemoState): Stores {
     help: new Collection(helpRows(state, now)),
     legal: new Collection(legalRows(state, now)),
     tac: new Collection(tacRows(state)),
+    search: buildSearchStores(listings.list(), now),
   };
 }

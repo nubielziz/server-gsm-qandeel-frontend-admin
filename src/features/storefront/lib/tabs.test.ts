@@ -4,13 +4,14 @@ import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_TAB, isStorefrontTab, PAGE_PERMISSIONS, STOREFRONT_TABS } from './tabs';
 
 describe('STOREFRONT_TABS', () => {
-  it('lists the demo’s four tabs in its order, then the TAC catalogue', () => {
+  it('lists the demo’s four tabs in its order, then the TAC catalogue and Search', () => {
     expect(STOREFRONT_TABS.map((tab) => tab.label)).toEqual([
       'Services on sale',
       'Landing pages',
       'Content and legal',
       'Help centre',
       'TAC catalogue',
+      'Search',
     ]);
     expect(DEFAULT_TAB).toBe('listings');
   });
@@ -23,8 +24,8 @@ describe('STOREFRONT_TABS', () => {
       );
     expect(opens(['legal:read'])).toEqual(['content']);
     expect(opens(['catalog:read'])).toEqual(['tac']);
-    expect(opens(['storefront:read'])).toEqual(['listings', 'landing', 'content', 'help']);
-    expect(opens(['storefront:*', 'catalog:*'])).toHaveLength(5);
+    expect(opens(['storefront:read'])).toEqual(['listings', 'landing', 'content', 'help', 'search']);
+    expect(opens(['storefront:*', 'catalog:*'])).toHaveLength(6);
     expect(opens(['orders:read'])).toEqual([]);
   });
 });
@@ -32,6 +33,7 @@ describe('STOREFRONT_TABS', () => {
 describe('isStorefrontTab', () => {
   it('accepts a tab id and nothing else', () => {
     expect(isStorefrontTab('help')).toBe(true);
+    expect(isStorefrontTab('search')).toBe(true);
     expect(isStorefrontTab('preview')).toBe(false);
     expect(isStorefrontTab(null)).toBe(false);
   });

@@ -46,6 +46,20 @@ export const TAC_VIEW: ViewSpec = {
   filters: {},
 };
 
+/** The search tab's synonyms: the most recently changed first, filtered by on or off (`state`). */
+export const SYNONYM_VIEW: ViewSpec = {
+  sortFields: ['updatedAt'],
+  defaultSort: { field: 'updatedAt', order: 'desc' },
+  filters: { state: ['on', 'off'] },
+};
+
+/** The search tab's pinned results: the most recently changed first, or by query, filtered by on or off (`state`). */
+export const PIN_VIEW: ViewSpec = {
+  sortFields: ['updatedAt', 'query'],
+  defaultSort: { field: 'updatedAt', order: 'desc' },
+  filters: { state: ['on', 'off'] },
+};
+
 /** A tab's search text, filters, page and sort, as read from the address. */
 export type ListView = {
   q: string;

@@ -98,10 +98,14 @@ export type UpdateListingBody = ListingContentFields & {
   slug?: string;
 };
 
-/** What `GET /admin/service-listings` filters by: `q` (title, slug, service name or code), `isListed`, `locked` and `isFeatured`. */
+/**
+ * What `GET /admin/service-listings` filters by: `q` (title, slug, service name or code), `isListed`, `locked`, `isFeatured`
+ * and `locale` (`en` or `ar`, added by the search feature: the pin picker offers English listings only).
+ */
 export type ListingListFilters = {
   q?: string;
   isListed?: boolean;
   locked?: boolean;
   isFeatured?: boolean;
+  locale?: 'en' | 'ar';
 };

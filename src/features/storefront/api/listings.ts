@@ -16,7 +16,8 @@ import {
 import type { CreateListingBody, ServiceListing, ServiceListingDetail, UpdateListingBody } from '../types';
 
 /**
- * The listings, one page of them, with the total in `x-total-count`. Filters: `q`, `isListed`, `locked` and `isFeatured`;
+ * The listings, one page of them, with the total in `x-total-count`. Filters: `q`, `isListed`, `locked`, `isFeatured` and
+ * `locale` (`en` or `ar`; the search tab's pin picker lists English listings only);
  * sort with `_sort`/`_order` on `publicTitle`, `isListed`, `slug`, `id`, `listedAt` or `sort`. The counts above the table are
  * this call with `_start=0&_end=1`. Rows carry the service join, the figures the server works out and the listing's content
  * (without the two Markdown bodies, which `getListing` has).
