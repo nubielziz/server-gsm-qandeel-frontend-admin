@@ -1,5 +1,5 @@
 // Tests for the Services on sale tab: the figures and columns, the On the site switch, the price dialog with the server's floor
-// refusal, Add listing with the service menu from the services feature, and the search kept in the address.
+// refusal, and the search kept in the address. The Add listing dialog has its own file (AddListing.test.tsx).
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { storefrontStore } from '../mocks/store';
 import { dialogOf, openStorefront, rowOf, tabTexts, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
@@ -123,56 +122,6 @@ describe('the price dialog', () => {
     await user.type(price, '12.99');
     await user.click(dialog.getByRole('button', { name: 'Save price' }));
     expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
-  });
-});
-
-describe('Add listing', () => {
-  async function openAdd(user: ReturnType<typeof userEvent.setup>) {
-    await openStorefront();
-    await user.click(await screen.findByRole('button', { name: 'Add listing…' }));
-    const dialog = dialogOf('Add listing');
-    const service = await dialog.findByRole('combobox', { name: 'Service' });
-    await waitFor(() => expect(within(service).getAllByRole('option').length).toBeGreaterThan(5));
-    return { dialog, service };
-  }
-
-  it('lists the active IMEI services from the services feature, suggests the title and adds a listing for a service that has none', async () => {
-    // Every active IMEI service of the demo has its listing; take one away so the service can be added again.
-    const stores = await storefrontStore();
-    stores.listings.remove(stores.listings.list().find((row) => row.serviceId === 2)!.id);
-    const user = userEvent.setup();
-    const { dialog, service } = await openAdd(user);
-    await user.selectOptions(
-      service,
-      within(service).getByRole('option', { name: 'Apple Warranty & Activation Date (IMEI-APL-WRN)' }),
-    );
-    const title = dialog.getByRole('textbox', { name: 'Public title' });
-    expect(title).toHaveValue('Apple Warranty & Activation Date');
-    expect(dialog.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
-    await user.click(dialog.getByRole('button', { name: 'Add listing' }));
-    expect(await screen.findByText('Listing added')).toBeInTheDocument();
-    expect(await screen.findByText('14 listings')).toBeInTheDocument();
-    const strip = within(screen.getByRole('region', { name: 'Storefront catalogue' }));
-    await waitFor(() => expect(strip.getByText('Not on the site').parentElement).toHaveTextContent('1'));
-  });
-
-  it('shows the server’s refusal of a second listing of the same service under the service', async () => {
-    const user = userEvent.setup();
-    const { dialog, service } = await openAdd(user);
-    await user.selectOptions(
-      service,
-      within(service).getByRole('option', { name: 'Apple Warranty & Activation Date (IMEI-APL-WRN)' }),
-    );
-    await user.click(dialog.getByRole('button', { name: 'Add listing' }));
-    expect(await dialog.findByText('This service already has a listing.')).toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Add listing' })).toBeInTheDocument();
-  });
-
-  it('asks for a service before it sends anything', async () => {
-    const user = userEvent.setup();
-    const { dialog } = await openAdd(user);
-    await user.click(dialog.getByRole('button', { name: 'Add listing' }));
-    expect(await dialog.findByText('Choose a service.')).toBeInTheDocument();
   });
 });
 

@@ -6,8 +6,8 @@ import type { InvalidateTarget } from '@/lib/query';
 /** The counts above the tables and on the first tab (a list call with `_start=0&_end=1`, read from the total). */
 export const STOREFRONT_COUNTS_KEY = ['api', 'storefront', 'counts'] as const;
 
-/** The services menu of the Add listing dialog. */
-export const SERVICE_PICKER_KEY = ['api', 'storefront', 'service-picker'] as const;
+/** The services the Add listing dialog's search offers for one search text (`''` is the first page, by name). */
+export const serviceSearchKey = (q: string) => ['api', 'storefront', 'service-search', q] as const;
 
 /** The reads a change makes stale besides Refine's own: the counts. */
 export const STOREFRONT_STALE_KEYS: QueryKey[] = [STOREFRONT_COUNTS_KEY];
@@ -17,8 +17,14 @@ export function staleResource(resource: string): InvalidateTarget[] {
   return [{ resource }];
 }
 
-/** How many names the service menu loads. A longer catalog would need a search box; the demo's menus were plain selects. */
-export const PICKER_CAP = 200;
+/**
+ * How many services one search of the Add listing dialog asks for. The server searches the whole catalog (a supplier's
+ * Quick add can bring thousands), so a short page is enough: the staff member types more to narrow it.
+ */
+export const SERVICE_SEARCH_ROWS = 20;
+
+/** The pause after the last keystroke before the Add listing dialog asks the server, so typing sends one request. */
+export const SERVICE_SEARCH_PAUSE_MS = 250;
 
 /** The five minutes a menu is kept: the catalog changes rarely, and a dialog should not wait for a request each time. */
 export const PICKER_STALE_MS = 5 * 60_000;

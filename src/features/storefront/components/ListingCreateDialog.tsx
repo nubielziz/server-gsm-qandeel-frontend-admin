@@ -1,55 +1,52 @@
 // ListingCreateDialog: "Add listing" (`POST /admin/service-listings`): puts a service on the storefront. The demo
-// listed every IMEI service from its seed and had no such button; the map adds the create route. The service menu comes from the
-// services feature (`GET /admin/services`, needs `catalog:read`); the server refuses a service that can never be public.
-import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, SelectField, TextField } from '@/components/ui';
-import { useServiceChoices } from '../hooks/useServiceChoices';
+// listed every IMEI service from its seed and had no such button; the map adds the create route. The Service field searches the
+// services feature's list on the server (`GET /admin/services?q=`, needs `catalog:read`); the server refuses a service that can
+// never be public.
+import { useController, useForm } from 'react-hook-form';
+import { dialogSubmit, FormDialog, TextField } from '@/components/ui';
+import type { Service } from '@/features/services';
 import { useCreateListing } from '../hooks/useListingMutations';
+import { ServiceSearchField } from './ServiceSearchField';
 
-type Values = { serviceId: string; publicTitle: string; slug: string };
+type Values = { service: Service | null; publicTitle: string; slug: string };
 
 /** The form and its request. */
 export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
-  const services = useServiceChoices();
   const create = useCreateListing();
-  const form = useForm<Values>({ defaultValues: { serviceId: '', publicTitle: '', slug: '' } });
+  const form = useForm<Values>({ defaultValues: { service: null, publicTitle: '', slug: '' } });
   const {
+    control,
     register,
     setValue,
-    getFieldState,
-    formState: { errors },
+    // Read here so the form keeps them current: `choose` must know whether the title was typed by hand.
+    formState: { errors, dirtyFields },
   } = form;
+  const service = useController({
+    control,
+    name: 'service',
+    rules: { validate: (value) => value !== null || 'Choose a service.' },
+  });
 
   const submit = dialogSubmit(
     form,
     async (values) => {
+      if (!values.service) return false;
       const slug = values.slug.trim();
       await create.mutateAsync({
-        serviceId: Number(values.serviceId),
+        serviceId: values.service.id,
         publicTitle: values.publicTitle.trim(),
         ...(slug ? { slug } : {}),
       });
     },
-    { fields: ['serviceId', 'publicTitle', 'slug'] },
+    // The server names the field `serviceId` ("This service already has a listing."); the form keeps the whole service.
+    { fields: ['service', 'publicTitle', 'slug'], aliases: { serviceId: 'service' } },
   );
 
   // Choosing a service suggests its name as the public title, until the admin types a title of their own.
-  const { onChange: onServiceChange, ...serviceField } = register('serviceId', {
-    validate: (value) => value !== '' || 'Choose a service.',
-  });
-  const chosen = (event: Parameters<typeof onServiceChange>[0]) => {
-    void onServiceChange(event);
-    const name = services.data?.find((service) => String(service.id) === event.target.value)?.name;
-    if (name && !getFieldState('publicTitle', form.formState).isDirty) setValue('publicTitle', name);
+  const choose = (next: Service | null) => {
+    service.field.onChange(next);
+    if (next && !dirtyFields.publicTitle) setValue('publicTitle', next.name);
   };
-
-  const options = [
-    { value: '', label: services.isLoading ? 'Loading services…' : 'Choose a service' },
-    ...(services.data ?? []).map((service) => ({
-      value: String(service.id),
-      label: `${service.name} (${service.code})`,
-    })),
-  ];
 
   return (
     <FormDialog
@@ -61,18 +58,12 @@ export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
       onSubmit={submit}
     >
       <div className="space-y-3">
-        <SelectField
-          label="Service"
-          selectWrapClassName="w-full"
-          options={options}
-          hint={
-            services.isError
-              ? 'The services could not be loaded. Close the dialog and try again.'
-              : 'Only active IMEI services are sold to the public.'
-          }
-          error={errors.serviceId}
-          {...serviceField}
-          onChange={chosen}
+        <ServiceSearchField
+          ref={service.field.ref}
+          value={service.field.value}
+          onChange={choose}
+          onBlur={service.field.onBlur}
+          error={service.fieldState.error}
         />
         <TextField
           label="Slug"

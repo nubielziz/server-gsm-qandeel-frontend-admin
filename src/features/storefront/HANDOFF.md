@@ -5,6 +5,8 @@ Page `/storefront` ("Storefront"), 22 of 22 routes of `docs/slices/storefront.js
 
 > **2026-11-16, English only (decision 039):** the console no longer has a language. The Language select is gone from the help article, content page, new legal version and add listing dialogs; the Language column is gone from the listings and landing page tables; `locale` is no longer sent or read on the listing, content page and help article routes (filters, `POST` and `PATCH` bodies, rows); the category has no Arabic name; the Search tab's picker sends no `locale`. A legal document is the one exception: its row keeps `locale` read-only, and a retired non-English version shows as `(retired TR text)` in "Earlier versions kept for the record". The rows STOREFRONT-7 and STOREFRONT-10 and the route notes below describe the earlier two-language design.
 
+> **2026-11-17, Add listing searches the services:** the Service field of the Add listing dialog is a search box (a combobox), not a select. It asks `GET /admin/services?q=<text>&type=imei&status=active&_sort=name&_order=asc&_start=0&_end=20` 250 ms after the last keystroke (no `q` lists the first 20 by name), shows each match with its name and code, and says how many more match on the server. The select it replaces loaded the first 200 names only, which hid most services after a supplier's Quick add. No route, body or permission changed (`catalog:read` as before); the server still refuses a service that already has a listing, under the field.
+
 ## Mismatches
 
 Rows are in the format of `docs/MISMATCHES.md`. The Live preview tab and the "Preview checkout" button are already M4 (a link to `VITE_STOREFRONT_URL`, new tab, shown only when the variable is set).
