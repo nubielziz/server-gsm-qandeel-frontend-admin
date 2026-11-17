@@ -19,14 +19,14 @@ describe('AuthShell', () => {
     expect(within(card).getByText('Staff accounts only.')).toBeInTheDocument();
     expect(within(card).getByRole('button', { name: 'Child' })).toBeInTheDocument();
     expect(within(card).getByRole('link', { name: 'Back' })).toBeInTheDocument();
-    expect(document.title).toBe('Sign in · GSM Supply');
+    expect(document.title).toBe('Sign in · IMEI-HUB');
   });
 
   it('shows the wordmark, and the product, version and development badge in the footer', () => {
     render(<AuthShell title="Sign in" />);
-    expect(within(screen.getByRole('banner')).getByText('GSM Supply')).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByText('IMEI-HUB')).toBeInTheDocument();
     const footer = screen.getByRole('contentinfo');
-    expect(footer).toHaveTextContent(`GSM Supply admin console · v${version}`);
+    expect(footer).toHaveTextContent(`IMEI-HUB admin console · v${version}`);
     // Tests run as a development build.
     expect(within(footer).getByText(/^Development/)).toBeInTheDocument();
   });

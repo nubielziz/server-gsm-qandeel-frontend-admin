@@ -151,7 +151,7 @@ describe('test connection and sync', () => {
     expect(await testSupplier(NORDIC)).toMatchObject({
       ok: true,
       httpStatus: 200,
-      accountName: 'GSM Supply',
+      accountName: 'IMEI-HUB',
     });
     expect((await listSupplierApiLogs({ filters: { supplierId: NORDIC } })).total).toBe(before + 1);
   });

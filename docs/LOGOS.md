@@ -17,3 +17,12 @@ what terms. Every file is 128 x 128 pixels, transparent where its source is.
 | `nowpayments.png` | Logo of NOWPayments (catalog entry `nowpayments`): the company's square logo | its GitHub organisation picture (`https://github.com/NowPaymentsIO.png`), 2026-11-17 | trademark of its owner |
 
 No file is drawn or downloaded by the console's code. Bank transfer and Crypto transfer have no logo file: they show the bank and the coin icon.
+
+## The IMEI-HUB mark
+
+`src/assets/brand/logo-mark.png` (dark ink, the light theme) and `logo-mark-inverse.png` (white ink, the dark theme) are the "IH"
+in its orbit (149 × 112, transparent), cut from the owner's own logo picture (`IH Orbit IMEI-HUB Logo.png`, supplied 2026-11-17)
+by a script that only crops, removes the white ground and, for the second file, turns the dark ink white. `public/favicon.ico` is
+the same mark on a white tile (16, 32 and 48 px), so the dark ink reads on a dark tab strip. `src/components/ui/BrandMark.tsx` shows the pair (the style sheet picks the one that fits the theme);
+the name "IMEI-HUB" beside it is text. The owner's source picture, the script and the larger files are kept outside the repository
+(`/home/saifi/gsm-project/.brand/`).

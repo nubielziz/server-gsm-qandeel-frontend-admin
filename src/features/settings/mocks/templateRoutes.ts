@@ -70,7 +70,7 @@ export const templateRoutes: HttpHandler[] = [
         subject: fill(subject),
         body: fill(text),
         format: 'text',
-        from: 'GSM Supply <support@gsmsupply.example>',
+        from: 'IMEI-HUB <support@gsmsupply.example>',
         note: 'A sample with made-up details.',
       });
     }),

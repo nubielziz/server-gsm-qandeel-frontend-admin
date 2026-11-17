@@ -184,7 +184,7 @@ describe('page gate and unknown addresses', () => {
     expect(screen.getByText('Nothing at this address')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Go to the start page' })).toHaveAttribute('href', '/');
     expect(await primaryNav()).toBeDefined();
-    expect(document.title).toBe('Page not found · GSM Supply');
+    expect(document.title).toBe('Page not found · IMEI-HUB');
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Page not found');
   });
 });
@@ -216,12 +216,12 @@ describe('breadcrumb and tab title', () => {
     const crumb = await screen.findByRole('navigation', { name: 'Breadcrumb' });
     expect(within(crumb).getByRole('link', { name: 'Merchants' })).toHaveAttribute('href', '/merchants');
     expect(within(crumb).getByText('Acme Ltd')).toHaveAttribute('aria-current', 'page');
-    expect(document.title).toBe('Acme Ltd · Merchants · GSM Supply');
+    expect(document.title).toBe('Acme Ltd · Merchants · IMEI-HUB');
 
     await user.click(within(crumb).getByRole('link', { name: 'Merchants' }));
     expect(await screen.findByText('merchant list')).toBeInTheDocument();
     expect(screen.queryByText('Acme Ltd')).not.toBeInTheDocument();
-    expect(document.title).toBe('Merchants · GSM Supply');
+    expect(document.title).toBe('Merchants · IMEI-HUB');
   });
 });
 

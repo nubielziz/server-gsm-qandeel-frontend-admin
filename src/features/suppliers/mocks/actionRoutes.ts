@@ -27,7 +27,7 @@ export const actionHandlers: HttpHandler[] = [
           message: 'Authenticated.',
           httpStatus: 200,
           durationMs: row.p50Ms ?? 300,
-          accountName: 'GSM Supply',
+          accountName: 'IMEI-HUB',
           balance: row.balance,
         });
       }

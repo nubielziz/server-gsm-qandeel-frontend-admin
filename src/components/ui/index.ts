@@ -11,6 +11,7 @@ export * from './TypeTag';
 export * from './Count';
 export * from './Kbd';
 export * from './Avatar';
+export * from './BrandMark';
 export * from './CopyButton';
 export { cx } from './cx';
 export { initials } from './initials';

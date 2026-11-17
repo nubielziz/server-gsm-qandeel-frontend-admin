@@ -1,4 +1,4 @@
-// The "(n) " prefix of the tab title while the tab is hidden and something is unread ("(3) Orders · GSM Supply", 99+ at the cap; owner, 2026-11-15; the
+// The "(n) " prefix of the tab title while the tab is hidden and something is unread ("(3) Orders · IMEI-HUB", 99+ at the cap; owner, 2026-11-15; the
 // website's title follows the same rules). Pure: the title, the visibility and the watcher are passed in (hooks/useBellMotion.ts wires the browser).
 
 /** One or more prefixes this module writes: "(3) ", "(99+) ". */

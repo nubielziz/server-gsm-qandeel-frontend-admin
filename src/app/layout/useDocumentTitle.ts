@@ -1,9 +1,9 @@
-// Sets the browser tab title to "<record> · <Page> · GSM Supply". Ports the document.title line of render() in 90-app.js.
+// Sets the browser tab title to "<record> · <Page> · IMEI-HUB". Ports the document.title line of render() in 90-app.js.
 import { useResourceParams } from '@refinedev/core';
 import { useEffect } from 'react';
 import { toPageResource } from '../resources';
 
-export const APP_TITLE = 'GSM Supply';
+export const APP_TITLE = 'IMEI-HUB';
 
 /** Joins the parts that exist: record name, page name, app name. */
 export function formatTitle(record: string | undefined, page: string | undefined): string {

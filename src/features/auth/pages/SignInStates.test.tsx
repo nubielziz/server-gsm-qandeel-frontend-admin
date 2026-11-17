@@ -37,7 +37,7 @@ describe('blocked-access screens from the address', () => {
     expect(screen.getByRole('link', { name: 'Use another account' })).toHaveAttribute('href', '/login');
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
-    expect(document.title).toBe(`${SUSPENDED.title} · GSM Supply`);
+    expect(document.title).toBe(`${SUSPENDED.title} · IMEI-HUB`);
   });
 
   it('shows the not-allowed screen for ?reason=ip, with the next step', async () => {

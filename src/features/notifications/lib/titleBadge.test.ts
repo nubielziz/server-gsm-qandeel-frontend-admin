@@ -5,7 +5,7 @@ import { createTitleBadge, stripTitleBadge, titleWithBadge, type TitleBadgeEnv }
 
 /** A fake document: its title, a visibility switch, and a watcher fired a microtask after a write, like a MutationObserver. */
 function fakeDocument(options: { title?: string; visible?: boolean } = {}) {
-  let title = options.title ?? 'Orders · GSM Supply';
+  let title = options.title ?? 'Orders · IMEI-HUB';
   let visible = options.visible ?? true;
   const visibility = new Set<() => void>();
   const watchers = new Set<() => void>();
@@ -86,13 +86,13 @@ describe("the hidden tab's title", () => {
     const bell = {};
     badge.set(bell, 3, '3');
     doc.setVisible(false);
-    expect(doc.title()).toBe('(3) Orders · GSM Supply');
+    expect(doc.title()).toBe('(3) Orders · IMEI-HUB');
     badge.set(bell, 4, '4');
-    expect(doc.title()).toBe('(4) Orders · GSM Supply');
+    expect(doc.title()).toBe('(4) Orders · IMEI-HUB');
     badge.set(bell, 100, '99+');
-    expect(doc.title()).toBe('(99+) Orders · GSM Supply');
+    expect(doc.title()).toBe('(99+) Orders · IMEI-HUB');
     badge.set(bell, 0, '');
-    expect(doc.title()).toBe('Orders · GSM Supply');
+    expect(doc.title()).toBe('Orders · IMEI-HUB');
     expect(doc.watchers()).toBe(0);
   });
 
@@ -100,9 +100,9 @@ describe("the hidden tab's title", () => {
     const doc = fakeDocument({ visible: false });
     const badge = createTitleBadge(doc.env);
     badge.set({}, 2, '2');
-    expect(doc.title()).toBe('(2) Orders · GSM Supply');
+    expect(doc.title()).toBe('(2) Orders · IMEI-HUB');
     doc.setVisible(true);
-    expect(doc.title()).toBe('Orders · GSM Supply');
+    expect(doc.title()).toBe('Orders · IMEI-HUB');
     expect(doc.watchers()).toBe(0);
   });
 
@@ -110,11 +110,11 @@ describe("the hidden tab's title", () => {
     const doc = fakeDocument({ visible: false });
     createTitleBadge(doc.env).set({}, 2, '2');
     doc.setTitle.mockClear();
-    doc.navigate('Merchants · GSM Supply');
+    doc.navigate('Merchants · IMEI-HUB');
     await vi.runAllTimersAsync();
-    expect(doc.title()).toBe('(2) Merchants · GSM Supply');
+    expect(doc.title()).toBe('(2) Merchants · IMEI-HUB');
     expect(doc.setTitle).toHaveBeenCalledTimes(1);
-    doc.navigate('(2) Merchants · GSM Supply');
+    doc.navigate('(2) Merchants · IMEI-HUB');
     await vi.runAllTimersAsync();
     expect(doc.setTitle).toHaveBeenCalledTimes(1);
   });
@@ -132,11 +132,11 @@ describe("the hidden tab's title", () => {
     const fresh = {};
     badge.set(old, 2, '2');
     badge.set(fresh, 5, '5');
-    expect(doc.title()).toBe('(5) Orders · GSM Supply');
+    expect(doc.title()).toBe('(5) Orders · IMEI-HUB');
     badge.remove(fresh);
-    expect(doc.title()).toBe('(2) Orders · GSM Supply');
+    expect(doc.title()).toBe('(2) Orders · IMEI-HUB');
     badge.remove(old);
-    expect(doc.title()).toBe('Orders · GSM Supply');
+    expect(doc.title()).toBe('Orders · IMEI-HUB');
     expect(doc.watchers()).toBe(0);
     expect(doc.visibilityListeners()).toBe(0);
   });

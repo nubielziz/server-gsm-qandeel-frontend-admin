@@ -75,10 +75,10 @@ describe('pages and blog', () => {
     await openContent(user);
     await user.click((await rowOf(PAGES, 'About us')).getByRole('button', { name: 'Edit About us' }));
     const edit = dialogOf('Edit About us');
-    await retype(user, edit.getByRole('textbox', { name: 'Title' }), 'About GSM Supply');
+    await retype(user, edit.getByRole('textbox', { name: 'Title' }), 'About IMEI-HUB');
     await user.click(edit.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Page saved')).toBeInTheDocument();
-    expect(await rowOf(PAGES, 'About GSM Supply')).toBeTruthy();
+    expect(await rowOf(PAGES, 'About IMEI-HUB')).toBeTruthy();
 
     await user.click(screen.getByRole('button', { name: 'New page…' }));
     const create = dialogOf('New page');

@@ -224,7 +224,7 @@ export const campaignRoutes: HttpHandler[] = [
         format: channel === 'email' ? 'html' : 'text',
         from:
           channel === 'email'
-            ? 'GSM Supply <no-reply@gsm-supply.example>'
+            ? 'IMEI-HUB <no-reply@gsm-supply.example>'
             : channel === 'telegram'
               ? 'Telegram bot'
               : 'In-app notification',

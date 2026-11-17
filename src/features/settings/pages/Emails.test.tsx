@@ -123,7 +123,7 @@ describe('Preview', () => {
     const dialog = dialogOf('Order received');
     expect(await dialog.findByText('Your order SF-20431 is confirmed')).toBeInTheDocument();
     expect(dialog.getByText(/We received £14\.39 for "Vodafone UK iPhone Unlock"/)).toBeInTheDocument();
-    expect(dialog.getByText(/From GSM Supply/)).toBeInTheDocument();
+    expect(dialog.getByText(/From IMEI-HUB/)).toBeInTheDocument();
     expect(dialog.getByText('A sample with made-up details.')).toBeInTheDocument();
     expect(dialog.queryByTitle('Message preview')).not.toBeInTheDocument();
     expect(recorder.to('POST', '/admin/notification-templates/1/preview')).toHaveLength(1);

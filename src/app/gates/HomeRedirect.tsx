@@ -16,7 +16,7 @@ export function HomeRedirect() {
     if (me.isError) {
       return (
         <>
-          <PageHeader title="GSM Supply" />
+          <PageHeader title="IMEI-HUB" />
           <Panel flush>
             <ErrorState
               title="Could not load your account"
@@ -35,7 +35,7 @@ export function HomeRedirect() {
   // Signed in, but the role opens no page at all: say so instead of bouncing between refusals.
   return (
     <>
-      <PageHeader title="GSM Supply" />
+      <PageHeader title="IMEI-HUB" />
       <Panel flush>
         <EmptyState icon="lock" title="Your role has no pages yet">
           You are signed in, but your role does not include any page of this console. Ask an owner to give

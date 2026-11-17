@@ -38,10 +38,10 @@ describe('testSummary', () => {
       testSummary({
         message: 'Authenticated.',
         durationMs: 310,
-        accountName: 'GSM Supply',
+        accountName: 'IMEI-HUB',
         balance: '1850.0000',
       }),
-    ).toBe('Authenticated as GSM Supply. Balance $1,850.00. Answered in 310\u00a0ms.');
+    ).toBe('Authenticated as IMEI-HUB. Balance $1,850.00. Answered in 310\u00a0ms.');
   });
 
   it('falls back to the server’s message when it names no account', () => {

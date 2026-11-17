@@ -1,6 +1,6 @@
 # GSM admin console
 
-The admin console of GSM Supply, built with [Refine](https://refine.dev) (headless), React 19, TypeScript (strict),
+The admin console of IMEI-HUB, built with [Refine](https://refine.dev) (headless), React 19, TypeScript (strict),
 Tailwind 3 and React Query 5. It ports the static demo in `reference/gsm-admin` (screens, copy, interactions) and is
 typed against the API design in `reference/gsm-map` (routes, entities, permissions, error codes). All 16 pages of the
 demo are built, plus System health (no demo page: `docs/system-health-design.md`), and every one of the map's 268

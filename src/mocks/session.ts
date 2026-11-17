@@ -251,7 +251,7 @@ export const sessionHandlers = [
     const account = encodeURIComponent(staff?.email ?? 'staff');
     return HttpResponse.json({
       secret: FAKE_SECRET,
-      otpauthUrl: `otpauth://totp/GSM%20Supply:${account}?secret=${FAKE_SECRET}&issuer=GSM%20Supply`,
+      otpauthUrl: `otpauth://totp/IMEI-HUB:${account}?secret=${FAKE_SECRET}&issuer=IMEI-HUB`,
       qrSvg: fakeQrSvg(FAKE_SECRET),
     });
   }),

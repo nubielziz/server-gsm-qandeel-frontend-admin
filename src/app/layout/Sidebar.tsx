@@ -1,7 +1,7 @@
 // Sidebar: brand block, page navigation and the foot with API health and the staff menu.
 // Ports renderNav() of 90-app.js; the demo's "synthetic data" note is replaced by the API health line.
 import type { RefObject } from 'react';
-import { Button, Icon, Skeleton } from '@/components/ui';
+import { BrandMark, Button, Icon, Skeleton } from '@/components/ui';
 import { HealthIndicator } from '@/features/system';
 import type { PageResource } from '../resources';
 import { SidebarNav } from './SidebarNav';
@@ -42,14 +42,9 @@ export function Sidebar({ pages, counts, open, onClose, onOpenShortcuts, sidebar
       className="invisible fixed inset-y-0 start-0 z-40 flex w-[260px] -translate-x-full flex-col border-e border-line bg-side transition-[transform,visibility] duration-[150ms,0ms] delay-[0ms,150ms] data-[open=true]:visible data-[open=true]:delay-0 data-[open=true]:translate-x-0 lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-auto lg:translate-x-0"
     >
       <div className="flex h-12 flex-none items-center gap-2.5 border-b border-line px-3.5">
-        <span
-          className="flex h-6 w-6 items-center justify-center rounded-md bg-ink text-2xs font-semibold text-surface"
-          aria-hidden="true"
-        >
-          GS
-        </span>
+        <BrandMark height={26} />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="truncate text-sm font-semibold">GSM Supply</p>
+          <p className="truncate text-sm font-semibold">IMEI-HUB</p>
           <p className="truncate text-2xs text-ink3">Admin console</p>
         </div>
         <Button

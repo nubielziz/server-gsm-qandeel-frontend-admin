@@ -72,7 +72,7 @@ describe('connect supplier', () => {
     // The toast's own button tests the new connection.
     await user.click(toasts().getByRole('button', { name: 'Test connection' }));
     expect(await toasts().findByText('Atlas IMEI is reachable')).toBeInTheDocument();
-    expect(toasts().getByText(/Authenticated as GSM Supply\./)).toBeInTheDocument();
+    expect(toasts().getByText(/Authenticated as IMEI-HUB\./)).toBeInTheDocument();
   });
 
   it('puts the server’s complaint under the field it names and keeps the dialog open', async () => {
@@ -100,7 +100,7 @@ describe('test connection', () => {
     await user.click(detail.getByRole('button', { name: 'Test connection' }));
     expect(await screen.findByText('Nordic GSM is reachable')).toBeInTheDocument();
     expect(
-      screen.getByText('Authenticated as GSM Supply. Balance $1,850.00. Answered in 310 ms.'),
+      screen.getByText('Authenticated as IMEI-HUB. Balance $1,850.00. Answered in 310 ms.'),
     ).toBeInTheDocument();
   });
 

@@ -669,20 +669,20 @@ describe('the live stream', () => {
       await waitFor(() => expect(button).toHaveAccessibleName('Notifications, 2 unread'));
       await streamOpen();
       act(() => {
-        document.title = 'Somewhere · GSM Supply';
+        document.title = 'Somewhere · IMEI-HUB';
       });
       setVisibility('hidden');
-      await waitFor(() => expect(document.title).toBe('(2) Somewhere · GSM Supply'));
+      await waitFor(() => expect(document.title).toBe('(2) Somewhere · IMEI-HUB'));
       push('notification.created', created(liveItem(55), 3), 'i55');
-      await waitFor(() => expect(document.title).toBe('(3) Somewhere · GSM Supply'));
+      await waitFor(() => expect(document.title).toBe('(3) Somewhere · IMEI-HUB'));
       expect(swings).toEqual([]);
       // The shell writes the title of another page: the prefix comes back, once.
       act(() => {
-        document.title = 'Orders · GSM Supply';
+        document.title = 'Orders · IMEI-HUB';
       });
-      await waitFor(() => expect(document.title).toBe('(3) Orders · GSM Supply'));
+      await waitFor(() => expect(document.title).toBe('(3) Orders · IMEI-HUB'));
       setVisibility('visible');
-      expect(document.title).toBe('Orders · GSM Supply');
+      expect(document.title).toBe('Orders · IMEI-HUB');
       await waitFor(() => expect(playing()).toHaveLength(1));
       expect(playing()[0].el).toBe(icon(button));
     });

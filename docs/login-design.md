@@ -33,13 +33,13 @@ is the console's own data palette, so the artwork reads as ours and avoids the i
 ```
 desktop (≥ 768px)                                         phone (< 768px)
 +--------------------------------------------------------+  +---------------------------+
-| [GS] GSM Supply admin        \\\\\\\ silk enters \\\\  |  | [GS] GSM Supply admin  \\\ |
+| [IH] IMEI-HUB admin          \\\\\\\ silk enters \\\\  |  | [IH] IMEI-HUB admin    \\\ |
 |                         ~~~~\\\\\\\\\\\\\\\\\\\\\\\\\\\  |  |   band ≈ 32vh   \\\\\\\\\\\ |
 |               +-----------+\\\\ fold \\\\\\\\\\\\\\\\\  |  | +-----------------------+ |
 |               |   card    |  \\\\\\\\\\\\\\\\\\\\\\\\\\  |  | |  card, 20px margins,  | |
 |               |  400px    |     \\\\\\\\\\\\\\\\\\\\\\\ →|  | |  top-aligned          | |
 |               +-----------+          \\\\\\\\\\\\\\\\\\  |  | +-----------------------+ |
-| GSM Supply · v0.1.0 · [dev]               \\\\\\\\\\\\  |  | GSM Supply · v0.1.0       |
+| IMEI-HUB · v0.1.0 · [dev]                 \\\\\\\\\\\\  |  | IMEI-HUB · v0.1.0         |
 +--------------------------------------------------------+  +---------------------------+
 ```
 - Three sheets in a seeded composition: a wide pale sheet behind, the main ribbon (blue → green → amber) that twists
@@ -95,7 +95,7 @@ desktop (≥ 768px)                                         phone (< 768px)
   the one place the screens do not show the server's title (ARCHITECTURE §4); the request id is still shown. A rate
   limit reads "Too many sign-in attempts" with the wait from `Retry-After`. Other failures keep the server's words; the
   dead-link card adds "Ask an Owner to send you a new link." only when the server gave no detail.
-- Wordmark: the console's GS mark (24px) with "GSM Supply" and a mono "admin". Footer: "GSM Supply admin console ·
+- Wordmark: the console's IH mark (30px tall, `BrandMark`) with "IMEI-HUB" and a mono "admin". Footer: "IMEI-HUB admin console ·
   v0.1.0", plus an environment badge in development builds only.
 
 ## Theme decision

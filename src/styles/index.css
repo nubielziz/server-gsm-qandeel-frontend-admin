@@ -55,6 +55,33 @@
   --wave-sheen: 0.55;
 }
 
+/* The brand mark has two drawings: dark ink for the light theme, white ink for the dark one (components/ui/BrandMark.tsx). */
+.brand-mark {
+  display: inline-flex;
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.brand-mark-dark {
+  display: none;
+}
+:root[data-theme='dark'] .brand-mark-light {
+  display: none;
+}
+:root[data-theme='dark'] .brand-mark-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .brand-mark-light {
+    display: none;
+  }
+  :root:not([data-theme='light']) .brand-mark-dark {
+    display: block;
+  }
+}
+
 :root[data-theme='dark'] {
   color-scheme: dark;
   --bg: 13 13 13;

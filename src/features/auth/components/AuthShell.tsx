@@ -1,6 +1,7 @@
 // AuthShell: the frame every sign-in screen shares (sign in, two-step code and setup, choose a password, blocked
 // access): one opaque card over the silk artwork, the wordmark in the top-left corner and a quiet footer. Ports the
 // demo's login screens into the design of docs/login-design.md.
+import { BrandMark } from '@/components/ui';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { version } from '../../../../package.json';
 import { WaveBackground } from '../wave/WaveBackground';
@@ -50,7 +51,7 @@ export function AuthShell({ title, intro, icon, children, footer, focusTitle = f
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    document.title = `${title} · GSM Supply`;
+    document.title = `${title} · IMEI-HUB`;
   }, [title]);
 
   useEffect(() => {
@@ -93,13 +94,8 @@ export function AuthShell({ title, intro, icon, children, footer, focusTitle = f
 function AuthWordmark() {
   return (
     <p className="flex items-center gap-2.5">
-      <span
-        aria-hidden="true"
-        className="flex h-6 w-6 items-center justify-center rounded-md bg-ink text-2xs font-semibold text-surface"
-      >
-        GS
-      </span>
-      <span className="text-[15px] font-semibold leading-5 text-ink">GSM Supply</span>
+      <BrandMark height={30} />
+      <span className="text-[15px] font-semibold leading-5 text-ink">IMEI-HUB</span>
       <span className="font-mono text-xs text-ink3">admin</span>
     </p>
   );
@@ -110,7 +106,7 @@ function AuthFooter() {
   const badge = devBadge();
   return (
     <footer className="relative flex flex-wrap items-center gap-x-2.5 gap-y-1 px-5 py-6 text-xs text-ink3 md:absolute md:inset-x-0 md:bottom-0 md:px-8">
-      <span>GSM Supply admin console · v{version}</span>
+      <span>IMEI-HUB admin console · v{version}</span>
       {badge && <span className="badge b-neutral">{badge}</span>}
     </footer>
   );
