@@ -2,6 +2,7 @@
 // empty states. Ports `servicesTab` of 43-p-services.js. Filters, page and sort live in the address; the server filters, sorts
 // and counts, and computes every price figure shown.
 import { usePageClamp, type RowSelection, type SortState } from '@/components/ui';
+import { useStartPublish } from '@/features/storefront';
 import type { ServiceGrants } from '../hooks/useServiceGrants';
 import { useServicesList } from '../hooks/useServicesList';
 import { useSetExecutionMode, useSetServiceStatus } from '../hooks/useServiceMutations';
@@ -39,6 +40,7 @@ export function ServicesTab({ grants, selection, onDialog }: ServicesTabProps) {
     settled: list.query.isSuccess && !list.query.isPlaceholderData,
     setPage: view.setPage,
   });
+  const publish = useStartPublish();
   const setStatus = useSetServiceStatus();
   const setMode = useSetExecutionMode();
   // Only the service whose switch is saving waits; the others stay usable.
@@ -79,6 +81,8 @@ export function ServicesTab({ grants, selection, onDialog }: ServicesTabProps) {
         count={selection.selected.size}
         grants={grants}
         onBulk={() => onDialog({ kind: 'bulk' })}
+        onPublish={() => publish.start({ scope: { kind: 'services', serviceIds: [...selection.selected] } })}
+        publishing={publish.pending}
         onClear={selection.clear}
       />
       <div className="border-t border-line">

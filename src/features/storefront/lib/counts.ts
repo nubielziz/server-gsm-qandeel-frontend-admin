@@ -9,3 +9,6 @@ export const LISTED_SPEC = { id: 'listed', filters: { isListed: true } } as cons
  * `x-total-count`). The tab itself shows the same list; both share this request.
  */
 export const WAITING_SPEC = { id: 'waiting', filters: { waiting: true } } as const;
+
+/** The retail pricing rules that are switched on, for the Publish tab's note: none means no row can get a price from a rule. */
+export const ACTIVE_RULES_SPEC = { id: 'activeRules', filters: { isActive: true } } as const;

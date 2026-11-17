@@ -3,6 +3,7 @@
 // charts and the services table wait for the supplier's detail read, and the report line for `reports:read`.
 import { errorText } from '@/components/ui';
 import { useOrderDrawer } from '@/features/orders';
+import { useStartPublish } from '@/features/storefront';
 import type { SupplierGrants } from '../hooks/useSupplierGrants';
 import { useSetSupplierEnabled, useSyncSupplier, useTestSupplier } from '../hooks/useSupplierMutations';
 import { useSupplierDetail } from '../hooks/useSupplierDetail';
@@ -39,6 +40,7 @@ export function SupplierDetailPanel({ row, grants, onDialog }: SupplierDetailPan
   const sync = useSyncSupplier();
   const enable = useSetSupplierEnabled({ toastErrors: true });
   const orderDrawer = useOrderDrawer();
+  const publish = useStartPublish();
   const bad = needsAttention(supplier);
   const rerouting = bad && supplier.openOrders > 0;
 
@@ -86,6 +88,8 @@ export function SupplierDetailPanel({ row, grants, onDialog }: SupplierDetailPan
           grants={grants}
           onImport={() => onDialog({ kind: 'import', supplier })}
           onQuickAdd={() => onDialog({ kind: 'quick-add', supplier })}
+          onPublish={() => publish.start({ scope: { kind: 'supplier', supplierId: supplier.id } })}
+          publishing={publish.pending}
           onEditLinks={(link) => onDialog({ kind: 'links', supplier, link })}
         />
         <SupplierConnection supplier={supplier} />

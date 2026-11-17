@@ -1,9 +1,10 @@
-// The seven tabs of the Storefront page and the permissions each one needs. Ports the `tabs` of pageStorefront in
+// The eight tabs of the Storefront page and the permissions each one needs. Ports the `tabs` of pageStorefront in
 // 50-p-storefront.js (Services on sale, Landing pages, Content and legal, Help centre), swaps the demo's Live preview for
-// the TAC catalogue the map adds (MISMATCHES M4 has the preview), adds the Retail pricing tab of backend feature 31 and ends
-// with the Search tab of the shop's search engine.
+// the TAC catalogue the map adds (MISMATCHES M4 has the preview), adds the Publish and Retail pricing tabs of backend feature 31
+// and ends with the Search tab of the shop's search engine.
 
-export type StorefrontTab = 'listings' | 'pricing' | 'landing' | 'content' | 'help' | 'tac' | 'search';
+export type StorefrontTab =
+  'listings' | 'publish' | 'pricing' | 'landing' | 'content' | 'help' | 'tac' | 'search';
 
 /** The tab the page opens on. It is left out of the address, as the demo's default tab is. */
 export const DEFAULT_TAB: StorefrontTab = 'listings';
@@ -17,6 +18,8 @@ export type TabSpec = { id: StorefrontTab; label: string; anyOf: readonly string
 /** The tabs in the order the page shows them. */
 export const STOREFRONT_TABS: readonly TabSpec[] = [
   { id: 'listings', label: 'Services on sale', anyOf: ['storefront:read'] },
+  // Backend feature 31 (no demo tab): puts services on the shop in bulk, from a preview the server keeps (`?tab=publish&run=<id>`).
+  { id: 'publish', label: 'Publish', anyOf: ['storefront:create'] },
   // Backend feature 31 (no demo tab): the rules that price the shop from each service's cost, and the price changes they make.
   { id: 'pricing', label: 'Retail pricing', anyOf: ['pricing:read'] },
   { id: 'landing', label: 'Landing pages', anyOf: ['storefront:read'] },

@@ -4,6 +4,7 @@ export * from './contentPages';
 export * from './helpArticles';
 export * from './legalDocuments';
 export * from './listings';
+export * from './publish';
 export * from './resources';
 export * from './retailPricing';
 export * from './search';

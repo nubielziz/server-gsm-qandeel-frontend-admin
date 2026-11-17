@@ -32,6 +32,26 @@ export const CHANGES_VIEW: ViewSpec = {
   filters: { show: ['all'] },
 };
 
+/** Rows per page of a run's rows (the preview and the result): a run holds up to 5000. */
+export const PUBLISH_ITEMS_PAGE = 50;
+
+/** The earlier runs on the Publish tab's start: newest first. */
+export const PUBLISH_RUNS_VIEW: ViewSpec = {
+  sortFields: ['id', 'createdAt'],
+  defaultSort: { field: 'id', order: 'desc' },
+  filters: {},
+};
+
+/**
+ * The rows of one run (the result of a finished run; the preview of a draft adds its own filters here): in the server's order of
+ * rows, or by title or cost. `result` is the chips Published, Left out and Refused (`skipped` is "Left out").
+ */
+export const PUBLISH_ITEMS_VIEW: ViewSpec = {
+  sortFields: ['id', 'title', 'cost'],
+  defaultSort: { field: 'id', order: 'asc' },
+  filters: { result: ['published', 'skipped', 'refused'] },
+};
+
 /** The landing pages tab: the most recently changed first, filtered by page type (`sf-kind`). */
 export const LANDING_VIEW: ViewSpec = {
   sortFields: ['title', 'status', 'updatedAt'],

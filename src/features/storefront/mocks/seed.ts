@@ -5,6 +5,7 @@ import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
 import type { ContentPage, HelpArticle, LegalDocument, PageKind, PageStatus, TacEntry } from '../types';
 import { buildPricingStores } from './pricingSeed';
+import { buildPublishStores } from './publishSeed';
 import { buildSearchStores } from './searchSeed';
 import type { MockListing, MockSales, MockService, Stores } from './types';
 
@@ -221,5 +222,11 @@ export function buildStores(state: DemoState): Stores {
     tac: new Collection(tacRows(state)),
     search: buildSearchStores(listings.list(), now),
     pricing: buildPricingStores(services, categories, now),
+    publish: buildPublishStores(
+      services,
+      categories,
+      listings.list().map((listing) => listing.serviceId),
+      now,
+    ),
   };
 }

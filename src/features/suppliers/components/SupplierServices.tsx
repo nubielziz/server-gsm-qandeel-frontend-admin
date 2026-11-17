@@ -18,6 +18,10 @@ export interface SupplierServicesProps {
   grants: SupplierGrants;
   onImport: () => void;
   onQuickAdd: () => void;
+  /** Starts a publish preview of this supplier's services on the Storefront page's Publish tab. */
+  onPublish: () => void;
+  /** True while the request that starts the preview is on its way. */
+  publishing: boolean;
   onEditLinks: (link: SupplierLink) => void;
 }
 
@@ -31,10 +35,13 @@ export function SupplierServices({
   grants,
   onImport,
   onQuickAdd,
+  onPublish,
+  publishing,
   onEditLinks,
 }: SupplierServicesProps) {
   const importLock = grants.needs('catalog:create');
   const linksLock = grants.needs('catalog:update');
+  const publishLock = grants.needs('storefront:create');
   const rows = [...(links ?? [])].sort(
     (a, b) => a.priority - b.priority || a.serviceName.localeCompare(b.serviceName),
   );
@@ -128,7 +135,21 @@ export function SupplierServices({
       <div className="panel-h !border-b-0">
         <h3 className="panel-t flex-1">Services {links !== undefined && <Count>{rows.length}</Count>}</h3>
         {/* The empty state has its own buttons; every other state keeps them in the header. */}
-        {!(links !== undefined && rows.length === 0) && addButtons}
+        {!(links !== undefined && rows.length === 0) && (
+          <>
+            <Button
+              size="sm"
+              loading={publishing}
+              disabled={publishLock.disabled}
+              title={publishLock.title}
+              onClick={onPublish}
+            >
+              <Icon name="upload" className="ic-sm" />
+              Publish to the shop…
+            </Button>
+            {addButtons}
+          </>
+        )}
       </div>
       {body}
     </div>

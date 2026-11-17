@@ -302,3 +302,58 @@ describe('states of the table', () => {
     expect(app.location()).toBe('/storefront');
   });
 });
+
+describe('publishing in bulk', () => {
+  it('has a Publish services link beside Add listing, and the sub no longer says only IMEI services are sold', async () => {
+    const user = userEvent.setup();
+    const app = await openStorefront();
+    await rowOf(TABLE, 'EE UK Unlock');
+    const publish = screen.getByRole('link', { name: 'Publish services…' });
+    expect(publish).toHaveAttribute('href', '/storefront?tab=publish');
+    // With listings on the shop, Add listing stays the main button and Publish is the default one.
+    expect(screen.getByRole('button', { name: 'Add listing…' })).toHaveClass('btn-primary');
+    expect(publish).not.toHaveClass('btn-primary');
+    expect(screen.queryByText(/Only IMEI services are sold to the public/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^A retail price can never go below the floor/)).toBeInTheDocument();
+    await user.click(publish);
+    expect(app.location()).toBe('/storefront?tab=publish');
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
+    ).toBeInTheDocument();
+  });
+
+  it('makes Publish services the main button, and the call to action of the empty state, when the shop has no listing', async () => {
+    const stores = await storefrontStore();
+    for (const listing of stores.listings.list()) stores.listings.remove(listing.id);
+    await openStorefront();
+    expect(await screen.findByText('No services yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('Add services under Services & pricing or Suppliers, then publish them here.'),
+    ).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: 'Publish services…' });
+    // One in the panel's header, one in the empty state: both lead to the Publish tab and both are the main action.
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', '/storefront?tab=publish');
+      expect(link).toHaveClass('btn-primary');
+    }
+    expect(screen.getByRole('button', { name: 'Add listing…' })).not.toHaveClass('btn-primary');
+  });
+
+  it('keeps the plain empty state of a search with no match, without a Publish button in it', async () => {
+    const user = userEvent.setup();
+    await openStorefront();
+    await user.type(await screen.findByRole('searchbox', { name: 'Search service, code, slug' }), 'zzzz');
+    expect(await screen.findByText('No listings match')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Publish services…' })).toHaveLength(1);
+  });
+
+  it('shows a disabled button with the permission named for a role that cannot create listings', async () => {
+    await openStorefront('/storefront', { permissions: ['storefront:read'] });
+    await rowOf(TABLE, 'EE UK Unlock');
+    expect(screen.queryByRole('link', { name: 'Publish services…' })).not.toBeInTheDocument();
+    const publish = screen.getByRole('button', { name: 'Publish services…' });
+    expect(publish).toBeDisabled();
+    expect(publish).toHaveAttribute('title', 'You need the storefront:create permission');
+  });
+});

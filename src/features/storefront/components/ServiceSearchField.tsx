@@ -1,4 +1,4 @@
-// ServiceSearchField: the Service field of the Add listing dialog, a search box over the active IMEI services. The staff member
+// ServiceSearchField: the Service field of the Add listing dialog, a search box over the active IMEI, server and remote services. The staff member
 // types part of a name, a code or a category, the server answers the matches (20 at a time), and a click or Enter picks one.
 // New in feature 30: it replaces a select capped at 200 names, which hid most services after a supplier's Quick add.
 import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
@@ -7,6 +7,7 @@ import { FieldFrame } from '@/components/ui/FieldFrame';
 import { describedBy, errorMessage, INVALID_BORDER, type FieldErrorLike } from '@/components/ui/fieldA11y';
 import type { Service } from '@/features/services';
 import { useServiceSearch } from '../hooks/useServiceSearch';
+import { SHOP_TYPES_HINT } from '../lib/publish';
 import { ServiceSearchList } from './ServiceSearchList';
 
 export interface ServiceSearchFieldProps {
@@ -87,12 +88,7 @@ export const ServiceSearchField = forwardRef<HTMLInputElement, ServiceSearchFiel
     }
 
     return (
-      <FieldFrame
-        id={id}
-        label="Service"
-        hint="Only active IMEI services are sold to the public."
-        error={message}
-      >
+      <FieldFrame id={id} label="Service" hint={SHOP_TYPES_HINT} error={message}>
         <div className="relative">
           <input
             ref={(element) => {

@@ -8,6 +8,8 @@ import type {
   HiddenTerm,
   LegalDocument,
   PinMatch,
+  PublishItem,
+  PublishRun,
   RetailChangeKind,
   RetailChangeReason,
   RetailChangeResolution,
@@ -147,6 +149,29 @@ export type PricingStores = {
   previewLines: readonly RetailRulePreviewLine[];
 };
 
+/**
+ * A publish run as the mock keeps it: the run as the server would send it right now (`counts` are filled in when it is read, from the
+ * rows), its rows, and how many times it was read since it last moved. Progress advances by reads, never by timers: the first read of
+ * a preview that is `preparing` still says so and the second says `draft`; a `queued` run reads `running` and then `succeeded`; a run
+ * switch reads `running` and then `done`. `refusals` are what apply would refuse (row id to reason and detail), fixed in the seed.
+ */
+export type MockPublishRun = {
+  id: number;
+  run: PublishRun;
+  items: PublishItem[];
+  reads: number;
+  switchReads: number;
+  refusals: ReadonlyMap<number, { reason: PublishItem['resultReason']; detail: string }>;
+};
+
+/** What the Publish tab's mock routes keep: the runs with their rows, the rows of a preview of everything, and the services that already have a listing. */
+export type PublishStores = {
+  runs: Collection<MockPublishRun>;
+  /** The rows a run of the scope `all` starts from (a copy is made for each new run), and the services that already have a listing. */
+  template: readonly PublishItem[];
+  listedServices: readonly number[];
+};
+
 /** Everything the mock server keeps for this feature. */
 export type Stores = {
   listings: Collection<MockListing>;
@@ -160,4 +185,5 @@ export type Stores = {
   tac: Collection<TacEntry>;
   search: SearchStores;
   pricing: PricingStores;
+  publish: PublishStores;
 };

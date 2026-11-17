@@ -129,12 +129,12 @@ describe('the chip on the tab', () => {
   it('counts the proposals that wait from the server’s total and drops once none waits', async () => {
     const user = userEvent.setup();
     await openChanges();
-    await waitFor(() => expect(tabTexts()[1]).toBe('Retail pricing3'));
+    await waitFor(() => expect(tabTexts()[2]).toBe('Retail pricing3'));
     for (const service of ['T-Mobile USA Unlock', 'Vodafone UK iPhone Unlock', 'Orange France Unlock']) {
       await tick(user, service);
     }
     await user.click(screen.getByRole('button', { name: 'Keep the current price' }));
-    await waitFor(() => expect(tabTexts()[1]).toBe('Retail pricing'));
+    await waitFor(() => expect(tabTexts()[2]).toBe('Retail pricing'));
     expect(await screen.findByText('Nothing is waiting for you')).toBeInTheDocument();
   });
 });
@@ -155,7 +155,7 @@ describe('approving and keeping proposals', () => {
     // The proposal left the waiting list and the bar is gone.
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(3));
     expect(screen.queryByRole('region', { name: 'Selected price changes' })).not.toBeInTheDocument();
-    expect(tabTexts()[1]).toBe('Retail pricing2');
+    expect(tabTexts()[2]).toBe('Retail pricing2');
   });
 
   it('lists the ids the server skipped, in its words, and leaves them waiting', async () => {

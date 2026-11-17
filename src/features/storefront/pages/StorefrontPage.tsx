@@ -8,6 +8,7 @@ import { HelpTab } from '../components/HelpTab';
 import { LandingTab } from '../components/LandingTab';
 import { ListingsTab } from '../components/ListingsTab';
 import { RetailPricingTab } from '../components/pricing/RetailPricingTab';
+import { PublishTab } from '../components/publish/PublishTab';
 import { SearchTab } from '../components/SearchTab';
 import { StorefrontHeader } from '../components/StorefrontHeader';
 import { TacTab } from '../components/TacTab';
@@ -67,6 +68,7 @@ export function StorefrontPage() {
           </div>
           <div role="tabpanel" aria-label={current.label}>
             {current.id === 'listings' && <ListingsTab grants={grants} />}
+            {current.id === 'publish' && <PublishTab grants={grants} />}
             {current.id === 'pricing' && <RetailPricingTab grants={grants} />}
             {current.id === 'landing' && <LandingTab grants={grants} />}
             {current.id === 'content' && <ContentTab grants={grants} />}

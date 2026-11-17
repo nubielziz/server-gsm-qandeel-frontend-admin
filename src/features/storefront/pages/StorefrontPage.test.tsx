@@ -11,11 +11,12 @@ vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe('the tab strip', () => {
-  it('shows the demo’s four tabs, Retail pricing with its waiting count, the TAC catalogue and Search, and no Live preview tab', async () => {
+  it('shows the demo’s four tabs, Publish, Retail pricing with its waiting count, the TAC catalogue and Search, and no Live preview tab', async () => {
     await openStorefront();
     await waitFor(() =>
       expect(tabTexts()).toEqual([
         'Services on sale11',
+        'Publish',
         'Retail pricing3',
         'Landing pages',
         'Content and legal',
