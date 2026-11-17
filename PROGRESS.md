@@ -11,9 +11,9 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
-## Status (2026-11-17): English only, the Add listing search, ready-made payment methods, the IMEI-HUB brand
+## Status (2026-11-17): English only, the Add listing search, ready-made payment methods, the IMEI-HUB brand, the sync toast
 
-Four merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS.md` has the whole story of each):
+The merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS.md` has the whole story of each):
 
 - **English only (feature 30, backend decision 039), `b24098b`.** Language existed in the console only as fields of the content
   it manages; all of it is gone with the backend's wire: no Language select, column or `locale` in the storefront, notification,
