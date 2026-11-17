@@ -85,6 +85,10 @@ export const ICON_PATHS = {
   // Not in the demo's set: the support composer's Attach button (feature 28). Drawn like the others (24x24 grid, stroke only).
   paperclip:
     '<path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
+  // The three below are not in the demo set: they draw a method of payment with no logo (feature 32, the Payment methods tab).
+  bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.7 10v8M14.3 10v8M19 10v8"/><path d="M3 20.5h18"/>',
+  coin: '<circle cx="12" cy="12" r="9"/><path d="M14.6 9.4c-.4-.9-1.4-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2 0 2.9 5.4 1.1 5.4 4 0 1.2-1.1 2-2.8 2-1.3 0-2.3-.5-2.8-1.4"/><path d="M12 6.6V8M12 16v1.4"/>',
+  card: '<rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19M6 15h4"/>',
 } as const;
 
 /** Names accepted by <Icon name="..." />. */

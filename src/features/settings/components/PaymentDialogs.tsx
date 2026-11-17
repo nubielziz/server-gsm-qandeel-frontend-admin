@@ -1,13 +1,15 @@
-// PaymentDialogs: the dialog the Payment methods tab has open: add or edit a method, delete one, or confirm turning off the last
+// PaymentDialogs: the dialog the Payment methods tab has open: add (custom or from a ready-made method) or edit a method, delete one, or confirm turning off the last
 // storefront method (the demo's confirmDlg for `st-gw`). Each one shows the server's refusal in its own error slot.
 import { ConfirmDialog } from '@/components/ui';
 import { useDeleteGateway, useToggleGateway } from '../hooks/useGateways';
 import type { PaymentGateway } from '../types';
-import { GatewayDialog } from './GatewayDialog';
+import { GatewayDialog, type PresetStart } from './GatewayDialog';
 
 /** Which dialog is open. */
 export type PaymentDialogState =
-  { kind: 'create' } | { kind: 'edit' | 'delete' | 'last'; gateway: PaymentGateway };
+  | { kind: 'create' }
+  | ({ kind: 'preset' } & PresetStart)
+  | { kind: 'edit' | 'delete' | 'last'; gateway: PaymentGateway };
 
 /** The open dialog, or nothing. */
 export function PaymentDialogs({
@@ -21,6 +23,9 @@ export function PaymentDialogs({
   const remove = useDeleteGateway();
   if (!dialog) return null;
   if (dialog.kind === 'create') return <GatewayDialog onClose={onClose} />;
+  if (dialog.kind === 'preset') {
+    return <GatewayDialog start={{ preset: dialog.preset, code: dialog.code }} onClose={onClose} />;
+  }
   if (dialog.kind === 'edit') return <GatewayDialog gateway={dialog.gateway} onClose={onClose} />;
   const { gateway } = dialog;
   if (dialog.kind === 'last') {

@@ -1,13 +1,15 @@
-// GatewayDialog: "Add payment method" and "Edit <name>" (`POST` and `PATCH /admin/payment-gateways`). The demo's cards were read-only; the
-// map adds this form. Only what changed is sent on an edit, and the secrets are sent only when typed (they are write-only); the second webhook secret goes as `null` when it is removed.
+// GatewayDialog: "Add payment method" (custom, or filled from a ready-made one) and "Edit <name>" (`POST` and `PATCH /admin/payment-gateways`).
+// The demo's cards were read-only; the map adds this form. Only what changed is sent on an edit, and the secrets are sent only when typed (they
+// are write-only); the second webhook secret goes as `null` when it is removed. An edit also has the Logo field (feature 32, backend B232).
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, toast } from '@/components/ui';
 import { sameDecimal } from '../lib/decimal';
 import { useCreateGateway, useGroupNames, useUpdateGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
-import type { CreateGatewayBody, PaymentGateway, UpdateGatewayBody } from '../types';
+import type { CreateGatewayBody, GatewayPreset, PaymentGateway, UpdateGatewayBody } from '../types';
 import { GatewayFields, type GatewayValues } from './GatewayFields';
+import { GatewayLogoField } from './GatewayLogoField';
 
 const sameIds = (a: readonly number[], b: readonly number[]) =>
   a.length === b.length && [...a].sort().every((id, index) => id === [...b].sort()[index]);
@@ -32,8 +34,8 @@ const FIELD_NAMES = [
   'secondaryWebhookSecret',
 ];
 
-/** The values of the form as a create body. */
-function toBody(values: GatewayValues, allowedGroupIds: number[]): CreateGatewayBody {
+/** The values of the form as a create body; `preset` is the key of the ready-made method it was filled from. */
+function toBody(values: GatewayValues, allowedGroupIds: number[], preset?: string): CreateGatewayBody {
   // A pasted secret with stray whitespace would fail every webhook signature check, and a blank one must not replace the real secret.
   const firstWebhookSecret = values.webhookSecret.trim();
   return {
@@ -52,6 +54,7 @@ function toBody(values: GatewayValues, allowedGroupIds: number[]): CreateGateway
     instructions: values.instructions.trim(),
     holdHours: Number(values.holdHours),
     isActive: values.isActive,
+    ...(preset ? { preset } : {}),
     ...(values.secret ? { secret: values.secret } : {}),
     // Webhook secrets only exist for a gateway that confirms by webhook; a manual one never sends them.
     ...(!values.isManual && firstWebhookSecret ? { webhookSecret: firstWebhookSecret } : {}),
@@ -92,8 +95,22 @@ function changes(next: CreateGatewayBody, saved: PaymentGateway, values: Gateway
   return body;
 }
 
-/** Adds a payment method, or edits the one it is given. */
-export function GatewayDialog({ gateway, onClose }: { gateway?: PaymentGateway; onClose: () => void }) {
+/** A ready-made method to start from, with the free code the tab made from its key. */
+export type PresetStart = { preset: GatewayPreset; code: string };
+
+/**
+ * Adds a payment method, or edits the one it is given. With `start` the form is filled from the ready-made method (name, code, driver,
+ * manual, instructions) for staff to complete, and `preset` is sent with the body.
+ */
+export function GatewayDialog({
+  gateway,
+  start,
+  onClose,
+}: {
+  gateway?: PaymentGateway;
+  start?: PresetStart;
+  onClose: () => void;
+}) {
   const grants = useSettingsGrants();
   const canGroups = grants.can('groups:read');
   const groups = useGroupNames(canGroups);
@@ -102,10 +119,11 @@ export function GatewayDialog({ gateway, onClose }: { gateway?: PaymentGateway; 
   const [groupIds, setGroupIds] = useState<number[]>(gateway?.allowedGroupIds ?? []);
   const form = useForm<GatewayValues>({
     defaultValues: {
-      name: gateway?.name ?? '',
-      code: gateway?.code ?? '',
-      driver: gateway?.driver ?? '',
-      audience: gateway?.audience ?? 'b2c',
+      name: gateway?.name ?? start?.preset.name ?? '',
+      code: gateway?.code ?? start?.code ?? '',
+      driver: gateway?.driver ?? start?.preset.driver ?? '',
+      // A ready-made method starts for both: a manual transfer tops up a merchant's wallet and a customer's store balance alike.
+      audience: gateway?.audience ?? (start ? 'both' : 'b2c'),
       feePercent: gateway?.feePercent ?? '0',
       feeFixed: gateway?.feeFixed ?? '0',
       minAmount: gateway?.minAmount ?? '0',
@@ -113,9 +131,9 @@ export function GatewayDialog({ gateway, onClose }: { gateway?: PaymentGateway; 
       holdHours: String(gateway?.holdHours ?? 0),
       supportsRefunds: gateway?.supportsRefunds ?? false,
       supports3ds: gateway?.supports3ds ?? false,
-      isManual: gateway?.isManual ?? false,
+      isManual: gateway?.isManual ?? start?.preset.kind === 'manual',
       isActive: gateway?.isActive ?? false,
-      instructions: gateway?.instructions ?? '',
+      instructions: gateway?.instructions ?? start?.preset.instructions ?? '',
       secret: '',
       webhookSecret: '',
       secondaryWebhookSecret: '',
@@ -126,7 +144,7 @@ export function GatewayDialog({ gateway, onClose }: { gateway?: PaymentGateway; 
   const submit = dialogSubmit(
     form,
     async (values) => {
-      const next = toBody(values, groupIds);
+      const next = toBody(values, groupIds, start?.preset.key);
       if (!gateway) {
         await create.mutateAsync(next);
         return;
@@ -145,13 +163,26 @@ export function GatewayDialog({ gateway, onClose }: { gateway?: PaymentGateway; 
   return (
     <FormDialog
       open
-      title={gateway ? `Edit ${gateway.name}` : 'Add payment method'}
-      sub="How customers or merchants pay: the fee, the limits and who may use it."
+      title={gateway ? `Edit ${gateway.name}` : start ? `Add ${start.preset.name}` : 'Add payment method'}
+      sub={
+        start
+          ? 'Fill in your account details where the instructions show a blank (________), then turn it on.'
+          : 'How customers or merchants pay: the fee, the limits and who may use it.'
+      }
       confirm={gateway ? 'Save changes' : 'Add payment method'}
       onClose={onClose}
       onSubmit={submit}
     >
-      <GatewayFields form={form} gateway={gateway} />
+      {gateway && (
+        <div className="mb-3">
+          <GatewayLogoField gateway={gateway} />
+        </div>
+      )}
+      <GatewayFields
+        form={form}
+        gateway={gateway}
+        presetMade={Boolean(gateway?.preset) || start !== undefined}
+      />
       <fieldset className="mt-3 min-w-0">
         <legend className="label">Merchant groups</legend>
         {canGroups ? (

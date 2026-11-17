@@ -1,9 +1,11 @@
 // GatewayCard: one payment method as a card with its switch, fees, limits and merchant groups. Ports gatewayCard of 55-p-settings.js.
-// The map adds Edit and Delete (the demo's cards were read-only) and the write-only secret behind the gateway.
+// The map adds Edit and Delete (the demo's cards were read-only) and the write-only secret behind the gateway; each card shows its logo.
 import { Badge, Button, Icon, KeyValue, Switch, TypeTag } from '@/components/ui';
 import { money0 } from '@/lib/format';
 import { AUDIENCE_LABEL, feeText, groupsText, limitsText, modeLabel } from '../lib/gateways';
+import { methodTypeOf } from '../lib/paymentLogos';
 import type { PaymentGateway } from '../types';
+import { PaymentMethodLogo } from './PaymentMethodLogo';
 
 export interface GatewayCardProps {
   gateway: PaymentGateway;
@@ -32,6 +34,13 @@ export function GatewayCard({
   return (
     <article className="panel p-3.5" aria-label={gateway.name}>
       <div className="flex items-start gap-3">
+        <PaymentMethodLogo
+          nameShown
+          name={gateway.name}
+          logoUrl={gateway.logoUrl}
+          preset={gateway.preset}
+          methodType={methodTypeOf(gateway)}
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-semibold">{gateway.name}</h3>

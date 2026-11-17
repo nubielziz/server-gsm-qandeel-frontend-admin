@@ -37,16 +37,26 @@ const AUDIENCES: readonly SelectOption[] = [
   { value: 'both', label: 'Both' },
 ];
 
+/** What a method made from a ready-made one says under its driver and its manual setting: the server keeps both as the entry has them. */
+const FIXED_HINT = 'Set by the ready-made method; it cannot change.';
+
 const required = (message: string) => (value: string) => value.trim() !== '' || message;
 const amount = (value: string) => isDecimalText(value) || 'Enter an amount, such as 0.30.';
 
-/** The fields. `gateway` is set when editing: the code is then fixed and the secret fields say which are stored. */
+/**
+ * The fields. `gateway` is set when editing: the code is then fixed and the secret fields say which are stored. `presetMade` is true for a
+ * method made from a ready-made one (an edit of one, or the add dialog opened from the gallery): its driver and its manual setting are
+ * fixed (read-only; `aria-disabled` and the click stopped, because react-hook-form drops the value of a disabled field), as the server
+ * refuses a change of either (422 `driver` and `isManual`). A custom method keeps both free.
+ */
 export function GatewayFields({
   form,
   gateway,
+  presetMade = false,
 }: {
   form: UseFormReturn<GatewayValues>;
   gateway?: PaymentGateway;
+  presetMade?: boolean;
 }) {
   const {
     register,
@@ -77,7 +87,8 @@ export function GatewayFields({
         <TextField
           label="Driver"
           autoComplete="off"
-          hint="The integration that talks to the gateway."
+          readOnly={presetMade}
+          hint={presetMade ? FIXED_HINT : 'The integration that talks to the gateway.'}
           error={errors.driver}
           {...register('driver', { validate: required('Enter the driver.') })}
         />
@@ -146,6 +157,11 @@ export function GatewayFields({
         <CheckboxField label="Uses 3D Secure" error={errors.supports3ds} {...register('supports3ds')} />
         <CheckboxField
           label="A person checks each payment (manual)"
+          hint={presetMade ? FIXED_HINT : undefined}
+          aria-disabled={presetMade || undefined}
+          className={presetMade ? 'aria-disabled:opacity-60' : undefined}
+          // A click (a mouse press, a label click or the space key all end in one) is stopped, so the box keeps its value.
+          onClick={presetMade ? (event) => event.preventDefault() : undefined}
           error={errors.isManual}
           {...register('isManual')}
         />

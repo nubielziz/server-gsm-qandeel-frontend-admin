@@ -140,7 +140,7 @@ describe('Webhook secrets in the payment method dialog', () => {
     const user = userEvent.setup();
     const recorder = recordRequests();
     await openSettings();
-    await user.click(await screen.findByRole('button', { name: 'Add payment method' }));
+    await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Stripe');
     await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'stripe');
@@ -165,7 +165,7 @@ describe('Webhook secrets in the payment method dialog', () => {
   it('puts the server’s 422 for a second secret without a first under that field', async () => {
     const user = userEvent.setup();
     await openSettings();
-    await user.click(await screen.findByRole('button', { name: 'Add payment method' }));
+    await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Stripe');
     await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'stripe');

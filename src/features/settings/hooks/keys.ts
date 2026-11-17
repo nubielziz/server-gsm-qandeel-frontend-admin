@@ -6,6 +6,9 @@ import { DASHBOARD_KEY } from '@/lib/query';
 /** The merchant group names the gateway cards and dialog use. */
 export const GROUP_NAMES_KEY = ['api', 'settings', 'groups'] as const;
 
+/** The catalog of ready-made payment methods (a fixed list: it changes only with a backend release). */
+export const GATEWAY_PRESETS_KEY = ['api', 'settings', 'gateway-presets'] as const;
+
 /** The preview of each template. */
 export const PREVIEW_KEY = ['api', 'settings', 'preview'] as const;
 

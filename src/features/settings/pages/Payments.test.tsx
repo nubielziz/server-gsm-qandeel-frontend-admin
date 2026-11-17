@@ -103,7 +103,7 @@ describe('Add payment method', () => {
     const user = userEvent.setup();
     const recorder = recordRequests();
     await openSettings();
-    await user.click(await screen.findByRole('button', { name: 'Add payment method' }));
+    await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'PayPal');
     await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'paypal');
@@ -131,7 +131,7 @@ describe('Add payment method', () => {
   it('asks for the required fields before it calls the server', async () => {
     const user = userEvent.setup();
     await openSettings();
-    await user.click(await screen.findByRole('button', { name: 'Add payment method' }));
+    await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     await user.click(dialogOf('Add payment method').getByRole('button', { name: 'Add payment method' }));
     expect(await dialogOf('Add payment method').findByText('Enter a name.')).toBeInTheDocument();
     expect(dialogOf('Add payment method').getByText('Enter a code.')).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe('Add payment method', () => {
   it('puts the server’s messages under their fields', async () => {
     const user = userEvent.setup();
     await openSettings();
-    await user.click(await screen.findByRole('button', { name: 'Add payment method' }));
+    await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Odd');
     await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'card');
@@ -241,6 +241,6 @@ describe('the list', () => {
     );
     await openSettings();
     expect(await screen.findByText('No payment methods')).toBeInTheDocument();
-    expect(screen.getByText('Connect a card gateway to start selling.')).toBeInTheDocument();
+    expect(screen.getByText('Add one of the ready-made methods above, or your own.')).toBeInTheDocument();
   });
 });

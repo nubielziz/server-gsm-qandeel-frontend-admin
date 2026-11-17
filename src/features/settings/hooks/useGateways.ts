@@ -1,11 +1,20 @@
 // The payment gateways: the list for the Payment methods tab, the merchant group names the cards show, and the changes (create, edit,
-// the on/off switch, delete). A failed switch shows the server's message as a toast; the dialogs show their own failures.
+// the on/off switch, delete), the catalog of ready-made methods and the logo upload and removal. A failed switch shows the server's message
+// as a toast; the dialogs show their own failures.
 import { useList } from '@refinedev/core';
 import { listClientGroups } from '@/features/merchants';
 import { useApiMutation, useApiQuery } from '@/lib/query';
-import { createGateway, deleteGateway, updateGateway } from '../api';
+import {
+  createGateway,
+  deleteGateway,
+  listGatewayPresets,
+  removeGatewayLogo,
+  updateGateway,
+  uploadGatewayLogo,
+} from '../api';
+import { logoForm } from '../lib/paymentLogos';
 import type { CreateGatewayBody, PaymentGateway, UpdateGatewayBody } from '../types';
-import { GROUP_NAMES_KEY, LOOKUP_STALE_MS, WHOLE_LIST } from './keys';
+import { GATEWAY_PRESETS_KEY, GROUP_NAMES_KEY, LOOKUP_STALE_MS, WHOLE_LIST } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
@@ -78,6 +87,37 @@ export function useDeleteGateway() {
     mutationFn: (gateway: PaymentGateway) => deleteGateway(gateway.id),
     invalidates: (_result, gateway) => [{ resource: 'payment-gateways', id: gateway.id }],
     successNotification: (_result, gateway) => ({ message: `${gateway.name} deleted` }),
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
+/** The catalog of ready-made methods for the gallery. Needs `payments:gateways`; pass `enabled: false` without it. */
+export function useGatewayPresets(enabled = true) {
+  return useApiQuery({
+    queryKey: [...GATEWAY_PRESETS_KEY],
+    queryFn: ({ signal }) => listGatewayPresets({ signal }),
+    enabled,
+    staleTime: LOOKUP_STALE_MS,
+  });
+}
+
+/** Uploads the logo of a method. The dialog's field shows the server's refusal; the cards behind it refresh. */
+export function useUploadGatewayLogo() {
+  return useApiMutation({
+    mutationFn: ({ gateway, file }: { gateway: PaymentGateway; file: File }) =>
+      uploadGatewayLogo(gateway.id, logoForm(file)),
+    invalidates: (_result, { gateway }) => [{ resource: 'payment-gateways', id: gateway.id }],
+    successNotification: (_gateway, { gateway }) => ({ message: `Logo of ${gateway.name} saved` }),
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
+/** Removes the uploaded logo of a method; it then shows its preset's logo, or an icon. */
+export function useRemoveGatewayLogo() {
+  return useApiMutation({
+    mutationFn: (gateway: PaymentGateway) => removeGatewayLogo(gateway.id),
+    invalidates: (_result, gateway) => [{ resource: 'payment-gateways', id: gateway.id }],
+    successNotification: (_result, gateway) => ({ message: `Logo of ${gateway.name} removed` }),
     errorNotification: NO_ERROR_TOAST,
   });
 }

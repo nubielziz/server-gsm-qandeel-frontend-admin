@@ -1,12 +1,15 @@
-// PaymentsTab: the "Payment methods" tab: one card per gateway with its switch, a warning when customers cannot pay, and Add, Edit and
-// Delete. Ports tabGateways and `st-gw` of 55-p-settings.js. The server decides what a switch may do; a refusal shows as a toast.
+// PaymentsTab: the "Payment methods" tab: the gallery of ready-made methods, then one card per gateway with its switch, a warning when
+// customers cannot pay, and Add, Edit and Delete. Ports tabGateways and `st-gw` of 55-p-settings.js; the gallery is feature 32 (backend B232).
+// The server decides what a switch may do; a refusal shows as a toast.
 import { useState } from 'react';
 import { Button, EmptyState, Icon, Panel, QueryState, SkeletonTable } from '@/components/ui';
 import { useGatewayList, useGroupNames, useToggleGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { customersCanPay, isLastStorefrontMethod } from '../lib/gateways';
+import { freeCode } from '../lib/gatewayPresets';
 import { GatewayCard } from './GatewayCard';
 import { PaymentDialogs, type PaymentDialogState } from './PaymentDialogs';
+import { PresetGallery } from './PresetGallery';
 
 /** The cards, the warning and the dialogs. */
 export function PaymentsTab() {
@@ -33,7 +36,7 @@ export function PaymentsTab() {
       onClick={() => setDialog({ kind: 'create' })}
     >
       <Icon name="plus" className="ic-sm" />
-      Add payment method
+      Add custom method
     </Button>
   );
 
@@ -46,6 +49,13 @@ export function PaymentsTab() {
         </p>
         {addButton}
       </div>
+      <PresetGallery
+        enabled={grants.ready && allowed}
+        gateways={gateways}
+        lock={lock}
+        onAdd={(preset) => setDialog({ kind: 'preset', preset, code: freeCode(preset.key, gateways) })}
+      />
+      <h3 className="mb-2 text-sm font-semibold">Your payment methods</h3>
       <QueryState
         isLoading={query.isLoading}
         isError={query.isError}
@@ -61,7 +71,7 @@ export function PaymentsTab() {
         empty={
           <Panel flush>
             <EmptyState icon="wallet" title="No payment methods" cta={addButton}>
-              Connect a card gateway to start selling.
+              Add one of the ready-made methods above, or your own.
             </EmptyState>
           </Panel>
         }

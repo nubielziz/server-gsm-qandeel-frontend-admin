@@ -71,6 +71,9 @@ export function gatewayRows(rows: DemoGateway[]): PaymentGateway[] {
       webhookSecretHint: row.mode === 'Manual' ? null : `••••${(5000 + index * 211).toString(16)}`,
       secondaryWebhookSecretHint: null,
       volume30d: row.volume ? toMoney(row.volume) : null,
+      // The demo's methods are custom ones: none was made from a ready-made method, none has an uploaded logo.
+      preset: null,
+      logoUrl: null,
     };
   });
 }

@@ -329,6 +329,22 @@ function or type (`api/*.ts`, `types/*.ts`).
   `supportsRefunds`, `supports3ds`, `isManual`, `instructions`, `holdHours`, `isActive`, optional write-only `secret`. `PATCH` takes any of
   them (the switch sends `{ isActive }`; `secret` replaces the stored one). A zero minimum or maximum means no limit. `DELETE` answers 204,
   or 409 for a gateway that took payments.
+- Ready-made payment methods and logos (feature 32; a backend addition, B232, MISMATCHES M266). The backend is built on its branch `feat/backend-32`
+  (`src/modules/money/contracts/gateways.contracts.ts`); the console was written from plan section 5 and its mocks, and matches that contract:
+  `GET /admin/payment-gateway-presets` answers a plain array (no total) in the order to show: `{ key, name, kind: 'manual' | 'automatic', available,
+  driver, methodType: 'bank' | 'card' | 'usdt' | 'wise', instructions }`; an entry that is not `available` is shown as Coming soon. `POST
+  /admin/payment-gateways` takes an optional `preset` (the key), checked on create only, every problem reported together: 422 on `preset` (`unknown`, the
+  only problem for an unknown key, or `unavailable`), on `isManual` (`preset_kind`) when it is not the entry's kind, on `driver` (`preset_driver`) when it
+  is not the entry's driver; several methods may come from one entry. `PATCH` ignores a `preset` (it never changes), and **a method made from a preset
+  keeps its kind and its driver**: the merged `isManual` or `driver` that is not the entry's is 422 on `isManual` (`preset_kind`) or `driver`
+  (`preset_driver`); a custom method may still change both. So the console fixes both fields (read-only driver, an `aria-disabled` manual box, the hint
+  "Set by the ready-made method; it cannot change.") in the edit dialog of a preset-made method and in the add dialog opened from the gallery. The gateway
+  row of the five routes has `preset: string | null` and `logoUrl: string | null` (the public path `/store/v1/media/<name>`; always sent).
+  `POST /admin/payment-gateways/:id/logo` takes multipart with one part `file` (JPEG, PNG or WebP, at most 2 MiB, 200 to 4096 pixels on each side) and
+  answers the gateway: 422 on `file` (`empty`, `unsupported_type`, `corrupt`, `animated`, `too_small`, `too_large_dimensions`, `rotated`; a body with no file
+  part too), 413 over 2 MiB, 415 for a body of a type the API does not read, 404 for an unknown method. `DELETE …/logo` answers 204, also when there was
+  none. The console's mock plays the catalog (the six templates word for word as the backend's `GATEWAY_PRESETS`), the create and edit refusals above and
+  the logo refusals (it cannot measure pixels or the size of a file in the test environment).
 - `GET /admin/tax-rates[/:id]`: `TaxRateRow`, several rows per country. `POST` body: `country`, `region`, `ratePercent`, `taxType`
   (`vat`, `gst`, `sales_tax`, `none`), `appliesTo`, `validFrom`, `validTo`, `label`, `ossScheme`. `PATCH` takes any of them.
 - `GET /admin/currencies[/:id]`: `CurrencyRow`, optionally `isStale`. `POST` body: `code`, `name`, `rateToBase`, `markupPercent`,
@@ -366,6 +382,12 @@ function or type (`api/*.ts`, `types/*.ts`).
 7. Webhook deliveries: are `endpoint` and `client` joined into each row? Which `status` values exist? Does the detail carry the merchant's
    `responseBody` and a network `error`? Does a retry make a new attempt at once, and is it rate limited?
 8. Tax rates: should two rates for one country be refused when their dates overlap? Which `taxType` values exist?
+9. Ready-made methods: the console starts a method from an entry with the entry's `instructions` and a free `code` made from the key
+   (`vodafone_cash`, then `vodafone_cash_2`; the contract allows `-` and `_` in a code), and for **both** audiences (lead decision,
+   2026-11-17: a manual transfer tops up a merchant's wallet and a customer's store balance alike; a custom method still starts at B2C).
+   A refusal of `preset` shows in the dialog's error slot as `preset: <message>`. The Logo field's hint says the server's rule for a
+   logo: JPEG, PNG or WebP, up to 2 MiB, at least 64 pixels on each side (a listing picture needs 200); the server's refusal
+   (`too_small`) shows under the field.
 
 ## storefront
 

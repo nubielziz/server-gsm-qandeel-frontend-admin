@@ -1,5 +1,7 @@
 // Mock of the payment gateway routes (`/admin/payment-gateways*`). The mock checks the fields the way the real server would and refuses
 // to delete a gateway that took payments lately. Secrets in a body are kept only as hints and never sent back; a second webhook secret needs a first (422 on its field).
+// A create body may carry `preset` (backend B232): the mock refuses what the server refuses and keeps the key; an edit never changes it, and
+// keeps the kind and the driver of a method made from a preset (422 on `isManual` and `driver`).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { ProblemError } from '@/mocks/problem';
 import type { GatewayAudience, PaymentGateway } from '../types';
@@ -14,6 +16,7 @@ import {
   signedIn,
   textOf,
 } from './http';
+import { presetPinProblems, presetProblems } from './gatewayPresets';
 import { settingsFeatureStore } from './store';
 
 const AUDIENCES: GatewayAudience[] = ['b2c', 'b2b', 'both'];
@@ -121,6 +124,8 @@ const NEW_GATEWAY: Omit<PaymentGateway, 'id'> = {
   webhookSecretHint: null,
   secondaryWebhookSecretHint: null,
   volume30d: null,
+  preset: null,
+  logoUrl: null,
 };
 
 /** The gateway routes. */
@@ -153,9 +158,10 @@ export const gatewayRoutes: HttpHandler[] = [
       for (const key of ['name', 'driver', 'code'] as const)
         if (!(key in body))
           problems.push({ field: key, message: key === 'name' ? 'Enter a name.' : `Enter the ${key}.` });
-      return problems.length > 0
-        ? invalid(problems)
-        : HttpResponse.json(gateways.insert(draft), { status: 201 });
+      problems.push(...presetProblems(body));
+      if (problems.length > 0) return invalid(problems);
+      const preset = typeof body.preset === 'string' ? body.preset : null;
+      return HttpResponse.json(gateways.insert({ ...draft, preset }), { status: 201 });
     }),
   ),
 
@@ -168,6 +174,8 @@ export const gatewayRoutes: HttpHandler[] = [
       const taken = (code: string) =>
         gateways.list().some((other) => other.id !== row.id && other.code === code);
       const draft = applyFields(row, await bodyOf(request), taken, problems);
+      // A method made from a preset keeps its entry's kind and driver, measured on the merged row.
+      problems.push(...presetPinProblems(row.preset, draft));
       return problems.length > 0
         ? invalid(problems)
         : HttpResponse.json(gateways.patch(row.id, draft) ?? row);
