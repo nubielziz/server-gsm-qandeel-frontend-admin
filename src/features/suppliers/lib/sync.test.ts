@@ -20,12 +20,12 @@ describe('syncSummary', () => {
     expect(syncSummary(result({ changed: 3 }))).toBe('3 with a changed cost. Balance $1,850.00.');
   });
 
-  it('says how many services now ask for the supplier’s own input', () => {
+  it('says how many services now ask for what the supplier requires', () => {
     expect(syncSummary(result({ adopted: 1 }))).toBe(
-      'No cost changes. 1 service now asks for the supplier’s own input (an ECID or a serial number) instead of an IMEI. Balance $1,850.00.',
+      'No cost changes. 1 service now asks for what the supplier requires (its own input instead of an IMEI, or its required fields). Balance $1,850.00.',
     );
     expect(syncSummary(result({ changed: 2, adopted: 335 }))).toBe(
-      '2 with a changed cost. 335 services now ask for the supplier’s own input (an ECID or a serial number) instead of an IMEI. Balance $1,850.00.',
+      '2 with a changed cost. 335 services now ask for what the supplier requires (its own input instead of an IMEI, or its required fields). Balance $1,850.00.',
     );
   });
 
