@@ -33,6 +33,12 @@ Four merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS
   the tab icon, and "IMEI-HUB" instead of "GSM Supply" in every title, mock and test. Never write the old name again; the demo
   sign-in addresses (`@gsm-supply.example`) stay. The kit is outside the repository: `/home/saifi/gsm-project/.brand/`.
 
+- **The sync says what it adopted (feature 33, backend decision 042, B233), `5ed70c8`.** A real Dhru Fusion supplier names the
+  main box of an IMEI service (an ECID, a serial number instead of an IMEI); the backend's sync turns the services imported
+  before into server services that ask for it, and answers how many in `adopted`. The toast after "Sync now" adds "N services
+  now ask for the supplier's own input (an ECID or a serial number) instead of an IMEI." (`features/suppliers/lib/sync.ts`).
+  M267. Four commands green on the branch (5342 tests).
+
 Checks after the merges are at the end of the backend's feature 32 paragraph. Parked, not merged: `feat/console-31` (bulk
 publish, postponed by the owner on 2026-11-17).
 
