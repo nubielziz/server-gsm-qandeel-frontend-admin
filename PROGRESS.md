@@ -11,6 +11,31 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-17): English only, the Add listing search, ready-made payment methods, the IMEI-HUB brand
+
+Four merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS.md` has the whole story of each):
+
+- **English only (feature 30, backend decision 039), `b24098b`.** Language existed in the console only as fields of the content
+  it manages; all of it is gone with the backend's wire: no Language select, column or `locale` in the storefront, notification,
+  customer, merchant, settings and support screens; a legal document keeps a read-only `locale` (a retired non-English version
+  is listed under "Earlier versions kept for the record"); no right-to-left code; a ticket message renders with `dir="auto"`, so
+  Arabic text people type still reads correctly. The guard `scripts/check-english-only.mjs` is part of `npm run lint`. M264.
+- **The Service field of Add listing searches on the server, `b9d8ded`.** A combobox over `GET /admin/services` instead of a
+  select of the first 200 services (most were missing after a supplier's Quick add).
+- **Ready-made payment methods with logos (feature 32, backend decision 041, B232), `d3d7f59`.** Settings, Payment methods: a
+  gallery of ready-made methods (bank transfer, crypto transfer, Vodafone Cash, Fawry, InstaPay, Binance Pay; NOWPayments and
+  Binance Pay (automatic) as "Coming soon"), **Add** opens the dialog filled from the entry (for merchants and customers alike,
+  switched off until staff complete the transfer details), each method shows its logo (uploaded, else bundled, else an icon),
+  the edit dialog has a Logo field (at least 64 pixels on each side), and a method made from an entry keeps its driver and its
+  kind (fixed in the dialog; the server refuses a change). Bundled logos and their sources: `docs/LOGOS.md`. M266. Built by
+  Sonnet, reviewed by Opus (one fix round). The real backend has no payment method until the owner adds them.
+- **The brand is IMEI-HUB, `8231e58`.** The owner's mark (`BrandMark`, both themes) in the sidebar and on the sign-in screens,
+  the tab icon, and "IMEI-HUB" instead of "GSM Supply" in every title, mock and test. Never write the old name again; the demo
+  sign-in addresses (`@gsm-supply.example`) stay. The kit is outside the repository: `/home/saifi/gsm-project/.brand/`.
+
+Checks after the merges are at the end of the backend's feature 32 paragraph. Parked, not merged: `feat/console-31` (bulk
+publish, postponed by the owner on 2026-11-17).
+
 ## Status (2026-11-08, evening): the console runs on the real backend with no mocks
 
 The backend builds every route the console calls (269 of 269; it has all 382 entries of the map). `src/mocks/liveRoutes.gen.ts`
