@@ -25,6 +25,13 @@ export const LISTING_VIEW: ViewSpec = {
   filters: {},
 };
 
+/** The price changes of the Retail pricing tab: newest first; the proposals that wait are shown until `show=all`. */
+export const CHANGES_VIEW: ViewSpec = {
+  sortFields: ['id', 'createdAt'],
+  defaultSort: { field: 'id', order: 'desc' },
+  filters: { show: ['all'] },
+};
+
 /** The landing pages tab: the most recently changed first, filtered by page type (`sf-kind`). */
 export const LANDING_VIEW: ViewSpec = {
   sortFields: ['title', 'status', 'updatedAt'],

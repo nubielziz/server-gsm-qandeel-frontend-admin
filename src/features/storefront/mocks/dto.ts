@@ -2,6 +2,7 @@
 // (the floor, the margin, the 30-day orders). The mock plays the server here and does not re-implement more than the demo did.
 import { toMoney } from '@/mocks/seed';
 import type { ServiceListing, ServiceListingDetail } from '../types';
+import { ruleLabel } from './pricingDto';
 import type { MockListing, Stores } from './types';
 
 /** The demo's `retailFloor`: the B2B base price plus 10%, to the cent. */
@@ -15,6 +16,8 @@ export function toListing(stores: Stores, row: MockListing): ServiceListing {
   if (!service) throw new Error(`Listing ${row.id} points at a service the mock does not have.`);
   const retail = stores.retail.get(row.serviceId) ?? null;
   const sales = stores.sales.get(row.serviceId);
+  const written = stores.pricing.sources.get(row.serviceId);
+  const rule = written?.ruleId == null ? undefined : stores.pricing.rules.find(written.ruleId);
   return {
     id: row.id,
     serviceId: row.serviceId,
@@ -41,6 +44,15 @@ export function toListing(stores: Stores, row: MockListing): ServiceListing {
       cost: toMoney(service.cost),
     },
     retailPrice: retail === null ? null : toMoney(retail),
+    // Who wrote the price: a rule (which one) or a person; a proposal that waits for this service shows as "waiting".
+    retailPriceSource: retail === null ? null : (written?.source ?? 'manual'),
+    retailPriceRule:
+      retail !== null && written?.source === 'rule' && rule
+        ? { id: rule.id, label: ruleLabel(stores, rule) }
+        : null,
+    retailPriceWaiting: stores.pricing.changes
+      .list()
+      .some((change) => change.serviceId === row.serviceId && change.waiting),
     floorPrice: toMoney(floorOf(service.basePrice)),
     marginPct: retail === null ? null : (((retail - service.cost) / retail) * 100).toFixed(4),
     orders30d: sales?.orders ?? 0,

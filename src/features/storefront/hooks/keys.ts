@@ -63,3 +63,16 @@ export const REBUILD_POLL_MS = 5_000;
 
 /** How many listed services the pin picker shows for a search text. */
 export const PICKER_RESULTS = 8;
+
+/** Refine resources of the Retail pricing tab's lists (`retail-price-rules`, `retail-price-changes`). */
+export const RETAIL_RESOURCES = { rules: 'retail-price-rules', changes: 'retail-price-changes' } as const;
+
+/** The server's preview of one rule change (`['api', 'storefront', 'retail-rule-preview', <change>]`); never kept after the dialog. */
+export const retailPreviewKey = (change: unknown) =>
+  ['api', 'storefront', 'retail-rule-preview', change] as const;
+
+/** The categories the rule dialog's search offers for one search text. */
+export const categorySearchKey = (q: string) => ['api', 'storefront', 'category-search', q] as const;
+
+/** How many categories one search of the rule dialog asks for (the menus of the services pages stop at 200 without a word). */
+export const CATEGORY_SEARCH_ROWS = 20;

@@ -7,7 +7,7 @@ import { useApiQuery } from '@/lib/query';
 import { PICKER_STALE_MS, SERVICE_SEARCH_PAUSE_MS, SERVICE_SEARCH_ROWS, serviceSearchKey } from './keys';
 
 /** `value`, once it has stayed the same for `delay` ms. */
-function useSettledValue<T>(value: T, delay: number): T {
+export function useSettledValue<T>(value: T, delay: number): T {
   const [settled, setSettled] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setSettled(value), delay);

@@ -11,11 +11,12 @@ vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe('the tab strip', () => {
-  it('shows the demo’s four tabs, the TAC catalogue and Search, and no Live preview tab', async () => {
+  it('shows the demo’s four tabs, Retail pricing with its waiting count, the TAC catalogue and Search, and no Live preview tab', async () => {
     await openStorefront();
     await waitFor(() =>
       expect(tabTexts()).toEqual([
         'Services on sale11',
+        'Retail pricing3',
         'Landing pages',
         'Content and legal',
         'Help centre',
@@ -142,6 +143,28 @@ describe('a reader of the storefront', () => {
 });
 
 describe('a role with a different part of the page', () => {
+  it('opens on Retail pricing for pricing:read alone, with every write button asking for its own permission', async () => {
+    await openStorefront('/storefront', { permissions: ['pricing:read'] });
+    expect(await screen.findByRole('tab', { name: /^Retail pricing/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await waitFor(() => expect(tabTexts()).toEqual(['Retail pricing3']));
+    const row = await rowOf('Retail pricing rules', 'IMEI');
+    expect(row.getByRole('button', { name: 'Edit the rule for IMEI services' })).toHaveAttribute(
+      'title',
+      'You need the pricing:update permission',
+    );
+    expect(row.getByRole('button', { name: 'Delete the rule for IMEI services' })).toHaveAttribute(
+      'title',
+      'You need the pricing:delete permission',
+    );
+    expect(screen.getAllByRole('button', { name: 'New rule' })[0]).toHaveAttribute(
+      'title',
+      'You need the pricing:create permission',
+    );
+  });
+
   it('opens on the legal documents for legal:read alone, with their buttons asking for legal:create and legal:publish', async () => {
     await openStorefront('/storefront', { permissions: ['legal:read'] });
     expect(await screen.findByRole('tab', { name: 'Content and legal' })).toHaveAttribute(
@@ -197,13 +220,15 @@ describe('a role with a different part of the page', () => {
 });
 
 describe('the page gate', () => {
-  it('shows the no-access page to a role with none of the three read permissions', async () => {
+  it('shows the no-access page to a role with none of the four read permissions', async () => {
     await signInAs();
     mockMe({ id: 1, name: 'Rami K.', permissions: ['orders:read'] });
     renderApp('/storefront');
     expect(
       await screen.findByText('You do not have access to this page', {}, { timeout: 10_000 }),
     ).toBeInTheDocument();
-    expect(screen.getByText('storefront:read or legal:read or catalog:read')).toBeInTheDocument();
+    expect(
+      screen.getByText('storefront:read or legal:read or catalog:read or pricing:read'),
+    ).toBeInTheDocument();
   });
 });

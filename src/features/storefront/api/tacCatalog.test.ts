@@ -63,11 +63,13 @@ describe('createTacEntry and updateTacEntry', () => {
 });
 
 describe('storefrontResources', () => {
-  it('registers the eight resources with the operations their endpoints offer', () => {
+  it('registers the ten resources with the operations their endpoints offer', () => {
     expect(Object.keys(storefrontResources).sort()).toEqual([
       'content-pages',
       'help-articles',
       'legal-documents',
+      'retail-price-changes',
+      'retail-price-rules',
       'search-hidden-terms',
       'search-pins',
       'search-synonyms',
@@ -79,5 +81,9 @@ describe('storefrontResources', () => {
     expect(storefrontResources['tac-catalog'].update).toBe(updateTacEntry);
     // The search rules are listed through Refine; their writes use the typed functions.
     expect(storefrontResources['search-pins'].create).toBeUndefined();
+    // The retail pricing lists are read through Refine; the rules are written through the typed functions.
+    expect(storefrontResources['retail-price-rules'].list).toBeDefined();
+    expect(storefrontResources['retail-price-rules'].create).toBeUndefined();
+    expect(storefrontResources['retail-price-changes'].update).toBeUndefined();
   });
 });

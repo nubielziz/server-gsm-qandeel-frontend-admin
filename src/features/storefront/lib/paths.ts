@@ -29,3 +29,13 @@ export function storefrontListPath(link: StorefrontLink = {}): string {
   const query = params.toString();
   return query ? `/storefront?${query}` : '/storefront';
 }
+
+/**
+ * The address of the Retail pricing tab, for the pages that send staff there (Publish says "make a pricing rule", Quick add says
+ * "set a retail pricing rule first"). `show: 'all'` lists every price change instead of the proposals that wait.
+ */
+export function storefrontPricingPath(link: { show?: 'all' } = {}): string {
+  const params = new URLSearchParams({ tab: 'pricing' });
+  if (link.show) params.set('show', link.show);
+  return `/storefront?${params.toString()}`;
+}

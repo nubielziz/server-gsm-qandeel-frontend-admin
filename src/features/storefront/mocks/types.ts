@@ -1,5 +1,6 @@
 // What the storefront mock server keeps. Content pages, help articles, legal documents and TAC entries are stored in the shape the
 // API sends them (the console types), the listings as rows that are joined with their service when they are read.
+import type { ServiceType } from '@/features/orders';
 import type { Collection } from '@/mocks/db';
 import type {
   ContentPage,
@@ -7,6 +8,13 @@ import type {
   HiddenTerm,
   LegalDocument,
   PinMatch,
+  RetailChangeKind,
+  RetailChangeReason,
+  RetailChangeResolution,
+  RetailPriceSource,
+  RetailRounding,
+  RetailRuleScope,
+  RetailRulePreviewLine,
   SearchIndexStatus,
   SearchSynonym,
   TacEntry,
@@ -20,6 +28,9 @@ export type MockService = {
   status: 'active' | 'disabled';
   basePrice: number;
   cost: number;
+  /** What the retail pricing rules read: the type, and the category (the services mock numbers them by first appearance). */
+  type: ServiceType;
+  categoryId: number;
 };
 
 /** A listing row before the join with its service and the retail price. */
@@ -84,6 +95,58 @@ export type SearchStores = {
   index: MockIndex;
 };
 
+/** A retail pricing rule as the mock keeps it: the figures as the server stores them, `following` as a fixed seed number. */
+export type MockRetailRule = {
+  id: number;
+  scope: RetailRuleScope;
+  serviceType: ServiceType | null;
+  categoryId: number | null;
+  percent: string;
+  fixed: string;
+  rounding: RetailRounding;
+  roundFrom: string;
+  autoFollowPercent: number;
+  isActive: boolean;
+  following: number;
+  updatedAt: string;
+};
+
+/**
+ * A price change as the mock keeps it: ids and fixed figures (the mock does no price arithmetic). `movedTo` is the figure the
+ * server would find when a proposal is applied after the cost moved again: the apply answers `changed` and shows it.
+ */
+export type MockRetailChange = {
+  id: number;
+  serviceId: number;
+  kind: RetailChangeKind;
+  reason: RetailChangeReason;
+  oldPrice: string;
+  newPrice: string | null;
+  oldCost: string;
+  newCost: string;
+  ruleId: number | null;
+  waiting: boolean;
+  resolution: RetailChangeResolution | null;
+  resolvedAt: string | null;
+  resolvedBy: number | null;
+  createdAt: string;
+  movedTo?: string;
+};
+
+/** What the Retail pricing tab's mock routes keep. */
+export type PricingStores = {
+  rules: Collection<MockRetailRule>;
+  changes: Collection<MockRetailChange>;
+  /** Who wrote each storefront price: a rule (with its id) or a person. Absent without a price. */
+  sources: Map<number, { source: RetailPriceSource; ruleId: number | null }>;
+  /** What the rules say each listed service costs on the shop: fixed seed figures, never worked out. */
+  rulePrices: ReadonlyMap<number, string>;
+  /** The category names by id, in the order the services mock numbers them. */
+  categories: ReadonlyMap<number, string>;
+  /** What a preview of a change answers: a fixed list of lines. */
+  previewLines: readonly RetailRulePreviewLine[];
+};
+
 /** Everything the mock server keeps for this feature. */
 export type Stores = {
   listings: Collection<MockListing>;
@@ -96,4 +159,5 @@ export type Stores = {
   legal: Collection<LegalDocument>;
   tac: Collection<TacEntry>;
   search: SearchStores;
+  pricing: PricingStores;
 };

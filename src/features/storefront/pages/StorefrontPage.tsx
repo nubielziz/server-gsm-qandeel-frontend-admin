@@ -1,16 +1,18 @@
-// StorefrontPage: "Storefront" (`/storefront`, the demo's `pageStorefront` in 50-p-storefront.js): a header and six tabs kept in the
-// address (`?tab=`), the demo's four plus the TAC catalogue the map adds in place of Live preview (M4) and the Search tab of the shop's
-// search engine (backend feature 29). A tab the role may not read is hidden. The page only composes; each tab owns its data, and the server decides every price, status and refusal.
+// StorefrontPage: "Storefront" (`/storefront`, the demo's `pageStorefront` in 50-p-storefront.js): a header and seven tabs kept in the
+// address (`?tab=`), the demo's four plus the TAC catalogue the map adds in place of Live preview (M4), the Retail pricing tab (backend
+// feature 31) and the Search tab of the shop's search engine (backend feature 29). A tab the role may not read is hidden. The page only composes; each tab owns its data, and the server decides every price, status and refusal.
 import { EmptyState, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
 import { listListings } from '../api';
 import { ContentTab } from '../components/ContentTab';
 import { HelpTab } from '../components/HelpTab';
 import { LandingTab } from '../components/LandingTab';
 import { ListingsTab } from '../components/ListingsTab';
+import { RetailPricingTab } from '../components/pricing/RetailPricingTab';
 import { SearchTab } from '../components/SearchTab';
 import { StorefrontHeader } from '../components/StorefrontHeader';
 import { TacTab } from '../components/TacTab';
 import { useCounts } from '../hooks/useCounts';
+import { useWaitingCount } from '../hooks/useRetailPricing';
 import { useStorefrontGrants } from '../hooks/useStorefrontGrants';
 import { useTabView } from '../hooks/useTabView';
 import { LISTED_SPEC } from '../lib/counts';
@@ -27,13 +29,21 @@ export function StorefrontPage() {
     grants.ready && grants.can('storefront:read'),
   );
 
+  // The proposals that wait for a person show on the Retail pricing tab as a chip.
+  const waiting = useWaitingCount(grants.ready && grants.can('pricing:read'));
+
   const visible = STOREFRONT_TABS.filter((spec) => grants.canAny(spec.anyOf));
   // An unknown or forbidden `?tab=` falls back to the first tab the staff member may open.
   const current = visible.find((spec) => spec.id === tab) ?? visible[0];
   const items: TabItem<StorefrontTab>[] = visible.map((spec) => ({
     value: spec.id,
     label: spec.label,
-    count: spec.id === 'listings' ? counts[LISTED_SPEC.id] : undefined,
+    count:
+      spec.id === 'listings'
+        ? counts[LISTED_SPEC.id]
+        : spec.id === 'pricing' && waiting
+          ? waiting
+          : undefined,
   }));
 
   return (
@@ -46,8 +56,8 @@ export function StorefrontPage() {
       ) : !current ? (
         <Panel flush>
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot see the storefront, its legal documents or the TAC catalogue. Ask an owner if you
-            need access.
+            Your role cannot see the storefront, its legal documents, the TAC catalogue or the retail pricing.
+            Ask an owner if you need access.
           </EmptyState>
         </Panel>
       ) : (
@@ -57,6 +67,7 @@ export function StorefrontPage() {
           </div>
           <div role="tabpanel" aria-label={current.label}>
             {current.id === 'listings' && <ListingsTab grants={grants} />}
+            {current.id === 'pricing' && <RetailPricingTab grants={grants} />}
             {current.id === 'landing' && <LandingTab grants={grants} />}
             {current.id === 'content' && <ContentTab grants={grants} />}
             {current.id === 'help' && <HelpTab grants={grants} />}

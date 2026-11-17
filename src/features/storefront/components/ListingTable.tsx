@@ -1,5 +1,5 @@
-// ListingTable: the listings table with the demo's columns (service with its picture and slug, B2B base, storefront price and floor,
-// margin, orders, the "On the site" switch with the date it first went live, the Edit and Price buttons). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
+// ListingTable: the listings table with the demo's columns (service with its picture and slug, B2B base, storefront price and floor
+// with a mark when a pricing rule wrote the price, margin, orders, the "On the site" switch with the date it first went live, the Edit and Price buttons). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
 // is given: the floor, margin and order figures come from the server, and the tab owns data, sort and page.
 import type { ReactNode } from 'react';
 import {
@@ -14,6 +14,7 @@ import {
 import { fmtDate, money0, num, pct, price } from '@/lib/format';
 import type { ServiceListing } from '../types';
 import { ListingThumbnail } from './ListingThumbnail';
+import { PriceSourceTag } from './pricing/PriceSourceTag';
 
 export interface ListingTableProps {
   rows: readonly ServiceListing[];
@@ -90,6 +91,7 @@ export function ListingTable({
             <span className="text-ink3">–</span>
           )}
           <p className="text-2xs text-ink3">Floor {price(l.floorPrice)}</p>
+          <PriceSourceTag listing={l} />
         </>
       ),
     },
