@@ -2,10 +2,10 @@
 // call themselves (in the error slot, or under the field the server named), so their hooks toast no error. Test and Sync
 // have no dialog: they keep the default error toast, which carries the server's title and detail.
 import { toast } from '@/components/ui';
-import { money } from '@/lib/format';
 import { useApiMutation } from '@/lib/query';
 import { createSupplier, deleteSupplier, syncSupplier, testSupplier, updateSupplier } from '../api';
 import { testSummary } from '../lib/connection';
+import { syncSummary } from '../lib/sync';
 import type { CreateSupplierBody, Supplier, UpdateSupplierBody } from '../types';
 import { staleLogged, staleSupplier, SUPPLIER_STALE_KEYS, SUPPLIER_CATALOGUE_KEY } from './keys';
 
@@ -107,7 +107,7 @@ export function useSyncSupplier() {
     invalidateKeys: [...SUPPLIER_STALE_KEYS, SUPPLIER_CATALOGUE_KEY],
     successNotification: (result) => ({
       message: `${result.services} services checked`,
-      description: `${result.changed > 0 ? `${result.changed} with a changed cost.` : 'No cost changes.'} Balance ${money(result.balance)}.`,
+      description: syncSummary(result),
     }),
   });
 }

@@ -130,6 +130,11 @@ export type SyncResult = {
   added: number;
   changed: number;
   removed: number;
+  /**
+   * Services the sync adopted (backend feature 33, B233): each was an IMEI service whose supplier asks for something else in the
+   * main box (an ECID, a serial number) and is now a server service whose first field is that box.
+   */
+  adopted: number;
   balance: Money;
   balanceCheckedAt: IsoDateTime;
 };

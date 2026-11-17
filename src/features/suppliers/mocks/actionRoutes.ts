@@ -74,6 +74,7 @@ export const actionHandlers: HttpHandler[] = [
         added: 0,
         changed,
         removed: 0,
+        adopted: 0,
         balance: row.balance,
         balanceCheckedAt: row.balanceCheckedAt,
       });
