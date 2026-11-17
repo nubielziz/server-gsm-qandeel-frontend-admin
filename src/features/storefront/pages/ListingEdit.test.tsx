@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { getListing } from '../api';
+import { getListing, updateListing } from '../api';
 import { recordRequests } from '../test/requests';
 import { dialogOf, openStorefront, rowOf } from '../test/storefrontPage';
 
@@ -49,9 +49,10 @@ describe('opening the editor', () => {
     expect(dialog.getByRole('textbox', { name: 'Description (Markdown)' })).toHaveValue('');
     expect(dialog.getByRole('textbox', { name: 'Requirements (Markdown)' })).toHaveValue('');
     expect(dialog.getByRole('textbox', { name: 'Delivery note' })).toHaveValue('');
-    expect(dialog.getByRole('textbox', { name: 'Brand' })).toHaveValue('Apple');
+    expect(dialog.getByRole('combobox', { name: 'Brand' })).toHaveValue('Apple');
+    expect(dialog.queryByRole('textbox', { name: 'Brand name' })).not.toBeInTheDocument();
     expect(dialog.getByRole('textbox', { name: 'Carrier' })).toHaveValue('');
-    expect(dialog.getByRole('textbox', { name: 'Country' })).toHaveValue('');
+    expect(dialog.getByRole('combobox', { name: 'Country' })).toHaveValue('');
     expect(dialog.getByRole('textbox', { name: 'Position' })).toHaveValue(String(ATT_ID));
     expect(dialog.getByRole('checkbox', { name: 'Featured on the storefront' })).toBeChecked();
     expect(dialog.getByRole('textbox', { name: 'Search title' })).toHaveValue('');
@@ -72,10 +73,10 @@ describe('opening the editor', () => {
       'Requirements (Markdown)',
       'Search title',
       'Search description',
-      'Country',
     ]) {
       expect(dialog.getByRole('textbox', { name })).not.toHaveAttribute('dir');
     }
+    expect(dialog.getByRole('combobox', { name: 'Country' })).not.toHaveAttribute('dir');
   });
 
   it('has no Edit button on a locked row', async () => {
@@ -113,7 +114,7 @@ describe('saving', () => {
     const dialog = await openEditor(user);
     await user.type(dialog.getByRole('textbox', { name: 'Summary' }), 'Unlock an AT&T iPhone.');
     await user.type(dialog.getByRole('textbox', { name: 'Description (Markdown)' }), '# About');
-    await user.type(dialog.getByRole('textbox', { name: 'Country' }), 'us');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'JO');
     await user.click(dialog.getByRole('checkbox', { name: 'Featured on the storefront' }));
     const requests = recordRequests();
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
@@ -123,15 +124,74 @@ describe('saving', () => {
     expect(patch?.body).toEqual({
       summary: 'Unlock an AT&T iPhone.',
       descriptionMd: '# About',
-      country: 'US',
+      country: 'JO',
       isFeatured: false,
     });
     expect(screen.queryByRole('dialog', { name: 'Edit listing' })).not.toBeInTheDocument();
     expect(await getListing(ATT_ID)).toMatchObject({
       summary: 'Unlock an AT&T iPhone.',
-      country: 'US',
+      country: 'JO',
       isFeatured: false,
     });
+  });
+
+  it('picks a brand the shop has a logo for and a country from the Arab countries', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEditor(user);
+    const brand = dialog.getByRole('combobox', { name: 'Brand' });
+    expect(brand).toHaveValue('Apple');
+    await user.selectOptions(brand, 'Samsung');
+    const country = dialog.getByRole('combobox', { name: 'Country' });
+    // No country, then the 22 Arab countries by name.
+    expect(country.querySelectorAll('option')).toHaveLength(23);
+    await user.selectOptions(country, 'Egypt');
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Listing saved')).toBeInTheDocument();
+    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toEqual({
+      brand: 'Samsung',
+      country: 'EG',
+    });
+  });
+
+  it('takes a brand typed by hand under Other', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEditor(user);
+    expect(dialog.queryByRole('textbox', { name: 'Brand name' })).not.toBeInTheDocument();
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Brand' }), 'Other (type a name)…');
+    const name = dialog.getByRole('textbox', { name: 'Brand name' });
+    // The picked brand is not what Other means: the box starts empty.
+    expect(name).toHaveValue('');
+    await user.type(name, 'Acme Phones');
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Listing saved')).toBeInTheDocument();
+    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toEqual({
+      brand: 'Acme Phones',
+    });
+    expect(await getListing(ATT_ID)).toMatchObject({ brand: 'Acme Phones' });
+  });
+
+  it('opens a brand typed by hand under Other and keeps a country saved before selectable', async () => {
+    const user = userEvent.setup();
+    await openStorefront('/storefront');
+    await updateListing(ATT_ID, { brand: 'Acme Phones', country: 'GB' });
+    const row = await rowOf(TABLE, ATT);
+    await user.click(row.getByRole('button', { name: `Edit listing ${ATT}` }));
+    const dialog = dialogOf('Edit listing');
+    await dialog.findByRole('textbox', { name: 'Public title' });
+    expect(dialog.getByRole('combobox', { name: 'Brand' })).toHaveDisplayValue('Other (type a name)…');
+    expect(dialog.getByRole('textbox', { name: 'Brand name' })).toHaveValue('Acme Phones');
+    const country = dialog.getByRole('combobox', { name: 'Country' });
+    expect(country).toHaveValue('GB');
+    expect(country).toHaveDisplayValue('United Kingdom (saved before)');
+    // Back to a brand of the list: the box goes away and the brand is sent.
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Brand' }), 'Nokia');
+    expect(dialog.queryByRole('textbox', { name: 'Brand name' })).not.toBeInTheDocument();
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Listing saved')).toBeInTheDocument();
+    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toEqual({ brand: 'Nokia' });
   });
 
   it('says nothing changed and sends no request when the form is as it was read', async () => {
@@ -143,19 +203,17 @@ describe('saving', () => {
     expect(requests.sent().some((request) => request.method === 'PATCH')).toBe(false);
   });
 
-  it('asks for a title, a slug, a country of two letters and a whole position before it sends anything', async () => {
+  it('asks for a title, a slug and a whole position before it sends anything', async () => {
     const user = userEvent.setup();
     const dialog = await openEditor(user);
     await user.clear(dialog.getByRole('textbox', { name: 'Public title' }));
     await user.clear(dialog.getByRole('textbox', { name: 'Slug' }));
-    await user.type(dialog.getByRole('textbox', { name: 'Country' }), 'g');
     await user.clear(dialog.getByRole('textbox', { name: 'Position' }));
     await user.type(dialog.getByRole('textbox', { name: 'Position' }), '1.5');
     const requests = recordRequests();
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
     expect(await dialog.findByText('Enter the title customers see.')).toBeInTheDocument();
     expect(dialog.getByText('Enter a slug.')).toBeInTheDocument();
-    expect(dialog.getByText('Use a two-letter country code like GB, or leave it empty.')).toBeInTheDocument();
     expect(dialog.getByText('Enter a whole number from 0 to 1,000,000.')).toBeInTheDocument();
     expect(requests.sent().some((request) => request.method === 'PATCH')).toBe(false);
   });

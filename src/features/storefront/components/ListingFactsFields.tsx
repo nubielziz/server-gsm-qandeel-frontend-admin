@@ -1,27 +1,73 @@
 // ListingFactsFields: the facts about the service itself (brand, carrier, country, featured, position). New in feature 22.
-import { CheckboxField, TextField } from '@/components/ui';
+// Since 2026-11-17 the brand is picked from the brands the shop has a logo for (or typed by hand under "Other"), and the
+// country from the Arab countries.
+import { useMemo, useState } from 'react';
+import { useController, type Control } from 'react-hook-form';
+import { CheckboxField, SelectField, TextField } from '@/components/ui';
+import { BRAND_OPTIONS, countryOptions, OTHER_BRAND, shopBrand } from '../lib/listingFacts';
 import {
   isCountryText,
   isPosition,
   LISTING_LIMITS,
   MAX_SORT,
   type ListingFieldsProps,
+  type ListingFormValues,
 } from '../lib/listingForm';
 
+export interface ListingFactsFieldsProps extends ListingFieldsProps {
+  control: Control<ListingFormValues>;
+  /** The listing's country when the editor opened: it stays selectable when it is not an Arab country. */
+  savedCountry: string;
+}
+
 /** The five facts about the service. */
-export function ListingFactsFields({ register, errors }: ListingFieldsProps) {
+export function ListingFactsFields({ register, errors, control, savedCountry }: ListingFactsFieldsProps) {
+  const { field: brand } = useController({ name: 'brand', control });
+  // "Other" is a mode of its own: an empty name typed by hand must not jump back to "No brand" while the box is open.
+  const [typed, setTyped] = useState(() => brand.value.trim() !== '' && shopBrand(brand.value) === null);
+  const countries = useMemo(() => countryOptions(savedCountry), [savedCountry]);
+  const picked = typed ? OTHER_BRAND : (shopBrand(brand.value) ?? '');
+
   return (
     <fieldset className="min-w-0 space-y-3">
       <legend className="label">About the service</legend>
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField
-          label="Brand"
-          autoComplete="off"
-          maxLength={LISTING_LIMITS.brand}
-          hint="For example Apple."
-          error={errors.brand}
-          {...register('brand')}
-        />
+        <div className="min-w-0 space-y-2">
+          <SelectField
+            label="Brand"
+            selectWrapClassName="w-full"
+            options={BRAND_OPTIONS}
+            value={picked}
+            hint="The brands the shop has a logo for. Choose Other to type a name of your own."
+            error={typed ? undefined : errors.brand}
+            onBlur={brand.onBlur}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === OTHER_BRAND) {
+                // A name picked from the list is not what "Other" means: the box starts empty.
+                if (!typed) brand.onChange('');
+                setTyped(true);
+                return;
+              }
+              setTyped(false);
+              brand.onChange(value);
+            }}
+          />
+          {typed && (
+            <TextField
+              label="Brand name"
+              autoComplete="off"
+              maxLength={LISTING_LIMITS.brand}
+              hint="As customers know it, for example Apple."
+              error={errors.brand}
+              name={brand.name}
+              ref={brand.ref}
+              value={brand.value}
+              onBlur={brand.onBlur}
+              onChange={brand.onChange}
+            />
+          )}
+        </div>
         <TextField
           label="Carrier"
           autoComplete="off"
@@ -30,13 +76,11 @@ export function ListingFactsFields({ register, errors }: ListingFieldsProps) {
           error={errors.carrier}
           {...register('carrier')}
         />
-        <TextField
+        <SelectField
           label="Country"
-          className="mono uppercase"
-          autoComplete="off"
-          spellCheck={false}
-          maxLength={2}
-          hint="Two letters, like GB, or empty."
+          selectWrapClassName="w-full"
+          options={countries}
+          hint="The Arab countries. Leave it at No country when the service is not for one country."
           error={errors.country}
           {...register('country', {
             validate: (value) =>

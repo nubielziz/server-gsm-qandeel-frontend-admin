@@ -53,6 +53,7 @@ function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; 
   const form = useForm<ListingFormValues>({ defaultValues: toFormValues(listing) });
   const {
     register,
+    control,
     formState: { errors },
   } = form;
 
@@ -82,7 +83,12 @@ function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; 
       <div className="space-y-4">
         <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} />
         <ListingContentFields register={register} errors={errors} />
-        <ListingFactsFields register={register} errors={errors} />
+        <ListingFactsFields
+          register={register}
+          errors={errors}
+          control={control}
+          savedCountry={listing.country}
+        />
         <ListingSeoFields register={register} errors={errors} />
       </div>
     </FormDialog>
