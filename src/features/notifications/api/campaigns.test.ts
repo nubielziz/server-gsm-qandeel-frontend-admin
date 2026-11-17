@@ -30,7 +30,7 @@ const INPUT: CampaignInput = {
   purpose: 'service',
   channels: ['in_app'],
   audience: { staff: {} },
-  content: { en: { title: 'Hi', body: 'There' } },
+  content: { title: 'Hi', body: 'There' },
   link: null,
 };
 
@@ -109,7 +109,6 @@ describe('the previews', () => {
       reachable: 2,
       byType: { staff: 2, client: 0, customer: 0 },
       byChannel: { inApp: 2, email: 0, telegram: 0 },
-      byLocale: { en: 2, ar: 0 },
       excluded: { noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 1 },
     };
     const seen = capture('post', '/admin/notification-campaigns/audience-preview', { json: answer });
@@ -122,17 +121,13 @@ describe('the previews', () => {
     });
   });
 
-  it('renders a campaign for one language and channel', async () => {
+  it('renders a campaign for one channel, with no language in the body', async () => {
     const seen = capture('post', '/admin/notification-campaigns/7/preview', {
       json: { subject: 'S', body: 'B', format: 'text', from: 'F', note: 'N' },
     });
-    expect((await previewCampaign(7, { locale: 'ar', channel: 'email', audience: 'merchant' })).subject).toBe(
-      'S',
-    );
-    expect(seen[0]).toMatchObject({
-      path: '/admin/notification-campaigns/7/preview',
-      body: { locale: 'ar', channel: 'email', audience: 'merchant' },
-    });
+    expect((await previewCampaign(7, { channel: 'email', audience: 'merchant' })).subject).toBe('S');
+    expect(seen[0]).toMatchObject({ path: '/admin/notification-campaigns/7/preview' });
+    expect(seen[0].body).toEqual({ channel: 'email', audience: 'merchant' });
   });
 });
 
@@ -142,11 +137,11 @@ describe('the actions', () => {
       json: { queued: ['in_app'] },
       status: 202,
     });
-    expect(await sendCampaignTest(7, { channels: ['in_app'], locale: 'en' })).toEqual({ queued: ['in_app'] });
+    expect(await sendCampaignTest(7, { channels: ['in_app'] })).toEqual({ queued: ['in_app'] });
     expect(seen[0]).toMatchObject({
       method: 'POST',
       path: '/admin/notification-campaigns/7/test',
-      body: { channels: ['in_app'], locale: 'en' },
+      body: { channels: ['in_app'] },
     });
   });
 

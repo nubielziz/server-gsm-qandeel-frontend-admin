@@ -86,8 +86,7 @@ export function previewAudience(body: AudiencePreviewBody, init?: ApiInit): Prom
 }
 
 /**
- * Renders the campaign for one language and channel with a sample name; `note` says when Arabic falls back to English. Nothing is sent. Needs
- * `broadcasts:read`.
+ * Renders the campaign for one channel with a sample name. Nothing is sent. Needs `broadcasts:read`.
  * @route POST /admin/notification-campaigns/:id/preview
  */
 export function previewCampaign(id: Id, body: PreviewCampaignBody, init?: ApiInit): Promise<CampaignPreview> {

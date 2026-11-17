@@ -19,6 +19,16 @@ const OUT_FILE = resolve(root, 'src/lib/api/schema.gen.ts');
 const OMITTED = /_(hash|enc)$/;
 // Every row type gets these three, so a column of the same name in the schema is not repeated.
 const BASE_COLUMNS = new Set(['id', 'created_at', 'updated_at']);
+// Map columns the backend dropped (decision 039, English only): the map still lists them, the API no longer sends them, so the
+// row types do not carry them. `legal_documents.locale` stays: it tags a retired version and is read-only.
+const DROPPED_COLUMNS = new Set([
+  'service_listings.locale',
+  'content_pages.locale',
+  'help_articles.locale',
+  'customers.locale',
+  'notification_templates.locale',
+  'reply_templates.locale',
+]);
 
 const KNOWN_HINTS = new Set(['nullable', 'unique', 'jsonb', 'text[]', 'bigint[]', 'int[]', 'cidr[]']);
 const ARRAY_TYPES = { 'bigint[]': 'Id[]', 'text[]': 'string[]', 'cidr[]': 'string[]', 'int[]': 'number[]' };
@@ -112,7 +122,7 @@ export function parseColumn(spec) {
  */
 export function columnType(table, spec, foreignKeys = new Map()) {
   const { name, hints } = parseColumn(spec);
-  if (OMITTED.test(name) || BASE_COLUMNS.has(name)) return null;
+  if (OMITTED.test(name) || BASE_COLUMNS.has(name) || DROPPED_COLUMNS.has(`${table}.${name}`)) return null;
   const nullable = hints.includes('nullable');
   const withNull = (type) => (nullable && !type.endsWith('| null') ? `${type} | null` : type);
 

@@ -2,6 +2,8 @@
 
 For the lead. The lead moves the rows into `docs/MISMATCHES.md` (numbers in merge order) and deletes this file in the squash commit.
 
+> **2026-11-16, English only (decision 039):** a merchant has no language any more: no `locale` on the row or in the details body, no Language select in Edit details, no Language row on the Profile tab. The rows below are the handoff as written.
+
 ## Mismatch rows
 
 | Id | Where | Frontend / map | Backend | Chosen | Why |
@@ -17,7 +19,7 @@ For the lead. The lead moves the rows into `docs/MISMATCHES.md` (numbers in merg
 
 `POST /admin/clients/:id/password`, `/reset-2fa`, `/sessions/revoke`, `/verify-email/resend` (`client-security.contracts.ts`);
 `POST /admin/clients/:id/api-keys`, `PATCH /admin/api-keys/:id` (`api-keys.contracts.ts`); `PATCH /admin/clients/:id` with the nine
-details and the `ClientRow` keys `locale`, `address`, `taxId`, `internalNotes`, `telegramLinked`, `security`, `suspension`
+details and the `ClientRow` keys `address`, `taxId`, `internalNotes`, `telegramLinked`, `security`, `suspension`
 (`clients.contracts.ts`); `GET /admin/sessions?subjectType=client&subjectId=<id>` (`sessions.contracts.ts`); `GET /admin/audit-logs`
 with `entityType` and `entityId` (platform `audit-logs.contracts.ts`, already built).
 

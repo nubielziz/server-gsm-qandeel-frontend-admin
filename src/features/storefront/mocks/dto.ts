@@ -18,7 +18,6 @@ export function toListing(stores: Stores, row: MockListing): ServiceListing {
   return {
     id: row.id,
     serviceId: row.serviceId,
-    locale: row.locale,
     slug: row.slug,
     publicTitle: row.publicTitle,
     summary: row.summary,

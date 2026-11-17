@@ -20,7 +20,7 @@ export function MacroPicker({ templates, disabled = false, onPick }: MacroPicker
         { value: '', label: 'Insert a reply template…' },
         ...templates.map((template) => ({
           value: template.id,
-          label: template.locale === 'en' ? template.title : `${template.title} (${template.locale})`,
+          label: template.title,
         })),
       ]}
       onChange={(event) => {

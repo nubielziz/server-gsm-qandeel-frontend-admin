@@ -14,16 +14,12 @@ export type ServiceCategory = Pick<
   'id' | 'name' | 'allowedGroupIds' | 'sort' | 'isActive'
 > & {
   type: ServiceType;
-  /** The Arabic name the storefront shows; `''` when none (the storefront then shows `name`). Typed by hand: the map's row lacks it. */
-  nameAr: string;
   serviceCount?: number;
 };
 
 /** Body of `POST /admin/service-categories` (assumed contract). */
 export type CreateCategoryBody = {
   name: string;
-  /** Optional Arabic name for the storefront, at most 80 characters; an empty text clears it. */
-  nameAr?: string;
   type: ServiceType;
   allowedGroupIds: Id[];
   sort: number;

@@ -1,5 +1,4 @@
-// ListingFactsFields: the facts about the service itself (brand, carrier, country, featured, position). They are the same in
-// every language, so the server writes them to every listing of the service. New in feature 22.
+// ListingFactsFields: the facts about the service itself (brand, carrier, country, featured, position). New in feature 22.
 import { CheckboxField, TextField } from '@/components/ui';
 import {
   isCountryText,
@@ -9,12 +8,11 @@ import {
   type ListingFieldsProps,
 } from '../lib/listingForm';
 
-/** The five shared facts, under a note that says they apply to every language. */
+/** The five facts about the service. */
 export function ListingFactsFields({ register, errors }: ListingFieldsProps) {
   return (
     <fieldset className="min-w-0 space-y-3">
       <legend className="label">About the service</legend>
-      <p className="hint">These apply to every language of this service.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField
           label="Brand"

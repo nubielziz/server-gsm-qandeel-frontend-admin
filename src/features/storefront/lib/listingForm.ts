@@ -26,8 +26,6 @@ export type ListingFormValues = {
 export type ListingFieldsProps = {
   register: UseFormRegister<ListingFormValues>;
   errors: FieldErrors<ListingFormValues>;
-  /** Text direction of the per-language inputs: `'rtl'` for an Arabic listing, undefined (browser default) otherwise. */
-  dir?: 'rtl';
 };
 
 /** The longest text each field accepts (the server's limits, used as `maxLength` hints). */

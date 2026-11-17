@@ -9,7 +9,6 @@ export type HelpArticle = Pick<
   | 'category'
   | 'question'
   | 'answerMd'
-  | 'locale'
   | 'isPublished'
   | 'helpfulYes'
   | 'helpfulNo'
@@ -23,17 +22,15 @@ export type CreateArticleBody = {
   category: string;
   question: string;
   answerMd: string;
-  locale: string;
   isPublished?: boolean;
 };
 
 /** Body of `PATCH /admin/help-articles/:id` (assumed contract): the edit dialog and the publish switch send only what changes. */
 export type UpdateArticleBody = Partial<CreateArticleBody>;
 
-/** What `GET /admin/help-articles` filters by: `q` (question, topic), `isPublished`, `category` and `locale`. */
+/** What `GET /admin/help-articles` filters by: `q` (question, topic), `isPublished` and `category`. */
 export type ArticleListFilters = {
   q?: string;
   isPublished?: boolean;
   category?: string;
-  locale?: string;
 };

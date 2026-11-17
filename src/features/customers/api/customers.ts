@@ -45,7 +45,7 @@ export function getCustomer(id: Id, init?: ApiInit): Promise<CustomerDetail> {
  * Adds a customer with an account, for someone who asks the team to sign them up or orders by phone: either an emailed
  * link to choose a password, or a temporary password the server makes and returns once (`temporaryPassword`). Marketing
  * emails stay off. The server answers 409 `EMAIL_TAKEN` for an address another customer already uses.
- * Assumed contract: body `{ name, email, country, locale, phone?, password: { mode } }`, answer 201 with the new customer.
+ * Assumed contract: body `{ name, email, country, phone?, password: { mode } }`, answer 201 with the new customer.
  * @route POST /admin/customers
  */
 export function createCustomer(body: CreateCustomerBody, init?: ApiInit): Promise<CreateCustomerResult> {
@@ -53,9 +53,9 @@ export function createCustomer(body: CreateCustomerBody, init?: ApiInit): Promis
 }
 
 /**
- * Edits a customer's name, email, country, language, phone or internal notes; only the fields that change are sent. A new
+ * Edits a customer's name, email, country, phone or internal notes; only the fields that change are sent. A new
  * email cancels the verification of an account. The change is written to the audit log by the server.
- * Assumed contract: body `{ name?, email?, country?, locale?, phone?, internalNotes? }`, answer the updated customer.
+ * Assumed contract: body `{ name?, email?, country?, phone?, internalNotes? }`, answer the updated customer.
  * @route PATCH /admin/customers/:id
  */
 export function updateCustomer(id: Id, body: UpdateCustomerBody, init?: ApiInit): Promise<Customer> {

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button, Icon, Panel } from '@/components/ui';
 import { useStorefrontList } from '../hooks/useStorefrontList';
 import type { StorefrontGrants } from '../hooks/useStorefrontGrants';
-import { groupLegal, legalLanguage, legalTypeLabel, versionInForce } from '../lib/legal';
+import { earlierVersionName, groupLegal, versionInForce } from '../lib/legal';
 import { WHOLE_LIST_CAP } from '../lib/views';
 import type { LegalDocument } from '../types';
 import { LegalTable } from './LegalTable';
@@ -61,9 +61,7 @@ export function LegalPanel({ grants }: { grants: StorefrontGrants }) {
             Earlier versions kept for the record:{' '}
             {groups.earlier
               .map(
-                (d) =>
-                  `${legalTypeLabel(d.type)} v${d.version} (${legalLanguage(d.locale)})` +
-                  (d.acceptedCount ? `, accepted ${d.acceptedCount} times` : ''),
+                (d) => earlierVersionName(d) + (d.acceptedCount ? `, accepted ${d.acceptedCount} times` : ''),
               )
               .join('; ')}
             .

@@ -213,7 +213,6 @@ describe('what each function sends', () => {
     const body = {
       title: 'Hi',
       category: 'other' as const,
-      locale: 'en',
       body: 'Hi {{name}}',
       shortcut: '/hi',
     };
@@ -509,7 +508,7 @@ describe('reply templates', () => {
     expect(total).toBe(8);
     expect(data.map((template) => template.title)[0]).toBe('Eligibility question');
     const progress = data.find((template) => template.title === 'Order is in progress');
-    expect(progress).toMatchObject({ category: 'delay', locale: 'en' });
+    expect(progress).toMatchObject({ category: 'delay' });
     expect(progress?.body).toContain('Hi {{name}}, thanks for your patience. Your order {{order}}');
     expect(progress?.body).toContain('{{eta}}');
     expect((await listReplyTemplates({ filters: { category: 'refund' } })).total).toBe(2);
@@ -519,7 +518,6 @@ describe('reply templates', () => {
     const created = await createReplyTemplate({
       title: '  Thanks  ',
       category: 'other',
-      locale: 'en',
       body: 'Thanks {{name}}',
       shortcut: '/thanks',
     });
@@ -541,7 +539,6 @@ describe('reply templates', () => {
     const empty = await createReplyTemplate({
       title: ' ',
       category: 'other',
-      locale: 'en',
       body: '',
       shortcut: '',
     }).catch((caught: unknown) => caught);
@@ -550,17 +547,15 @@ describe('reply templates', () => {
     const noSlash = await createReplyTemplate({
       title: 'A',
       category: 'other',
-      locale: 'en',
       body: 'x',
       shortcut: 'a',
     }).catch((caught: unknown) => caught);
     expect(isApiError(noSlash) && noSlash.fieldErrors.shortcut).toBeTruthy();
 
-    await createReplyTemplate({ title: 'A', category: 'other', locale: 'en', body: 'x', shortcut: '/a' });
+    await createReplyTemplate({ title: 'A', category: 'other', body: 'x', shortcut: '/a' });
     const taken = await createReplyTemplate({
       title: 'B',
       category: 'other',
-      locale: 'en',
       body: 'x',
       shortcut: '/a',
     }).catch((caught: unknown) => caught);

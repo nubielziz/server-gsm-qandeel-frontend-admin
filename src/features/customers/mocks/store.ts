@@ -13,7 +13,6 @@ type DemoCustomer = {
   email: string;
   country: string;
   cur: string;
-  locale: string;
   hasAccount: boolean;
   optIn: boolean;
   risk: 'low' | 'med' | 'high';
@@ -45,7 +44,7 @@ type DemoRequest = {
 };
 
 type DemoOrder = { id: string; cid?: string; created: number; risk?: { score: number; signals: string[] } };
-type DemoLegal = { type: string; version: string; lang: string; current: boolean };
+type DemoLegal = { type: string; version: string; current: boolean };
 type DemoRow = { cid?: string; who?: { type: string; id: string } };
 
 /** The ids the mock gives the storefront currencies, and the currency each country pays in. */
@@ -77,7 +76,6 @@ function fromDemoCustomer(c: DemoCustomer): MockCustomer {
     name: c.name,
     phone: c.phone,
     country: c.country,
-    locale: c.locale,
     currency: currencyId(c.cur),
     currencyCode: c.cur,
     hasAccount: c.hasAccount,
@@ -118,7 +116,6 @@ function nameless(): MockCustomer {
     name: '',
     phone: '',
     country: 'GB',
-    locale: 'en',
     currency: currencyId('GBP'),
     currencyCode: 'GBP',
     hasAccount: false,
@@ -190,7 +187,7 @@ function build(demo: DemoState): CustomerState {
 
   const legal = new Map<string, string>();
   for (const doc of demoRows<DemoLegal>(demo, 'legal')) {
-    if (doc.current && doc.lang === 'EN') legal.set(doc.type, `${doc.type} v${doc.version}`);
+    if (doc.current) legal.set(doc.type, `${doc.type} v${doc.version}`);
   }
 
   const customers = [...demoRows<DemoCustomer>(demo, 'customers').map(fromDemoCustomer), nameless()];

@@ -1,4 +1,4 @@
-// AddCustomerDialog: "Add a customer" (the demo's `cu-new` action): name, email, country, language, phone and how they get
+// AddCustomerDialog: "Add a customer" (the demo's `cu-new` action): name, email, country, phone and how they get
 // their first password. A temporary password is made by the server and shown once (see RevealPasswordDialog).
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -6,7 +6,6 @@ import { FormDialog, RadioGroup, SelectField, TextField, dialogSubmit } from '@/
 import { useCreateCustomer } from '../hooks/useCustomerMutations';
 import { countryOptions } from '../lib/countries';
 import { cleanEmail, cleanName, validEmail } from '../lib/input';
-import { LOCALES } from '../lib/status';
 import type { CreateCustomerResult, PasswordMode } from '../types';
 import { PASSWORD_MODES } from './passwordModes';
 
@@ -14,11 +13,10 @@ type Values = {
   name: string;
   email: string;
   country: string;
-  locale: string;
   phone: string;
   mode: PasswordMode;
 };
-const FIELDS = ['name', 'email', 'country', 'locale', 'phone', 'mode'] as const;
+const FIELDS = ['name', 'email', 'country', 'phone', 'mode'] as const;
 
 export interface AddCustomerDialogProps {
   onClose: () => void;
@@ -35,7 +33,7 @@ export function AddCustomerDialog({ onClose, onCreated }: AddCustomerDialogProps
   // The dialog closes itself after a successful save; this remembers what was created so `onClose` can hand it on.
   const created = useRef<CreateCustomerResult | undefined>(undefined);
   const form = useForm<Values>({
-    defaultValues: { name: '', email: '', country: 'GB', locale: 'en', phone: '', mode: 'reset_link' },
+    defaultValues: { name: '', email: '', country: 'GB', phone: '', mode: 'reset_link' },
   });
   const {
     register,
@@ -50,7 +48,6 @@ export function AddCustomerDialog({ onClose, onCreated }: AddCustomerDialogProps
         name: cleanName(values.name),
         email: cleanEmail(values.email),
         country: values.country,
-        locale: values.locale,
         ...(phone ? { phone } : {}),
         password: { mode: values.mode },
       });
@@ -99,13 +96,6 @@ export function AddCustomerDialog({ onClose, onCreated }: AddCustomerDialogProps
             hint="Sets the currency and VAT on their orders."
             error={errors.country}
             {...register('country')}
-          />
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            options={LOCALES}
-            error={errors.locale}
-            {...register('locale')}
           />
           <TextField
             label="Phone (optional)"

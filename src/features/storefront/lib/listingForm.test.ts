@@ -15,7 +15,6 @@ import type { ServiceListingDetail } from '../types';
 const listing: ServiceListingDetail = {
   id: 5,
   serviceId: 5,
-  locale: 'en',
   slug: 'att-unlock',
   publicTitle: 'AT&T Unlock',
   summary: 'Unlock an AT&T iPhone.',

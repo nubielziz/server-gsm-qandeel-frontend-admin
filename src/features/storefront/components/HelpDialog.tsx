@@ -1,21 +1,12 @@
 // HelpDialog: "New article" and "Edit article" (`POST` and `PATCH /admin/help-articles`): a topic, the question, the answer as
-// Markdown in a textarea, the language and whether it is published. The demo only toggled the status of seeded articles; the map
+// Markdown in a textarea and whether it is published. The demo only toggled the status of seeded articles; the map
 // adds the routes. Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
-import {
-  CheckboxField,
-  dialogSubmit,
-  FormDialog,
-  SelectField,
-  TextareaField,
-  TextField,
-  toast,
-} from '@/components/ui';
+import { CheckboxField, dialogSubmit, FormDialog, TextareaField, TextField, toast } from '@/components/ui';
 import { useCreateArticle, useUpdateArticle } from '../hooks/useHelpMutations';
-import { LOCALE_OPTIONS } from '../lib/kinds';
 import type { HelpArticle, UpdateArticleBody } from '../types';
 
-type Values = { category: string; question: string; answerMd: string; locale: string; isPublished: boolean };
+type Values = { category: string; question: string; answerMd: string; isPublished: boolean };
 
 export interface HelpDialogProps {
   /** The article to edit; leave out to write one. */
@@ -32,7 +23,6 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
       category: article?.category ?? '',
       question: article?.question ?? '',
       answerMd: article?.answerMd ?? '',
-      locale: article?.locale ?? 'en',
       isPublished: article?.isPublished ?? false,
     },
   });
@@ -48,7 +38,6 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
         category: values.category.trim(),
         question: values.question.trim(),
         answerMd: values.answerMd,
-        locale: values.locale,
         isPublished: values.isPublished,
       };
       if (!article) {
@@ -59,7 +48,6 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
       if (next.category !== article.category) body.category = next.category;
       if (next.question !== article.question) body.question = next.question;
       if (next.answerMd !== article.answerMd) body.answerMd = next.answerMd;
-      if (next.locale !== article.locale) body.locale = next.locale;
       if (next.isPublished !== article.isPublished) body.isPublished = next.isPublished;
       if (Object.keys(body).length === 0) {
         toast({ kind: 'info', title: 'Nothing changed' });
@@ -67,7 +55,7 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
       }
       await update.mutateAsync({ article, body });
     },
-    { fields: ['category', 'question', 'answerMd', 'locale', 'isPublished'] },
+    { fields: ['category', 'question', 'answerMd', 'isPublished'] },
   );
 
   return (
@@ -81,22 +69,13 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
       onSubmit={submit}
     >
       <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Topic"
-            autoComplete="off"
-            hint="Orders, Unlocking, Payments, IMEI, Privacy…"
-            error={errors.category}
-            {...register('category', { validate: (value) => value.trim() !== '' || 'Enter a topic.' })}
-          />
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            options={LOCALE_OPTIONS}
-            error={errors.locale}
-            {...register('locale')}
-          />
-        </div>
+        <TextField
+          label="Topic"
+          autoComplete="off"
+          hint="Orders, Unlocking, Payments, IMEI, Privacy…"
+          error={errors.category}
+          {...register('category', { validate: (value) => value.trim() !== '' || 'Enter a topic.' })}
+        />
         <TextField
           label="Question"
           autoComplete="off"

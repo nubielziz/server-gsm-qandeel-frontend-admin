@@ -49,7 +49,9 @@ export function TemplateDialogs({
       open
       title={`Delete “${eventLabel(template.event)}”?`}
       body={
-        <p>The template is removed for good. The event then sends nothing in this language and channel.</p>
+        <p>
+          The template is removed for good. The event then sends nothing in this channel to this audience.
+        </p>
       }
       confirm="Delete template"
       kind="danger"

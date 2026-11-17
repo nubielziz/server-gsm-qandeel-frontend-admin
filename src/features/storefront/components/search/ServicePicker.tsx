@@ -1,4 +1,4 @@
-// ServicePicker: a search box that offers the listed English services matching what is typed, for the pin dialog's "pin" and
+// ServicePicker: a search box that offers the listed services matching what is typed, for the pin dialog's "pin" and
 // "hide" lists. The server refuses any other service (422), so the menu never shows one. New in the Search tab.
 import { useState } from 'react';
 import { Button, errorText, SearchInput, Skeleton, useDebouncedCommit } from '@/components/ui';
@@ -17,7 +17,7 @@ export interface ServicePickerProps {
   onPick: (listing: ServiceListing) => void;
 }
 
-/** A debounced search over the English listings, with one button per match. */
+/** A debounced search over the listed services, with one button per match. */
 export function ServicePicker({ label, verb, exclude, full = false, onPick }: ServicePickerProps) {
   const [committed, setCommitted] = useState('');
   const box = useDebouncedCommit(committed, setCommitted);
@@ -43,9 +43,7 @@ export function ServicePicker({ label, verb, exclude, full = false, onPick }: Se
               {errorText(results.error)}
             </p>
           ) : matches.length === 0 ? (
-            <p className="hint">
-              No listed English service matches. Only listed English services can be pinned or hidden.
-            </p>
+            <p className="hint">No listed service matches. Only listed services can be pinned or hidden.</p>
           ) : (
             <ul className="divide-y divide-line rounded-md border border-line">
               {matches.map((listing) => (

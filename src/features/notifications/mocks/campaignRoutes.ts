@@ -14,7 +14,6 @@ import {
   type CampaignChannel,
   type CampaignDetail,
   type CampaignInput,
-  type CampaignLocale,
 } from '../types';
 import { previewOf } from './audience';
 import { denied } from './access';
@@ -61,7 +60,7 @@ function inputOf(body: Record<string, unknown>): CampaignInput {
     purpose: CAMPAIGN_PURPOSES.find((p) => p === body.purpose) ?? 'service',
     channels: Array.isArray(body.channels) ? (body.channels as CampaignChannel[]) : [],
     audience: (body.audience ?? {}) as CampaignInput['audience'],
-    content: (body.content ?? { en: { title: '', body: '' } }) as CampaignInput['content'],
+    content: (body.content ?? { title: '', body: '' }) as CampaignInput['content'],
     link: (body.link ?? null) as CampaignInput['link'],
   };
 }
@@ -211,14 +210,9 @@ export const campaignRoutes: HttpHandler[] = [
     route('broadcasts:read', async ({ request, campaign }) => {
       if (!campaign) return notFound('campaign', undefined);
       const body = await bodyOf(request);
-      const locale = body.locale === 'ar' ? 'ar' : body.locale === 'en' ? 'en' : null;
       const channel = CAMPAIGN_CHANNELS.find((c) => c === body.channel);
-      if (!locale || !channel)
-        return invalid([
-          { field: locale ? 'channel' : 'locale', message: 'Choose a language and a channel.' },
-        ]);
-      const fallback = locale === 'ar' && !campaign.content.ar;
-      const text = (locale === 'ar' ? campaign.content.ar : null) ?? campaign.content.en;
+      if (!channel) return invalid([{ field: 'channel', message: 'Choose a channel.' }]);
+      const text = campaign.content;
       const fill = (value: string) => value.replaceAll('{{name}}', SAMPLE_NAME);
       const lines = fill(text.body).split('\n');
       return HttpResponse.json({
@@ -234,9 +228,7 @@ export const campaignRoutes: HttpHandler[] = [
             : channel === 'telegram'
               ? 'Telegram bot'
               : 'In-app notification',
-        note: fallback
-          ? 'There is no Arabic text, so the English one is shown. A sample with made-up details.'
-          : 'A sample with made-up details.',
+        note: 'A sample with made-up details.',
       });
     }),
   ),
@@ -254,15 +246,13 @@ export const campaignRoutes: HttpHandler[] = [
         return invalid([{ field: 'channels', message: 'Choose in-app, email or both.' }]);
       }
       if (queued.includes('in_app')) {
-        const locale: CampaignLocale = body.locale === 'ar' && campaign.content.ar ? 'ar' : 'en';
-        const text = (locale === 'ar' ? campaign.content.ar : null) ?? campaign.content.en;
+        const text = campaign.content;
         const store = notificationsState();
         const item = store.inbox.insert({
           category: campaign.purpose === 'marketing' ? 'marketing' : 'announcement',
           title: text.title,
           body: text.body.replaceAll('{{name}}', SAMPLE_NAME),
           link: null,
-          locale,
           readAt: null,
           createdAt: new Date().toISOString(),
           campaignId: campaign.id,

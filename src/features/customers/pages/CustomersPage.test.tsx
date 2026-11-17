@@ -520,6 +520,7 @@ describe('adding a customer', () => {
     await user.type(within(dialog).getByLabelText('Full name'), 'Pat Example');
     await user.type(within(dialog).getByLabelText('Email'), 'Pat.Example@Mail.example');
     await user.selectOptions(within(dialog).getByLabelText('Country'), 'DE');
+    expect(within(dialog).queryByLabelText('Language')).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Phone (optional)'), '+49 170 000');
     await user.click(within(dialog).getByRole('button', { name: 'Create customer' }));
 
@@ -532,7 +533,6 @@ describe('adding a customer', () => {
         name: 'Pat Example',
         email: 'pat.example@mail.example',
         country: 'DE',
-        locale: 'en',
         phone: '+49 170 000',
         password: { mode: 'reset_link' },
       },

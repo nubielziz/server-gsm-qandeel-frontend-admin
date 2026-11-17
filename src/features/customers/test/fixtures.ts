@@ -10,7 +10,6 @@ export function customer(overrides: Partial<Customer> = {}): Customer {
     name: 'Daniel Whitmore',
     phone: '',
     country: 'GB',
-    locale: 'en',
     currency: 2,
     currencyCode: 'GBP',
     hasAccount: true,

@@ -1,6 +1,6 @@
 // Mock of the Search tab's routes (`/admin/search/*`): synonyms, pinned results, hidden popular terms, the report, the preview and
 // the index with its rebuild. The mock plays the server for the rules the backend plan states: terms are cleaned and distinct (2 to
-// 20), a pin needs a listed English listing for every service it names (422 on its row), a query and match pair has one rule
+// 20), a pin needs a listed listing for every service it names (422 on its row), a query and match pair has one rule
 // (409 CONFLICT), a second rebuild is refused (409 JOB_ALREADY_RUNNING). Nothing here touches a real engine.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { problem, type ProblemError } from '@/mocks/problem';
@@ -33,11 +33,9 @@ function clean(value: unknown): string {
     : '';
 }
 
-/** The English listing that lets a service be pinned or hidden: listed, in English. */
+/** The listing that lets a service be pinned or hidden: a listed one. */
 function pinnable(stores: Stores, serviceId: unknown): MockListing | undefined {
-  return stores.listings
-    .list()
-    .find((row) => row.serviceId === serviceId && row.locale === 'en' && row.isListed);
+  return stores.listings.list().find((row) => row.serviceId === serviceId && row.isListed);
 }
 
 const asArray = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
@@ -113,11 +111,10 @@ const synonymRoutes: HttpHandler[] = [
 
 // ---------- pinned results ----------
 
-/** A stored rule as the API sends it: with the titles of its services, read from the English listings. */
+/** A stored rule as the API sends it: with the titles of its services, read from the listings. */
 function toPin(stores: Stores, row: MockPin): SearchPin {
   const titleOf = (serviceId: number) =>
-    stores.listings.list().find((l) => l.serviceId === serviceId && l.locale === 'en')?.publicTitle ??
-    `Service ${serviceId}`;
+    stores.listings.list().find((l) => l.serviceId === serviceId)?.publicTitle ?? `Service ${serviceId}`;
   return {
     ...row,
     pinned: row.pinned.map((item) => ({ ...item, title: titleOf(item.serviceId) })),
@@ -148,7 +145,7 @@ function readPin(
     errors.push({ field: 'pinned', message: 'Each pinned service needs its own position.' });
   }
   if (hidden.length > 50) errors.push({ field: 'hidden', message: 'Hide at most 50 services.' });
-  const unlisted = 'This service has no listed English listing.';
+  const unlisted = 'This service is not listed on the site.';
   pinned.forEach((item, i) => {
     if (!pinnable(stores, item.serviceId)) errors.push({ field: `pinned.${i}.serviceId`, message: unlisted });
   });
@@ -272,7 +269,7 @@ function inForce(rule: MockPin, now: number): boolean {
   return !(rule.endsAt && Date.parse(rule.endsAt) <= now);
 }
 
-/** The top 10 English listed services for a query: title words match, pins first at their positions, hidden ones left out. */
+/** The top 10 listed services for a query: title words match, pins first at their positions, hidden ones left out. */
 function previewOf(stores: Stores, q: string): SearchPreview {
   const words = clean(q).split(' ');
   const rules = stores.search.pins
@@ -285,7 +282,7 @@ function previewOf(stores: Stores, q: string): SearchPreview {
   const pins = new Map(rules.flatMap((rule) => rule.pinned.map((p) => [p.serviceId, p.position] as const)));
   const organic = stores.listings
     .list()
-    .filter((row) => row.locale === 'en' && row.isListed)
+    .filter((row) => row.isListed)
     .filter((row) =>
       words.every(
         (word) => row.publicTitle.toLowerCase().includes(word) || row.brand.toLowerCase().includes(word),
@@ -295,7 +292,7 @@ function previewOf(stores: Stores, q: string): SearchPreview {
     .sort((a, b) => a.sort - b.sort)
     .map((row) => ({ serviceId: row.serviceId, title: row.publicTitle }));
   const titleOf = (serviceId: number) =>
-    stores.listings.list().find((r) => r.serviceId === serviceId && r.locale === 'en')?.publicTitle ?? '';
+    stores.listings.list().find((r) => r.serviceId === serviceId)?.publicTitle ?? '';
   const slots: SearchPreview['hits'] = [...pins]
     .sort((a, b) => a[1] - b[1])
     .map(([serviceId, position]) => ({

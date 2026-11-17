@@ -58,7 +58,7 @@ export type SearchPin = {
 
 /**
  * Body of `POST /admin/search/pins`. `pinned` has at most 10 entries with distinct positions 1 to 10, `hidden` is the ids
- * of at most 50 services; every service must have a listed English listing (else 422). The answer carries the titles.
+ * of at most 50 services; every service must be listed (else 422). The answer carries the titles.
  */
 export type CreatePinBody = {
   query: string;

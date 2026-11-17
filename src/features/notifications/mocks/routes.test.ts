@@ -33,7 +33,7 @@ const INPUT: CampaignInput = {
   purpose: 'service',
   channels: ['in_app', 'email'],
   audience: { staff: {} },
-  content: { en: { title: 'Hello', body: 'Hi {{name}}' } },
+  content: { title: 'Hello', body: 'Hi {{name}}' },
   link: null,
 };
 
@@ -72,7 +72,7 @@ describe('create and edit', () => {
         name: ' ',
         channels: ['telegram'],
         audience: {},
-        content: { en: { title: '<b>Hi</b>', body: 'Hello {{email}}' } },
+        content: { title: '<b>Hi</b>', body: 'Hello {{email}}' },
         link: { staff: 'https://evil.example' },
       }),
     );
@@ -80,8 +80,8 @@ describe('create and edit', () => {
     expect(Object.keys(bad.fieldErrors).sort()).toEqual([
       'audience',
       'channels',
-      'content.en.body',
-      'content.en.title',
+      'content.body',
+      'content.title',
       'link.staff',
       'name',
     ]);
@@ -134,20 +134,17 @@ describe('the live count and the preview', () => {
     ).toBeDefined();
   });
 
-  it('renders the campaign with a sample name, html for email, and says when Arabic falls back to English', async () => {
-    const text = await previewCampaign(3, { locale: 'en', channel: 'in_app' });
+  it('renders the campaign with a sample name, html for email, and says it is a sample', async () => {
+    const text = await previewCampaign(3, { channel: 'in_app' });
     expect(text).toMatchObject({
       subject: 'New unlock services',
       format: 'text',
       from: 'In-app notification',
     });
     expect(text.body).toContain('Hello Daniel');
-    const email = await previewCampaign(3, { locale: 'en', channel: 'email' });
+    expect(text.note).toBe('A sample with made-up details.');
+    const email = await previewCampaign(3, { channel: 'email' });
     expect(email.format).toBe('html');
-    const draft = await createCampaign(INPUT);
-    expect((await previewCampaign(draft.id, { locale: 'ar', channel: 'in_app' })).note).toMatch(
-      /no Arabic text/,
-    );
   });
 });
 
@@ -267,7 +264,7 @@ describe('the recipients', () => {
 describe('the test send', () => {
   it("queues an in-app item in the staff member's own inbox, and only for a draft or scheduled campaign", async () => {
     const before = (await getUnreadCount()).unread;
-    expect(await sendCampaignTest(3, { channels: ['in_app'], locale: 'en' })).toEqual({ queued: ['in_app'] });
+    expect(await sendCampaignTest(3, { channels: ['in_app'] })).toEqual({ queued: ['in_app'] });
     expect((await getUnreadCount()).unread).toBe(before + 1);
     expect(await sendCampaignTest(3, {})).toEqual({ queued: ['in_app', 'email'] });
     expect(await refusal(sendCampaignTest(1, {}))).toMatchObject({ code: 'INVALID_TRANSITION' });
@@ -277,8 +274,8 @@ describe('the test send', () => {
 describe('the inbox', () => {
   it('lists newest first, filters unread and counts unread', async () => {
     const all = await listInbox({ start: 0, end: 20 });
-    expect(all.total).toBe(5);
-    expect(all.data.map((item) => item.id)).toEqual([5, 4, 3, 2, 1]);
+    expect(all.total).toBe(4);
+    expect(all.data.map((item) => item.id)).toEqual([5, 4, 3, 2]);
     const unread = await listInbox({ unread: true });
     expect(unread.data.map((item) => item.id)).toEqual([5, 3]);
     expect(await getUnreadCount()).toEqual({ unread: 2 });
@@ -340,7 +337,7 @@ describe('the live events of the mock stream', () => {
     const seen = await listen();
     await sendCampaignTest(3, { channels: ['email'] });
     expect(seen).toEqual([]);
-    await sendCampaignTest(3, { channels: ['in_app'], locale: 'en' });
+    await sendCampaignTest(3, { channels: ['in_app'] });
     expect(seen).toHaveLength(1);
     expect(seen[0].name).toBe('notification.created');
     expect(seen[0].data).toMatchObject({ unread: 3, live: true, item: { campaignId: 3, readAt: null } });

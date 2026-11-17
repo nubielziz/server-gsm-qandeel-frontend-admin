@@ -23,6 +23,7 @@ afterEach(() => vi.restoreAllMocks());
 // Records of the mock seed (taken from the demo; see mocks/seed.ts).
 const ICLOUD = 1; // iCloud Clean / Lost Check: listed, retail 3.99
 const MDM = 11; // MDM Removal: locked to B2B
+const Z3X = 15; // Z3X Credits x10: a server service, active, with no listing yet
 const TOTAL = 14;
 
 describe('listListings', () => {
@@ -55,7 +56,6 @@ describe('listListings', () => {
     const listing = await getListing(ICLOUD);
     expect(listing).toMatchObject({
       id: ICLOUD,
-      locale: 'en',
       isListed: true,
       locked: false,
       lockedReason: null,
@@ -111,24 +111,20 @@ describe('updateListing', () => {
 });
 
 describe('createListing', () => {
-  it('adds a listing in another language, not yet on the site, with a slug made from the title', async () => {
+  it('adds a listing for a service that has none, not yet on the site, with a slug made from the title', async () => {
     const requests = recordRequests();
-    const created = await createListing({
-      serviceId: 2,
-      locale: 'ar',
-      publicTitle: 'Apple Warranty Check AR',
-    });
+    const created = await createListing({ serviceId: Z3X, publicTitle: 'Z3X Credits Pack' });
     expect(requests.last()).toMatchObject({
       method: 'POST',
-      body: { serviceId: 2, locale: 'ar', publicTitle: 'Apple Warranty Check AR' },
+      body: { serviceId: Z3X, publicTitle: 'Z3X Credits Pack' },
     });
-    expect(created).toMatchObject({ locale: 'ar', isListed: false, slug: 'apple-warranty-check-ar' });
+    expect(requests.last().body).not.toHaveProperty('locale');
+    expect(created).toMatchObject({ serviceId: Z3X, isListed: false, slug: 'z3x-credits-pack' });
+    expect(created).not.toHaveProperty('locale');
   });
 
-  it('refuses a second listing of the same service in the same language', async () => {
-    const error = await createListing({ serviceId: 2, locale: 'en', publicTitle: 'Again' }).catch(
-      (e: unknown) => e,
-    );
+  it('refuses a second listing of the same service', async () => {
+    const error = await createListing({ serviceId: 2, publicTitle: 'Again' }).catch((e: unknown) => e);
     expect((error as ApiError).status).toBe(409);
     expect((error as ApiError).fieldErrors.serviceId?.[0]).toContain('already has a listing');
   });
@@ -170,14 +166,8 @@ describe('updateListing content', () => {
     expect(row).not.toHaveProperty('descriptionMd');
   });
 
-  it('writes the facts of the service to every language and keeps the text to one', async () => {
-    const created = await createListing({ serviceId: ICLOUD, locale: 'ar', publicTitle: 'فحص آيكلاود' });
-    await updateListing(ICLOUD, { brand: 'Samsung', summary: 'English only' });
-    expect(await getListing(created.id)).toMatchObject({ brand: 'Samsung', summary: '' });
-  });
-
   it('sets listedAt the first time a listing goes on the site and never resets it', async () => {
-    const created = await createListing({ serviceId: 2, locale: 'ar', publicTitle: 'Warranty AR' });
+    const created = await createListing({ serviceId: Z3X, publicTitle: 'Z3X Credits Pack' });
     expect(created.listedAt).toBeNull();
     const on = await updateListing(created.id, { isListed: true });
     expect(on.listedAt).not.toBeNull();

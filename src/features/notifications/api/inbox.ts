@@ -12,8 +12,8 @@ import {
 } from '@/lib/api';
 import type { InboxCategory, InboxItem, ReadAllBody, ReadAllResult, UnreadCount } from '../types';
 
-/** The inbox's own query: the usual range and sort plus `unread` (only the unread ones) and the language of the text. */
-export type InboxQuery = ListQuery & { unread?: boolean; locale?: 'en' | 'ar'; category?: InboxCategory };
+/** The inbox's own query: the usual range and sort plus `unread` (only the unread ones). */
+export type InboxQuery = ListQuery & { unread?: boolean; category?: InboxCategory };
 
 /**
  * The signed-in staff member's notifications, newest first; `_start`/`_end` page through them (up to 100 a page). `unread: true` shows only
@@ -21,13 +21,13 @@ export type InboxQuery = ListQuery & { unread?: boolean; locale?: 'en' | 'ar'; c
  * @route GET /admin/inbox
  */
 export function listInbox(
-  { unread, locale, category, ...query }: InboxQuery = {},
+  { unread, category, ...query }: InboxQuery = {},
   init?: ApiInit,
 ): Promise<ListResult<InboxItem>> {
   return apiList<InboxItem>(
     '/admin/inbox',
     { ...query, filters: { ...query.filters, category } },
-    { unread, locale },
+    { unread },
     init,
   );
 }

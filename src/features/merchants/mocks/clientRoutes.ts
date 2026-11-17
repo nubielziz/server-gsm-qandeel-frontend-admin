@@ -97,7 +97,6 @@ export const clientRoutes: HttpHandler[] = [
       referralCode: `GSM${Date.now().toString(36).toUpperCase()}`,
       emailVerifiedAt: null,
       createdAt: toIso(Date.now()),
-      locale: 'en',
       address: '',
       taxId: '',
       internalNotes: '',

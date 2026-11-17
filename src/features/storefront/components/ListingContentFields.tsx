@@ -1,16 +1,15 @@
-// ListingContentFields: the per-language text of the listing editor (title, slug, summary, delivery note, description and
-// requirements as Markdown). New in feature 22; the demo had no editor. These texts belong to this language only.
+// ListingContentFields: the text of the listing editor (title, slug, summary, delivery note, description and
+// requirements as Markdown). New in feature 22; the demo had no editor.
 import { TextareaField, TextField } from '@/components/ui';
 import { LISTING_LIMITS, type ListingFieldsProps } from '../lib/listingForm';
 
-/** The title, the web address, the one-line summary, the delivery note and the two Markdown texts. `dir` applies to the texts of this language, not to the slug. */
-export function ListingContentFields({ register, errors, dir }: ListingFieldsProps) {
+/** The title, the web address, the one-line summary, the delivery note and the two Markdown texts. */
+export function ListingContentFields({ register, errors }: ListingFieldsProps) {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField
           label="Public title"
-          dir={dir}
           autoComplete="off"
           maxLength={LISTING_LIMITS.publicTitle}
           error={errors.publicTitle}
@@ -31,7 +30,6 @@ export function ListingContentFields({ register, errors, dir }: ListingFieldsPro
       </div>
       <TextField
         label="Summary"
-        dir={dir}
         autoComplete="off"
         maxLength={LISTING_LIMITS.summary}
         hint="One line under the title, up to 300 characters."
@@ -40,7 +38,6 @@ export function ListingContentFields({ register, errors, dir }: ListingFieldsPro
       />
       <TextField
         label="Delivery note"
-        dir={dir}
         autoComplete="off"
         maxLength={LISTING_LIMITS.etaText}
         hint="Shown to customers instead of the service's delivery time, for example “Usually within 24 hours”. Leave empty to show the delivery time."
@@ -49,7 +46,6 @@ export function ListingContentFields({ register, errors, dir }: ListingFieldsPro
       />
       <TextareaField
         label="Description (Markdown)"
-        dir={dir}
         className="mono"
         rows={8}
         spellCheck={false}
@@ -59,7 +55,6 @@ export function ListingContentFields({ register, errors, dir }: ListingFieldsPro
       />
       <TextareaField
         label="Requirements (Markdown)"
-        dir={dir}
         className="mono"
         rows={4}
         spellCheck={false}

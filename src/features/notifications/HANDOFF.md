@@ -23,7 +23,9 @@ None: every shape is the backend's contract (`campaign.contracts.ts`, `inbox.con
 
 ## Backend questions
 
-- None blocking. Nice to have: a `locale` for staff (the inbox list takes `locale`, the console does not send it; staff text is English).
+- None blocking.
+
+> **2026-11-16, English only (decision 039):** the composer is one title and one text, the audience has no language filter, the preview and the test send have no language, and the inbox and the live stream carry no `locale`. The text above is the handoff as written.
 
 ## Notes for the lead
 

@@ -17,7 +17,6 @@ function createdItem(id: number, live = true) {
       title: `Item ${id}`,
       body: 'Text',
       link: null,
-      locale: 'en',
       readAt: null,
       createdAt: '2026-11-15T10:00:00.000Z',
       campaignId: null,

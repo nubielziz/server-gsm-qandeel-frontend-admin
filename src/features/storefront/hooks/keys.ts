@@ -43,7 +43,7 @@ export const searchPreviewKey = (q: string) => [...SEARCH_PREVIEW_KEY, q] as con
 /** The index status, which a running rebuild refreshes every few seconds. */
 export const SEARCH_INDEX_KEY = ['api', 'storefront', 'search-index'] as const;
 
-/** The English listings the pin picker offers for one search text. */
+/** The listed services the pin picker offers for one search text. */
 export const searchPickerKey = (q: string) => ['api', 'storefront', 'search-picker', q] as const;
 
 /** Every read a change of a synonym or a pin makes stale besides Refine's own: the previews. */
@@ -55,5 +55,5 @@ export const SEARCH_INDEX_STALE_KEYS: QueryKey[] = [SEARCH_INDEX_KEY];
 /** How often the index status is read while a rebuild runs. */
 export const REBUILD_POLL_MS = 5_000;
 
-/** How many English listings the pin picker shows for a search text. */
+/** How many listed services the pin picker shows for a search text. */
 export const PICKER_RESULTS = 8;

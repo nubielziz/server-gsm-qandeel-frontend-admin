@@ -3,6 +3,8 @@
 Page `/storefront` ("Storefront"), 22 of 22 routes of `docs/slices/storefront.json`. Demo: `50-p-storefront.js` (Live preview excluded) with the helpers in
 `12-state-b2c.js` and `13-b2c-ui.js`. Tabs, in the address as `?tab=`: Services on sale, Landing pages, Content and legal, Help centre, TAC catalogue (new), Search (new, feature 29).
 
+> **2026-11-16, English only (decision 039):** the console no longer has a language. The Language select is gone from the help article, content page, new legal version and add listing dialogs; the Language column is gone from the listings and landing page tables; `locale` is no longer sent or read on the listing, content page and help article routes (filters, `POST` and `PATCH` bodies, rows); the category has no Arabic name; the Search tab's picker sends no `locale`. A legal document is the one exception: its row keeps `locale` read-only, and a retired non-English version shows as `(retired TR text)` in "Earlier versions kept for the record". The rows STOREFRONT-7 and STOREFRONT-10 and the route notes below describe the earlier two-language design.
+
 ## Mismatches
 
 Rows are in the format of `docs/MISMATCHES.md`. The Live preview tab and the "Preview checkout" button are already M4 (a link to `VITE_STOREFRONT_URL`, new tab, shown only when the variable is set).
@@ -33,7 +35,7 @@ All marked "Assumed contract" in the JSDoc of `api/*.ts` and `types/*.ts`.
 - **Help articles** (`/admin/help-articles`): rows carry `answerMd`, `helpfulYes`, `helpfulNo`, `isPublished`, `sort`. Filters `q` (question, topic), `isPublished`; sorts `sort`, `question`, `category`, `isPublished`. `POST` body `{ category, question, answerMd, locale, isPublished? }`; the publish button is `PATCH { isPublished }`.
 - **Legal documents** (`/admin/legal-documents`): `type` is `terms`, `privacy`, `refund` or `cookies`; rows carry `bodyMd`, `isCurrent`, `effectiveFrom` (`null` for a version not yet published), `requiresReacceptance` and `acceptedCount` (or `null`). The list answers every version (the console reads up to 200). `POST` body `{ type, locale, version, bodyMd, requiresReacceptance }` makes a version that is not in force; `publish` has no body and answers the published version.
 - **TAC catalogue** (`/admin/tac-catalog`): filters `q` (prefix, brand, model, marketing name); sorts `tac`, `brand`, `model`, `releaseYear`. `POST` body `{ tac, brand, model, marketingName?, releaseYear? }`; `PATCH` any of them. `model` is the model code and `marketingName` the name customers know.
-- **Languages** are `en` and `ar` (the demo's `EN, AR`); the forms offer those two.
+- **Language**: none (decision 039, 2026-11-16); no form offers one. See the note at the top.
 - **Server messages**: a refusal names its field in `errors[]` (`retailPrice`, `serviceId`, `slug`, `version`, `tac`, `title`, `answerMd`…); anything else shows in the dialog's error slot or a toast.
 
 ## Feature 22 (listing editor)

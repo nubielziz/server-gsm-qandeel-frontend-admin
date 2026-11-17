@@ -3,7 +3,7 @@
 // remove, the server's refusal). They run through the whole app against the dev mock API.
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
@@ -38,10 +38,10 @@ const png = (name = 'phone.png', type = 'image/png', size = 3) =>
   new File([new Uint8Array(size)], name, { type });
 
 describe('opening the editor', () => {
-  it('reads the listing and fills every field, with the facts under their note', async () => {
+  it('reads the listing and fills every field, with the facts under their heading', async () => {
     const user = userEvent.setup();
     const dialog = await openEditor(user);
-    expect(dialog.getByText(`${ATT} · EN`)).toBeInTheDocument();
+    expect(dialog.getByText(ATT)).toBeInTheDocument();
     expect(dialog.getByRole('textbox', { name: 'Public title' })).toHaveValue(ATT);
     expect(dialog.getByRole('textbox', { name: 'Slug' })).toHaveValue('atandt-usa-premier-unlock');
     expect(dialog.getByText(/Changing it changes the public link\./)).toBeInTheDocument();
@@ -56,36 +56,26 @@ describe('opening the editor', () => {
     expect(dialog.getByRole('checkbox', { name: 'Featured on the storefront' })).toBeChecked();
     expect(dialog.getByRole('textbox', { name: 'Search title' })).toHaveValue('');
     expect(dialog.getByRole('textbox', { name: 'Search description' })).toHaveValue('');
-    expect(dialog.getByText('These apply to every language of this service.')).toBeInTheDocument();
+    expect(dialog.getByText('About the service')).toBeInTheDocument();
+    expect(dialog.queryByText(/every language/)).not.toBeInTheDocument();
   });
 
-  it('types the per-language texts right-to-left in an Arabic listing, and leaves the slug alone', async () => {
+  it('leaves the text direction alone: no field of the editor sets one', async () => {
     const user = userEvent.setup();
-    await openStorefront();
-    const arabic = { ...(await getListing(ATT_ID)), locale: 'ar' };
-    mockServer.use(http.get('*/admin/service-listings/:id', () => HttpResponse.json(arabic)));
-    await user.click((await rowOf(TABLE, ATT)).getByRole('button', { name: `Edit listing ${ATT}` }));
-    const dialog = dialogOf('Edit listing');
-    await dialog.findByRole('textbox', { name: 'Public title' });
+    const dialog = await openEditor(user);
     for (const name of [
       'Public title',
+      'Slug',
       'Summary',
       'Delivery note',
       'Description (Markdown)',
       'Requirements (Markdown)',
       'Search title',
       'Search description',
+      'Country',
     ]) {
-      expect(dialog.getByRole('textbox', { name })).toHaveAttribute('dir', 'rtl');
+      expect(dialog.getByRole('textbox', { name })).not.toHaveAttribute('dir');
     }
-    expect(dialog.getByRole('textbox', { name: 'Slug' })).not.toHaveAttribute('dir');
-    expect(dialog.getByRole('textbox', { name: 'Country' })).not.toHaveAttribute('dir');
-  });
-
-  it('leaves the text direction alone in an English listing', async () => {
-    const user = userEvent.setup();
-    const dialog = await openEditor(user);
-    expect(dialog.getByRole('textbox', { name: 'Summary' })).not.toHaveAttribute('dir');
   });
 
   it('has no Edit button on a locked row', async () => {

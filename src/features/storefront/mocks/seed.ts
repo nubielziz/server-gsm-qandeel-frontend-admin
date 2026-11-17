@@ -40,7 +40,6 @@ type DemoPage = { title: string; slug: string; kind: PageKind; status: PageStatu
 type DemoLegal = {
   type: string;
   version: string;
-  lang: string;
   effective: number;
   current: boolean;
   accepted: number;
@@ -71,7 +70,6 @@ function listingStores(state: DemoState, now: number) {
     demoRows<DemoListing>(state, 'listings').map((l, index) => ({
       id: index + 1,
       serviceId: demoNumericId(l.sid),
-      locale: 'en',
       slug: l.slug,
       publicTitle: l.title,
       summary: '',
@@ -115,7 +113,6 @@ function pageRows(state: DemoState): ContentPage[] {
     id,
     kind: p.kind,
     slug: p.slug,
-    locale: 'en',
     title: p.title,
     bodyMd: bodyFor(p.title),
     seoTitle: p.title,
@@ -141,7 +138,7 @@ function legalRows(state: DemoState, now: number): LegalDocument[] {
     id: i + 1,
     type: LEGAL_TYPE[d.type] ?? d.type.toLowerCase(),
     version: d.version,
-    locale: d.lang.toLowerCase(),
+    locale: 'en',
     bodyMd: bodyFor(`${d.type} v${d.version}`),
     effectiveFrom: toIso(d.effective),
     isCurrent: d.current,
@@ -170,7 +167,6 @@ function helpRows(state: DemoState, now: number): HelpArticle[] {
     category: h.cat,
     question: h.q,
     answerMd: `Short answer to "${h.q}".`,
-    locale: 'en',
     isPublished: h.status === 'published',
     helpfulYes: h.yes,
     helpfulNo: h.no,

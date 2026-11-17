@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { storefrontStore } from '../mocks/store';
 import { dialogOf, openStorefront, openTab, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
@@ -100,28 +101,52 @@ describe('legal documents', () => {
     await openContent(user);
     const table = await tableNamed(LEGAL);
     const terms = within(
-      table.getByRole('button', { name: 'New version of Terms of service v3.2 (English)' }).closest('tr')!,
+      table.getByRole('button', { name: 'New version of Terms of service v3.2' }).closest('tr')!,
     );
     expect(terms.getByText('v3.2')).toBeInTheDocument();
-    expect(terms.getByText('English')).toBeInTheDocument();
+    // The language line under the document name is gone: English is the only language.
+    expect(terms.queryByText('English')).not.toBeInTheDocument();
     const draft = await rowOf(LEGAL, 'v1.5');
     expect(draft.getByText('Draft')).toBeInTheDocument();
-    expect(draft.getByRole('button', { name: 'Publish Refund policy v1.5 (English)' })).toBeInTheDocument();
+    expect(draft.getByRole('button', { name: 'Publish Refund policy v1.5' })).toBeInTheDocument();
     expect(draft.getByText('Not asked')).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /^Earlier versions kept for the record: Terms of service v3\.1 \(English\), accepted 38 times\.$/,
+      screen.getByText(/^Earlier versions kept for the record: Terms of service v3\.1, accepted 38 times\.$/),
+    ).toBeInTheDocument();
+    // The header, the four versions in force and the draft.
+    expect((await tableNamed(LEGAL)).getAllByRole('row')).toHaveLength(6);
+  });
+
+  it('marks a retired version in another language by its code in capitals, in the earlier versions line', async () => {
+    // Consents may still point at a version kept from before English became the only language (decision 039).
+    (await storefrontStore()).legal.insert({
+      type: 'terms',
+      version: '3.0',
+      locale: 'tr',
+      bodyMd: '# Terms',
+      effectiveFrom: '2025-06-01T00:00:00.000Z',
+      isCurrent: false,
+      requiresReacceptance: false,
+      createdAt: '2025-06-01T00:00:00.000Z',
+      acceptedCount: 14,
+    });
+    const user = userEvent.setup();
+    await openContent(user);
+    expect(
+      await screen.findByText(
+        /^Earlier versions kept for the record: Terms of service v3\.1, accepted 38 times; Terms of service v3\.0 \(retired TR text\), accepted 14 times\.$/,
       ),
     ).toBeInTheDocument();
-    expect((await tableNamed(LEGAL)).getAllByRole('row')).toHaveLength(7);
+    // It is history only: the table lists no row for it.
+    expect((await tableNamed(LEGAL)).getAllByRole('row')).toHaveLength(6);
   });
 
   it('asks before it publishes, says what changes, and puts the draft in force', async () => {
     const user = userEvent.setup();
     await openContent(user);
-    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5 (English)' }));
+    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5' }));
     const dialog = dialogOf('Publish a new version?');
-    expect(dialog.getByText(/^Refund policy \(English\) goes from v1\.4 to/)).toBeInTheDocument();
+    expect(dialog.getByText(/^Refund policy goes from v1\.4 to/)).toBeInTheDocument();
     expect(dialog.getByText('v1.5', { selector: 'strong' })).toBeInTheDocument();
     expect(
       dialog.getByText(
@@ -133,20 +158,18 @@ describe('legal documents', () => {
     expect(screen.getByText('Version 1.5 is now in force.')).toBeInTheDocument();
     await waitFor(async () => {
       const row = await rowOf(LEGAL, 'v1.5');
-      expect(
-        row.getByRole('button', { name: 'New version of Refund policy v1.5 (English)' }),
-      ).toBeInTheDocument();
+      expect(row.getByRole('button', { name: 'New version of Refund policy v1.5' })).toBeInTheDocument();
     });
-    expect(screen.getByText(/Refund policy v1\.4 \(English\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Refund policy v1\.4/)).toBeInTheDocument();
   });
 
   it('changes nothing when the confirm is cancelled', async () => {
     const user = userEvent.setup();
     await openContent(user);
-    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5 (English)' }));
+    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5' }));
     await user.click(dialogOf('Publish a new version?').getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Publish Refund policy v1.5 (English)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish Refund policy v1.5' })).toBeInTheDocument();
   });
 
   it('shows the server’s refusal in the confirm dialog and keeps it open', async () => {
@@ -162,20 +185,21 @@ describe('legal documents', () => {
     );
     const user = userEvent.setup();
     await openContent(user);
-    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5 (English)' }));
+    await user.click(screen.getByRole('button', { name: 'Publish Refund policy v1.5' }));
     const dialog = dialogOf('Publish a new version?');
     await user.click(dialog.getByRole('button', { name: 'Publish v1.5' }));
     expect(await dialog.findByText(/A second admin must approve this text first\./)).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Publish a new version?' })).toBeInTheDocument();
   });
 
-  it('writes a new version from a document: its type and language are fixed, the next number and the text are suggested', async () => {
+  it('writes a new version from a document: its type is fixed, the next number and the text are suggested', async () => {
     const user = userEvent.setup();
     await openContent(user);
-    await user.click(screen.getByRole('button', { name: 'New version of Terms of service v3.2 (English)' }));
+    await user.click(screen.getByRole('button', { name: 'New version of Terms of service v3.2' }));
     const dialog = dialogOf('New version');
     expect(dialog.getByRole('combobox', { name: 'Document' })).toBeDisabled();
     expect(dialog.getByRole('combobox', { name: 'Document' })).toHaveValue('terms');
+    expect(dialog.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
     expect(dialog.getByRole('textbox', { name: 'Version' })).toHaveValue('3.3');
     expect(dialog.getByRole('textbox', { name: 'Text (Markdown)' })).toHaveValue(
       '# Terms of service v3.2\n\nText for Terms of service v3.2 goes here.',
@@ -186,9 +210,7 @@ describe('legal documents', () => {
     await user.click(dialog.getByRole('button', { name: 'Save version' }));
     expect(await screen.findByText('Terms of service v3.3 saved')).toBeInTheDocument();
     expect(screen.getByText('It is not in force yet. Publish it when it is ready.')).toBeInTheDocument();
-    expect(
-      await screen.findByRole('button', { name: 'Publish Terms of service v3.3 (English)' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Publish Terms of service v3.3' })).toBeInTheDocument();
   });
 
   it('shows the server’s refusal of a version number that exists under the Version field', async () => {

@@ -166,7 +166,6 @@ export type ReplyTemplate = Omit<ReplyTemplateRow, 'category' | 'createdBy' | 'u
 export type CreateTemplateBody = {
   title: string;
   category: TicketCategory;
-  locale: string;
   body: string;
   shortcut: string;
 };

@@ -1,4 +1,4 @@
-// CheckList: a labelled list of checkboxes for the audience filters (roles, merchant groups, languages). When the list cannot be read (the role lacks the
+// CheckList: a labelled list of checkboxes for the audience filters (roles, merchant groups). When the list cannot be read (the role lacks the
 // permission, or the request failed) it says so instead of showing an empty box.
 import { CheckboxField } from '@/components/ui';
 

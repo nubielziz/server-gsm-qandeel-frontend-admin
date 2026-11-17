@@ -732,9 +732,6 @@
   .switch:disabled {
     @apply opacity-45;
   }
-  html[dir='rtl'] .switch[aria-checked='true']::after {
-    transform: translateX(-16px);
-  }
 }
 
 /*

@@ -16,8 +16,7 @@ import {
 import type { CreateListingBody, ServiceListing, ServiceListingDetail, UpdateListingBody } from '../types';
 
 /**
- * The listings, one page of them, with the total in `x-total-count`. Filters: `q`, `isListed`, `locked`, `isFeatured` and
- * `locale` (`en` or `ar`; the search tab's pin picker lists English listings only);
+ * The listings, one page of them, with the total in `x-total-count`. Filters: `q`, `isListed`, `locked` and `isFeatured`;
  * sort with `_sort`/`_order` on `publicTitle`, `isListed`, `slug`, `id`, `listedAt` or `sort`. The counts above the table are
  * this call with `_start=0&_end=1`. Rows carry the service join, the figures the server works out and the listing's content
  * (without the two Markdown bodies, which `getListing` has).
@@ -36,7 +35,7 @@ export function getListing(id: Id, init?: ApiInit): Promise<ServiceListingDetail
 }
 
 /**
- * Puts a service on the storefront in one language (a listing with a title and a slug). The server refuses a service that
+ * Puts a service on the storefront (a listing with a title and a slug). The server refuses a service that
  * can never be public and a listing that already exists. The content fields of an edit may be sent too.
  * @route POST /admin/service-listings
  */
@@ -48,7 +47,7 @@ export function createListing(body: CreateListingBody, init?: ApiInit): Promise<
  * Changes a listing: the "On the site" switch (`isListed`), the retail price dialog (`retailPrice`) and the editor (title,
  * slug, summary, Markdown bodies, delivery note, search texts, and the facts of the service: brand, carrier, country,
  * featured, position). At least one field. The server refuses a price under the floor, a service that cannot be listed, a
- * slug that is not lower-case words with hyphens (422) or already used in the language (409), and says why.
+ * slug that is not lower-case words with hyphens (422) or already used (409), and says why.
  * @route PATCH /admin/service-listings/:id
  */
 export function updateListing(
@@ -60,7 +59,7 @@ export function updateListing(
 }
 
 /**
- * Uploads the picture of the listing's service (it applies to every language and replaces the previous one). Sent as
+ * Uploads the picture of the listing's service (it replaces the previous one). Sent as
  * `multipart/form-data` with one part `file`; the browser sets the boundary. The server reads the type from the content
  * and answers 422 on `file` (`empty`, `unsupported_type`, `corrupt`, `animated`, `too_small`, `too_large_dimensions`,
  * `rotated`), 413 over 2 MiB or 415 for a body it does not read.
@@ -73,7 +72,7 @@ export function uploadListingImage(id: Id, file: File, init?: ApiInit): Promise<
 }
 
 /**
- * Removes the picture of the listing's service in every language. Answers 204 also when there was none.
+ * Removes the picture of the listing's service. Answers 204 also when there was none.
  * @route DELETE /admin/service-listings/:id/image
  */
 export function removeListingImage(id: Id, init?: ApiInit): Promise<void> {

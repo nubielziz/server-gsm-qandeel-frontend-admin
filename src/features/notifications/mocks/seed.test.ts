@@ -1,4 +1,4 @@
-// Tests for the mock seed (plan section 11): the three campaigns with the backend seed's ids and names, the inbox of five items with two read, and the made-up
+// Tests for the mock seed (plan section 11): the three campaigns with the backend seed's ids and names, the inbox of four items with two read, and the made-up
 // audience agreeing with itself (the live count, the fan-out and the delivery numbers are counted from the same people).
 import { describe, expect, it } from 'vitest';
 import { eligiblePeople, MOCK_AUDIENCE, previewOf } from './audience';
@@ -25,10 +25,11 @@ describe('the campaigns', () => {
     ]);
   });
 
-  it('write English and Arabic', () => {
+  it('each write one title and one text', () => {
     for (const { campaign } of items) {
-      expect(campaign.content.en.title).toBeTruthy();
-      expect(campaign.content.ar?.title).toBeTruthy();
+      expect(campaign.content.title).toBeTruthy();
+      expect(campaign.content.body).toBeTruthy();
+      expect(Object.keys(campaign.content).sort()).toEqual(['body', 'title']);
     }
   });
 
@@ -52,16 +53,16 @@ describe('the campaigns', () => {
 describe('the inbox', () => {
   const items = seedInbox(NOW);
 
-  it("has five items, newest first by id, two unread, and campaign 1's in-app item among them", () => {
-    expect(items.map((item) => item.id)).toEqual([5, 4, 3, 2, 1]);
+  it("has four items, newest first by id, two unread, and campaign 1's in-app item among them", () => {
+    expect(items.map((item) => item.id)).toEqual([5, 4, 3, 2]);
     expect(items.filter((item) => item.readAt === null)).toHaveLength(2);
     expect(items.find((item) => item.campaignId === 1)?.title).toBe('Scheduled maintenance on Friday');
     const times = items.map((item) => Date.parse(item.createdAt));
     expect(times).toEqual([...times].sort((a, b) => b - a));
   });
 
-  it('has an Arabic item and a link a console page can open', () => {
-    expect(items.some((item) => item.locale === 'ar')).toBe(true);
+  it('has a link a console page can open, and no item carries a language', () => {
+    expect(items.some((item) => 'locale' in item)).toBe(false);
     expect(items.find((item) => item.link)?.link).toMatch(/^\//);
   });
 });
@@ -87,7 +88,7 @@ describe('the made-up audience', () => {
         include: [{ type: 'client' as const, id: 3 }],
         exclude: [{ type: 'staff' as const, id: 1 }],
       },
-      { customers: { locales: ['ar' as const] }, merchants: { countries: ['JO'] } },
+      { customers: { countries: ['SA'] }, merchants: { countries: ['JO'] } },
     ];
     for (const spec of specs) {
       for (const channels of [['in_app'], ['email'], ['in_app', 'email', 'telegram']] as const) {

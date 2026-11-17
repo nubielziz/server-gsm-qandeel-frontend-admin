@@ -1,6 +1,6 @@
 // PinServicesField: the two lists of the pin dialog: the services pinned at a position (1 to 10) and the services hidden from
-// the query's results, each with the picker that adds to it. A refusal of one service (for example one with no listed English
-// listing) shows on its own row. New in the Search tab.
+// the query's results, each with the picker that adds to it. A refusal of one service (for example one that is not
+// listed) shows on its own row. New in the Search tab.
 import { Button, SelectField } from '@/components/ui';
 import { MAX_HIDDEN, MAX_PINNED, nextPosition, rowMessage } from '../../lib/search';
 import type { HiddenService, PinnedService, ServiceListing } from '../../types';

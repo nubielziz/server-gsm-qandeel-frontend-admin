@@ -173,19 +173,8 @@ describe('the message preview', () => {
     expect(frame.getAttribute('srcdoc')).toContain('Hello Daniel');
   });
 
-  it('shows the Arabic text right-to-left, and says when there is none', async () => {
-    const user = userEvent.setup();
-    await open(1, {}, 'Scheduled maintenance on Friday');
-    const panel = within(await screen.findByRole('region', { name: 'Message' }));
-    await user.click(panel.getByRole('tab', { name: 'العربية' }));
-    const body = await panel.findByText(/مرحباً Daniel/);
-    expect(body.closest('[dir="rtl"]')).not.toBeNull();
-    expect(panel.queryByText(/There is no Arabic text/)).not.toBeInTheDocument();
-  });
-
-  it('says people who read Arabic get the English text when Arabic was not written', async () => {
-    const user = userEvent.setup();
-    serveCampaign(campaignDetail({ id: 10, name: 'English only' }));
+  it('has one message with no language tabs, and shows the note the server sends under it', async () => {
+    serveCampaign(campaignDetail({ id: 10, name: 'One message' }));
     mockServer.use(
       http.post('*/admin/notification-campaigns/10/preview', () =>
         HttpResponse.json({
@@ -193,17 +182,14 @@ describe('the message preview', () => {
           body: 'Hello Daniel',
           format: 'text',
           from: 'In-app notification',
-          note: 'There is no Arabic text, so the English one is shown.',
+          note: 'A sample with made-up details.',
         }),
       ),
     );
-    await open(10, {}, 'English only');
+    await open(10, {}, 'One message');
     const panel = within(await screen.findByRole('region', { name: 'Message' }));
-    await user.click(panel.getByRole('tab', { name: 'العربية' }));
-    expect(await panel.findByText(/people who read Arabic get the English one/)).toBeInTheDocument();
-    expect(
-      await panel.findByText('There is no Arabic text, so the English one is shown.'),
-    ).toBeInTheDocument();
+    expect(await panel.findByText('A sample with made-up details.')).toBeInTheDocument();
+    expect(panel.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   it('offers a sample per kind of person when more than one is reached', async () => {

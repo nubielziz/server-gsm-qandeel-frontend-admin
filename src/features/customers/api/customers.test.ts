@@ -100,7 +100,6 @@ describe('what each function sends', () => {
       name: 'Pat Example',
       email: 'pat@mail.example',
       country: 'DE',
-      locale: 'en',
       phone: '+49 1',
       password: { mode: 'reset_link' as const },
     };
@@ -302,7 +301,6 @@ describe('creating and editing', () => {
     name: 'Pat Example',
     email: 'pat@mail.example',
     country: 'DE',
-    locale: 'en',
     password: { mode: 'reset_link' as const },
   };
 

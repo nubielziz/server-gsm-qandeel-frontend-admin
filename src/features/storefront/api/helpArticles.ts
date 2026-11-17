@@ -15,7 +15,7 @@ import {
 import type { CreateArticleBody, HelpArticle, UpdateArticleBody } from '../types';
 
 /**
- * The help articles, one page of them. Filters: `q`, `isPublished`, `category` and `locale`; sort with `_sort`/`_order` on
+ * The help articles, one page of them. Filters: `q`, `isPublished` and `category`; sort with `_sort`/`_order` on
  * `sort`, `question`, `category` or `isPublished`.
  * @route GET /admin/help-articles
  */
@@ -34,7 +34,7 @@ export function getHelpArticle(id: Id, init?: ApiInit): Promise<HelpArticle> {
 
 /**
  * Writes a new article.
- * Assumed contract: body `{ category, question, answerMd, locale, isPublished? }`, answer the new article.
+ * Assumed contract: body `{ category, question, answerMd, isPublished? }`, answer the new article.
  * @route POST /admin/help-articles
  */
 export function createHelpArticle(body: CreateArticleBody, init?: ApiInit): Promise<HelpArticle> {

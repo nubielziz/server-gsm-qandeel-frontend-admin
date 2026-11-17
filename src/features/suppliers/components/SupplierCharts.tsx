@@ -17,7 +17,7 @@ export function SupplierCharts({ name, history }: SupplierChartsProps) {
   const last = history[history.length - 1];
   return (
     <>
-      <div className="grid gap-0 border-b border-line md:grid-cols-2 md:divide-x md:divide-line rtl:md:divide-x-reverse">
+      <div className="grid gap-0 border-b border-line md:grid-cols-2 md:divide-x md:divide-line">
         <div className="p-3.5">
           <h3 className="mb-2 text-sm font-medium">Success rate, last 24 hours</h3>
           <LineChart

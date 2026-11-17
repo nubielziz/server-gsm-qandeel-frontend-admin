@@ -1,4 +1,4 @@
-// The composer's form model and how it becomes the API body: the audience as switches and filters (`AudienceForm`), the message in two languages,
+// The composer's form model and how it becomes the API body: the audience as switches and filters (`AudienceForm`), the message (one title and one text),
 // the client-side hints (the server checks everything again and its field errors are shown too) and the presets of the audience builder.
 import type { Id } from '@/lib/api';
 import type {
@@ -7,7 +7,6 @@ import type {
   CampaignChannel,
   CampaignDetail,
   CampaignInput,
-  CampaignLocale,
   CampaignPurpose,
   PersonRef,
   PersonType,
@@ -22,7 +21,7 @@ export type PickedPerson = PersonRef & { name: string; detail?: string };
 export type AudienceForm = {
   staff: { on: boolean; roleIds: Id[] };
   merchants: { on: boolean; statuses: MerchantStatus[]; groupIds: Id[]; countries: string };
-  customers: { on: boolean; accounts: CustomerAccounts; countries: string; locales: CampaignLocale[] };
+  customers: { on: boolean; accounts: CustomerAccounts; countries: string };
   include: PickedPerson[];
   exclude: PickedPerson[];
 };
@@ -32,8 +31,7 @@ export type ComposerForm = {
   purpose: CampaignPurpose;
   channels: CampaignChannel[];
   audience: AudienceForm;
-  en: { title: string; body: string };
-  ar: { title: string; body: string };
+  content: { title: string; body: string };
   link: { staff: string; merchant: string; customer: string };
 };
 
@@ -60,7 +58,7 @@ const COUNTRY = /^[A-Z]{2}$/;
 const noSegments = (): Pick<AudienceForm, 'staff' | 'merchants' | 'customers'> => ({
   staff: { on: false, roleIds: [] },
   merchants: { on: false, statuses: ['active'], groupIds: [], countries: '' },
-  customers: { on: false, accounts: 'all', countries: '', locales: [] },
+  customers: { on: false, accounts: 'all', countries: '' },
 });
 
 /** A new campaign: a service announcement by in-app and email, with nobody chosen yet (the staff member picks the audience on purpose). */
@@ -70,8 +68,7 @@ export function emptyForm(): ComposerForm {
     purpose: 'service',
     channels: ['in_app', 'email'],
     audience: { ...noSegments(), include: [], exclude: [] },
-    en: { title: '', body: '' },
-    ar: { title: '', body: '' },
+    content: { title: '', body: '' },
     link: { staff: '', merchant: '', customer: '' },
   };
 }
@@ -133,7 +130,7 @@ export function audienceToSpec(form: AudienceForm): AudienceSpec {
     };
   }
   if (form.customers.on) {
-    const { accounts, countries, locales } = form.customers;
+    const { accounts, countries } = form.customers;
     const codes = parseCountries(countries).codes;
     spec.customers = {
       ...(accounts === 'accounts'
@@ -142,7 +139,6 @@ export function audienceToSpec(form: AudienceForm): AudienceSpec {
           ? { hasAccount: false }
           : {}),
       ...(codes.length > 0 ? { countries: codes } : {}),
-      ...(locales.length > 0 ? { locales } : {}),
     };
   }
   if (form.include.length > 0) spec.include = form.include.map(person);
@@ -181,7 +177,6 @@ export function specToAudienceForm(spec: AudienceSpec): AudienceForm {
       on: true,
       accounts: hasAccount === true ? 'accounts' : hasAccount === false ? 'guests' : 'all',
       countries: (spec.customers.countries ?? []).join(', '),
-      locales: spec.customers.locales ?? [],
     };
   }
   return form;
@@ -218,9 +213,8 @@ const trimmed = (text: { title: string; body: string }) => ({
   body: text.body.trim(),
 });
 
-/** The form in the API's shape. Arabic is sent only when it has text; the link only with the paths that were filled in. */
+/** The form in the API's shape: the trimmed title and text; the link only with the paths that were filled in. */
 export function formToInput(form: ComposerForm): CampaignInput {
-  const ar = trimmed(form.ar);
   const link = Object.fromEntries(
     (['staff', 'merchant', 'customer'] as const)
       .map((key) => [key, form.link[key].trim()] as const)
@@ -231,7 +225,7 @@ export function formToInput(form: ComposerForm): CampaignInput {
     purpose: form.purpose,
     channels: form.channels,
     audience: audienceToSpec(form.audience),
-    content: { en: trimmed(form.en), ...(ar.title || ar.body ? { ar } : {}) },
+    content: trimmed(form.content),
     link: Object.keys(link).length > 0 ? link : null,
   };
 }
@@ -241,14 +235,12 @@ export function campaignToForm(
   campaign: CampaignDetail,
   options: { duplicate?: boolean } = {},
 ): ComposerForm {
-  const ar = campaign.content.ar;
   return {
     name: options.duplicate ? `${campaign.name} (copy)`.slice(0, NAME_MAX) : campaign.name,
     purpose: campaign.purpose,
     channels: campaign.channels,
     audience: specToAudienceForm(campaign.audience),
-    en: { ...campaign.content.en },
-    ar: ar ? { ...ar } : { title: '', body: '' },
+    content: { title: campaign.content.title, body: campaign.content.body },
     link: {
       staff: campaign.link?.staff ?? '',
       merchant: campaign.link?.merchant ?? '',
@@ -257,7 +249,7 @@ export function campaignToForm(
   };
 }
 
-/** The hints keyed by the field name the server also uses (`name`, `channels`, `audience`, `content.en.title`, `link.staff`…). */
+/** The hints keyed by the field name the server also uses (`name`, `channels`, `audience`, `content.title`, `link.staff`…). */
 export type Problems = Record<string, string>;
 
 /** What can be said about the audience and the channels without asking the server; it decides whether the live count may run. */
@@ -286,16 +278,12 @@ export function audienceProblems(form: ComposerForm): Problems {
   return problems;
 }
 
-/** Every hint the composer can give before saving (the audience and channel ones, the name, the English text, Arabic and the links). */
+/** Every hint the composer can give before saving (the audience and channel ones, the name, the title and text, and the links). */
 export function composerProblems(form: ComposerForm): Problems {
   const problems = audienceProblems(form);
   if (form.name.trim() === '') problems.name = 'Give the campaign a name.';
-  if (form.en.title.trim() === '') problems['content.en.title'] = 'Write the English title.';
-  if (form.en.body.trim() === '') problems['content.en.body'] = 'Write the English text.';
-  const ar = trimmed(form.ar);
-  if ((ar.title === '') !== (ar.body === '')) {
-    problems['content.ar'] = 'Write both the Arabic title and text, or leave Arabic empty.';
-  }
+  if (form.content.title.trim() === '') problems['content.title'] = 'Write the title.';
+  if (form.content.body.trim() === '') problems['content.body'] = 'Write the text.';
   for (const key of ['staff', 'merchant', 'customer'] as const) {
     const value = form.link[key].trim();
     if (value !== '' && !SITE_PATH.test(value)) {

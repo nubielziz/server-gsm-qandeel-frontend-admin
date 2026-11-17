@@ -43,9 +43,8 @@ export const inboxRoutes: HttpHandler[] = [
     session(({ request }) => {
       const params = new URL(request.url).searchParams;
       const unread = params.get('unread');
-      // `unread` and `locale` are not fields of an item: read them here, then let the generic list code do the paging.
+      // `unread` is not a field of an item: read it here, then let the generic list code do the paging.
       params.delete('unread');
-      params.delete('locale');
       if (!params.has('_sort')) {
         params.set('_sort', 'createdAt,id');
         params.set('_order', 'desc,desc');

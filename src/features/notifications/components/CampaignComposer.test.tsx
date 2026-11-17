@@ -1,5 +1,5 @@
-// Tests for the campaign composer, run through the whole app against the dev mock API: the required fields, Telegram only with merchants, the right-to-left Arabic
-// fields, the live count that waits for a pause, the server's field errors, the people-picker button and saving a draft.
+// Tests for the campaign composer, run through the whole app against the dev mock API: the required fields, Telegram only with merchants, the one title and
+// text, the live count that waits for a pause, the server's field errors, the people-picker button and saving a draft.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -23,7 +23,7 @@ async function openComposer(options: { permissions?: string[] } = {}) {
   return { user, app, composer: within(composer) };
 }
 
-/** Fills name, English title and text. */
+/** Fills name, title and text. */
 async function writeMessage(
   user: ReturnType<typeof userEvent.setup>,
   composer: ReturnType<typeof within>,
@@ -40,8 +40,8 @@ describe('the required fields', () => {
     const { user, composer } = await openComposer();
     await user.click(composer.getByRole('button', { name: 'Save draft' }));
     expect(await composer.findByText('Give the campaign a name.')).toBeInTheDocument();
-    expect(composer.getByText('Write the English title.')).toBeInTheDocument();
-    expect(composer.getByText('Write the English text.')).toBeInTheDocument();
+    expect(composer.getByText('Write the title.')).toBeInTheDocument();
+    expect(composer.getByText('Write the text.')).toBeInTheDocument();
     expect(
       composer.getAllByText('Choose at least one group of people, or add people.').length,
     ).toBeGreaterThan(0);
@@ -74,34 +74,19 @@ describe('Telegram', () => {
   });
 });
 
-describe('the Arabic tab', () => {
-  it('has right-to-left title and text, keeps what was typed on each tab, and says Arabic is optional', async () => {
+describe('the message', () => {
+  it('is one title and one text, with no language tabs, and keeps what was typed', async () => {
     const { user, composer } = await openComposer();
-    await user.type(composer.getByRole('textbox', { name: 'Title' }), 'English title');
-    await user.click(composer.getByRole('tab', { name: 'العربية' }));
-    const title = composer.getByRole('textbox', { name: 'العنوان' });
-    const body = composer.getByRole('textbox', { name: 'النص' });
-    expect(title).toHaveAttribute('dir', 'rtl');
-    expect(title).toHaveAttribute('lang', 'ar');
-    expect(body).toHaveAttribute('dir', 'rtl');
-    expect(body).toHaveAttribute('lang', 'ar');
-    expect(composer.getByText(/Arabic is optional/)).toBeInTheDocument();
-    await user.type(title, 'عنوان');
-    await user.click(composer.getByRole('tab', { name: 'English' }));
-    expect(composer.getByRole('textbox', { name: 'Title' })).toHaveValue('English title');
-    expect(composer.getByRole('textbox', { name: 'Title' })).not.toHaveAttribute('dir', 'rtl');
-    await user.click(composer.getByRole('tab', { name: 'العربية' }));
-    expect(composer.getByRole('textbox', { name: 'العنوان' })).toHaveValue('عنوان');
-  });
-
-  it('wants both Arabic fields or none when saving', async () => {
-    const { user, composer } = await openComposer();
-    await user.click(composer.getByRole('tab', { name: 'العربية' }));
-    await user.type(composer.getByRole('textbox', { name: 'العنوان' }), 'عنوان');
-    await user.click(composer.getByRole('button', { name: 'Save draft' }));
-    expect(
-      await composer.findByText('Write both the Arabic title and text, or leave Arabic empty.'),
-    ).toBeInTheDocument();
+    expect(composer.queryByRole('tab')).not.toBeInTheDocument();
+    const title = composer.getByRole('textbox', { name: 'Title' });
+    const body = composer.getByRole('textbox', { name: 'Text' });
+    expect(title).not.toHaveAttribute('dir');
+    expect(body).not.toHaveAttribute('dir');
+    expect(composer.queryByText(/Arabic/)).not.toBeInTheDocument();
+    await user.type(title, 'Winter news');
+    await user.type(body, 'Hello');
+    expect(title).toHaveValue('Winter news');
+    expect(body).toHaveValue('Hello');
   });
 
   it('counts the characters of the text and explains {{name}}', async () => {
@@ -131,7 +116,7 @@ describe('the live count', () => {
     expect(sent.length).toBeLessThanOrEqual(2);
     expect(count.getByText('Who')).toBeInTheDocument();
     expect(count.getByText('Messages')).toBeInTheDocument();
-    expect(count.getByText('Language')).toBeInTheDocument();
+    expect(count.queryByText('Language')).not.toBeInTheDocument();
   });
 
   it('says who is left out and why for marketing', async () => {
@@ -221,7 +206,7 @@ describe('the server field errors', () => {
       http.post('*/admin/notification-campaigns', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
           { field: 'name', message: 'That name is taken.' },
-          { field: 'content.en.body', message: 'Only {{name}} can be used.' },
+          { field: 'content.body', message: 'Only {{name}} can be used.' },
           { field: 'audience.merchants.countries', message: 'Use an ISO code.' },
           { field: 'mystery', message: 'Something else.' },
         ]),
@@ -259,10 +244,6 @@ describe('saving', () => {
     const { user, app, composer } = await openComposer();
     await user.click(composer.getByRole('button', { name: 'Staff' }));
     await writeMessage(user, composer);
-    await user.click(composer.getByRole('tab', { name: 'العربية' }));
-    await user.type(composer.getByRole('textbox', { name: 'العنوان' }), 'أخبار');
-    await user.type(composer.getByRole('textbox', { name: 'النص' }), 'نص');
-    await user.click(composer.getByRole('tab', { name: 'English' }));
     await user.click(composer.getByRole('button', { name: 'Save draft' }));
     await waitFor(() => expect(app.location()).toBe('/notifications/4'), { timeout: 10_000 });
     const post = sent.find(
@@ -274,7 +255,7 @@ describe('saving', () => {
       purpose: 'service',
       channels: ['in_app', 'email'],
       audience: { staff: {} },
-      content: { en: { title: 'Big news', body: 'Hello {{name}}' }, ar: { title: 'أخبار', body: 'نص' } },
+      content: { title: 'Big news', body: 'Hello {{name}}' },
       link: null,
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Winter promo' })).toBeInTheDocument();

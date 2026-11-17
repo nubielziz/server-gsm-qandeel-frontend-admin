@@ -4,7 +4,6 @@ import {
   audienceLines,
   audienceSummary,
   byChannelText,
-  byLocaleText,
   byTypeText,
   exclusionLines,
   plannedText,
@@ -57,10 +56,10 @@ describe('the audience in words', () => {
     expect(audienceLines(spec)[0].text).toBe('Active staff with the role 2 roles');
   });
 
-  it('describes guests, languages, added and left-out people', () => {
+  it('describes guests, countries, added and left-out people', () => {
     expect(
       audienceLines({
-        customers: { hasAccount: false, countries: ['JO'], locales: ['ar'] },
+        customers: { hasAccount: false, countries: ['JO'] },
         include: [
           { type: 'staff', id: 1 },
           { type: 'client', id: 2 },
@@ -68,7 +67,7 @@ describe('the audience in words', () => {
         exclude: [{ type: 'customer', id: 3 }],
       }),
     ).toEqual([
-      { label: 'Customers', text: 'Guest customers from JO who read Arabic' },
+      { label: 'Customers', text: 'Guest customers from JO' },
       { label: 'Added', text: '2 people' },
       { label: 'Left out', text: '1 person' },
     ]);
@@ -90,7 +89,7 @@ describe('the live count in words', () => {
     expect(exclusionLines({ noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 0 })).toEqual([]);
   });
 
-  it('breaks the reach down by kind, channel and language', () => {
+  it('breaks the reach down by kind and channel', () => {
     expect(byTypeText({ staff: 6, client: 402, customer: 800 })).toBe(
       '6 staff, 402 merchants and 800 customers',
     );
@@ -98,7 +97,6 @@ describe('the live count in words', () => {
     expect(byChannelText({ inApp: 1208, email: 1190, telegram: 0 }, ['in_app', 'email'])).toBe(
       '1,208 in the app and 1,190 by email',
     );
-    expect(byLocaleText({ en: 950, ar: 258 })).toBe('950 read English and 258 Arabic');
   });
 
   it('says what the fan-out planned and skipped', () => {

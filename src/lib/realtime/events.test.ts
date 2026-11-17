@@ -17,7 +17,6 @@ const ITEM = {
   title: 'An order needs attention',
   body: 'Order 1042 timed out.',
   link: '/orders?order=1042',
-  locale: 'en',
   readAt: null,
   createdAt: '2026-11-15T10:00:00.000Z',
   campaignId: null,
@@ -58,7 +57,6 @@ describe('parsers', () => {
     expect(parseReady({ v: 1 })).toBeNull();
     expect(parseReady(null)).toBeNull();
     expect(parseNotificationCreated({ item: { ...ITEM, id: 'x' }, unread: 1, live: true })).toBeNull();
-    expect(parseNotificationCreated({ item: { ...ITEM, locale: 'fr' }, unread: 1, live: true })).toBeNull();
     expect(parseNotificationCreated({ item: ITEM, unread: -1, live: true })).toBeNull();
     expect(parseNotificationCreated({ item: ITEM })).toBeNull();
     expect(parseNotificationCreated([])).toBeNull();
@@ -68,6 +66,12 @@ describe('parsers', () => {
     expect(parseUnreadChanged({ unread: 1.5 })).toBeNull();
     expect(parseResync({ topics: [1] })).toBeNull();
     expect(parseBye({})).toBeNull();
+  });
+
+  it('accept an item with no language field, which is the shape of every item now', () => {
+    const parsed = parseNotificationCreated({ item: ITEM, unread: 3, live: true });
+    expect(parsed?.item).toEqual(ITEM);
+    expect(parsed?.item).not.toHaveProperty('locale');
   });
 
   it('treat a missing "live" as not live, so an odd frame never raises a toast', () => {

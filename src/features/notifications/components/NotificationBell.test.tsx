@@ -212,7 +212,7 @@ describe('the panel', () => {
     const items = panel
       .getAllByRole('button')
       .filter((button) => button.hasAttribute('data-unread') || button.className.includes('hover:bg-hover'));
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(4);
     expect(items[0]).toHaveTextContent('An order needs attention');
     expect(items[0]).toHaveTextContent('Unread');
     expect(items[0].querySelector('span.whitespace-pre-line')).not.toBeNull();
@@ -222,14 +222,6 @@ describe('the panel', () => {
     expect(items[2]).toHaveTextContent('Scheduled maintenance on Friday');
     expect(panel.getAllByText('Unread')).toHaveLength(2);
     expect(rows.length).toBeGreaterThan(0);
-  });
-
-  it('shows an Arabic item right-to-left', async () => {
-    const user = userEvent.setup();
-    await openShell();
-    await user.click(await bell());
-    const arabic = await screen.findByText('مرحباً بك في مركز الإشعارات');
-    expect(arabic.closest('[dir="rtl"]')).not.toBeNull();
   });
 
   it('never runs markup in a title or text: it is shown as text', async () => {

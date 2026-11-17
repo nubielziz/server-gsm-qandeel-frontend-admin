@@ -1,9 +1,9 @@
-// LegalTable: the legal documents table (document and language, version, in force since, accepted at checkout, the action). Ports
+// LegalTable: the legal documents table (document, version, in force since, accepted at checkout, the action). Ports
 // `lcols` of tabContent in 50-p-storefront.js. A version in force offers "New version…"; one written and not yet published offers
 // Publish. It only draws what it is given; the panel owns data and dialogs.
 import { Badge, Button, DataTable, EmptyState, type DataTableColumn } from '@/components/ui';
 import { fmtDay, num } from '@/lib/format';
-import { legalLanguage, legalTypeLabel } from '../lib/legal';
+import { legalTypeLabel } from '../lib/legal';
 import type { LegalDocument } from '../types';
 
 export interface LegalTableProps {
@@ -34,12 +34,7 @@ export function LegalTable({
     {
       key: 'type',
       label: 'Document',
-      render: (d) => (
-        <>
-          <p className="font-medium">{legalTypeLabel(d.type)}</p>
-          <p className="text-2xs text-ink3">{legalLanguage(d.locale)}</p>
-        </>
-      ),
+      render: (d) => <p className="font-medium">{legalTypeLabel(d.type)}</p>,
     },
     {
       key: 'version',
@@ -79,7 +74,7 @@ export function LegalTable({
       key: 'actions',
       label: '',
       render: (d) => {
-        const name = `${legalTypeLabel(d.type)} v${d.version} (${legalLanguage(d.locale)})`;
+        const name = `${legalTypeLabel(d.type)} v${d.version}`;
         return d.isCurrent ? (
           <Button
             size="sm"

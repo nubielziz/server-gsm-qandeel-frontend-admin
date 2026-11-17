@@ -1,6 +1,6 @@
 // LegalVersionDialog: "New version" of a legal document (`POST /admin/legal-documents`). The demo's "New version…" published the
 // next number at once (`publishLegal`); the map splits it in two, so this saves the version and the Publish button puts it in
-// force. Started from a document it keeps that document's type and language and suggests the next number and its text.
+// force. Started from a document it keeps that document's type and suggests the next number and its text.
 import { useForm } from 'react-hook-form';
 import {
   CheckboxField,
@@ -11,13 +11,11 @@ import {
   TextField,
 } from '@/components/ui';
 import { useCreateLegal } from '../hooks/useLegalMutations';
-import { LOCALE_OPTIONS } from '../lib/kinds';
-import { LEGAL_TYPE_OPTIONS, legalLanguage, legalTypeLabel, suggestNextVersion } from '../lib/legal';
+import { LEGAL_TYPE_OPTIONS, legalTypeLabel, suggestNextVersion } from '../lib/legal';
 import type { LegalDocument } from '../types';
 
 type Values = {
   type: string;
-  locale: string;
   version: string;
   bodyMd: string;
   requiresReacceptance: boolean;
@@ -35,7 +33,6 @@ export function LegalVersionDialog({ from, onClose }: LegalVersionDialogProps) {
   const form = useForm<Values>({
     defaultValues: {
       type: from?.type ?? LEGAL_TYPE_OPTIONS[0].value,
-      locale: from?.locale ?? 'en',
       version: from ? suggestNextVersion(from.version) : '',
       bodyMd: from?.bodyMd ?? '',
       requiresReacceptance: true,
@@ -51,7 +48,7 @@ export function LegalVersionDialog({ from, onClose }: LegalVersionDialogProps) {
     async (values) => {
       await create.mutateAsync({ ...values, version: values.version.trim() });
     },
-    { fields: ['type', 'locale', 'version', 'bodyMd', 'requiresReacceptance'] },
+    { fields: ['type', 'version', 'bodyMd', 'requiresReacceptance'] },
   );
 
   return (
@@ -61,7 +58,7 @@ export function LegalVersionDialog({ from, onClose }: LegalVersionDialogProps) {
       title="New version"
       sub={
         from
-          ? `${legalTypeLabel(from.type)} (${legalLanguage(from.locale)}) is at v${from.version}. The new version is saved but not in force until you publish it.`
+          ? `${legalTypeLabel(from.type)} is at v${from.version}. The new version is saved but not in force until you publish it.`
           : 'The new version is saved but not in force until you publish it.'
       }
       confirm="Save version"
@@ -69,7 +66,7 @@ export function LegalVersionDialog({ from, onClose }: LegalVersionDialogProps) {
       onSubmit={submit}
     >
       <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <SelectField
             label="Document"
             selectWrapClassName="w-full"
@@ -77,14 +74,6 @@ export function LegalVersionDialog({ from, onClose }: LegalVersionDialogProps) {
             options={LEGAL_TYPE_OPTIONS}
             error={errors.type}
             {...register('type')}
-          />
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            disabled={Boolean(from)}
-            options={LOCALE_OPTIONS}
-            error={errors.locale}
-            {...register('locale')}
           />
           <TextField
             label="Version"

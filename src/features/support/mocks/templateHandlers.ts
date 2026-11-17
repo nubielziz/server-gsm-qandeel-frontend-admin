@@ -25,7 +25,6 @@ function templateErrors(body: Record<string, unknown>, partial: boolean): Proble
     body.category !== undefined,
     Object.hasOwn(CATEGORY_LABEL, String(body.category)),
   );
-  need('locale', 'Choose a language.', body.locale !== undefined, textOf(body.locale).length > 0);
   if (body.shortcut !== undefined && textOf(body.shortcut) !== '' && !textOf(body.shortcut).startsWith('/')) {
     errors.push({ field: 'shortcut', message: 'A shortcut starts with a slash, like /refund.' });
   }
@@ -64,7 +63,6 @@ export const templateHandlers: HttpHandler[] = [
     const row = state.templates.insert({
       title: textOf(body.title),
       category: body.category as TicketCategory,
-      locale: textOf(body.locale),
       body: textOf(body.body),
       shortcut,
       createdBy: (await currentStaff())?.id ?? null,
@@ -88,7 +86,6 @@ export const templateHandlers: HttpHandler[] = [
     if (body.title !== undefined) changes.title = textOf(body.title);
     if (body.body !== undefined) changes.body = textOf(body.body);
     if (body.category !== undefined) changes.category = body.category as TicketCategory;
-    if (body.locale !== undefined) changes.locale = textOf(body.locale);
     if (body.shortcut !== undefined) {
       const shortcut = textOf(body.shortcut);
       const other = shortcutOwner(state, shortcut, row.id);

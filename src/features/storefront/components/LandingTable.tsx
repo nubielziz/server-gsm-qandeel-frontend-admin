@@ -1,5 +1,5 @@
 // LandingTable: the landing pages table with the demo's columns (page and path, type, status, visits, orders, visit to order,
-// language, updated, the row menu). Ports `cols` of tabLanding in 50-p-storefront.js. It only draws what it is given; the tab owns
+// updated, the row menu). Ports `cols` of tabLanding in 50-p-storefront.js. It only draws what it is given; the tab owns
 // data, sort and page.
 import type { ReactNode } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   type SortState,
 } from '@/components/ui';
 import { ago, num, pct } from '@/lib/format';
-import { kindLabel, localeLabel, pagePath } from '../lib/kinds';
+import { kindLabel, pagePath } from '../lib/kinds';
 import type { ContentPage } from '../types';
 import { PageStatusBadge } from './PageStatusBadge';
 
@@ -80,12 +80,6 @@ export function LandingTable({
       hide: 'md',
       // Orders over visits is the demo's display ratio; both numbers are the server's.
       render: (p) => (p.visits30d ? pct(((p.orders30d ?? 0) / p.visits30d) * 100) : '–'),
-    },
-    {
-      key: 'language',
-      label: 'Language',
-      hide: 'xl',
-      render: (p) => <span className="text-ink2">{localeLabel(p.locale)}</span>,
     },
     {
       key: 'updated',

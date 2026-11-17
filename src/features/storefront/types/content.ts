@@ -24,7 +24,6 @@ export type ContentPage = Pick<
   ContentPageRow,
   | 'id'
   | 'slug'
-  | 'locale'
   | 'title'
   | 'bodyMd'
   | 'seoTitle'
@@ -43,7 +42,6 @@ export type ContentPage = Pick<
 export type CreatePageBody = {
   kind: PageKind;
   title: string;
-  locale: string;
   slug?: string;
   bodyMd: string;
   seoTitle?: string;
@@ -72,10 +70,9 @@ export type GeneratePagesResult = {
   skipped: number;
 };
 
-/** What `GET /admin/content-pages` filters by: `q`, a `kind` (one or several), `status` and `locale`. */
+/** What `GET /admin/content-pages` filters by: `q`, a `kind` (one or several) and `status`. */
 export type PageListFilters = {
   q?: string;
   kind?: PageKind | PageKind[];
   status?: PageStatus;
-  locale?: string;
 };

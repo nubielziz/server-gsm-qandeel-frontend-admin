@@ -22,9 +22,6 @@ export type CampaignPurpose = (typeof CAMPAIGN_PURPOSES)[number];
 export const CAMPAIGN_CHANNELS = ['in_app', 'email', 'telegram'] as const;
 export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
 
-/** The languages a campaign is written in (English is required, Arabic optional). */
-export type CampaignLocale = 'en' | 'ar';
-
 /** Who a person is: a staff member, a merchant (`client`) or a customer. */
 export type PersonType = 'staff' | 'client' | 'customer';
 export type PersonRef = { type: PersonType; id: Id };
@@ -33,13 +30,14 @@ export type PersonRef = { type: PersonType; id: Id };
 export type AudienceSpec = {
   staff?: { roleIds?: Id[] };
   merchants?: { statuses?: ('active' | 'pending')[]; groupIds?: Id[]; countries?: string[] };
-  customers?: { hasAccount?: boolean; countries?: string[]; locales?: CampaignLocale[] };
+  customers?: { hasAccount?: boolean; countries?: string[] };
   include?: PersonRef[];
   exclude?: PersonRef[];
 };
 
+/** The text of a campaign: one title and one body (English is the only language of the system, decision 039). */
 export type CampaignText = { title: string; body: string };
-export type CampaignContent = { en: CampaignText; ar?: CampaignText | null };
+export type CampaignContent = CampaignText;
 
 /** A site path per audience (`/account/orders`), for the link of the notification. */
 export type CampaignLink = { staff?: string; merchant?: string; customer?: string };
@@ -113,7 +111,6 @@ export type AudiencePreview = {
   reachable: number;
   byType: { staff: number; client: number; customer: number };
   byChannel: { inApp: number; email: number; telegram: number };
-  byLocale: { en: number; ar: number };
   excluded: { noConsent: number; optedOut: number; noTelegram: number; noAccount: number };
 };
 
@@ -122,7 +119,6 @@ export type PreviewAudience = 'staff' | 'merchant' | 'customer';
 
 /** Body of `POST /admin/notification-campaigns/:id/preview`. */
 export type PreviewCampaignBody = {
-  locale: CampaignLocale;
   channel: CampaignChannel;
   audience?: PreviewAudience;
 };
@@ -137,7 +133,7 @@ export type CampaignPreview = {
 };
 
 /** Body of `POST /admin/notification-campaigns/:id/test`. */
-export type TestCampaignBody = { channels?: ('in_app' | 'email')[]; locale?: CampaignLocale };
+export type TestCampaignBody = { channels?: ('in_app' | 'email')[] };
 export type TestCampaignResult = { queued: ('in_app' | 'email')[] };
 
 /** Body of `POST /admin/notification-campaigns/:id/send`: the reachable number the staff member saw. */

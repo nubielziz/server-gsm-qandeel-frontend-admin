@@ -152,7 +152,7 @@ describe('a role with a different part of the page', () => {
     expect(
       await screen.findByText('You need the storefront:read permission to see pages and blog posts.'),
     ).toBeInTheDocument();
-    const publish = await screen.findByRole('button', { name: 'Publish Refund policy v1.5 (English)' });
+    const publish = await screen.findByRole('button', { name: 'Publish Refund policy v1.5' });
     expect(publish).toBeDisabled();
     expect(publish).toHaveAttribute('title', 'You need the legal:publish permission');
     expect(screen.getByRole('button', { name: 'New version…' })).toHaveAttribute(
@@ -164,7 +164,7 @@ describe('a role with a different part of the page', () => {
   it('can publish a legal version with legal:publish', async () => {
     const user = userEvent.setup();
     await openStorefront('/storefront', { permissions: ['legal:read', 'legal:publish'] });
-    await user.click(await screen.findByRole('button', { name: 'Publish Refund policy v1.5 (English)' }));
+    await user.click(await screen.findByRole('button', { name: 'Publish Refund policy v1.5' }));
     expect(dialogOf('Publish a new version?')).toBeTruthy();
   });
 

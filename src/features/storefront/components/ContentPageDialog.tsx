@@ -4,12 +4,11 @@
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, SelectField, TextareaField, TextField, toast } from '@/components/ui';
 import { useCreatePage, useUpdatePage } from '../hooks/usePageMutations';
-import { kindLabel, LOCALE_OPTIONS } from '../lib/kinds';
+import { kindLabel } from '../lib/kinds';
 import type { ContentPage, PageKind, UpdatePageBody } from '../types';
 
 type Values = {
   kind: PageKind;
-  locale: string;
   title: string;
   slug: string;
   bodyMd: string;
@@ -26,7 +25,7 @@ export interface ContentPageDialogProps {
 }
 
 /** The text fields an edit compares one by one. */
-const TEXT_FIELDS = ['locale', 'title', 'slug', 'bodyMd', 'seoTitle', 'seoDescription'] as const;
+const TEXT_FIELDS = ['title', 'slug', 'bodyMd', 'seoTitle', 'seoDescription'] as const;
 
 /** Creates a page, or edits the one it is given. */
 export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogProps) {
@@ -35,7 +34,6 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
   const form = useForm<Values>({
     defaultValues: {
       kind: page?.kind ?? kinds[0],
-      locale: page?.locale ?? 'en',
       title: page?.title ?? '',
       slug: page?.slug ?? '',
       bodyMd: page?.bodyMd ?? '',
@@ -55,7 +53,6 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
         const slug = values.slug.trim();
         await create.mutateAsync({
           kind: values.kind,
-          locale: values.locale,
           title: values.title.trim(),
           ...(slug ? { slug } : {}),
           bodyMd: values.bodyMd,
@@ -90,23 +87,14 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
       onSubmit={submit}
     >
       <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SelectField
-            label="Type"
-            selectWrapClassName="w-full"
-            disabled={Boolean(page)}
-            options={kinds.map((kind) => ({ value: kind, label: kindLabel(kind) }))}
-            error={errors.kind}
-            {...register('kind')}
-          />
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            options={LOCALE_OPTIONS}
-            error={errors.locale}
-            {...register('locale')}
-          />
-        </div>
+        <SelectField
+          label="Type"
+          selectWrapClassName="w-full"
+          disabled={Boolean(page)}
+          options={kinds.map((kind) => ({ value: kind, label: kindLabel(kind) }))}
+          error={errors.kind}
+          {...register('kind')}
+        />
         <TextField
           label="Title"
           autoComplete="off"

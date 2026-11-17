@@ -88,7 +88,6 @@ export type CreateCustomerBody = {
   name: string;
   email: string;
   country: string;
-  locale: string;
   phone?: string;
   password: { mode: PasswordMode };
 };
@@ -101,7 +100,6 @@ export type UpdateCustomerBody = {
   name?: string;
   email?: string;
   country?: string;
-  locale?: string;
   phone?: string;
   internalNotes?: string;
 };

@@ -1,17 +1,6 @@
 // The editable details of a merchant (Profile tab, "Edit details"): the form's values, how they are cleaned, and which of them
 // really changed. Hints only: the server validates everything and its field messages show under the same fields (decision 008).
-import type { Client, ClientDetails, ClientLocale } from '../types';
-
-/** The two languages a merchant can use (`clients.locale`). */
-export const LOCALES: readonly { value: ClientLocale; label: string }[] = [
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'Arabic' },
-];
-
-/** The language's name, or the code when it is not one the console knows. */
-export function localeLabel(locale: string | undefined): string {
-  return LOCALES.find((option) => option.value === locale)?.label ?? locale ?? '–';
-}
+import type { Client, ClientDetails } from '../types';
 
 /** The limits of the server's contract, used for the form's hints. */
 export const DETAIL_LIMITS = {
@@ -30,7 +19,6 @@ export type DetailValues = {
   email: string;
   phone: string;
   country: string;
-  locale: ClientLocale;
   address: string;
   taxId: string;
   internalNotes: string;
@@ -38,10 +26,10 @@ export type DetailValues = {
 
 type Editable = Pick<
   Client,
-  'name' | 'company' | 'email' | 'phone' | 'country' | 'locale' | 'address' | 'taxId' | 'internalNotes'
+  'name' | 'company' | 'email' | 'phone' | 'country' | 'address' | 'taxId' | 'internalNotes'
 >;
 
-/** What the dialog starts with: the merchant's own values; a value the server did not send is empty (the language: English). */
+/** What the dialog starts with: the merchant's own values; a value the server did not send is empty. */
 export function detailDefaults(client: Editable): DetailValues {
   return {
     name: client.name,
@@ -49,7 +37,6 @@ export function detailDefaults(client: Editable): DetailValues {
     email: client.email,
     phone: client.phone,
     country: client.country,
-    locale: client.locale ?? 'en',
     address: client.address ?? '',
     taxId: client.taxId ?? '',
     internalNotes: client.internalNotes ?? '',
@@ -78,7 +65,6 @@ export function changedDetails(client: Editable, values: DetailValues): ClientDe
   if (phone !== start.phone.trim()) body.phone = phone;
   const country = values.country.trim().toUpperCase();
   if (country !== start.country.trim().toUpperCase()) body.country = country;
-  if (values.locale !== start.locale) body.locale = values.locale;
   const address = values.address.trim();
   if (address !== start.address.trim()) body.address = address;
   const taxId = values.taxId.trim();

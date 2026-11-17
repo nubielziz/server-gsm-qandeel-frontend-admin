@@ -22,7 +22,6 @@ export type EditValues = {
   name: string;
   email: string;
   country: string;
-  locale: string;
   phone: string;
   internalNotes: string;
 };
@@ -32,7 +31,7 @@ export type EditValues = {
  * sends no request at all. The email is compared without case: only the address matters, not how it was typed.
  */
 export function changedFields(
-  customer: Pick<Customer, 'name' | 'email' | 'country' | 'locale' | 'phone' | 'internalNotes'>,
+  customer: Pick<Customer, 'name' | 'email' | 'country' | 'phone' | 'internalNotes'>,
   form: EditValues,
 ): UpdateCustomerBody {
   const body: UpdateCustomerBody = {};
@@ -41,7 +40,6 @@ export function changedFields(
   const email = cleanEmail(form.email);
   if (email !== customer.email.toLowerCase()) body.email = email;
   if (form.country !== customer.country) body.country = form.country;
-  if (form.locale !== customer.locale) body.locale = form.locale;
   const phone = form.phone.trim();
   if (phone !== customer.phone.trim()) body.phone = phone;
   const notes = form.internalNotes.trim();

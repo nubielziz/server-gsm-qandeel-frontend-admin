@@ -171,7 +171,6 @@ function build(demo: DemoState): SupportState {
     id: demoNumericId(macro.id),
     title: macro.title,
     category: macro.cat,
-    locale: 'en',
     body: toApiVariables(macro.body),
     shortcut: '',
     createdBy: author,

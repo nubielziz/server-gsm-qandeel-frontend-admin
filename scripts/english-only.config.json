@@ -1,0 +1,30 @@
+{
+  "roots": ["src", "scripts", "index.html"],
+  "frontend": true,
+  "notScanned": [],
+  "allow": [
+    {
+      "path": "scripts/build-route-manifest.mjs",
+      "why": "Reads the map's own Arabic auth words (public, session) to parse its auth column: the map is the owner's Arabic specification and stays read-only."
+    },
+    {
+      "path": "scripts/gen-entity-types.mjs",
+      "why": "Holds the check that refuses an Arabic table description, so the generated types stay English: a guard that enforces English."
+    },
+    {
+      "path": "scripts/gen-entity-types.test.mjs",
+      "why": "Tests of that check; they need an Arabic sample to prove it refuses it."
+    },
+    {
+      "path": "src/features/support/components/MessageBubble.test.tsx",
+      "why": "Group C: a customer's Arabic ticket message is data and must render with dir=\"auto\"; the test needs an Arabic body."
+    }
+  ],
+  "keep": [
+    {
+      "path": "src/features/support/components/MessageBubble.tsx",
+      "has": "dir=\"auto\"",
+      "why": "A ticket message is text a person typed, and may be Arabic: it keeps its own direction (group C, decision 039)."
+    }
+  ]
+}

@@ -74,6 +74,3 @@ export function slugOf(title: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 }
-
-/** The two languages the mock accepts. */
-export const LOCALES = ['en', 'ar'];

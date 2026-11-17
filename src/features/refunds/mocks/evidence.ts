@@ -18,7 +18,7 @@ export type EvidenceContext = {
 function consentsFor(order: DemoOrder, customer: DemoCustomer, legal: readonly DemoLegal[]) {
   const digits = parseInt(order.token.replace(/\D/g, '').slice(0, 3) || '24', 10);
   const doc = (type: string) => {
-    const found = legal.find((x) => x.type === type && x.current && x.lang === 'EN');
+    const found = legal.find((x) => x.type === type && x.current);
     return found ? `${type} v${found.version}` : type;
   };
   const what = [

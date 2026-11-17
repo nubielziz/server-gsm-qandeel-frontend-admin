@@ -1,14 +1,7 @@
 // The people the mock campaigns reach: a small made-up audience (6 staff, 28 merchants, 80 customers) with the facts the server's providers know (can see an
-// inbox, may be emailed, has a Telegram chat, reads English or Arabic, agreed to marketing), so the live count, the send and the recipients agree with each other.
+// inbox, may be emailed, has a Telegram chat, agreed to marketing), so the live count, the send and the recipients agree with each other.
 // Mocks fake answers only (decision 014): the real server counts the real people.
-import type {
-  AudiencePreview,
-  AudienceSpec,
-  CampaignChannel,
-  CampaignPurpose,
-  CampaignLocale,
-  PersonType,
-} from '../types';
+import type { AudiencePreview, AudienceSpec, CampaignChannel, CampaignPurpose, PersonType } from '../types';
 
 /** One person of the made-up audience, with how each channel reaches them. */
 export type MockPerson = {
@@ -17,7 +10,6 @@ export type MockPerson = {
   inApp: boolean;
   email: boolean;
   telegram: boolean;
-  locale: CampaignLocale;
   /** Customers only: agreed to marketing. Everyone else is true. */
   consent: boolean;
 };
@@ -42,7 +34,6 @@ const customer = (id: number) => ({
   id,
   hasAccount: id <= CUSTOMERS_WITH_ACCOUNT,
   country: COUNTRIES[id % 5],
-  locale: (id % 4 === 0 ? 'ar' : 'en') as CampaignLocale,
 });
 
 /** A merchant who switched the announcement email off (about one in twenty-five), and one with a linked Telegram chat (three in five). */
@@ -65,7 +56,7 @@ export function eligiblePeople(
     const row = staff(id);
     const inSegment = spec.staff && (!spec.staff.roleIds || spec.staff.roleIds.includes(row.roleId));
     if (inSegment || include.has(`staff:${id}`))
-      out.push({ type: 'staff', id, inApp: true, email: true, telegram: false, locale: 'en', consent: true });
+      out.push({ type: 'staff', id, inApp: true, email: true, telegram: false, consent: true });
   }
   for (let id = 1; id <= MERCHANT_COUNT; id++) {
     const row = merchant(id);
@@ -83,7 +74,6 @@ export function eligiblePeople(
         inApp: true,
         email: merchantEmail(id),
         telegram: merchantTelegram(id),
-        locale: 'en',
         consent: true,
       });
   }
@@ -93,8 +83,7 @@ export function eligiblePeople(
     const inSegment =
       segment &&
       (segment.hasAccount === undefined || segment.hasAccount === row.hasAccount) &&
-      (!segment.countries || segment.countries.includes(row.country)) &&
-      (!segment.locales || segment.locales.includes(row.locale));
+      (!segment.countries || segment.countries.includes(row.country));
     if (!inSegment && !include.has(`customer:${id}`)) continue;
     if (purpose === 'marketing' && !customerConsent(id)) {
       noConsent += 1;
@@ -106,7 +95,6 @@ export function eligiblePeople(
       inApp: row.hasAccount,
       email: true,
       telegram: false,
-      locale: row.locale,
       consent: true,
     });
   }
@@ -141,7 +129,6 @@ export function previewOf(
       email: wants('email') ? count((p) => p.email) : 0,
       telegram: wants('telegram') ? count((p) => p.telegram) : 0,
     },
-    byLocale: { en: count((p) => p.locale === 'en'), ar: count((p) => p.locale === 'ar') },
     excluded: {
       noConsent,
       optedOut: wants('email') ? wasted((p) => !p.email) : 0,

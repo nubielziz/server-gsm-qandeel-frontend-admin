@@ -60,11 +60,9 @@ export function isProofEmail(
   );
 }
 
-/** "Customer · Email · en": the line under the title. */
-export function templateMeta(
-  template: Pick<NotificationTemplate, 'audience' | 'channel' | 'locale'>,
-): string {
-  return `${AUDIENCE_LABEL[template.audience]} · ${CHANNEL_LABEL[template.channel]} · ${template.locale}`;
+/** "Customer · Email": the line under the title. */
+export function templateMeta(template: Pick<NotificationTemplate, 'audience' | 'channel'>): string {
+  return `${AUDIENCE_LABEL[template.audience]} · ${CHANNEL_LABEL[template.channel]}`;
 }
 
 /** Whether the preview is HTML: the server's `format` when it sends one, else a guess from the markup in the text. */

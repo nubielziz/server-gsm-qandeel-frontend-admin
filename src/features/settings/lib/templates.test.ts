@@ -8,7 +8,6 @@ const template = (patch: Partial<NotificationTemplate>): NotificationTemplate =>
   event: 'order.received',
   channel: 'email',
   audience: 'customer',
-  locale: 'en',
   subject: 'Hello',
   body: 'Body',
   isActive: true,
@@ -23,11 +22,9 @@ describe('texts', () => {
     expect(eventLabel('deposit_approved')).toBe('Deposit approved');
   });
 
-  it('describes who gets it, where and in which language', () => {
-    expect(templateMeta(template({}))).toBe('Customer · Email · en');
-    expect(templateMeta(template({ audience: 'merchant', channel: 'telegram', locale: 'ar' }))).toBe(
-      'Merchant · Telegram · ar',
-    );
+  it('describes who gets it and where', () => {
+    expect(templateMeta(template({}))).toBe('Customer · Email');
+    expect(templateMeta(template({ audience: 'merchant', channel: 'telegram' }))).toBe('Merchant · Telegram');
   });
 });
 

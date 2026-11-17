@@ -10,9 +10,6 @@ export type NamedRef = { id: Id; name: string };
 /** Where a merchant account stands: waiting for approval, trading, or stopped by staff. */
 export type ClientStatus = 'active' | 'pending' | 'suspended';
 
-/** The language of a merchant's mails and portal (`clients.locale`). */
-export type ClientLocale = 'en' | 'ar';
-
 /**
  * How a merchant signs in and what staff can still do about it (backend contract `ClientRow.security`, feature 20). Never
  * carries a hash or a secret. `linkSentAt` is when the newest open invitation or reset link was made, `verificationSentAt` the
@@ -66,7 +63,7 @@ export type ClientStats = {
 /**
  * One merchant, as `GET /admin/clients` and `GET /admin/clients/:id` send it. The group and the referrer come as joins so a
  * row needs no second request. `wallet` and `stats` are extras the server may add for staff who can read wallets; a screen
- * shows a dash where they are missing. The keys from `locale` to `suspension` are optional in the backend schema (its recorded
+ * shows a dash where they are missing. The keys from `address` to `suspension` are optional in the backend schema (its recorded
  * fixtures predate them) but the server always sends them, so a screen treats a missing one as "not known".
  */
 export type Client = Pick<
@@ -89,7 +86,6 @@ export type Client = Pick<
   referredBy: NamedRef | null;
   wallet?: ClientWallet | null;
   stats?: ClientStats | null;
-  locale?: ClientLocale;
   address?: string;
   taxId?: string;
   /** Staff only; never on a `/client` route. */
@@ -123,7 +119,6 @@ export type ClientDetails = {
   phone?: string;
   country?: string;
   email?: string;
-  locale?: ClientLocale;
   address?: string;
   taxId?: string;
   internalNotes?: string;

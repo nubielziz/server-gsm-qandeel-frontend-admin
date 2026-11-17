@@ -1,5 +1,5 @@
 // The reads of the Search tab that are not Refine lists: the report, the preview of a query, the index status (refreshed while a
-// rebuild runs) and the pin picker's English listings. The three rule lists are Refine resources (`useStorefrontList`).
+// rebuild runs) and the pin picker's listings. The three rule lists are Refine resources (`useStorefrontList`).
 import { listListings, getSearchIndex, getSearchPreview, getSearchReport } from '../api';
 import { useApiQuery } from '@/lib/query';
 import type { ReportDays } from '../types';
@@ -49,7 +49,7 @@ export function useSearchIndex(enabled = true) {
 }
 
 /**
- * The listed English services whose title, slug, name or code holds the text: what the pin dialog offers to pin or hide. The
+ * The listed services whose title, slug, name or code holds the text: what the pin dialog offers to pin or hide. The
  * server refuses any other service (422), so the menu never shows one.
  */
 export function usePinPicker(text: string, enabled = true) {
@@ -64,7 +64,7 @@ export function usePinPicker(text: string, enabled = true) {
           q,
           sort: ['publicTitle'],
           order: ['asc'],
-          filters: { locale: 'en', isListed: true },
+          filters: { isListed: true },
         },
         { signal },
       ),

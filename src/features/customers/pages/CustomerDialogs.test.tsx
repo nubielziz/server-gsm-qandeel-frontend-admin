@@ -63,6 +63,7 @@ describe('Edit details', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Edit Daniel Whitmore' });
     expect(within(dialog).getByLabelText('Full name')).toHaveValue('Daniel Whitmore');
     expect(within(dialog).getByLabelText('Country')).toHaveValue('GB');
+    expect(within(dialog).queryByLabelText('Language')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
     await waitFor(() =>

@@ -37,7 +37,6 @@ export interface StreamInboxItem {
   title: string;
   body: string;
   link: string | null;
-  locale: 'en' | 'ar';
   readAt: IsoDateTime | null;
   createdAt: IsoDateTime;
   campaignId: Id | null;
@@ -109,7 +108,6 @@ function parseItem(value: unknown): StreamInboxItem | null {
     isText(value.title) &&
     isText(value.body) &&
     isNullable(value.link, isText) &&
-    (value.locale === 'en' || value.locale === 'ar') &&
     isNullable(value.readAt, isText) &&
     isText(value.createdAt) &&
     isNullable(value.campaignId, isId) &&

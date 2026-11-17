@@ -23,7 +23,7 @@ import {
 const filled = (change: Partial<ComposerForm> = {}): ComposerForm => ({
   ...emptyForm(),
   name: 'Winter promo',
-  en: { title: 'Hello', body: 'Big news, {{name}}.' },
+  content: { title: 'Hello', body: 'Big news, {{name}}.' },
   audience: applyPreset(emptyForm().audience, 'staff'),
   ...change,
 });
@@ -74,12 +74,12 @@ describe('the audience in the API shape', () => {
         groupIds: [4],
         countries: 'jo, sa',
       },
-      customers: { on: true, accounts: 'guests' as const, countries: '', locales: ['ar' as const] },
+      customers: { on: true, accounts: 'guests' as const, countries: 'sa' },
     };
     expect(audienceToSpec(audience)).toEqual({
       staff: { roleIds: [2, 3] },
       merchants: { statuses: ['active', 'pending'], groupIds: [4], countries: ['JO', 'SA'] },
-      customers: { hasAccount: false, locales: ['ar'] },
+      customers: { hasAccount: false, countries: ['SA'] },
     });
   });
 
@@ -103,7 +103,7 @@ describe('the audience in the API shape', () => {
     const spec = {
       staff: { roleIds: [1] },
       merchants: { statuses: ['pending' as const], countries: ['JO'] },
-      customers: { hasAccount: true, locales: ['en' as const] },
+      customers: { hasAccount: true, countries: ['SA'] },
       include: [{ type: 'staff' as const, id: 2 }],
     };
     const form = specToAudienceForm(spec);
@@ -153,11 +153,11 @@ describe('channels and who is targeted', () => {
 });
 
 describe('the form to the API body', () => {
-  it('trims the text, sends Arabic only when it has text and the link only with the paths filled in', () => {
+  it('trims the text and sends the link only with the paths filled in', () => {
     const body = formToInput(
       filled({
         name: '  Winter promo ',
-        en: { title: ' Hello ', body: ' Hi ' },
+        content: { title: ' Hello ', body: ' Hi ' },
         link: { staff: '/orders', merchant: '  ', customer: '' },
       }),
     );
@@ -166,11 +166,9 @@ describe('the form to the API body', () => {
       purpose: 'service',
       channels: ['in_app', 'email'],
       audience: { staff: {} },
-      content: { en: { title: 'Hello', body: 'Hi' } },
+      content: { title: 'Hello', body: 'Hi' },
       link: { staff: '/orders' },
     });
-    const withArabic = formToInput(filled({ ar: { title: 'مرحبا', body: 'نص' } }));
-    expect(withArabic.content.ar).toEqual({ title: 'مرحبا', body: 'نص' });
   });
 
   it('has a null link when no path was written', () => {
@@ -182,25 +180,21 @@ describe('the form to the API body', () => {
     expect(campaignToForm(detail).name).toBe('Winter promo');
     expect(campaignToForm(detail, { duplicate: true }).name).toBe('Winter promo (copy)');
     expect(campaignToForm(detail).link.customer).toBe('/account/orders');
-    expect(campaignToForm(detail).ar).toEqual({ title: '', body: '' });
+    expect(campaignToForm(detail).content).toEqual({
+      title: 'Winter promo',
+      body: 'Hello {{name}},\nBig news.',
+    });
   });
 });
 
 describe('the hints', () => {
-  it('asks for a name, the English title and text, and an audience', () => {
+  it('asks for a name, the title and text, and an audience', () => {
     const problems = composerProblems(emptyForm());
-    expect(Object.keys(problems).sort()).toEqual(['audience', 'content.en.body', 'content.en.title', 'name']);
+    expect(Object.keys(problems).sort()).toEqual(['audience', 'content.body', 'content.title', 'name']);
   });
 
   it('accepts a complete form', () => {
     expect(composerProblems(filled())).toEqual({});
-  });
-
-  it('wants Arabic title and text together or not at all', () => {
-    expect(composerProblems(filled({ ar: { title: 'عنوان', body: '' } }))['content.ar']).toMatch(
-      /both the Arabic title and text/,
-    );
-    expect(composerProblems(filled({ ar: { title: 'عنوان', body: 'نص' } }))['content.ar']).toBeUndefined();
   });
 
   it('checks the links against the site-path rule', () => {
@@ -220,7 +214,7 @@ describe('the hints', () => {
   it('names a country that is not a code, and Telegram without merchants, and no channel', () => {
     const audience = {
       ...applyPreset(emptyForm().audience, 'customers'),
-      customers: { on: true, accounts: 'all' as const, countries: 'Jordan', locales: [] },
+      customers: { on: true, accounts: 'all' as const, countries: 'Jordan' },
     };
     expect(audienceProblems(filled({ audience }))['audience.customers.countries']).toMatch(/JORDAN/);
     expect(audienceProblems(filled({ channels: ['telegram'] })).channels).toMatch(/merchants only/);

@@ -1,6 +1,7 @@
 // MessageBubble: one message of the thread. A customer or merchant message sits on the left in a bordered bubble, a staff reply
 // on the right in the accent tint, and an internal note is a dashed amber block with a lock. Files on the message are listed
-// under its text. Ports the `msg` function of threadView (49-p-support.js).
+// under its text. Ports the `msg` function of threadView (49-p-support.js). The text is typed by a person, so it carries
+// `dir="auto"`: a message in a right-to-left script reads and aligns the way it was written (decision 039, text stays data).
 import { cx, Icon } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import type { TicketMessage } from '../types';
@@ -14,7 +15,11 @@ export function MessageBubble({ message }: { message: TicketMessage }) {
           <Icon name="lock" className="ic-xs me-1 inline" />
           Internal note · {message.authorName} · {fmtDate(message.createdAt)}
         </p>
-        {message.body !== '' && <p className="whitespace-pre-wrap">{message.body}</p>}
+        {message.body !== '' && (
+          <p dir="auto" className="whitespace-pre-wrap">
+            {message.body}
+          </p>
+        )}
         <MessageAttachments message={message} />
       </div>
     );
@@ -31,7 +36,11 @@ export function MessageBubble({ message }: { message: TicketMessage }) {
         <p className="mb-0.5 text-2xs text-ink3">
           {message.authorName} · {fmtDate(message.createdAt)}
         </p>
-        {message.body !== '' && <p className="whitespace-pre-wrap">{message.body}</p>}
+        {message.body !== '' && (
+          <p dir="auto" className="whitespace-pre-wrap">
+            {message.body}
+          </p>
+        )}
         <MessageAttachments message={message} />
       </div>
     </div>

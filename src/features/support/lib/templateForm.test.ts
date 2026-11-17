@@ -7,7 +7,6 @@ const template: ReplyTemplate = {
   id: 4,
   title: 'Refund approved',
   category: 'refund',
-  locale: 'en',
   body: 'Hi {{name}}, your refund is on its way.',
   shortcut: '/refund',
   createdBy: 1,
@@ -17,7 +16,6 @@ const template: ReplyTemplate = {
 const same = {
   title: template.title,
   category: template.category,
-  locale: template.locale,
   shortcut: template.shortcut,
   body: template.body,
 };
@@ -40,9 +38,10 @@ describe('changedTemplateFields', () => {
   });
 
   it('sends only the fields that changed', () => {
-    expect(
-      changedTemplateFields(template, { ...same, title: 'Refund sent', category: 'billing', locale: 'ar' }),
-    ).toEqual({ title: 'Refund sent', category: 'billing', locale: 'ar' });
+    expect(changedTemplateFields(template, { ...same, title: 'Refund sent', category: 'billing' })).toEqual({
+      title: 'Refund sent',
+      category: 'billing',
+    });
     expect(changedTemplateFields(template, { ...same, shortcut: '' })).toEqual({ shortcut: '' });
   });
 });

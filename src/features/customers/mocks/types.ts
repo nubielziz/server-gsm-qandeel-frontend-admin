@@ -11,7 +11,6 @@ export type MockCustomer = {
   name: string;
   phone: string;
   country: string;
-  locale: string;
   currency: number;
   currencyCode: string;
   hasAccount: boolean;

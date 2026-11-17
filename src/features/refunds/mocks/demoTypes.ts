@@ -69,4 +69,4 @@ export type DemoTicket = {
   who: { type: string; id: string };
 };
 
-export type DemoLegal = { type: string; version: string; lang: string; current: boolean };
+export type DemoLegal = { type: string; version: string; current: boolean };

@@ -357,10 +357,9 @@ describe('API keys', () => {
 });
 
 describe('merchant details', () => {
-  it('carries the keys of feature 20: language, business details, notes, sign-in facts and the suspension', async () => {
+  it('carries the keys of feature 20: business details, notes, sign-in facts and the suspension', async () => {
     const zain = await getClient(ZAIN);
     expect(zain).toMatchObject({
-      locale: 'en',
       address: 'Abdali Boulevard, Amman',
       taxId: 'JO-1234567',
       internalNotes: 'Pays by bank transfer on Sundays.',
@@ -382,8 +381,8 @@ describe('merchant details', () => {
   });
 
   it('sends the details with the sent keys only and the mock applies them', async () => {
-    const updated = await updateClient(ZAIN, { company: 'Zain Hub LLC', locale: 'ar', taxId: '' });
-    expect(updated).toMatchObject({ company: 'Zain Hub LLC', locale: 'ar', taxId: '' });
+    const updated = await updateClient(ZAIN, { company: 'Zain Hub LLC', taxId: '' });
+    expect(updated).toMatchObject({ company: 'Zain Hub LLC', taxId: '' });
     expect((await getClient(ZAIN)).company).toBe('Zain Hub LLC');
   });
 
@@ -436,7 +435,6 @@ describe('merchant details', () => {
         country: 'JOR',
         email: 'nope',
         taxId: 'x'.repeat(41),
-        locale: 'fr' as never,
       }),
     ).rejects.toMatchObject({
       status: 422,
@@ -445,7 +443,6 @@ describe('merchant details', () => {
         country: ['Enter the two-letter country code.'],
         email: ['Enter a valid email address.'],
         taxId: ['Use at most 40 characters.'],
-        locale: ['Choose English or Arabic.'],
       },
     });
   });

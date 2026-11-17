@@ -99,7 +99,7 @@ describe('Schedule', () => {
 });
 
 describe('Send test', () => {
-  it('defaults to in-app and email in English, sends, and the in-app item reaches the bell', async () => {
+  it('defaults to in-app and email, sends, and the in-app item reaches the bell', async () => {
     const sent = recordRequests('/test');
     const { user } = await openCampaign(3, 'New unlock services');
     const before = await screen.findByRole('button', { name: /^Notifications, \d+ unread$/ });
@@ -108,10 +108,10 @@ describe('Send test', () => {
     const test = await dialog('Send a test to yourself');
     expect(test.getByRole('checkbox', { name: /In-app/ })).toBeChecked();
     expect(test.getByRole('checkbox', { name: /Email/ })).toBeChecked();
-    expect(test.getByRole('combobox', { name: 'Language' })).toHaveValue('en');
+    expect(test.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
     await user.click(test.getByRole('button', { name: 'Send test' }));
     await waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0].body).toEqual({ channels: ['in_app', 'email'], locale: 'en' });
+    expect(sent[0].body).toEqual({ channels: ['in_app', 'email'] });
     expect(await screen.findByText('Test queued')).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /^Notifications, \d+ unread$/ })).toHaveAccessibleName(
@@ -120,7 +120,7 @@ describe('Send test', () => {
     );
   });
 
-  it('sends only what is ticked, in Arabic, and wants at least one channel', async () => {
+  it('sends only what is ticked, and wants at least one channel', async () => {
     const sent = recordRequests('/test');
     const { user } = await openCampaign(3, 'New unlock services');
     await user.click(screen.getByRole('button', { name: 'Send test' }));
@@ -131,10 +131,9 @@ describe('Send test', () => {
     expect(await test.findByText('Choose at least one channel.')).toBeInTheDocument();
     expect(sent).toEqual([]);
     await user.click(test.getByRole('checkbox', { name: /Email/ }));
-    await user.selectOptions(test.getByRole('combobox', { name: 'Language' }), 'ar');
     await user.click(test.getByRole('button', { name: 'Send test' }));
     await waitFor(() => expect(sent).toHaveLength(1));
-    expect(sent[0].body).toEqual({ channels: ['email'], locale: 'ar' });
+    expect(sent[0].body).toEqual({ channels: ['email'] });
   });
 });
 
@@ -266,8 +265,7 @@ describe('Duplicate', () => {
       'Scheduled maintenance on Friday (copy)',
     );
     expect(composer.getByRole('button', { name: 'Everyone' })).toHaveAttribute('aria-pressed', 'true');
-    await user.click(composer.getByRole('tab', { name: 'العربية' }));
-    expect(composer.getByRole('textbox', { name: 'العنوان' })).toHaveValue('صيانة مجدولة يوم الجمعة');
+    expect(composer.getByRole('textbox', { name: 'Title' })).toHaveValue('Scheduled maintenance on Friday');
     await user.click(composer.getByRole('button', { name: 'Save draft' }));
     await waitFor(() => expect(app.location()).toBe('/notifications/4'), { timeout: 10_000 });
     const post = sent.find(

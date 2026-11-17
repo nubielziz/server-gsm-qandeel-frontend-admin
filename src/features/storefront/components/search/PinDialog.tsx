@@ -1,6 +1,6 @@
 // PinDialog: "Add pinned results" and "Edit pinned results" (`POST` and `PATCH /admin/search/pins`): for searches that match some
 // words, put chosen services first at fixed positions and keep others out, between optional dates. The checks here only save a
-// round trip; the server cleans the query, refuses a service with no listed English listing (422, shown on its row) and a rule
+// round trip; the server cleans the query, refuses a service that is not listed (422, shown on its row) and a rule
 // for a query that already has one (409). The Report tab opens it with a query filled in.
 import { useController, useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, RadioGroup, TextField, toast } from '@/components/ui';

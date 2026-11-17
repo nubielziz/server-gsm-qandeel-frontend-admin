@@ -7,7 +7,6 @@ import { Button, dialogSubmit, errorText, FormDialog, Modal, toast } from '@/com
 import { useListing } from '../hooks/useListing';
 import { useUpdateListingContent } from '../hooks/useListingMutations';
 import { changedBody, LISTING_FORM_FIELDS, toFormValues, type ListingFormValues } from '../lib/listingForm';
-import { localeLabel } from '../lib/kinds';
 import type { ServiceListing, ServiceListingDetail } from '../types';
 import { ListingContentFields } from './ListingContentFields';
 import { ListingFactsFields } from './ListingFactsFields';
@@ -51,7 +50,6 @@ export function ListingEditDialog({ listing, onClose }: ListingEditDialogProps) 
 function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; onClose: () => void }) {
   const update = useUpdateListingContent();
   const [imageUrl, setImageUrl] = useState(listing.imageUrl);
-  const dir = listing.locale === 'ar' ? 'rtl' : undefined;
   const form = useForm<ListingFormValues>({ defaultValues: toFormValues(listing) });
   const {
     register,
@@ -76,16 +74,16 @@ function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; 
       open
       size="lg"
       title="Edit listing"
-      sub={`${listing.service.name} · ${localeLabel(listing.locale)}`}
+      sub={listing.service.name}
       confirm="Save changes"
       onClose={onClose}
       onSubmit={submit}
     >
       <div className="space-y-4">
         <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} />
-        <ListingContentFields register={register} errors={errors} dir={dir} />
+        <ListingContentFields register={register} errors={errors} />
         <ListingFactsFields register={register} errors={errors} />
-        <ListingSeoFields register={register} errors={errors} dir={dir} />
+        <ListingSeoFields register={register} errors={errors} />
       </div>
     </FormDialog>
   );

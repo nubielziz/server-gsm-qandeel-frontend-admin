@@ -1,17 +1,16 @@
-// The checks the mock makes on the details of `PATCH /admin/clients/:id` (name, company, phone, country, email, locale, address,
+// The checks the mock makes on the details of `PATCH /admin/clients/:id` (name, company, phone, country, email, address,
 // tax ID, internal notes), with the limits of the backend's contract. Mock only: the real rules are the server's (decision 014).
 import type { ProblemError } from '@/mocks/problem';
 import type { ClientDetails } from '../types';
 import { textOf } from './shared';
 
-/** The nine keys of a details change, in the order the server reads them. */
+/** The eight keys of a details change, in the order the server reads them. */
 export const DETAIL_KEYS = [
   'name',
   'company',
   'phone',
   'country',
   'email',
-  'locale',
   'address',
   'taxId',
   'internalNotes',
@@ -49,10 +48,6 @@ export function checkDetails(body: Record<string, unknown>): ClientDetails | { e
     const email = textOf(body.email).toLowerCase();
     if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) out.email = email;
     else fail('email', 'Enter a valid email address.');
-  }
-  if (body.locale !== undefined) {
-    if (body.locale === 'en' || body.locale === 'ar') out.locale = body.locale;
-    else fail('locale', 'Choose English or Arabic.');
   }
   return errors.length > 0 ? { errors } : out;
 }

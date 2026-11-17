@@ -7,7 +7,7 @@ import { ago } from '@/lib/format';
 import { usePublishPage } from '../hooks/usePageMutations';
 import { useStorefrontList } from '../hooks/useStorefrontList';
 import type { StorefrontGrants } from '../hooks/useStorefrontGrants';
-import { kindLabel, localeLabel, pagePath } from '../lib/kinds';
+import { kindLabel, pagePath } from '../lib/kinds';
 import { toRefineFilters, WHOLE_LIST_CAP } from '../lib/views';
 import { CONTENT_KINDS, type ContentPage } from '../types';
 import { ContentPageDialog } from './ContentPageDialog';
@@ -44,12 +44,6 @@ export function PagesPanel({ grants }: { grants: StorefrontGrants }) {
     },
     { key: 'kind', label: 'Type', hide: 'sm', render: (p) => <TypeTag>{kindLabel(p.kind)}</TypeTag> },
     { key: 'status', label: 'Status', render: (p) => <PageStatusBadge status={p.status} /> },
-    {
-      key: 'language',
-      label: 'Language',
-      hide: 'md',
-      render: (p) => <span className="text-ink2">{localeLabel(p.locale)}</span>,
-    },
     {
       key: 'updated',
       label: 'Updated',

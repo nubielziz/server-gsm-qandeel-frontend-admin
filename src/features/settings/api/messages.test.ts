@@ -26,7 +26,7 @@ describe('notification templates', () => {
   it('lists the templates of one audience and channel', async () => {
     const result = await listTemplates({ filters: { audience: 'customer', channel: 'email' } });
     expect(result.total).toBe(6);
-    expect(result.data[0]).toMatchObject({ event: 'order.received', locale: 'en', isActive: true });
+    expect(result.data[0]).toMatchObject({ event: 'order.received', isActive: true });
     expect((await listTemplates({ filters: { channel: 'telegram' } })).total).toBe(1);
   });
 
@@ -35,7 +35,6 @@ describe('notification templates', () => {
       event: 'refund.issued',
       channel: 'email',
       audience: 'customer',
-      locale: 'en',
       subject: 'Your refund',
       body: 'We refunded {{amount}}.',
       isActive: true,

@@ -1,21 +1,10 @@
 // Mock of the content page routes (`/admin/content-pages*`): list with the kind, status and search filters, one page, create (a
-// draft), change, publish or hide, and the draft generator. The mock plays the server: slugs are unique per language, a new page is
+// draft), change, publish or hide, and the draft generator. The mock plays the server: a slug belongs to one page, a new page is
 // a draft, and the generator skips a combination that already has a page.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toIso } from '@/mocks/seed';
 import { CONTENT_KINDS, LANDING_KINDS, type ContentPage, type PageKind } from '../types';
-import {
-  bodyOf,
-  conflict,
-  invalid,
-  listAnswer,
-  LOCALES,
-  notFound,
-  rawTextOf,
-  signedIn,
-  slugOf,
-  textOf,
-} from './http';
+import { bodyOf, conflict, invalid, listAnswer, notFound, rawTextOf, signedIn, slugOf, textOf } from './http';
 import { storefrontStore } from './store';
 import type { Stores } from './types';
 
@@ -26,11 +15,9 @@ const DEFAULT_NETWORKS = ['AT&T', 'T-Mobile', 'Vodafone'];
 /** The most drafts one generator run makes: "a handful". */
 const GENERATE_CAP = 6;
 
-/** The page with this slug in this language, other than `exceptId`. */
-function slugTaken(stores: Stores, slug: string, locale: string, exceptId?: number): ContentPage | undefined {
-  return stores.pages
-    .list()
-    .find((page) => page.slug === slug && page.locale === locale && page.id !== exceptId);
+/** The page with this slug, other than `exceptId`. */
+function slugTaken(stores: Stores, slug: string, exceptId?: number): ContentPage | undefined {
+  return stores.pages.list().find((page) => page.slug === slug && page.id !== exceptId);
 }
 
 function slugConflict(slug: string) {
@@ -41,7 +28,7 @@ function slugConflict(slug: string) {
 /** A new draft page. */
 function draftPage(
   stores: Stores,
-  fields: Pick<ContentPage, 'kind' | 'title' | 'slug' | 'locale'> & Partial<ContentPage>,
+  fields: Pick<ContentPage, 'kind' | 'title' | 'slug'> & Partial<ContentPage>,
 ) {
   const now = toIso(Date.now());
   return stores.pages.insert({
@@ -81,14 +68,13 @@ export const pageRoutes: HttpHandler[] = [
         for (const network of networks) {
           const title = `Unlock ${model} on ${network}`;
           const slug = slugOf(title);
-          if (slugTaken(stores, slug, 'en')) skipped += 1;
+          if (slugTaken(stores, slug)) skipped += 1;
           else if (created.length < GENERATE_CAP) {
             created.push(
               draftPage(stores, {
                 kind: 'model',
                 title,
                 slug,
-                locale: 'en',
                 bodyMd: `# ${title}\n\nDraft for review.`,
               }),
             );
@@ -133,19 +119,16 @@ export const pageRoutes: HttpHandler[] = [
       const body = await bodyOf(request);
       const title = textOf(body.title);
       const kind = textOf(body.kind);
-      const locale = textOf(body.locale) || 'en';
       const errors = [];
       if (!KINDS.includes(kind)) errors.push({ field: 'kind', message: 'Choose a type.' });
       if (!title) errors.push({ field: 'title', message: 'Enter a title.' });
-      if (!LOCALES.includes(locale)) errors.push({ field: 'locale', message: 'Choose a language.' });
       if (errors.length > 0) return invalid(errors);
       const slug = textOf(body.slug) || slugOf(title);
-      if (slugTaken(stores, slug, locale)) return slugConflict(slug);
+      if (slugTaken(stores, slug)) return slugConflict(slug);
       const page = draftPage(stores, {
         kind: kind as PageKind,
         title,
         slug,
-        locale,
         bodyMd: rawTextOf(body.bodyMd),
         seoTitle: textOf(body.seoTitle),
         seoDescription: textOf(body.seoDescription),
@@ -166,14 +149,10 @@ export const pageRoutes: HttpHandler[] = [
         if (!changes.title) return invalid([{ field: 'title', message: 'Enter a title.' }]);
       }
       if ('slug' in body) changes.slug = textOf(body.slug);
-      if ('locale' in body) changes.locale = textOf(body.locale);
       if ('bodyMd' in body) changes.bodyMd = rawTextOf(body.bodyMd);
       if ('seoTitle' in body) changes.seoTitle = textOf(body.seoTitle);
       if ('seoDescription' in body) changes.seoDescription = textOf(body.seoDescription);
-      if (
-        changes.slug !== undefined &&
-        (!changes.slug || slugTaken(stores, changes.slug, changes.locale ?? page.locale, page.id))
-      ) {
+      if (changes.slug !== undefined && (!changes.slug || slugTaken(stores, changes.slug, page.id))) {
         return changes.slug
           ? slugConflict(changes.slug)
           : invalid([{ field: 'slug', message: 'Enter a slug.' }]);

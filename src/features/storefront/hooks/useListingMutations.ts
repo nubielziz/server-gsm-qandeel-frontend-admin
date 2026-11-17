@@ -80,7 +80,7 @@ export function useUpdateListingContent() {
   });
 }
 
-/** Uploads the picture of the service (every language). The field under the picture shows the server's refusal. */
+/** Uploads the picture of the service. The field under the picture shows the server's refusal. */
 export function useUploadListingImage() {
   return useApiMutation({
     mutationFn: ({ listing, file }: { listing: ServiceListing; file: File }) =>
@@ -94,7 +94,7 @@ export function useUploadListingImage() {
   });
 }
 
-/** Removes the picture of the service (every language). */
+/** Removes the picture of the service. */
 export function useRemoveListingImage() {
   return useApiMutation({
     mutationFn: (listing: ServiceListing) => removeListingImage(listing.id),

@@ -58,9 +58,3 @@ export const BLOCK_REASONS = [
   'Abuse of refunds',
   'Other',
 ] as const;
-
-/** The languages a customer can use (the demo's LOCALES). */
-export const LOCALES = [
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'Arabic' },
-] as const;

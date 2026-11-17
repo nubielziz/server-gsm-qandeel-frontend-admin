@@ -12,10 +12,11 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-// Records of the mock seed: six documents from the demo, then a draft Refund policy v1.5.
-const TERMS_EN = 1; // Terms of service v3.2 (EN), in force
-const TERMS_OLD = 6; // Terms of service v3.1 (EN), an earlier version
-const REFUND_DRAFT = 7;
+// Records of the mock seed: the five English documents of the demo (its Arabic row is left out), then a draft Refund policy v1.5.
+const TERMS = 1; // Terms of service v3.2, in force
+const REFUND = 3; // Refund policy v1.4, in force
+const TERMS_OLD = 5; // Terms of service v3.1, an earlier version
+const REFUND_DRAFT = 6;
 
 describe('listLegalDocuments', () => {
   it('filters by document and by the version in force', async () => {
@@ -23,11 +24,11 @@ describe('listLegalDocuments', () => {
     const current = await listLegalDocuments({ filters: { type: 'terms', isCurrent: true } });
     expect(requests.last().url.searchParams.get('type')).toBe('terms');
     expect(requests.last().url.searchParams.get('isCurrent')).toBe('true');
-    expect(current.data.map((d) => d.locale).sort()).toEqual(['ar', 'en']);
+    expect(current.data.map((d) => d.version)).toEqual(['3.2']);
   });
 
   it('tells a version in force, an earlier one and a draft apart', async () => {
-    expect(await getLegalDocument(TERMS_EN)).toMatchObject({
+    expect(await getLegalDocument(TERMS)).toMatchObject({
       isCurrent: true,
       type: 'terms',
       version: '3.2',
@@ -47,7 +48,6 @@ describe('createLegalDocument', () => {
     const requests = recordRequests();
     const created = await createLegalDocument({
       type: 'terms',
-      locale: 'en',
       version: '3.3',
       bodyMd: '# Terms',
       requiresReacceptance: true,
@@ -62,7 +62,6 @@ describe('createLegalDocument', () => {
   it('refuses a version number that exists and names the field', async () => {
     const error = await createLegalDocument({
       type: 'terms',
-      locale: 'en',
       version: '3.2',
       bodyMd: '# Terms',
       requiresReacceptance: false,
@@ -80,11 +79,11 @@ describe('publishLegalDocument', () => {
     expect(requests.last().url.pathname).toBe(`/admin/legal-documents/${REFUND_DRAFT}/publish`);
     expect(published).toMatchObject({ isCurrent: true, version: '1.5' });
     expect(published.effectiveFrom).not.toBeNull();
-    expect((await getLegalDocument(4)).isCurrent).toBe(false);
+    expect((await getLegalDocument(REFUND)).isCurrent).toBe(false);
   });
 
   it('refuses a version that is already in force', async () => {
-    const error = await publishLegalDocument(TERMS_EN).catch((e: unknown) => e);
+    const error = await publishLegalDocument(TERMS).catch((e: unknown) => e);
     expect((error as ApiError).status).toBe(409);
     expect((error as ApiError).detail).toContain('already in force');
   });

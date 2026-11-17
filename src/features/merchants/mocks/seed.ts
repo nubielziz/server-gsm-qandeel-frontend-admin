@@ -173,7 +173,6 @@ export async function buildStore(): Promise<MerchantStore> {
       referralCode: `GSM${String(id).padStart(4, '0')}`,
       emailVerifiedAt: m.status === 'pending' ? null : toIso(created + 3_600_000),
       createdAt: toIso(created),
-      locale: 'en',
       address: BUSINESS[id]?.address ?? '',
       taxId: BUSINESS[id]?.taxId ?? '',
       internalNotes: BUSINESS[id]?.internalNotes ?? '',

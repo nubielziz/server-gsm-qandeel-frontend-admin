@@ -124,8 +124,13 @@ describe('Edit category', () => {
     const dialog = dialogOf('Edit Xiaomi');
     await user.click(await dialog.findByRole('checkbox', { name: 'VIP' }));
     await user.click(dialog.getByRole('checkbox', { name: 'Shown to merchants' }));
+    const requests = recordRequests();
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Xiaomi updated')).toBeInTheDocument();
+    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toEqual({
+      allowedGroupIds: [3],
+      isActive: false,
+    });
     expect(await getCategory(5)).toMatchObject({ name: 'Xiaomi', allowedGroupIds: [3], isActive: false });
     const changed = await categoryRow('Xiaomi');
     expect(await changed.findByText('Hidden')).toBeInTheDocument();
@@ -139,89 +144,6 @@ describe('Edit category', () => {
     await user.click(row.getByRole('button', { name: 'Edit Xiaomi' }));
     await user.click(dialogOf('Edit Xiaomi').getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
-  });
-});
-
-describe('the Arabic name', () => {
-  it('creates a category with an Arabic name for the storefront', async () => {
-    const user = userEvent.setup();
-    await openServices(CATEGORIES);
-    await user.click(await screen.findByRole('button', { name: 'New category' }));
-    const dialog = dialogOf('New category');
-    expect(dialog.getByText(/^Optional\. The Arabic storefront shows this name/)).toBeInTheDocument();
-    await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Bulk credits');
-    await user.type(dialog.getByRole('textbox', { name: 'Arabic name (storefront)' }), 'رصيد بالجملة');
-    const requests = recordRequests();
-    await user.click(dialog.getByRole('button', { name: 'Create category' }));
-    expect(await screen.findByText('Bulk credits created')).toBeInTheDocument();
-    expect(requests.sent().find((request) => request.method === 'POST')?.body).toMatchObject({
-      name: 'Bulk credits',
-      nameAr: 'رصيد بالجملة',
-    });
-    expect((await listCategories()).data.find((category) => category.name === 'Bulk credits')?.nameAr).toBe(
-      'رصيد بالجملة',
-    );
-  });
-
-  it('leaves the Arabic name out of the request when it is empty', async () => {
-    const user = userEvent.setup();
-    await openServices(CATEGORIES);
-    await user.click(await screen.findByRole('button', { name: 'New category' }));
-    const dialog = dialogOf('New category');
-    await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Plain');
-    const requests = recordRequests();
-    await user.click(dialog.getByRole('button', { name: 'Create category' }));
-    expect(await screen.findByText('Plain created')).toBeInTheDocument();
-    expect(requests.sent().find((request) => request.method === 'POST')?.body).not.toHaveProperty('nameAr');
-  });
-
-  it('changes the Arabic name and sends only it, then clears it with an empty text', async () => {
-    const user = userEvent.setup();
-    await openServices(CATEGORIES);
-    await user.click((await categoryRow('Xiaomi')).getByRole('button', { name: 'Edit Xiaomi' }));
-    let dialog = dialogOf('Edit Xiaomi');
-    const field = dialog.getByRole('textbox', { name: 'Arabic name (storefront)' });
-    expect(field).toHaveValue('');
-    expect(field).toHaveAttribute('dir', 'rtl');
-    await user.type(field, 'شاومي');
-    const requests = recordRequests();
-    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
-    expect(await screen.findByText('Xiaomi updated')).toBeInTheDocument();
-    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toEqual({ nameAr: 'شاومي' });
-    expect((await getCategory(5)).nameAr).toBe('شاومي');
-
-    await user.click((await categoryRow('Xiaomi')).getByRole('button', { name: 'Edit Xiaomi' }));
-    dialog = dialogOf('Edit Xiaomi');
-    const again = dialog.getByRole('textbox', { name: 'Arabic name (storefront)' });
-    expect(again).toHaveValue('شاومي');
-    await user.clear(again);
-    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
-    await vi.waitFor(async () => expect((await getCategory(5)).nameAr).toBe(''));
-    expect(
-      requests
-        .sent()
-        .filter((request) => request.method === 'PATCH')
-        .at(-1)?.body,
-    ).toEqual({ nameAr: '' });
-  });
-
-  it('shows the server’s refusal of a long Arabic name under the field', async () => {
-    const user = userEvent.setup();
-    mockServer.use(
-      http.patch('*/admin/service-categories/:id', () =>
-        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'nameAr', message: 'Use at most 80 characters.' },
-        ]),
-      ),
-    );
-    await openServices(CATEGORIES);
-    await user.click((await categoryRow('Xiaomi')).getByRole('button', { name: 'Edit Xiaomi' }));
-    const dialog = dialogOf('Edit Xiaomi');
-    const field = dialog.getByRole('textbox', { name: 'Arabic name (storefront)' });
-    await user.type(field, 'شاومي');
-    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
-    expect(await dialog.findByText('Use at most 80 characters.')).toBeInTheDocument();
-    expect(field).toHaveAttribute('aria-invalid', 'true');
   });
 });
 

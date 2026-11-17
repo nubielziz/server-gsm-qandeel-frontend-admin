@@ -4,7 +4,6 @@ import { COUNTRIES, countryName, countryOptions } from './countries';
 import { customerPath, DETAIL_TABS, isDetailTab, visibleDetailTabs } from './detailTabs';
 import {
   BLOCK_REASONS,
-  LOCALES,
   rawLabel,
   RISK_BADGE,
   riskBadge,
@@ -47,7 +46,7 @@ describe('status and risk words', () => {
     expect(rawLabel(null)).toBe('Unknown');
   });
 
-  it('offers the demo’s reasons and both languages', () => {
+  it('offers the demo’s reasons', () => {
     expect(SUSPEND_REASONS).toHaveLength(5);
     expect(SUSPEND_REASONS[0]).toBe('Customer asked to pause the account');
     expect(BLOCK_REASONS).toEqual([
@@ -56,7 +55,6 @@ describe('status and risk words', () => {
       'Abuse of refunds',
       'Other',
     ]);
-    expect(LOCALES.map((locale) => locale.value)).toEqual(['en', 'ar']);
   });
 });
 

@@ -9,7 +9,8 @@ export type LegalType = (typeof LEGAL_TYPES)[number];
 
 /**
  * One version of a legal document (assumed contract). The version in force has `isCurrent`; a version nobody has
- * published yet has no `effectiveFrom`. `acceptedCount` is how many times customers accepted it at checkout, `null`
+ * published yet has no `effectiveFrom`. `locale` is read-only (decision 039): `en` on every version that can be written,
+ * and another code only on a retired version that consents still point at. `acceptedCount` is how many times customers accepted it at checkout, `null`
  * when the server does not count.
  */
 export type LegalDocument = Pick<
@@ -28,7 +29,6 @@ export type LegalDocument = Pick<
 /** Body of `POST /admin/legal-documents` (assumed contract): a new version, not yet in force until it is published. */
 export type CreateLegalBody = {
   type: string;
-  locale: string;
   version: string;
   bodyMd: string;
   requiresReacceptance: boolean;
@@ -37,6 +37,5 @@ export type CreateLegalBody = {
 /** What `GET /admin/legal-documents` filters by. */
 export type LegalListFilters = {
   type?: string;
-  locale?: string;
   isCurrent?: boolean;
 };

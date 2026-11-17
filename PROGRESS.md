@@ -8,7 +8,7 @@ The console's own next work is phase 0 of that plan: merchant actions it cannot 
 invitation, edit a merchant's details, reset 2FA and end sessions; optionally create an API key for a merchant), plus the
 webhook-secret field of the payment gateway form. The owner deferred phase 0 ("later", 2026-11-09): the public site for
 merchants and customers (Arabic and English; phases 1 to 3) comes first, as a separate app in `../storefront`, built in a new
-session from `../STOREFRONT-HANDOFF.md`. To run the console against the real backend, start it with `VITE_API_MOCKS=false
+session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
 ## Status (2026-11-08, evening): the console runs on the real backend with no mocks

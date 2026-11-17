@@ -1,6 +1,6 @@
-// Tests for the page kind and status words, the public paths the table shows, and the language labels.
+// Tests for the page kind and status words, and the public paths the table shows.
 import { describe, expect, it } from 'vitest';
-import { KIND_FILTER_ITEMS, kindLabel, localeLabel, pagePath, pageStatus } from './kinds';
+import { KIND_FILTER_ITEMS, kindLabel, pagePath, pageStatus } from './kinds';
 
 describe('kinds', () => {
   it('has the demo’s filter: All, then the five landing kinds', () => {
@@ -30,11 +30,10 @@ describe('pageStatus', () => {
   });
 });
 
-describe('pagePath and localeLabel', () => {
+describe('pagePath', () => {
   it('shows the path the demo showed under a title, with the slug as the server sent it', () => {
     expect(pagePath('carrier', 'unlock-iphone-on-att')).toBe('/unlock/unlock-iphone-on-att');
     expect(pagePath('blog', 'is-my-iphone-locked')).toBe('/blog/is-my-iphone-locked');
     expect(pagePath('static', 'about')).toBe('/about');
-    expect(localeLabel('ar')).toBe('AR');
   });
 });

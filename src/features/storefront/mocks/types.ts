@@ -26,7 +26,6 @@ export type MockService = {
 export type MockListing = {
   id: number;
   serviceId: number;
-  locale: string;
   slug: string;
   publicTitle: string;
   summary: string;
@@ -35,7 +34,6 @@ export type MockListing = {
   etaText: string;
   seoTitle: string;
   seoDescription: string;
-  /** The facts of the service (brand, carrier, country, position, featured, picture) are kept on every language row alike. */
   brand: string;
   carrier: string;
   country: string;

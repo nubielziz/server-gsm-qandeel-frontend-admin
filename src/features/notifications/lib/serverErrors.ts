@@ -1,5 +1,5 @@
 // Places the server's refusal of a save on the composer's fields. The API names a field (`name`, `channels`, `audience.merchants.countries`,
-// `content.en.title`, `link.customer`); a message about a field the composer does not know goes to the drawer's general slot, so nothing is lost.
+// `content.title`, `link.customer`); a message about a field the composer does not know goes to the drawer's general slot, so nothing is lost.
 import { isApiError } from '@/lib/api';
 import type { Problems } from './spec';
 

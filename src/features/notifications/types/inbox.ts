@@ -14,7 +14,6 @@ export type InboxItem = {
   body: string;
   /** A console path without a host (`/orders?order=7`), or null. */
   link: string | null;
-  locale: 'en' | 'ar';
   readAt: IsoDateTime | null;
   createdAt: IsoDateTime;
   /** Set for an item that came from a broadcast. */

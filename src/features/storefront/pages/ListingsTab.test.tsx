@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { storefrontStore } from '../mocks/store';
 import { dialogOf, openStorefront, rowOf, tabTexts, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
@@ -36,7 +37,7 @@ describe('the table and the figures', () => {
     expect(strip.getByText('Not on the site').parentElement).toHaveTextContent('0');
   });
 
-  it('shows each listing with its code and slug, B2B base, storefront price, floor, margin and language', async () => {
+  it('shows each listing with its code and slug, B2B base, storefront price, floor, margin and no language', async () => {
     await openStorefront();
     const row = await rowOf(TABLE, 'AT&T USA Premier Unlock');
     expect(row.getByText('IMEI-ATT-USA · /atandt-usa-premier-unlock')).toBeInTheDocument();
@@ -44,7 +45,7 @@ describe('the table and the figures', () => {
     expect(row.getByText('$25.99')).toBeInTheDocument();
     expect(row.getByText('Floor $19.01')).toBeInTheDocument();
     expect(row.getByText('48.1%')).toBeInTheDocument();
-    expect(row.getByText('EN')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Language' })).not.toBeInTheDocument();
     expect(row.getByRole('switch', { name: 'Show AT&T USA Premier Unlock on the storefront' })).toBeChecked();
   });
 
@@ -135,7 +136,10 @@ describe('Add listing', () => {
     return { dialog, service };
   }
 
-  it('lists the active IMEI services from the services feature, suggests the title and adds a listing in Arabic', async () => {
+  it('lists the active IMEI services from the services feature, suggests the title and adds a listing for a service that has none', async () => {
+    // Every active IMEI service of the demo has its listing; take one away so the service can be added again.
+    const stores = await storefrontStore();
+    stores.listings.remove(stores.listings.list().find((row) => row.serviceId === 2)!.id);
     const user = userEvent.setup();
     const { dialog, service } = await openAdd(user);
     await user.selectOptions(
@@ -144,15 +148,15 @@ describe('Add listing', () => {
     );
     const title = dialog.getByRole('textbox', { name: 'Public title' });
     expect(title).toHaveValue('Apple Warranty & Activation Date');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Language' }), 'Arabic');
+    expect(dialog.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Add listing' }));
     expect(await screen.findByText('Listing added')).toBeInTheDocument();
-    expect(await screen.findByText('15 listings')).toBeInTheDocument();
+    expect(await screen.findByText('14 listings')).toBeInTheDocument();
     const strip = within(screen.getByRole('region', { name: 'Storefront catalogue' }));
     await waitFor(() => expect(strip.getByText('Not on the site').parentElement).toHaveTextContent('1'));
   });
 
-  it('shows the server’s refusal of a second listing in the same language under the service', async () => {
+  it('shows the server’s refusal of a second listing of the same service under the service', async () => {
     const user = userEvent.setup();
     const { dialog, service } = await openAdd(user);
     await user.selectOptions(
@@ -160,9 +164,7 @@ describe('Add listing', () => {
       within(service).getByRole('option', { name: 'Apple Warranty & Activation Date (IMEI-APL-WRN)' }),
     );
     await user.click(dialog.getByRole('button', { name: 'Add listing' }));
-    expect(
-      await dialog.findByText('This service already has a listing in that language.'),
-    ).toBeInTheDocument();
+    expect(await dialog.findByText('This service already has a listing.')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Add listing' })).toBeInTheDocument();
   });
 

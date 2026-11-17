@@ -79,7 +79,7 @@ export function listSearchPins(query: ListQuery = {}, init?: ApiInit): Promise<L
 
 /**
  * Adds a rule: for searches that match `query`, the pinned services come first at their positions and the hidden ones are
- * left out. The server answers 422 on a service without a listed English listing, 409 `CONFLICT` for a query and match
+ * left out. The server answers 422 on a service that is not listed, 409 `CONFLICT` for a query and match
  * that already have a rule.
  * Assumed contract: body `{ query, match, pinned: [{ serviceId, position }], hidden: [serviceId], startsAt?, endsAt?,
  * isEnabled?, note? }`, answer the new rule with titles.

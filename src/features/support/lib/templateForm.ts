@@ -6,7 +6,6 @@ import type { ReplyTemplate, TicketCategory, UpdateTemplateBody } from '../types
 export type TemplateFormValues = {
   title: string;
   category: TicketCategory;
-  locale: string;
   shortcut: string;
   body: string;
 };
@@ -16,7 +15,6 @@ export function cleanTemplate(values: TemplateFormValues): TemplateFormValues {
   return {
     title: values.title.trim(),
     category: values.category,
-    locale: values.locale,
     shortcut: values.shortcut.trim(),
     body: values.body.trim(),
   };
@@ -31,7 +29,6 @@ export function changedTemplateFields(
   const changed: UpdateTemplateBody = {};
   if (next.title !== template.title) changed.title = next.title;
   if (next.category !== template.category) changed.category = next.category;
-  if (next.locale !== template.locale) changed.locale = next.locale;
   if (next.shortcut !== template.shortcut) changed.shortcut = next.shortcut;
   if (next.body !== template.body) changed.body = next.body;
   return changed;

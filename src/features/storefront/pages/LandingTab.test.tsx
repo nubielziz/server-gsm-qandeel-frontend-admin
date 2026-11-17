@@ -50,7 +50,7 @@ describe('the table and the figures', () => {
     expect(row.getByText('5,480')).toBeInTheDocument();
     expect(row.getByText('21')).toBeInTheDocument();
     expect(row.getByText('0.4%')).toBeInTheDocument();
-    expect(row.getByText('EN')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Language' })).not.toBeInTheDocument();
     expect(screen.getByText('14 pages')).toBeInTheDocument();
   });
 

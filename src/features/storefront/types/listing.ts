@@ -19,14 +19,12 @@ export type ListingService = {
  * lowest price the server accepts for it, and `marginPct`, `orders30d` and `revenue30d` are worked out by the server; the
  * console never computes them. A `locked` listing can never go on the public site and `lockedReason` says why.
  * Typed by hand beyond the generated row (the map's row has no `listedAt` or `imageUrl`, and a different `updatedAt`).
- * `brand`, `carrier`, `country`, `sort`, `isFeatured` and `imageUrl` describe the service and are the same in every
- * language; the rest of the text is per language. `imageUrl` is a root-relative `/store/v1/media/<name>` path.
+ * A service has one listing. `imageUrl` is a root-relative `/store/v1/media/<name>` path.
  */
 export type ServiceListing = Pick<
   ServiceListingRow,
   | 'id'
   | 'serviceId'
-  | 'locale'
   | 'slug'
   | 'publicTitle'
   | 'summary'
@@ -61,9 +59,9 @@ export type ServiceListingDetail = ServiceListing & {
 };
 
 /**
- * The content fields `POST` and `PATCH /admin/service-listings` share, all optional. Per language: `summary`, `descriptionMd`,
- * `requirementsMd`, `etaText`, `seoTitle`, `seoDescription`. The server writes these to every language of the service:
- * `brand`, `carrier`, `country` (empty or two letters), `isFeatured`, `sort` (0 to 1,000,000).
+ * The content fields `POST` and `PATCH /admin/service-listings` share, all optional: `summary`, `descriptionMd`,
+ * `requirementsMd`, `etaText`, `seoTitle`, `seoDescription`, `brand`, `carrier`, `country` (empty or two letters),
+ * `isFeatured` and `sort` (0 to 1,000,000).
  */
 export type ListingContentFields = {
   summary?: string;
@@ -82,7 +80,6 @@ export type ListingContentFields = {
 /** Body of `POST /admin/service-listings`. Without a `slug` the server makes one from the title. */
 export type CreateListingBody = ListingContentFields & {
   serviceId: Id;
-  locale: string;
   publicTitle: string;
   slug?: string;
 };
@@ -99,13 +96,12 @@ export type UpdateListingBody = ListingContentFields & {
 };
 
 /**
- * What `GET /admin/service-listings` filters by: `q` (title, slug, service name or code), `isListed`, `locked`, `isFeatured`
- * and `locale` (`en` or `ar`, added by the search feature: the pin picker offers English listings only).
+ * What `GET /admin/service-listings` filters by: `q` (title, slug, service name or code), `isListed`, `locked` and
+ * `isFeatured`.
  */
 export type ListingListFilters = {
   q?: string;
   isListed?: boolean;
   locked?: boolean;
   isFeatured?: boolean;
-  locale?: 'en' | 'ar';
 };

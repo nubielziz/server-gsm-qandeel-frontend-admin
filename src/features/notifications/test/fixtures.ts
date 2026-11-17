@@ -31,7 +31,7 @@ export function campaignDetail(change: Partial<CampaignDetail> = {}): CampaignDe
   return {
     ...BASE,
     audience: { staff: {}, merchants: {}, customers: { hasAccount: true } },
-    content: { en: { title: 'Winter promo', body: 'Hello {{name}},\nBig news.' }, ar: null },
+    content: { title: 'Winter promo', body: 'Hello {{name}},\nBig news.' },
     link: null,
     skipped: { optedOut: 0, noTelegram: 0, noAccount: 0 },
     delivery: {
@@ -53,7 +53,6 @@ export function inboxItem(change: Partial<InboxItem> = {}): InboxItem {
     title: 'Scheduled maintenance',
     body: 'Read-only on Friday.',
     link: null,
-    locale: 'en',
     readAt: null,
     createdAt: '2026-11-10T09:00:00.000Z',
     campaignId: null,

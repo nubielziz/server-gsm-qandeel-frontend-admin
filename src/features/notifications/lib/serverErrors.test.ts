@@ -19,7 +19,7 @@ describe('placeErrors', () => {
       refusal(
         {
           name: ['Give a name.'],
-          'content.en.title': ['Write a text.'],
+          'content.title': ['Write a text.'],
           'audience.merchants.countries': ['Bad code.'],
           mystery: ['What?'],
         },
@@ -28,7 +28,7 @@ describe('placeErrors', () => {
     );
     expect(placed.fields).toEqual({
       name: 'Give a name.',
-      'content.en.title': 'Write a text.',
+      'content.title': 'Write a text.',
       'audience.merchants.countries': 'Bad code.',
     });
     expect(placed.rest).toEqual(['General.', 'mystery: What?']);

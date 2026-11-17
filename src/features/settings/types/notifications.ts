@@ -21,7 +21,6 @@ export type CreateTemplateBody = {
   event: string;
   channel: NotificationChannel;
   audience: NotificationAudience;
-  locale: string;
   subject: string;
   body: string;
   isActive: boolean;

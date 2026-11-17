@@ -3,7 +3,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toIso } from '@/mocks/seed';
 import type { HelpArticle } from '../types';
-import { bodyOf, invalid, listAnswer, LOCALES, notFound, rawTextOf, signedIn, textOf } from './http';
+import { bodyOf, invalid, listAnswer, notFound, rawTextOf, signedIn, textOf } from './http';
 import { storefrontStore } from './store';
 
 const SEARCH_FIELDS = ['question', 'category'];
@@ -28,19 +28,16 @@ export const helpRoutes: HttpHandler[] = [
       const category = textOf(body.category);
       const question = textOf(body.question);
       const answerMd = rawTextOf(body.answerMd);
-      const locale = textOf(body.locale) || 'en';
       const errors = [];
       if (!category) errors.push({ field: 'category', message: 'Enter a topic.' });
       if (!question) errors.push({ field: 'question', message: 'Enter the question.' });
       if (!answerMd.trim()) errors.push({ field: 'answerMd', message: 'Enter the answer.' });
-      if (!LOCALES.includes(locale)) errors.push({ field: 'locale', message: 'Choose a language.' });
       if (errors.length > 0) return invalid(errors);
       const now = toIso(Date.now());
       const article = stores.help.insert({
         category,
         question,
         answerMd,
-        locale,
         isPublished: body.isPublished === true,
         helpfulYes: 0,
         helpfulNo: 0,
@@ -62,7 +59,6 @@ export const helpRoutes: HttpHandler[] = [
       if ('category' in body) changes.category = textOf(body.category);
       if ('question' in body) changes.question = textOf(body.question);
       if ('answerMd' in body) changes.answerMd = rawTextOf(body.answerMd);
-      if ('locale' in body) changes.locale = textOf(body.locale);
       if ('isPublished' in body && typeof body.isPublished === 'boolean')
         changes.isPublished = body.isPublished;
       const empty = (['category', 'question', 'answerMd'] as const).find(

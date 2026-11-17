@@ -20,7 +20,6 @@ const PREVIEW = (reachable: number) => ({
   reachable,
   byType: { staff: 0, client: reachable, customer: 0 },
   byChannel: { inApp: reachable, email: 0, telegram: 0 },
-  byLocale: { en: reachable, ar: 0 },
   excluded: { noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 2 },
 });
 

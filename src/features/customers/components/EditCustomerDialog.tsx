@@ -1,15 +1,14 @@
-// EditCustomerDialog: "Edit <name>" (the demo's `cu-edit` action): name, email, country, language, phone and internal notes.
+// EditCustomerDialog: "Edit <name>" (the demo's `cu-edit` action): name, email, country, phone and internal notes.
 // Nothing is sent when nothing changed; otherwise only the changed fields are.
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextareaField, TextField, dialogSubmit, toast } from '@/components/ui';
 import { useUpdateCustomer } from '../hooks/useCustomerMutations';
 import { countryOptions } from '../lib/countries';
 import { changedFields, cleanName, validEmail, type EditValues } from '../lib/input';
-import { LOCALES } from '../lib/status';
 import type { CustomerDetail } from '../types';
 import { customerLabel } from '@/lib/format';
 
-const FIELDS = ['name', 'email', 'country', 'locale', 'phone', 'internalNotes'] as const;
+const FIELDS = ['name', 'email', 'country', 'phone', 'internalNotes'] as const;
 
 export interface EditCustomerDialogProps {
   customer: CustomerDetail;
@@ -24,7 +23,6 @@ export function EditCustomerDialog({ customer, onClose }: EditCustomerDialogProp
       name: customer.name,
       email: customer.email,
       country: customer.country,
-      locale: customer.locale,
       phone: customer.phone,
       internalNotes: customer.internalNotes,
     },
@@ -91,13 +89,6 @@ export function EditCustomerDialog({ customer, onClose }: EditCustomerDialogProp
             hint="Applies to new orders. Past orders keep their price and VAT."
             error={errors.country}
             {...register('country')}
-          />
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            options={LOCALES}
-            error={errors.locale}
-            {...register('locale')}
           />
           <TextField
             label="Phone"

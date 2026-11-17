@@ -22,7 +22,7 @@ describe('the list', () => {
   it('lists the customer emails with who gets them and how many were sent', async () => {
     await openSettings(EMAILS);
     const received = await rowOf(TABLE, 'Order received');
-    expect(received.getByText('Customer · Email · en')).toBeInTheDocument();
+    expect(received.getByText('Customer · Email')).toBeInTheDocument();
     expect(received.getByText('112')).toBeInTheDocument();
     expect(received.getByRole('switch', { name: 'Turn off: Order received' })).toHaveAttribute(
       'aria-checked',
@@ -45,7 +45,7 @@ describe('the list', () => {
     expect(await screen.findByRole('heading', { name: 'Merchant messages' })).toBeInTheDocument();
     expect(app.location()).toBe('/settings?tab=notifications&audience=merchant');
     expect(await screen.findByText('Deposit approved')).toBeInTheDocument();
-    expect((await rowOf(TABLE, 'Order completed')).getByText('Merchant · Telegram · en')).toBeInTheDocument();
+    expect((await rowOf(TABLE, 'Order completed')).getByText('Merchant · Telegram')).toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Channel' }), 'telegram');
     await waitFor(() => expect(screen.queryByText('Deposit approved')).not.toBeInTheDocument());
     await user.selectOptions(screen.getByRole('combobox', { name: 'Who receives it' }), 'all');
@@ -247,6 +247,7 @@ describe('New template', () => {
     await user.click(await screen.findByRole('button', { name: 'New template' }));
     const dialog = dialogOf('New template');
     await user.type(dialog.getByRole('textbox', { name: 'Event' }), 'refund.issued');
+    expect(dialog.queryByRole('textbox', { name: 'Language' })).not.toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Subject' }), 'Your refund');
     await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'We refunded your money.');
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Channel' }), 'telegram');
@@ -254,7 +255,7 @@ describe('New template', () => {
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Channel' }), 'email');
     await user.click(dialog.getByRole('button', { name: 'Create template' }));
     expect(await screen.findByText('Refund issued added')).toBeInTheDocument();
-    expect((await rowOf(TABLE, 'Refund issued')).getByText('Customer · Email · en')).toBeInTheDocument();
+    expect((await rowOf(TABLE, 'Refund issued')).getByText('Customer · Email')).toBeInTheDocument();
   });
 
   it('shows the server’s message when the same template already exists', async () => {
@@ -267,7 +268,7 @@ describe('New template', () => {
     await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Again.');
     await user.click(dialog.getByRole('button', { name: 'Create template' }));
     expect(
-      await dialog.findByText('A template for this event, channel and language already exists.'),
+      await dialog.findByText('A template for this event, channel and audience already exists.'),
     ).toBeInTheDocument();
     expect(dialog.getByRole('textbox', { name: 'Event' })).toHaveAttribute('aria-invalid', 'true');
   });

@@ -1,10 +1,10 @@
-// TemplatesTable: the reply templates as a table: title, category, language, shortcut and the start of the text, with Edit and Delete
+// TemplatesTable: the reply templates as a table: title, category, shortcut and the start of the text, with Edit and Delete
 // on each row. New in the console (the demo had no list of its macros outside the reply box). It draws what it is given; the
 // view owns the data and the dialogs. Without the permission a button is disabled and its title names it.
 import type { ReactNode } from 'react';
 import { Button, DataTable, Icon, type DataTableColumn } from '@/components/ui';
 import type { SupportGrants } from '../hooks/useSupportGrants';
-import { CATEGORY_LABEL, LOCALE_OPTIONS } from '../lib/status';
+import { CATEGORY_LABEL } from '../lib/status';
 import type { ReplyTemplate } from '../types';
 
 export interface TemplatesTableProps {
@@ -17,9 +17,6 @@ export interface TemplatesTableProps {
   onDelete: (template: ReplyTemplate) => void;
   empty: ReactNode;
 }
-
-const localeLabel = (locale: string) =>
-  LOCALE_OPTIONS.find((option) => option.value === locale)?.label ?? locale;
 
 export function TemplatesTable({
   rows,
@@ -40,7 +37,6 @@ export function TemplatesTable({
       render: (template) => <span className="font-medium">{template.title}</span>,
     },
     { key: 'category', label: 'Category', render: (template) => CATEGORY_LABEL[template.category] },
-    { key: 'locale', label: 'Language', hide: 'sm', render: (template) => localeLabel(template.locale) },
     {
       key: 'shortcut',
       label: 'Shortcut',

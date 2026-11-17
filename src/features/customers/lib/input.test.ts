@@ -10,7 +10,6 @@ const unchanged = (): EditValues => {
     name: c.name,
     email: c.email,
     country: c.country,
-    locale: c.locale,
     phone: c.phone,
     internalNotes: c.internalNotes,
   };
@@ -54,7 +53,6 @@ describe('changedFields', () => {
         internalNotes: ' Calls on Mondays ',
         name: 'Dan  Whitmore',
         country: 'IE',
-        locale: 'ar',
         phone: '',
         email: 'Dan@mail.example',
       }),
@@ -62,7 +60,6 @@ describe('changedFields', () => {
       name: 'Dan Whitmore',
       email: 'dan@mail.example',
       country: 'IE',
-      locale: 'ar',
       phone: '',
       internalNotes: 'Calls on Mondays',
     });

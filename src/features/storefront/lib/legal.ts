@@ -19,11 +19,14 @@ export function legalTypeLabel(type: string): string {
   return Object.hasOwn(TYPE_LABEL, type) ? TYPE_LABEL[type] : type;
 }
 
-/** `en` is English, `ar` is Arabic (the demo's `EN` and `AR`), anything else is shown in capitals. */
-export function legalLanguage(locale: string): string {
-  if (locale === 'en') return 'English';
-  if (locale === 'ar') return 'Arabic';
-  return locale.toUpperCase();
+/**
+ * A version as the line of earlier versions names it: `Terms of service v3.2`. A version kept from before English became the
+ * only language (decision 039) has another code in `locale`; it is marked with that code in capitals, `(retired TR text)`,
+ * because the consents that point at it still prove what a person accepted.
+ */
+export function earlierVersionName(document: Pick<LegalDocument, 'type' | 'version' | 'locale'>): string {
+  const name = `${legalTypeLabel(document.type)} v${document.version}`;
+  return document.locale === 'en' ? name : `${name} (retired ${document.locale.toUpperCase()} text)`;
 }
 
 /**
@@ -36,7 +39,7 @@ export function suggestNextVersion(version: string): string {
   return `${match[1]}${Number(match[2]) + 1}`;
 }
 
-/** The rows of the legal table: what the table lists, split three ways, grouped by document and language inside each. */
+/** The rows of the legal table: what the table lists, split three ways, grouped by document inside each. */
 export type LegalGroups = {
   /** The versions in force. */
   current: LegalDocument[];
@@ -48,18 +51,14 @@ export type LegalGroups = {
   shown: LegalDocument[];
 };
 
-// Documents in the order of the type menu (terms first), then by language (English first, as in the demo), then the newest version first.
+// Documents in the order of the type menu (terms first), then the newest version first.
 function byDocument(a: LegalDocument, b: LegalDocument): number {
   const order = (type: string) => {
     const index = LEGAL_TYPE_OPTIONS.findIndex((option) => option.value === type);
     return index === -1 ? LEGAL_TYPE_OPTIONS.length : index;
   };
   return (
-    order(a.type) - order(b.type) ||
-    a.type.localeCompare(b.type) ||
-    Number(a.locale !== 'en') - Number(b.locale !== 'en') ||
-    a.locale.localeCompare(b.locale) ||
-    b.createdAt.localeCompare(a.createdAt)
+    order(a.type) - order(b.type) || a.type.localeCompare(b.type) || b.createdAt.localeCompare(a.createdAt)
   );
 }
 
@@ -74,10 +73,10 @@ export function groupLegal(documents: readonly LegalDocument[]): LegalGroups {
   };
 }
 
-/** The version in force for the same document type and language, if any: what a publish replaces. */
+/** The version in force for the same document type, if any: what a publish replaces. */
 export function versionInForce(
   documents: readonly LegalDocument[],
-  document: Pick<LegalDocument, 'type' | 'locale'>,
+  document: Pick<LegalDocument, 'type'>,
 ): LegalDocument | undefined {
-  return documents.find((d) => d.isCurrent && d.type === document.type && d.locale === document.locale);
+  return documents.find((d) => d.isCurrent && d.type === document.type);
 }

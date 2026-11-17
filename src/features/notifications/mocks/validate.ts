@@ -1,5 +1,5 @@
-// The refusals of the mock create and edit routes: the same field rules the server applies (plain text only, `{{name}}` the only placeholder, English
-// required, a site path for each link, Telegram only with merchants, an audience that targets someone). The mock is the reference behaviour for the UI tests.
+// The refusals of the mock create and edit routes: the same field rules the server applies (plain text only, `{{name}}` the only placeholder, a title
+// and a text, a site path for each link, Telegram only with merchants, an audience that targets someone). The mock is the reference behaviour for the UI tests.
 import type { ProblemError } from '@/mocks/problem';
 import type { AudienceSpec, CampaignChannel, CampaignInput } from '../types';
 
@@ -65,10 +65,7 @@ export function inputProblems(input: CampaignInput): ProblemError[] {
   }
   errors.push(...audienceProblems(input.audience, input.channels));
   for (const part of ['title', 'body'] as const)
-    errors.push(...textProblems(`content.en.${part}`, input.content.en[part]));
-  if (input.content.ar)
-    for (const part of ['title', 'body'] as const)
-      errors.push(...textProblems(`content.ar.${part}`, input.content.ar[part]));
+    errors.push(...textProblems(`content.${part}`, input.content[part]));
   for (const key of ['staff', 'merchant', 'customer'] as const) {
     const value = input.link?.[key];
     if (value !== undefined && !SITE_PATH.test(value)) {

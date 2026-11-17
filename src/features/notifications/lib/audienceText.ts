@@ -58,7 +58,7 @@ export function audienceLines(
     lines.push({ label: 'Merchants', text: parts.join(' ') });
   }
   if (spec.customers) {
-    const { hasAccount, countries, locales } = spec.customers;
+    const { hasAccount, countries } = spec.customers;
     const base =
       hasAccount === true
         ? 'Customers with an account'
@@ -67,8 +67,6 @@ export function audienceLines(
           : 'All active customers';
     const parts = [base];
     if (countries?.length) parts.push(`from ${sentenceList(countries)}`);
-    if (locales?.length)
-      parts.push(`who read ${sentenceList(locales.map((l) => (l === 'ar' ? 'Arabic' : 'English')))}`);
     lines.push({ label: 'Customers', text: parts.join(' ') });
   }
   if (spec.include?.length)
@@ -128,10 +126,6 @@ export function byChannelText(
   ].filter((part): part is string => Boolean(part));
   return sentenceList(parts);
 }
-
-/** "950 read English and 258 Arabic". */
-export const byLocaleText = (byLocale: AudiencePreview['byLocale']): string =>
-  sentenceList([`${num(byLocale.en)} read English`, `${num(byLocale.ar)} Arabic`]);
 
 /** The planned message counts of a campaign as short text for a stat cell ("12 in-app, 10 email"). */
 export function plannedText(planned: Campaign['planned']): string {

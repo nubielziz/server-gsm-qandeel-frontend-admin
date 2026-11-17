@@ -5,6 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { dropLanguages, formatDemoState } from './english-only-seed.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const demoDir = resolve(root, 'reference/gsm-admin/src/js');
@@ -87,14 +88,11 @@ function replacer(_key, value) {
 const code = FILES.map((name) => readFileSync(resolve(demoDir, `${name}.js`), 'utf8')).join('\n;\n');
 const context = createContext();
 vm.runInContext(code, context, { filename: 'demo-bundle.js' });
-const state = vm.runInContext('S', context);
+// English only (decision 039): the demo still lists languages; the console's seed does not.
+const state = dropLanguages(vm.runInContext('S', context));
 
-// One line per top-level key: small file, and a data change shows up as a readable diff.
-const body = Object.entries(state)
-  .map(([key, value]) => `${JSON.stringify(key)}:${JSON.stringify(value, replacer)}`)
-  .join(',\n');
 mkdirSync(dirname(outFile), { recursive: true });
-writeFileSync(outFile, `{"capturedAt":${NOW},"state":{\n${body}\n}}\n`);
+writeFileSync(outFile, formatDemoState(NOW, state, replacer));
 
 const keys = Object.keys(state);
 console.log(`Wrote ${outFile}`);

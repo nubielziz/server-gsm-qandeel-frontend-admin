@@ -1,5 +1,5 @@
 // ListingTable: the listings table with the demo's columns (service with its picture and slug, B2B base, storefront price and floor,
-// margin, orders, language, the "On the site" switch with the date it first went live, the Edit and Price buttons). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
+// margin, orders, the "On the site" switch with the date it first went live, the Edit and Price buttons). Ports `cols` of tabListings in 50-p-storefront.js. It only draws what it
 // is given: the floor, margin and order figures come from the server, and the tab owns data, sort and page.
 import type { ReactNode } from 'react';
 import {
@@ -12,7 +12,6 @@ import {
   type SortState,
 } from '@/components/ui';
 import { fmtDate, money0, num, pct, price } from '@/lib/format';
-import { localeLabel } from '../lib/kinds';
 import type { ServiceListing } from '../types';
 import { ListingThumbnail } from './ListingThumbnail';
 
@@ -124,12 +123,6 @@ export function ListingTable({
         ) : (
           <span className="text-ink3">0</span>
         ),
-    },
-    {
-      key: 'language',
-      label: 'Language',
-      hide: 'xl',
-      render: (l) => <span className="text-ink2">{localeLabel(l.locale)}</span>,
     },
     {
       key: 'listed',

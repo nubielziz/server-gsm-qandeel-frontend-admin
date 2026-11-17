@@ -27,6 +27,16 @@ describe('columnType (decision 011 rules)', () => {
     }
   });
 
+  it('leaves out the map columns the backend dropped, and keeps the legal document tag', () => {
+    expect(type('service_listings', 'locale')).toBeNull();
+    expect(type('content_pages', 'locale')).toBeNull();
+    expect(type('help_articles', 'locale')).toBeNull();
+    expect(type('customers', 'locale')).toBeNull();
+    expect(type('notification_templates', 'locale')).toBeNull();
+    expect(type('reply_templates', 'locale')).toBeNull();
+    expect(type('legal_documents', 'locale')).toBe('string');
+  });
+
   it('maps ids, dates and flags', () => {
     expect(type('t', 'role_id')).toBe('Id');
     expect(type('t', 'client_id nullable')).toBe('Id | null');

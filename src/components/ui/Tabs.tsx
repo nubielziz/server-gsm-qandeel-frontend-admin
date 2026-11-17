@@ -20,17 +20,16 @@ export interface TabsProps<V extends string = string> {
 }
 
 // Index a navigation key leads to (before wrapping), or null for any other key.
-function targetIndex(key: string, from: number, count: number, rtl: boolean): number | null {
+function targetIndex(key: string, from: number, count: number): number | null {
   if (key === 'Home') return 0;
   if (key === 'End') return count - 1;
-  if (key === 'ArrowRight') return from + (rtl ? -1 : 1);
-  if (key === 'ArrowLeft') return from + (rtl ? 1 : -1);
+  if (key === 'ArrowRight') return from + 1;
+  if (key === 'ArrowLeft') return from - 1;
   return null;
 }
 
 /**
- * The selected tab is the only tab stop (roving tabindex). ArrowLeft/ArrowRight (mirrored in right-to-left
- * layouts), Home and End move focus and select the tab at once, so the content follows the keyboard.
+ * The selected tab is the only tab stop (roving tabindex). ArrowLeft/ArrowRight, Home and End move focus and select the tab at once, so the content follows the keyboard.
  */
 export function Tabs<V extends string = string>({ items, value, onChange, label, className }: TabsProps<V>) {
   const strip = useRef<HTMLDivElement>(null);
@@ -51,9 +50,8 @@ export function Tabs<V extends string = string>({ items, value, onChange, label,
   }, [value]);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
     const focused = items.findIndex((item) => buttons.current.get(item.value) === document.activeElement);
-    const to = targetIndex(e.key, focused >= 0 ? focused : Math.max(0, selected), items.length, rtl);
+    const to = targetIndex(e.key, focused >= 0 ? focused : Math.max(0, selected), items.length);
     if (to === null) return;
     e.preventDefault();
     const next = items[(to + items.length) % items.length];

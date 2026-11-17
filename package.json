@@ -12,7 +12,7 @@
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json --noEmit",
-    "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "lint": "eslint . --max-warnings 0 && prettier --check . && node scripts/check-english-only.mjs",
     "format": "prettier --write . && eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",

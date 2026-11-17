@@ -23,10 +23,10 @@ describe('listInbox', () => {
     expect(result.total).toBe(31);
   });
 
-  it('sends the category and the language when given, and no unread parameter when it is off', async () => {
+  it('sends the category when given, and no unread parameter when it is off', async () => {
     const seen = capture('get', '/admin/inbox', { json: [] });
-    await listInbox({ category: 'order', locale: 'ar' });
-    expect(seen[0].query).toEqual({ category: ['order'], locale: ['ar'] });
+    await listInbox({ category: 'order' });
+    expect(seen[0].query).toEqual({ category: ['order'] });
   });
 });
 

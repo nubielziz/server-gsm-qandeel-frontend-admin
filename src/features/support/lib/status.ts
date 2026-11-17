@@ -59,12 +59,6 @@ export const PRIORITY_OPTIONS: readonly { value: TicketPriority; label: string }
   { value: 'low', label: 'Low priority' },
 ];
 
-/** The languages a reply template can be written in. */
-export const LOCALE_OPTIONS: readonly SelectOption[] = [
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'Arabic' },
-];
-
 /** The first word of a name, for "Write a reply to Jessica" and the `{{name}}` variable. */
 export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? '';

@@ -42,7 +42,7 @@ describe('Profile tab', () => {
     expect(account.getByText('ops@zainmobilehub.example', { exact: false })).toBeInTheDocument();
     expect(account.getByText('Verified')).toBeInTheDocument();
     expect(account.getByText('JO')).toBeInTheDocument();
-    expect(account.getByText('English')).toBeInTheDocument();
+    expect(account.queryByText('Language')).not.toBeInTheDocument();
     expect(account.getByText('zain-mobile-hub')).toBeInTheDocument();
     expect(account.getByText('GSM0001')).toBeInTheDocument();
     expect(account.getByText('VIP')).toBeInTheDocument();
@@ -77,7 +77,7 @@ describe('Edit details', () => {
     expect(within(dialog).getByLabelText('Name')).toHaveValue('Zain Mobile Hub');
     expect(within(dialog).getByLabelText('Email')).toHaveValue('ops@zainmobilehub.example');
     expect(within(dialog).getByLabelText('Country')).toHaveValue('JO');
-    expect(within(dialog).getByLabelText('Language')).toHaveValue('en');
+    expect(within(dialog).queryByLabelText('Language')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Tax ID')).toHaveValue('JO-1234567');
     expect(
       within(dialog).getByText(
@@ -105,12 +105,13 @@ describe('Edit details', () => {
     const dialog = await openEdit(user);
     await user.clear(within(dialog).getByLabelText('Tax ID'));
     await user.type(within(dialog).getByLabelText('Tax ID'), 'JO-7654321');
-    await user.selectOptions(within(dialog).getByLabelText('Language'), 'ar');
+    await user.clear(within(dialog).getByLabelText('Address'));
+    await user.type(within(dialog).getByLabelText('Address'), 'Rainbow Street, Amman');
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Details updated')).toBeInTheDocument();
     expect(screen.getByText('2 fields saved.')).toBeInTheDocument();
     await waitFor(() => expect(card('Business').getByText('JO-7654321')).toBeInTheDocument());
-    expect(card('Account').getByText('Arabic')).toBeInTheDocument();
+    expect(card('Business').getByText('Rainbow Street, Amman')).toBeInTheDocument();
   });
 
   it('puts the request body together from the changed fields only, cleaned', async () => {

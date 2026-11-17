@@ -38,7 +38,7 @@ export function getReplyTemplate(id: Id, init?: ApiInit): Promise<ReplyTemplate>
 
 /**
  * Adds a template. The server checks the title and the text and answers 422 with a message per field.
- * Assumed contract: body `{ title, category, locale, body, shortcut }`, answer 201 with the new template.
+ * Assumed contract: body `{ title, category, body, shortcut }`, answer 201 with the new template.
  * @route POST /admin/reply-templates
  */
 export function createReplyTemplate(body: CreateTemplateBody, init?: ApiInit): Promise<ReplyTemplate> {
@@ -47,7 +47,7 @@ export function createReplyTemplate(body: CreateTemplateBody, init?: ApiInit): P
 
 /**
  * Edits a template; only the fields that change are sent.
- * Assumed contract: body `{ title?, category?, locale?, body?, shortcut? }`, answer the updated template.
+ * Assumed contract: body `{ title?, category?, body?, shortcut? }`, answer the updated template.
  * @route PATCH /admin/reply-templates/:id
  */
 export function updateReplyTemplate(

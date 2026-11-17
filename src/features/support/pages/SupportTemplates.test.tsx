@@ -57,7 +57,7 @@ describe('the list', () => {
     ]);
     expect(screen.getByText('8 templates')).toBeInTheDocument();
     expect(rowOf('Invoice request').getByText('Billing')).toBeInTheDocument();
-    expect(rowOf('Invoice request').getByText('English')).toBeInTheDocument();
+    expect(table.queryByRole('columnheader', { name: 'Language' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Back to the inbox' }));
     expect(app.location()).toBe('/support');
@@ -107,7 +107,7 @@ describe('adding a template', () => {
     );
     await user.type(dialog.getByLabelText('Title'), 'Zebra reply');
     await user.selectOptions(dialog.getByLabelText('Category'), 'refund');
-    await user.selectOptions(dialog.getByLabelText('Language'), 'ar');
+    expect(dialog.queryByLabelText('Language')).not.toBeInTheDocument();
     await user.type(dialog.getByLabelText('Shortcut'), '/zebra');
     await user.click(dialog.getByLabelText('Text'));
     await user.paste('Hi {{name}}, order {{order}} is {{status}} within {{eta}}.');
@@ -124,7 +124,6 @@ describe('adding a template', () => {
       {
         title: 'Zebra reply',
         category: 'refund',
-        locale: 'ar',
         shortcut: '/zebra',
         body: 'Hi {{name}}, order {{order}} is {{status}} within {{eta}}.',
       },

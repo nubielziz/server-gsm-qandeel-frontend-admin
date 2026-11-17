@@ -63,7 +63,6 @@ describe('templatesFor', () => {
     id,
     title: `T${id}`,
     category,
-    locale: 'en',
     body: '',
     shortcut: '',
     createdBy: null,

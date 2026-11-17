@@ -1,6 +1,6 @@
 // Mock of the notification template routes (`/admin/notification-templates*`) and the preview. The preview fills `{{name}}` marks with
 // sample data and answers plain text; a test that needs HTML answers the route itself. The mock stops a second template for the same
-// event, channel, audience and language.
+// event, channel and audience.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { ProblemError } from '@/mocks/problem';
 import type { NotificationAudience, NotificationChannel, NotificationTemplate } from '../types';
@@ -45,11 +45,6 @@ function applyFields(
     if (AUDIENCES.includes(body.audience as NotificationAudience))
       draft.audience = body.audience as NotificationAudience;
     else problems.push({ field: 'audience', message: 'Choose who receives it.' });
-  }
-  if ('locale' in body) {
-    draft.locale = textOf(body.locale) ?? '';
-    if (!/^[a-z]{2}(-[A-Z]{2})?$/.test(draft.locale))
-      problems.push({ field: 'locale', message: 'Use a language code such as en.' });
   }
   if ('subject' in body) draft.subject = textOf(body.subject) ?? '';
   if ('body' in body) {
@@ -103,7 +98,6 @@ export const templateRoutes: HttpHandler[] = [
         event: '',
         channel: 'email',
         audience: 'customer',
-        locale: 'en',
         subject: '',
         body: '',
         isActive: true,
@@ -115,13 +109,11 @@ export const templateRoutes: HttpHandler[] = [
         if (!(key in body)) problems.push({ field: key, message: 'This field is required.' });
       const twin = templates
         .list()
-        .some((row) =>
-          (['event', 'channel', 'audience', 'locale'] as const).every((key) => row[key] === draft[key]),
-        );
+        .some((row) => (['event', 'channel', 'audience'] as const).every((key) => row[key] === draft[key]));
       if (twin && problems.length === 0)
         problems.push({
           field: 'event',
-          message: 'A template for this event, channel and language already exists.',
+          message: 'A template for this event, channel and audience already exists.',
         });
       return problems.length > 0
         ? invalid(problems)

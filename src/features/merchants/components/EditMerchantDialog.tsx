@@ -1,13 +1,12 @@
-// EditMerchantDialog: "Edit <merchant>" (Profile tab, feature 20): name, company, email, phone, country, language, address, tax ID
+// EditMerchantDialog: "Edit <merchant>" (Profile tab, feature 20): name, company, email, phone, country, address, tax ID
 // and internal notes. Only the changed fields are sent, and nothing at all when none changed. `EMAIL_TAKEN` shows under the email.
 import { useForm } from 'react-hook-form';
-import { FormDialog, SelectField, TextareaField, TextField, dialogSubmit, toast } from '@/components/ui';
+import { FormDialog, TextareaField, TextField, dialogSubmit, toast } from '@/components/ui';
 import { useUpdateClientDetails } from '../hooks/useClientMutations';
 import {
   changedDetails,
   DETAIL_LIMITS,
   detailDefaults,
-  LOCALES,
   tidyName,
   tooLong,
   type DetailValues,
@@ -15,17 +14,7 @@ import {
 import { validCountry, validEmail } from '../lib/input';
 import type { Client } from '../types';
 
-const FIELDS = [
-  'name',
-  'company',
-  'email',
-  'phone',
-  'country',
-  'locale',
-  'address',
-  'taxId',
-  'internalNotes',
-] as const;
+const FIELDS = ['name', 'company', 'email', 'phone', 'country', 'address', 'taxId', 'internalNotes'] as const;
 
 /** The form for editing a merchant's details. Mounted only while open. */
 export function EditMerchantDialog({ client, onClose }: { client: Client; onClose: () => void }) {
@@ -109,14 +98,6 @@ export function EditMerchantDialog({ client, onClose }: { client: Client; onClos
           {...register('country', {
             validate: (value) => validCountry(value) || 'Enter the two-letter country code.',
           })}
-        />
-        <SelectField
-          label="Language"
-          selectWrapClassName="w-full"
-          options={LOCALES}
-          hint="The language of the mails the merchant receives."
-          error={errors.locale}
-          {...register('locale')}
         />
         <TextField
           label="Tax ID"

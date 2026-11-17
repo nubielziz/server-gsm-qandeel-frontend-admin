@@ -1,5 +1,5 @@
 // Tests for the Pinned results section of the Search tab: the seeded rule, the "Test a search" box, add with the service picker,
-// the refusals of the server (a service with no listed English listing on its row, a twin rule), edit with only the changed fields,
+// the refusals of the server (a service that is not listed on its row, a twin rule), edit with only the changed fields,
 // the On switch, delete behind a confirmation, and the permissions.
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -130,14 +130,20 @@ describe('Add pinned results', () => {
     expect(row.getByText('1 service')).toBeInTheDocument();
   });
 
-  it('does not offer a service twice, and says when no listed English service matches', async () => {
+  it('does not offer a service twice, and says when no listed service matches', async () => {
     const user = userEvent.setup();
     await openSearch('pins');
+    const requests = recordRequests();
     await user.click(await screen.findByRole('button', { name: 'Add pinned results…' }));
     const dialog = dialogOf('Add pinned results');
     await pinService(user, dialog, 'EE UK Unlock');
     await user.type(dialog.getByRole('searchbox', { name: 'Find a service to hide' }), 'EE UK');
-    expect(await dialog.findByText(/No listed English service matches/)).toBeInTheDocument();
+    expect(await dialog.findByText(/No listed service matches/)).toBeInTheDocument();
+    // The picker asks for listed services and sends no language.
+    const picks = requests.sent().filter((r) => r.url.pathname === '/admin/service-listings');
+    expect(picks.length).toBeGreaterThan(0);
+    expect(picks.every((r) => r.url.searchParams.get('isListed') === 'true')).toBe(true);
+    expect(picks.some((r) => r.url.searchParams.has('locale'))).toBe(false);
     expect(dialog.queryByRole('button', { name: 'Hide EE UK Unlock' })).toBeNull();
     await user.click(dialog.getByRole('button', { name: 'Remove EE UK Unlock from pinned' }));
     expect(dialog.queryByRole('button', { name: 'Remove EE UK Unlock from pinned' })).toBeNull();
@@ -166,7 +172,7 @@ describe('Add pinned results', () => {
     mockServer.use(
       http.post('*/admin/search/pins', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'pinned.0.serviceId', message: 'This service has no listed English listing.' },
+          { field: 'pinned.0.serviceId', message: 'This service is not listed on the site.' },
         ]),
       ),
     );
@@ -178,7 +184,7 @@ describe('Add pinned results', () => {
     await pinService(user, dialog, 'EE UK Unlock');
     await user.click(dialog.getByRole('button', { name: 'Save rule' }));
     const pinned = within(await dialog.findByRole('region', { name: 'Pinned services' }));
-    expect(await pinned.findByText('This service has no listed English listing.')).toBeInTheDocument();
+    expect(await pinned.findByText('This service is not listed on the site.')).toBeInTheDocument();
   });
 
   it('shows a refusal on the row it names even when the positions are not in the order of the list', async () => {
@@ -186,7 +192,7 @@ describe('Add pinned results', () => {
     mockServer.use(
       http.post('*/admin/search/pins', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'pinned.1.serviceId', message: 'This service has no listed English listing.' },
+          { field: 'pinned.1.serviceId', message: 'This service is not listed on the site.' },
         ]),
       ),
     );
@@ -204,12 +210,12 @@ describe('Add pinned results', () => {
     const requests = recordRequests();
     await user.click(dialog.getByRole('button', { name: 'Save rule' }));
     const pinned = within(await dialog.findByRole('region', { name: 'Pinned services' }));
-    const message = await pinned.findByText('This service has no listed English listing.');
+    const message = await pinned.findByText('This service is not listed on the site.');
     const [ee, vodafone] = pinned.getAllByRole('listitem');
     expect(ee).toHaveTextContent('EE UK Unlock');
     expect(vodafone).toHaveTextContent('Vodafone UK iPhone Unlock');
-    expect(within(vodafone).getByText('This service has no listed English listing.')).toBe(message);
-    expect(within(ee).queryByText('This service has no listed English listing.')).toBeNull();
+    expect(within(vodafone).getByText('This service is not listed on the site.')).toBe(message);
+    expect(within(ee).queryByText('This service is not listed on the site.')).toBeNull();
     // The body keeps the order of the list, EE (position 3) first, so `pinned.1` is Vodafone.
     const body = lastOf(requests, 'POST')?.body as { pinned: { position: number }[] };
     expect(body.pinned.map((item) => item.position)).toEqual([3, 2]);

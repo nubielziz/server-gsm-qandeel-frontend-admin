@@ -41,7 +41,7 @@ export function getTemplate(id: Id, init?: ApiInit): Promise<NotificationTemplat
 }
 
 /**
- * Adds a template for an event, channel and language. Assumed contract: body `CreateTemplateBody`, answer the new template.
+ * Adds a template for an event, channel and audience. Assumed contract: body `CreateTemplateBody`, answer the new template.
  * @route POST /admin/notification-templates
  */
 export function createTemplate(body: CreateTemplateBody, init?: ApiInit): Promise<NotificationTemplate> {

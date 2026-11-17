@@ -1,6 +1,5 @@
 // What the listing mock accepts in a body: the content fields of `POST` and `PATCH /admin/service-listings`, checked with the
-// server's limits and answered with its field messages (the mock plays the server for these, nothing more). Per-language fields
-// change one row; the facts of the service (brand, carrier, country, position, featured) are written to every language row.
+// server's limits and answered with its field messages (the mock plays the server for these, nothing more).
 import { rawTextOf, textOf } from './http';
 import type { MockListing } from './types';
 
@@ -23,15 +22,12 @@ const MARKDOWN: readonly (readonly [keyof MockListing, number])[] = [
   ['requirementsMd', 10_000],
 ];
 
-/** The facts that belong to the service, so every language row of it takes them alike. */
-export const FACT_KEYS = ['brand', 'carrier', 'country', 'sort', 'isFeatured', 'imageUrl'] as const;
-
 /** A slug as the server wants it: lower-case words joined by hyphens. */
 const SLUG_FORM = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 /**
  * Reads the content fields of a body into `changes` (only the keys the body holds) and collects what the server would refuse.
- * The title and the slug are checked here too; a slug already used in the language is the route's to refuse (it needs the rows).
+ * The title and the slug are checked here too; a slug already used is the route's to refuse (it needs the rows).
  */
 export function readContent(body: Record<string, unknown>, problems: FieldProblem[]): Partial<MockListing> {
   const changes: Record<string, unknown> = {};
@@ -86,18 +82,4 @@ export function readContent(body: Record<string, unknown>, problems: FieldProble
     else problems.push({ field: 'sort', message: 'Enter a whole number from 0 to 1000000.' });
   }
   return changes as Partial<MockListing>;
-}
-
-/** Splits changes into the part for one language row and the facts of the service, which go to every language row. */
-export function splitContent(changes: Partial<MockListing>): {
-  own: Partial<MockListing>;
-  facts: Partial<MockListing>;
-} {
-  const own: Record<string, unknown> = { ...changes };
-  const facts: Record<string, unknown> = {};
-  for (const key of FACT_KEYS) {
-    if (key in own) facts[key] = own[key];
-    delete own[key];
-  }
-  return { own: own as Partial<MockListing>, facts: facts as Partial<MockListing> };
 }

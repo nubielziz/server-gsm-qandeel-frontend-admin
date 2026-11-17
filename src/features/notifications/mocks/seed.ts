@@ -1,5 +1,5 @@
 // The three campaigns of the plan's seed (section 11), with the same ids and names as the backend seed: 1 "Scheduled maintenance on Friday" (sent), 2 "Ramadan offer"
-// (scheduled for 7 days from now) and 3 "New unlock services" (a draft); and five notifications for the signed-in staff member. Times are relative to the moment the
+// (scheduled for 7 days from now) and 3 "New unlock services" (a draft); and four notifications for the signed-in staff member. Times are relative to the moment the
 // store is built, so the screens look the same on any day.
 import type { CampaignDetail, CampaignRecipient, InboxItem } from '../types';
 import { previewOf } from './audience';
@@ -16,14 +16,8 @@ export type SeedCampaign = { campaign: CampaignDetail; rows: CampaignRecipient[]
 /** Campaign 1 is finished; its rows exist. Campaigns 2 and 3 have none. `nextRowId` continues the numbering for later sends. */
 export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: number } {
   const maintenance = {
-    en: {
-      title: 'Scheduled maintenance on Friday',
-      body: 'Hello {{name}},\nThe portal will be read-only on Friday from 02:00 to 03:00 UTC.',
-    },
-    ar: {
-      title: 'صيانة مجدولة يوم الجمعة',
-      body: 'مرحباً {{name}}،\nستكون البوابة للقراءة فقط يوم الجمعة من 02:00 إلى 03:00 بتوقيت UTC.',
-    },
+    title: 'Scheduled maintenance on Friday',
+    body: 'Hello {{name}},\nThe portal will be read-only on Friday from 02:00 to 03:00 UTC.',
   };
   const base = {
     link: null,
@@ -87,14 +81,8 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
     planned: noPlan,
     audience: customers,
     content: {
-      en: {
-        title: 'Ramadan offer: 10% off all top-ups',
-        body: 'Hello {{name}},\nTop up your wallet this month and get 10% extra.',
-      },
-      ar: {
-        title: 'عرض رمضان: خصم 10% على كل الشحنات',
-        body: 'مرحباً {{name}}،\nاشحن محفظتك هذا الشهر واحصل على 10% إضافية.',
-      },
+      title: 'Ramadan offer: 10% off all top-ups',
+      body: 'Hello {{name}},\nTop up your wallet this month and get 10% extra.',
     },
     delivery: empty,
     createdBy: OWNER,
@@ -120,14 +108,8 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
     planned: noPlan,
     audience: { merchants: {} },
     content: {
-      en: {
-        title: 'New unlock services',
-        body: 'Hello {{name}},\nWe added new unlock services to the catalogue. Take a look.',
-      },
-      ar: {
-        title: 'خدمات فك قفل جديدة',
-        body: 'مرحباً {{name}}،\nأضفنا خدمات فك قفل جديدة إلى الكتالوج. ألقِ نظرة.',
-      },
+      title: 'New unlock services',
+      body: 'Hello {{name}},\nWe added new unlock services to the catalogue. Take a look.',
     },
     delivery: empty,
     createdBy: OWNER,
@@ -145,7 +127,7 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
   };
 }
 
-/** Five notifications for the signed-in staff member, newest first by id: two unread (an order that needs attention and campaign 1's in-app item), three read. */
+/** Four notifications for the signed-in staff member, newest first by id: two unread (an order that needs attention and campaign 1's in-app item), two read. */
 export function seedInbox(now: number): InboxItem[] {
   const item = (
     id: number,
@@ -155,7 +137,6 @@ export function seedInbox(now: number): InboxItem[] {
   ): InboxItem => ({
     id,
     link: null,
-    locale: 'en',
     campaignId: null,
     event: null,
     readAt: read ? iso(now - ago + 10 * 60_000) : null,
@@ -208,17 +189,6 @@ export function seedInbox(now: number): InboxItem[] {
         event: 'maintenance.off',
       },
       3 * DAY,
-      true,
-    ),
-    item(
-      1,
-      {
-        category: 'announcement',
-        locale: 'ar',
-        title: 'مرحباً بك في مركز الإشعارات',
-        body: 'يمكنك الآن إرسال رسائل إلى الموظفين والتجار والعملاء من صفحة الإشعارات.',
-      },
-      6 * DAY,
       true,
     ),
   ];

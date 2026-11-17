@@ -47,8 +47,7 @@ export function NotificationBell() {
         onClick={pop.toggle}
         onAnimationEnd={onAnimationEnd}
       >
-        {/* One icon element for good: the swing is played on it (playRing), never by a remount. It pivots on the top centre: symmetric, so RTL needs
-            nothing. */}
+        {/* One icon element for good: the swing is played on it (playRing), never by a remount. It pivots on the top centre. */}
         <Icon ref={iconRef} name="bell" className="origin-top" />
         {badge && (
           <Count

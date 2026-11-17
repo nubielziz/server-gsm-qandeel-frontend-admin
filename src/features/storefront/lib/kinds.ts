@@ -43,14 +43,3 @@ export function pagePath(kind: string, slug: string): string {
   if (kind === 'static') return `/${slug}`;
   return `/unlock/${slug}`;
 }
-
-/** Languages of the storefront the console offers in its forms (the demo's `EN, AR`). */
-export const LOCALE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'ar', label: 'Arabic' },
-] as const;
-
-/** A language code for a table cell: `en` is `EN`. */
-export function localeLabel(locale: string): string {
-  return locale.toUpperCase();
-}

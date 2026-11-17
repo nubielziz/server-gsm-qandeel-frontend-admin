@@ -1,4 +1,4 @@
-// Tests for the page glue of the stream client: the stream address (page language and cursor), the probe's answers, the dev mock EventSource (every tab its
+// Tests for the page glue of the stream client: the stream address (the cursor only), the probe's answers, the dev mock EventSource (every tab its
 // own stream), the lifecycle listeners, and the rule that a browser without EventSource opens no stream.
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,21 +14,15 @@ beforeEach(() => {
 });
 afterEach(() => {
   uninstallMockEventSource();
-  document.documentElement.lang = '';
 });
 
 const options = { path: STAFF_STREAM_PATH, probePath: STAFF_PROBE_PATH, lockName: STAFF_LOCK_NAME };
 
 describe('the stream address', () => {
-  it('is the stream path with the page language, and the cursor when there is one', () => {
-    document.documentElement.lang = 'en';
+  it('is the stream path, and the cursor when there is one, and never a language', () => {
     const env = browserStreamEnv(options);
-    expect(env.streamUrl(null)).toBe('http://api.test/admin/stream?locale=en');
-    expect(env.streamUrl('i9001')).toBe('http://api.test/admin/stream?locale=en&cursor=i9001');
-    document.documentElement.lang = 'ar';
-    expect(browserStreamEnv(options).streamUrl(null)).toBe('http://api.test/admin/stream?locale=ar');
-    document.documentElement.lang = '';
-    expect(browserStreamEnv(options).streamUrl('i1')).toBe('http://api.test/admin/stream?cursor=i1');
+    expect(env.streamUrl(null)).toBe('http://api.test/admin/stream');
+    expect(env.streamUrl('i9001')).toBe('http://api.test/admin/stream?cursor=i9001');
   });
 });
 

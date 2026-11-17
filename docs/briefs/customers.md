@@ -1,6 +1,8 @@
 Feature brief: **customers**. Read `/home/saifi/gsm-project/frontend-admin/docs/briefs/_common.md` first (worktree, rules, checks, HANDOFF.md); your worktree is `/home/saifi/gsm-project/worktrees/customers`, your slice `/home/saifi/gsm-project/frontend-admin/docs/slices/customers.json`.
 
 # Feature: customers (`/customers` and `/customers/:id`, page permission `customers:read`)
+
+> **2026-11-16, English only (decision 039):** a customer has no language any more. The create and update bodies below carry no `locale`, and the Add and Edit dialogs have no Language select. The text below is the brief as written.
 Demo: `/home/saifi/gsm-project/frontend-admin/reference/gsm-admin/src/js/48-p-customers.js` (read it all), helpers `custStats`, `CUST_STATUS`, `RISK_LABEL`, `SUSPEND_REASONS`, `consentsFor` in `12-state-b2c.js`, `custIpCell` in `56-p-access.js`. Drop `modeGate`.
 
 ## Routes (15; one exported function each, JSDoc what+why, `@route` with the exact manifest path; `node scripts/check-route-coverage.mjs --feature customers` must print 15/15)

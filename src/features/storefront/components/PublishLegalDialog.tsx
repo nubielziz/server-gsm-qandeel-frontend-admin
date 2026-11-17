@@ -3,12 +3,12 @@
 // consent. The version in force today comes from the rows already loaded; the server decides what the publish does.
 import { ConfirmDialog } from '@/components/ui';
 import { usePublishLegal } from '../hooks/useLegalMutations';
-import { legalLanguage, legalTypeLabel } from '../lib/legal';
+import { legalTypeLabel } from '../lib/legal';
 import type { LegalDocument } from '../types';
 
 export interface PublishLegalDialogProps {
   document: LegalDocument;
-  /** The version in force for the same document and language, if any. */
+  /** The version in force for the same document, if any. */
   inForce?: LegalDocument;
   onClose: () => void;
 }
@@ -16,7 +16,7 @@ export interface PublishLegalDialogProps {
 /** Confirm, then publish; a refusal shows in the dialog. */
 export function PublishLegalDialog({ document, inForce, onClose }: PublishLegalDialogProps) {
   const publish = usePublishLegal();
-  const name = `${legalTypeLabel(document.type)} (${legalLanguage(document.locale)})`;
+  const name = legalTypeLabel(document.type);
   return (
     <ConfirmDialog
       open

@@ -1,19 +1,18 @@
-// ListingCreateDialog: "Add listing" (`POST /admin/service-listings`): puts a service on the storefront in one language. The demo
+// ListingCreateDialog: "Add listing" (`POST /admin/service-listings`): puts a service on the storefront. The demo
 // listed every IMEI service from its seed and had no such button; the map adds the create route. The service menu comes from the
 // services feature (`GET /admin/services`, needs `catalog:read`); the server refuses a service that can never be public.
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, SelectField, TextField } from '@/components/ui';
 import { useServiceChoices } from '../hooks/useServiceChoices';
 import { useCreateListing } from '../hooks/useListingMutations';
-import { LOCALE_OPTIONS } from '../lib/kinds';
 
-type Values = { serviceId: string; locale: string; publicTitle: string; slug: string };
+type Values = { serviceId: string; publicTitle: string; slug: string };
 
 /** The form and its request. */
 export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
   const services = useServiceChoices();
   const create = useCreateListing();
-  const form = useForm<Values>({ defaultValues: { serviceId: '', locale: 'en', publicTitle: '', slug: '' } });
+  const form = useForm<Values>({ defaultValues: { serviceId: '', publicTitle: '', slug: '' } });
   const {
     register,
     setValue,
@@ -27,12 +26,11 @@ export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
       const slug = values.slug.trim();
       await create.mutateAsync({
         serviceId: Number(values.serviceId),
-        locale: values.locale,
         publicTitle: values.publicTitle.trim(),
         ...(slug ? { slug } : {}),
       });
     },
-    { fields: ['serviceId', 'locale', 'publicTitle', 'slug'] },
+    { fields: ['serviceId', 'publicTitle', 'slug'] },
   );
 
   // Choosing a service suggests its name as the public title, until the admin types a title of their own.
@@ -57,7 +55,7 @@ export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
     <FormDialog
       open
       title="Add listing"
-      sub="Put a service on the public site in one language. Set its price and switch it on afterwards."
+      sub="Put a service on the public site. Set its price and switch it on afterwards."
       confirm="Add listing"
       onClose={onClose}
       onSubmit={submit}
@@ -76,24 +74,15 @@ export function ListingCreateDialog({ onClose }: { onClose: () => void }) {
           {...serviceField}
           onChange={chosen}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SelectField
-            label="Language"
-            selectWrapClassName="w-full"
-            options={LOCALE_OPTIONS}
-            error={errors.locale}
-            {...register('locale')}
-          />
-          <TextField
-            label="Slug"
-            className="mono"
-            autoComplete="off"
-            spellCheck={false}
-            hint="Leave empty and the server makes it from the title."
-            error={errors.slug}
-            {...register('slug')}
-          />
-        </div>
+        <TextField
+          label="Slug"
+          className="mono"
+          autoComplete="off"
+          spellCheck={false}
+          hint="Leave empty and the server makes it from the title."
+          error={errors.slug}
+          {...register('slug')}
+        />
         <TextField
           label="Public title"
           autoComplete="off"

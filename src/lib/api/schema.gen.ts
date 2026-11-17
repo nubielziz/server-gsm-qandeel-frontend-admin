@@ -686,7 +686,6 @@ export interface NotificationTemplateRow {
   event: string;
   channel: string;
   audience: string;
-  locale: string;
   subject: string;
   body: string;
   isActive: boolean;
@@ -885,14 +884,10 @@ export interface JobRunRow {
   updatedAt?: IsoDateTime;
 }
 
-/**
- * The public service page in the storefront: title, slug and SEO fields per language. Table
- * `service_listings`.
- */
+/** The public service page in the storefront: title, slug and SEO fields. Table `service_listings`. */
 export interface ServiceListingRow {
   id: Id;
   serviceId: Id;
-  locale: string;
   slug: string;
   publicTitle: string;
   summary: string;
@@ -912,12 +907,11 @@ export interface ServiceListingRow {
   updatedAt?: IsoDateTime;
 }
 
-/** Landing pages, static pages and the blog, in several languages. Table `content_pages`. */
+/** Landing pages, static pages and the blog. Table `content_pages`. */
 export interface ContentPageRow {
   id: Id;
   kind: string;
   slug: string;
-  locale: string;
   title: string;
   bodyMd: string;
   seoTitle: string;
@@ -937,7 +931,6 @@ export interface HelpArticleRow {
   category: string;
   question: string;
   answerMd: string;
-  locale: string;
   serviceId: Id;
   sort: number;
   isPublished: boolean;
@@ -974,7 +967,6 @@ export interface CustomerRow {
   name: string;
   phone: string;
   country: string;
-  locale: string;
   currency: Id;
   hasAccount: boolean;
   createdBy: Id | null;
@@ -1099,12 +1091,11 @@ export interface TicketMessageRow {
   updatedAt?: IsoDateTime;
 }
 
-/** Ready-made reply templates for staff, by category and language. Table `reply_templates`. */
+/** Ready-made reply templates for staff, by category. Table `reply_templates`. */
 export interface ReplyTemplateRow {
   id: Id;
   title: string;
   category: string;
-  locale: string;
   body: string;
   shortcut: string;
   createdBy: Id;

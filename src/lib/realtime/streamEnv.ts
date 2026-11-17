@@ -52,7 +52,7 @@ export interface ProbeResult {
 
 /** Everything the client takes from outside. `locks` and `createChannel` are optional: without either, every tab opens its own stream. */
 export interface StreamEnv {
-  /** The address of the stream for this cursor (the page language and the cursor are query parameters). */
+  /** The address of the stream for this cursor (the cursor is a query parameter). */
   streamUrl(cursor: string | null): string;
   createEventSource(url: string): EventSourceLike;
   /** Name of the Web Lock and of the BroadcastChannel: one per browser and surface. */

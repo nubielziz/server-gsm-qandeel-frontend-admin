@@ -42,9 +42,8 @@ describe('createHelpArticle and updateHelpArticle', () => {
       category: 'Orders',
       question: 'Can I change the IMEI?',
       answerMd: 'No, place a new order.',
-      locale: 'en',
     });
-    expect(requests.last()).toMatchObject({ method: 'POST', body: { category: 'Orders', locale: 'en' } });
+    expect(requests.last()).toMatchObject({ method: 'POST', body: { category: 'Orders' } });
     expect(created).toMatchObject({ isPublished: false, helpfulYes: 0, helpfulNo: 0 });
   });
 
@@ -53,7 +52,6 @@ describe('createHelpArticle and updateHelpArticle', () => {
       category: 'Orders',
       question: '',
       answerMd: 'x',
-      locale: 'en',
     }).catch((e: unknown) => e);
     expect((error as ApiError).status).toBe(422);
     expect((error as ApiError).fieldErrors.question?.[0]).toBe('Enter the question.');

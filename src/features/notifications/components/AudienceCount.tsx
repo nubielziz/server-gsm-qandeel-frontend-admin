@@ -1,12 +1,12 @@
 // AudienceCount: section 3 of the composer, the live count. It asks `POST /admin/notification-campaigns/audience-preview` 400 ms after the last change and
-// shows how many people the message reaches (large), then by kind, channel and language, and who is left out and why, in words. Nothing is asked until the
+// shows how many people the message reaches (large), then by kind and channel, and who is left out and why, in words. Nothing is asked until the
 // audience is complete; the previous answer stays on screen (dimmed) while the next one loads. It shows the server's refusal when it gives one.
 import { Icon } from '@/components/ui';
 import { errorText } from '@/components/ui';
 import { num } from '@/lib/format';
 import { useAudiencePreview } from '../hooks/useAudiencePreview';
 import { useSettledValue } from '../hooks/useSettledValue';
-import { byChannelText, byLocaleText, byTypeText, exclusionLines, plural } from '../lib/audienceText';
+import { byChannelText, byTypeText, exclusionLines, plural } from '../lib/audienceText';
 import { countRequest, type ComposerForm } from '../lib/spec';
 
 export function AudienceCount({ form }: { form: ComposerForm }) {
@@ -44,7 +44,6 @@ export function AudienceCount({ form }: { form: ComposerForm }) {
             {[
               ['Who', byTypeText(data.byType)],
               ['Messages', byChannelText(data.byChannel, form.channels)],
-              ['Language', byLocaleText(data.byLocale)],
             ].map(([label, text]) =>
               text ? (
                 <div key={label} className="flex gap-2">

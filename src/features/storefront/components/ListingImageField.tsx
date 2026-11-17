@@ -1,5 +1,5 @@
 // ListingImageField: the picture of the service in the listing editor: a preview, a file input, Upload and Remove. It saves at
-// once (its own requests, not the form's Save). The picture belongs to the service, so it shows in every language. A client check
+// once (its own requests, not the form's Save). The picture belongs to the service. A client check
 // stops a wrong type or a file over 2 MiB; the server's refusal (too small, animated, corrupt…) shows under the control.
 import { useRef, useState } from 'react';
 import { Button, errorText, Icon } from '@/components/ui';
@@ -100,8 +100,8 @@ export function ListingImageField({ listing, imageUrl, onChange }: ListingImageF
           )}
         </div>
         <p className="hint">
-          JPEG, PNG or WebP, up to 2 MiB, at least 200 pixels on each side. It shows in every language of this
-          service and is saved as soon as you choose it.
+          JPEG, PNG or WebP, up to 2 MiB, at least 200 pixels on each side. It is saved as soon as you choose
+          it.
         </p>
         {problem && (
           <p className="mt-1 text-xs text-crit-fg" role="alert">

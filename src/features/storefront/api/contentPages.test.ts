@@ -68,13 +68,11 @@ describe('createContentPage and updateContentPage', () => {
     const created = await createContentPage({
       kind: 'country',
       title: 'Unlock phones in Spain',
-      locale: 'en',
       bodyMd: '# Spain',
     });
     expect(requests.last().body).toEqual({
       kind: 'country',
       title: 'Unlock phones in Spain',
-      locale: 'en',
       bodyMd: '# Spain',
     });
     expect(created).toMatchObject({ status: 'draft', slug: 'unlock-phones-in-spain', publishedAt: null });
@@ -85,7 +83,6 @@ describe('createContentPage and updateContentPage', () => {
       kind: 'static',
       title: 'Other',
       slug: 'about',
-      locale: 'en',
       bodyMd: '',
     }).catch((e: unknown) => e);
     expect((error as ApiError).status).toBe(409);

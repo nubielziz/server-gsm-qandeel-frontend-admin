@@ -95,28 +95,27 @@ describe('pinned results', () => {
     expect(pins.data[0].pinned[0].title).toBeTruthy();
   });
 
-  it('adds a rule for a listed English service and sends the ids', async () => {
-    const english = (await listListings({ filters: { locale: 'en', isListed: true }, start: 0, end: 3 }))
-      .data;
+  it('adds a rule for a listed service and sends the ids', async () => {
+    const listed = (await listListings({ filters: { isListed: true }, start: 0, end: 3 })).data;
     const requests = recordRequests();
     const created = await createSearchPin({
       query: 'Icloud',
       match: 'exact',
-      pinned: [{ serviceId: english[0].serviceId, position: 2 }],
-      hidden: [english[1].serviceId],
+      pinned: [{ serviceId: listed[0].serviceId, position: 2 }],
+      hidden: [listed[1].serviceId],
     });
     expect(requests.last().body).toMatchObject({
       query: 'Icloud',
       match: 'exact',
-      hidden: [english[1].serviceId],
+      hidden: [listed[1].serviceId],
     });
     expect(created).toMatchObject({ query: 'icloud', match: 'exact' });
     expect(created.pinned[0]).toMatchObject({
-      serviceId: english[0].serviceId,
+      serviceId: listed[0].serviceId,
       position: 2,
-      title: english[0].publicTitle,
+      title: listed[0].publicTitle,
     });
-    expect(created.hidden[0].title).toBe(english[1].publicTitle);
+    expect(created.hidden[0].title).toBe(listed[1].publicTitle);
   });
 
   it('refuses a query and match that already have a rule with 409, and an unlisted service on its row with 422', async () => {
@@ -125,21 +124,20 @@ describe('pinned results', () => {
     )) as ApiError;
     expect(twin.status).toBe(409);
     expect(twin.code).toBe('CONFLICT');
-    const english = (await listListings({ filters: { locale: 'en', isListed: true }, start: 0, end: 1 }))
-      .data;
+    const listed = (await listListings({ filters: { isListed: true }, start: 0, end: 1 })).data;
     const unlisted = (await failure(
       createSearchPin({
         query: 'frp',
         match: 'exact',
         pinned: [
-          { serviceId: english[0].serviceId, position: 1 },
+          { serviceId: listed[0].serviceId, position: 1 },
           { serviceId: 987654, position: 2 },
         ],
         hidden: [],
       }),
     )) as ApiError;
     expect(unlisted.status).toBe(422);
-    expect(unlisted.fieldErrors['pinned.1.serviceId']?.[0]).toContain('no listed English listing');
+    expect(unlisted.fieldErrors['pinned.1.serviceId']?.[0]).toContain('not listed');
     expect(unlisted.fieldErrors['pinned.0.serviceId']).toBeUndefined();
   });
 
@@ -219,11 +217,12 @@ describe('report, preview and index', () => {
 });
 
 describe('the listings filter the pin picker uses', () => {
-  it('asks for English listings only and the mock honours it', async () => {
+  it('asks for listed services only and the mock honours it', async () => {
     const requests = recordRequests();
-    const english = await listListings({ filters: { locale: 'en', isListed: true } });
-    expect(requests.last().url.searchParams.get('locale')).toBe('en');
-    expect(english.data.every((row) => row.locale === 'en' && row.isListed)).toBe(true);
-    expect((await listListings({ filters: { locale: 'ar' } })).total).toBe(0);
+    const listed = await listListings({ filters: { isListed: true } });
+    expect(requests.last().url.searchParams.get('isListed')).toBe('true');
+    expect(requests.last().url.searchParams.has('locale')).toBe(false);
+    expect(listed.data.length).toBeGreaterThan(0);
+    expect(listed.data.every((row) => row.isListed)).toBe(true);
   });
 });

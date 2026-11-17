@@ -14,7 +14,7 @@ import {
 import type { CreateLegalBody, LegalDocument } from '../types';
 
 /**
- * Every version of the terms, privacy, refund and cookie documents. Filters: `type`, `locale` and `isCurrent`.
+ * Every version of the terms, privacy, refund and cookie documents. Filters: `type` and `isCurrent`.
  * Assumed contract: rows carry `isCurrent`, `effectiveFrom` (`null` until published), `requiresReacceptance` and
  * `acceptedCount` (how often customers accepted the version at checkout).
  * @route GET /admin/legal-documents
@@ -37,7 +37,7 @@ export function getLegalDocument(id: Id, init?: ApiInit): Promise<LegalDocument>
 
 /**
  * Writes a new version. It is not in force until it is published.
- * Assumed contract: body `{ type, locale, version, bodyMd, requiresReacceptance }`, answer the new version.
+ * Assumed contract: body `{ type, version, bodyMd, requiresReacceptance }`, answer the new version.
  * @route POST /admin/legal-documents
  */
 export function createLegalDocument(body: CreateLegalBody, init?: ApiInit): Promise<LegalDocument> {

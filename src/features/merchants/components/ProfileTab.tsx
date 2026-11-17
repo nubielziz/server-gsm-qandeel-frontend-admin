@@ -6,7 +6,6 @@ import { Link } from 'react-router';
 import { Badge, Button, Icon, KeyValue, type KeyValueRow } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
-import { localeLabel } from '../lib/details';
 import { merchantPath } from '../lib/paths';
 import type { Client } from '../types';
 
@@ -62,7 +61,6 @@ export function ProfileTab({
         {client.country}
       </span>,
     ],
-    ['Language', localeLabel(client.locale)],
     [
       'Username',
       <span key="u" className="mono">

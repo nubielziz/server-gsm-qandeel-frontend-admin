@@ -344,7 +344,6 @@ describe('reply templates', () => {
               id: 99,
               title: 'Odd one',
               category: 'delay',
-              locale: 'en',
               body: 'Hi {{name}}, your code is {{code}}. Order {{ order }}.',
               shortcut: '',
               createdBy: 1,

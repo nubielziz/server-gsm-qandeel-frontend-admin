@@ -41,7 +41,6 @@ export function toCustomer(row: MockCustomer, orders: readonly MockOrder[]): Cus
     name: row.name,
     phone: row.phone,
     country: row.country,
-    locale: row.locale,
     currency: row.currency,
     currencyCode: row.currencyCode,
     hasAccount: row.hasAccount,

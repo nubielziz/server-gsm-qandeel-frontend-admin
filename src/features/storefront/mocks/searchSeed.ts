@@ -1,5 +1,5 @@
 // The seed of the Search tab's mock routes: the owner's five synonym rules (backend plan §4.6), one pinned-results rule for
-// `unlock` on a listed English service, one hidden term, and an index that is running with 14 documents. Dates are relative to now.
+// `unlock` on a listed service, one hidden term, and an index that is running with 14 documents. Dates are relative to now.
 import { Collection } from '@/mocks/db';
 import type { HiddenTerm, SearchSynonym } from '../types';
 import type { MockIndex, MockListing, MockPin, SearchStores } from './types';
@@ -28,9 +28,9 @@ function synonymRows(now: number): SearchSynonym[] {
   }));
 }
 
-/** One rule: a search that contains "unlock" shows the first listed English service that mentions unlocking first. */
+/** One rule: a search that contains "unlock" shows the first listed service that mentions unlocking first. */
 function pinRows(listings: readonly MockListing[], now: number): MockPin[] {
-  const listed = listings.filter((row) => row.locale === 'en' && row.isListed);
+  const listed = listings.filter((row) => row.isListed);
   const pick = listed.find((row) => /unlock/i.test(row.publicTitle)) ?? listed[0];
   if (!pick) return [];
   return [
@@ -62,7 +62,7 @@ function hiddenRows(now: number): HiddenTerm[] {
   ];
 }
 
-/** An engine that answers, with 14 documents of 14 expected (the backend seed's English listings), and nothing waiting. */
+/** An engine that answers, with 14 documents of 14 expected (the backend seed's listings), and nothing waiting. */
 export function freshIndex(now: number): MockIndex {
   return {
     rebuildStartedAt: null,

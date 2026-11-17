@@ -22,8 +22,8 @@ import type {
 } from '../types';
 
 /**
- * The landing, static and blog pages, one page of them. Filters: `q`, `kind` (repeat it for several kinds), `status` and
- * `locale`; sort with `_sort`/`_order` on `title`, `status` or `updatedAt`.
+ * The landing, static and blog pages, one page of them. Filters: `q`, `kind` (repeat it for several kinds) and `status`;
+ * sort with `_sort`/`_order` on `title`, `status` or `updatedAt`.
  * Assumed contract: rows carry `kind`, `status` (`draft`, `published`, `noindex`) and, for landing pages, `visits30d` and
  * `orders30d`.
  * @route GET /admin/content-pages
@@ -43,7 +43,7 @@ export function getContentPage(id: Id, init?: ApiInit): Promise<ContentPage> {
 
 /**
  * Creates a page as a draft. Publishing is a separate step with its own permission.
- * Assumed contract: body `{ kind, title, locale, slug?, bodyMd, seoTitle?, seoDescription? }`, answer the new page.
+ * Assumed contract: body `{ kind, title, slug?, bodyMd, seoTitle?, seoDescription? }`, answer the new page.
  * @route POST /admin/content-pages
  */
 export function createContentPage(body: CreatePageBody, init?: ApiInit): Promise<ContentPage> {

@@ -78,7 +78,6 @@ export const customerHandlers: HttpHandler[] = [
       name,
       phone: textOf(body.phone),
       country,
-      locale: textOf(body.locale) || 'en',
       currency: currencyId(COUNTRY_CURRENCY[country]),
       currencyCode: COUNTRY_CURRENCY[country],
       hasAccount: true,
@@ -145,7 +144,6 @@ export const customerHandlers: HttpHandler[] = [
           currencyCode: COUNTRY_CURRENCY[country],
         });
     }
-    if (body.locale !== undefined) changes.locale = textOf(body.locale);
     if (body.phone !== undefined) changes.phone = textOf(body.phone);
     if (body.internalNotes !== undefined) changes.internalNotes = textOf(body.internalNotes);
     if (errors.length > 0) return invalid(errors);

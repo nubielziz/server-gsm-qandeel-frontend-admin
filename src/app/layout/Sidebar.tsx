@@ -39,7 +39,7 @@ export function Sidebar({ pages, counts, open, onClose, onOpenShortcuts, sidebar
       data-open={open}
       // Off-canvas below 1024px. `invisible` keeps the closed menu out of the tab order and the reading order.
       // Visibility flips at once when opening (so focus can move in) and only after the slide when closing.
-      className="invisible fixed inset-y-0 start-0 z-40 flex w-[260px] -translate-x-full flex-col border-e border-line bg-side transition-[transform,visibility] duration-[150ms,0ms] delay-[0ms,150ms] data-[open=true]:visible data-[open=true]:delay-0 data-[open=true]:translate-x-0 rtl:translate-x-full lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-auto lg:translate-x-0 lg:rtl:translate-x-0"
+      className="invisible fixed inset-y-0 start-0 z-40 flex w-[260px] -translate-x-full flex-col border-e border-line bg-side transition-[transform,visibility] duration-[150ms,0ms] delay-[0ms,150ms] data-[open=true]:visible data-[open=true]:delay-0 data-[open=true]:translate-x-0 lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-auto lg:translate-x-0"
     >
       <div className="flex h-12 flex-none items-center gap-2.5 border-b border-line px-3.5">
         <span

@@ -1,5 +1,5 @@
-// TemplateDialog: "New template" and "Edit <event>" (`POST` and `PATCH /admin/notification-templates`): event, channel, audience and
-// language (fixed after the first save), the subject and the message, and whether it is sent. The demo only had a canned preview; the map
+// TemplateDialog: "New template" and "Edit <event>" (`POST` and `PATCH /admin/notification-templates`): event, channel and audience
+// (fixed after the first save), the subject and the message, and whether it is sent. The demo only had a canned preview; the map
 // lets staff edit the texts. Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
 import {
@@ -32,7 +32,6 @@ export function TemplateDialog({
       event: template?.event ?? '',
       channel: template?.channel ?? 'email',
       audience: template?.audience ?? 'customer',
-      locale: template?.locale ?? 'en',
       subject: template?.subject ?? '',
       body: template?.body ?? '',
       isActive: template?.isActive ?? true,
@@ -52,7 +51,6 @@ export function TemplateDialog({
       const next: CreateTemplateBody = {
         ...values,
         event: values.event.trim(),
-        locale: values.locale.trim(),
         subject: values.channel === 'email' ? values.subject.trim() : '',
       };
       if (!template) {
@@ -69,7 +67,7 @@ export function TemplateDialog({
       }
       await update.mutateAsync({ template, body });
     },
-    { fields: ['event', 'channel', 'audience', 'locale', 'subject', 'body', 'isActive'] },
+    { fields: ['event', 'channel', 'audience', 'subject', 'body', 'isActive'] },
   );
 
   return (
@@ -91,14 +89,6 @@ export function TemplateDialog({
             hint={fixed ? undefined : 'The event key, such as order.completed.'}
             error={errors.event}
             {...register('event', { validate: (v) => v.trim() !== '' || 'Enter the event.' })}
-          />
-          <TextField
-            label="Language"
-            autoComplete="off"
-            readOnly={fixed}
-            hint={fixed ? undefined : 'For example en.'}
-            error={errors.locale}
-            {...register('locale', { validate: (v) => v.trim() !== '' || 'Enter a language.' })}
           />
           <SelectField
             label="Channel"
