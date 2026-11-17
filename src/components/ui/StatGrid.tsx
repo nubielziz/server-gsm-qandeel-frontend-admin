@@ -18,6 +18,8 @@ export interface StatGridProps {
   cells: readonly StatCell[];
   /** Accessible name of the group. */
   label?: string;
+  /** Extra classes for the section, for example `!mb-0 !rounded-none !border-0` when the grid sits inside a panel. */
+  className?: string;
 }
 
 // Full class names so Tailwind can see them; any other count falls back to four columns like the demo.
@@ -28,11 +30,11 @@ const COLUMNS: Record<number, string> = {
   6: 'md:grid-cols-6',
 };
 
-export function StatGrid({ cells, label = 'Key figures' }: StatGridProps) {
+export function StatGrid({ cells, label = 'Key figures', className }: StatGridProps) {
   const count = cells.length;
   return (
     <section
-      className={cx('panel mb-4 grid grid-cols-2', COLUMNS[count] ?? 'md:grid-cols-4')}
+      className={cx('panel mb-4 grid grid-cols-2', COLUMNS[count] ?? 'md:grid-cols-4', className)}
       aria-label={label}
     >
       {cells.map((cell, i) => (

@@ -19,6 +19,12 @@ export function useListView(spec: ViewSpec) {
       setParams((prev) => writeView(prev, { filters: { [name]: value }, page: 1 }, spec), { replace: true }),
     [setParams, spec],
   );
+  // Several filters in one change: two calls of `setFilter` in a row would each start from the same address and the second would win.
+  const setFilters = useCallback(
+    (filters: Record<string, string>) =>
+      setParams((prev) => writeView(prev, { filters, page: 1 }, spec), { replace: true }),
+    [setParams, spec],
+  );
   const clear = useCallback(
     () => setParams((prev) => clearView(prev, spec), { replace: true }),
     [setParams, spec],
@@ -32,5 +38,5 @@ export function useListView(spec: ViewSpec) {
     [setParams, spec],
   );
 
-  return { view, setQuery, setFilter, clear, setPage, setSort };
+  return { view, setQuery, setFilter, setFilters, clear, setPage, setSort };
 }

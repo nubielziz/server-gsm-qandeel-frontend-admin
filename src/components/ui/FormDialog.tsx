@@ -1,5 +1,5 @@
 // FormDialog: Modal + <form> with Cancel/Confirm, an async submit and a pending state. Ports modal({ onSubmit }).
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Button } from './Button';
 import { errorText } from './errorText';
 import { Modal, type ModalProps } from './Modal';
@@ -22,6 +22,8 @@ export interface FormDialogProps extends Omit<ModalProps, 'footer' | 'onSubmit' 
   error?: string | null;
   /** Pending state that lives outside the dialog (a mutation's isPending). */
   pending?: boolean;
+  /** Another button in the footer, after the confirm button (a second way to submit, like "Save and next"). The confirm button stays the form's default. */
+  extra?: ReactNode;
 }
 
 /**
@@ -37,6 +39,7 @@ export function FormDialog({
   onSubmit,
   error,
   pending = false,
+  extra,
   onClose,
   open,
   children,
@@ -101,6 +104,7 @@ export function FormDialog({
           <Button type="submit" variant={kind === 'danger' ? 'danger-solid' : 'primary'} loading={busy}>
             {confirm}
           </Button>
+          {extra}
         </>
       }
     >

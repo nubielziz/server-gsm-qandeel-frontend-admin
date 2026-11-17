@@ -34,6 +34,12 @@ function useRunCache() {
   };
 }
 
+/** Makes the page read a run again (after a 409 that says the run is not what the page thought). */
+export function useRereadPublishRun() {
+  const queryClient = useQueryClient();
+  return (id: Id) => void queryClient.invalidateQueries({ queryKey: publishRunKey(id) });
+}
+
 /** Starts a run (a preview). The answer is the run, `preparing`; the server prepares the rows in the background. */
 export function useCreatePublishRun() {
   const put = useRunCache();

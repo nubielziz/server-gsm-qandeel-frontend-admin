@@ -13,6 +13,9 @@ export const RUN_POLL_MS = 1500;
 /** Above this many included services the confirm dialog asks for a tick box first (Quick add's rule). */
 export const CONFIRM_ABOVE = 500;
 
+/** A margin under this many percent is drawn in amber: the rule of the listings table (the figure itself is the server's). */
+export const THIN_MARGIN_PCT = 15;
+
 /**
  * The service types that can be on the shop: a `file` service cannot be ordered online (it is refused at checkout), so the Add
  * listing dialog's search does not offer it. IMEI, server and remote services can be published (backend plan 3.1, owner question 2).
@@ -146,6 +149,11 @@ export function refusalText(failure: unknown): string {
 /** Whether a failure is the server saying the run is already being worked on (409 `JOB_ALREADY_RUNNING`). */
 export function isAlreadyRunning(failure: unknown): boolean {
   return isApiError(failure) && failure.code === 'JOB_ALREADY_RUNNING';
+}
+
+/** Whether a failure is a 409: the run is not in the state the call needs (no longer a draft, still working), so the page reads it again. */
+export function isConflict(failure: unknown): boolean {
+  return isApiError(failure) && failure.status === 409;
 }
 
 /** The server's stalled-run error ends with this hint already; the page does not repeat it. */
