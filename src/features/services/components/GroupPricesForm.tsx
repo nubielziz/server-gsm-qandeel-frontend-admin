@@ -1,9 +1,12 @@
 // GroupPricesForm: the form of the group prices dialog: one price box per merchant group, filled from the service's saved prices.
 // Saving replaces the whole list, so a saved price for a group the menu does not list is sent back unchanged instead of being lost.
+// It also sends the retail price it loaded (`retailPriceSeen`), so the server can keep a retail price that moved after it opened.
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, TextField } from '@/components/ui';
 import { money } from '@/lib/format';
 import { useReplaceGroupPrices } from '../hooks/useServicePartMutations';
+import { loadedRetailPrice } from '../lib/groupPrices';
 import { isMoneyText, moneyInput, percentText, toMoneyText } from '../lib/money';
 import type { ClientGroup, Service, ServiceGroupPrice } from '../types';
 
@@ -21,6 +24,8 @@ export interface GroupPricesFormProps {
 /** One price box per group; a blank box means no fixed price. */
 export function GroupPricesForm({ service, groups, saved, onClose }: GroupPricesFormProps) {
   const replace = useReplaceGroupPrices();
+  // Taken once, with the boxes: a later refetch of the service must not change what this form says it loaded.
+  const [retailPriceSeen] = useState(() => loadedRetailPrice(groups, saved));
   const form = useForm<Values>({
     defaultValues: Object.fromEntries(
       groups.map((group) => {
@@ -54,7 +59,7 @@ export function GroupPricesForm({ service, groups, saved, onClose }: GroupPrices
       // Prices of groups this menu does not list are kept as they are: the save replaces the whole list.
       const listed = new Set(groups.map((group) => group.id));
       prices.push(...saved.filter((entry) => !listed.has(entry.groupId)));
-      await replace.mutateAsync({ service, body: { prices } });
+      await replace.mutateAsync({ service, body: { prices, retailPriceSeen } });
     },
     { fields: groups.map(fieldOf) },
   );

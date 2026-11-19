@@ -203,6 +203,7 @@ function seedRuns(now: number): MockRun[] {
         scope: 'all',
         groups: [],
         serviceStatus: 'active',
+        publish: 'none',
         status: 'succeeded',
         total: 12,
         processed: 12,

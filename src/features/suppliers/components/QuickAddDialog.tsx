@@ -1,10 +1,11 @@
 // QuickAddDialog: "Quick add…": add a supplier's services by whole group, or all of them, in the background. Three steps in one
 // dialog: pick the groups, review what will happen, then follow the run. The server builds the list and does the work; the
 // console sends a scope and polls the run. Built in the demo's dialog style (the demo has no such screen).
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { errorText, Modal, useRowSelection } from '@/components/ui';
 import { isApiError } from '@/lib/api';
 import { useQuickAddRun, useServiceGroups, useStartQuickAdd } from '../hooks/useQuickAdd';
+import { useSupplierGrants } from '../hooks/useSupplierGrants';
 import {
   CONFIRM_ABOVE,
   isLive,
@@ -14,9 +15,11 @@ import {
   servicesText,
   tooManyGroups,
 } from '../lib/quickAdd';
+import { isNoRuleRefusal, publishLock, wantsPublishLine } from '../lib/quickAddPublish';
 import type { QuickAddRun, QuickAddServiceStatus, Supplier } from '../types';
 import { QuickAddFooter, type QuickAddStep } from './QuickAddFooter';
 import { QuickAddGroups } from './QuickAddGroups';
+import { QuickAddNoRule } from './QuickAddNoRule';
 import { QuickAddProgress } from './QuickAddProgress';
 import { QuickAddReview } from './QuickAddReview';
 
@@ -41,32 +44,41 @@ function refusalText(failure: unknown): string {
   return errorText(failure);
 }
 
-/** The three steps. The picks survive Back; a run already going when the dialog opens is shown at once (step 3). */
+/**
+ * The three steps. The picks survive Back; a run already going when the dialog opens is shown at once (step 3), and so is a run that
+ * ended after asking to publish, so its publishing line and "Prepare the shop preview" are not lost when the dialog is opened again.
+ */
 export function QuickAddDialog({ supplier, onClose }: QuickAddDialogProps) {
   const [step, setStep] = useState<QuickAddStep>('groups');
   const [tracked, setTracked] = useState<QuickAddRun | null>(null);
   const [serviceStatus, setServiceStatus] = useState<QuickAddServiceStatus>('active');
   const [confirmed, setConfirmed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [publish, setPublish] = useState(false);
+  const [error, setError] = useState<ReactNode>(null);
   const selection = useRowSelection<string>();
+  const grants = useSupplierGrants();
   const groups = useServiceGroups(supplier.id);
   const start = useStartQuickAdd(supplier.id);
   const { run, query } = useQuickAddRun(supplier, tracked);
   const decided = useRef(false);
 
-  // Once, when the first fresh answer arrives: open on the progress of a run that is already going (queued or running).
+  // Once, when the first fresh answer arrives: open on the progress of a run that is already going (queued or running) or that ended
+  // with a publish line to show (the plan's 6.3: the dialog shows the publish run when it is opened again).
   useEffect(() => {
     if (decided.current || !groups.isFetchedAfterMount || !groups.data) return;
     decided.current = true;
     const latest = groups.data.latestRun;
-    if (step === 'groups' && latest && isLive(latest)) {
+    if (step === 'groups' && latest && (isLive(latest) || wantsPublishLine(latest))) {
       setTracked(latest);
       setStep('progress');
     }
   }, [groups.isFetchedAfterMount, groups.data, step]);
 
   const list = groups.data?.groups ?? [];
-  const body = quickAddBody(list, selection.selected, serviceStatus);
+  // "Also put them on the shop" counts only while it can be used: switched off services and a role without `storefront:publish` lock it.
+  const publishReason = publishLock(serviceStatus, grants.can('storefront:publish'));
+  const publishing = publish && publishReason === undefined;
+  const body = quickAddBody(list, selection.selected, serviceStatus, publishing);
   const picked = { ...pickedTotals(list, selection.selected), tooMany: tooManyGroups(body) };
   const needsConfirm = picked.services > CONFIRM_ABOVE;
 
@@ -93,7 +105,10 @@ export function QuickAddDialog({ supplier, onClose }: QuickAddDialogProps) {
       void groups.refetch();
       setStep('groups');
     }
-    setError(refusalText(failure));
+    // No active retail pricing rule: the server's words, with the way to make one.
+    setError(
+      isNoRuleRefusal(failure) ? <QuickAddNoRule message={refusalText(failure)} /> : refusalText(failure),
+    );
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -149,6 +164,7 @@ export function QuickAddDialog({ supplier, onClose }: QuickAddDialogProps) {
           picked={picked}
           serviceStatus={serviceStatus}
           onServiceStatus={setServiceStatus}
+          publish={{ checked: publishing, lock: publishReason, onChange: setPublish }}
         />
       )}
       {step === 'review' && (
@@ -158,6 +174,7 @@ export function QuickAddDialog({ supplier, onClose }: QuickAddDialogProps) {
           groups={pickedGroups(list, selection.selected)}
           services={picked.services}
           serviceStatus={serviceStatus}
+          publish={publishing}
           confirmed={confirmed}
           onConfirmed={setConfirmed}
         />

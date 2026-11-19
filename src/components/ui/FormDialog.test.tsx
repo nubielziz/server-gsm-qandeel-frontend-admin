@@ -257,3 +257,55 @@ describe('FormDialog with react-hook-form', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe('FormDialog: a second submit button and a confirm button that waits', () => {
+  it('draws `extra` after the confirm button, and it submits the form too', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <FormDialog
+        open
+        onClose={() => {}}
+        title="Edit row"
+        confirm="Save"
+        onSubmit={onSubmit}
+        extra={<button type="submit">Save and next</button>}
+      >
+        <TextField label="Name" name="name" />
+      </FormDialog>,
+    );
+    const names = screen.getAllByRole('button').map((button) => button.textContent);
+    expect(names.indexOf('Save and next')).toBe(names.indexOf('Save') + 1);
+    await user.click(screen.getByRole('button', { name: 'Save and next' }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the form from submitting while `confirmDisabled` is on, by the button and by Enter', async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const { rerender } = render(
+      <FormDialog
+        open
+        onClose={() => {}}
+        title="Publish"
+        confirm="Publish"
+        onSubmit={onSubmit}
+        confirmDisabled
+      >
+        <TextField label="Name" name="name" />
+      </FormDialog>,
+    );
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    await user.type(screen.getByLabelText('Name'), 'x{Enter}');
+    expect(onSubmit).not.toHaveBeenCalled();
+    rerender(
+      <FormDialog open onClose={() => {}} title="Publish" confirm="Publish" onSubmit={onSubmit}>
+        <TextField label="Name" name="name" />
+      </FormDialog>,
+    );
+    expect(screen.getByRole('button', { name: 'Publish' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+});

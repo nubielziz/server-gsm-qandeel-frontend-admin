@@ -107,8 +107,13 @@ export type ReplaceFieldsBody = { fields: ServiceField[] };
 /** Body of `PUT /admin/services/:id/options` (assumed contract): all three lists together. */
 export type ReplaceOptionsBody = { options: ServiceOption[] };
 
-/** Body of `PUT /admin/services/:id/group-prices` (assumed contract): one entry per group that has a fixed price. */
-export type ReplaceGroupPricesBody = { prices: ServiceGroupPrice[] };
+/**
+ * Body of `PUT /admin/services/:id/group-prices`: one entry per group that has a fixed price, and `retailPriceSeen`, the
+ * storefront retail price the form loaded (`null` when it had none). The server keeps the stored retail price when the retail
+ * row sent is that same figure, so a price a follow pass or a publish set after the form opened is not taken for a typed one.
+ * The form always sends the key.
+ */
+export type ReplaceGroupPricesBody = { prices: ServiceGroupPrice[]; retailPriceSeen: Money | null };
 
 /**
  * What `GET /admin/services` filters by (simple-rest field filters plus `q`). `belowFloor` asks for the services

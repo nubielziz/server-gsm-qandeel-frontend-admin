@@ -40,7 +40,9 @@ export function replaceServiceOptions(
 
 /**
  * Replaces the fixed prices of this service per merchant group. A group left out pays the base price less its discount.
- * Assumed contract: body `{ prices }`, answer the saved prices.
+ * Body `{ prices, retailPriceSeen }`: `retailPriceSeen` is the storefront retail price the form loaded (`null`: it had none).
+ * When the retail row sent is that same figure the server keeps the retail price it stores now and its following, even if it
+ * moved since the form opened (feature 31, backend `pricing.contracts.ts`). Answer: the saved prices.
  * @route PUT /admin/services/:id/group-prices
  */
 export function replaceServiceGroupPrices(

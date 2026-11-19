@@ -45,6 +45,7 @@ const run = (changes: Partial<QuickAddRun> = {}): QuickAddRun => ({
   scope: 'all',
   groups: [],
   serviceStatus: 'active',
+  publish: 'none',
   status: 'succeeded',
   total: 10,
   processed: 10,
@@ -140,6 +141,26 @@ describe('the body of the start request', () => {
     expect(quickAddBody(GROUPS, keys(GROUPS[0], GROUPS[1], GROUPS[3]), 'disabled')).toEqual({
       scope: 'all',
       serviceStatus: 'disabled',
+    });
+  });
+
+  it('adds publish: { listed: true } only when the tick box is on, with either scope and with the service status', () => {
+    expect(quickAddBody(GROUPS, keys(GROUPS[0]), 'active', true)).toEqual({
+      scope: 'groups',
+      groups: [{ type: 'imei', remoteGroup: 'Apple' }],
+      publish: { listed: true },
+    });
+    expect(quickAddBody(GROUPS, keys(GROUPS[0], GROUPS[1], GROUPS[3]), 'active', true)).toEqual({
+      scope: 'all',
+      publish: { listed: true },
+    });
+    expect(quickAddBody(GROUPS, keys(GROUPS[0], GROUPS[1], GROUPS[3]), 'active', false)).toEqual({
+      scope: 'all',
+    });
+    // The dialog never passes it for switched off services; the function itself sends what it is told.
+    expect(quickAddBody(GROUPS, keys(GROUPS[0]), 'disabled', true)).toMatchObject({
+      serviceStatus: 'disabled',
+      publish: { listed: true },
     });
   });
 

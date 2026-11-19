@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { namesOf } from './names';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
-import { storefrontListPath } from './paths';
+import { storefrontListPath, storefrontPricingPath } from './paths';
 import { isTacPrefix, isYear } from './tac';
 import { storefrontUrl } from './url';
 
@@ -60,5 +60,13 @@ describe('storefrontListPath', () => {
       '/storefront?tab=landing&kind=carrier',
     );
     expect(storefrontListPath({ tab: 'tac', q: '3538' })).toBe('/storefront?tab=tac&q=3538');
+  });
+});
+
+describe('storefrontPricingPath', () => {
+  it('is the address of the Retail pricing tab, and of its All view', () => {
+    expect(storefrontPricingPath()).toBe('/storefront?tab=pricing');
+    expect(storefrontPricingPath({ show: 'all' })).toBe('/storefront?tab=pricing&show=all');
+    expect(storefrontListPath({ tab: 'pricing' })).toBe('/storefront?tab=pricing');
   });
 });

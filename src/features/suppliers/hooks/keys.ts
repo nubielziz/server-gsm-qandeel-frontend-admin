@@ -13,6 +13,9 @@ export const SUPPLIER_GROUPS_KEY = ['api', 'suppliers', 'service-groups'] as con
 /** One quick add run, asked again while it is going. */
 export const SUPPLIER_QUICK_ADD_KEY = ['api', 'suppliers', 'quick-add'] as const;
 
+/** The publish run Quick add handed over to (`GET /admin/publish-runs?quickAddRunId=`), asked again while it is going. */
+export const SUPPLIER_QUICK_ADD_PUBLISH_KEY = ['api', 'suppliers', 'quick-add-publish'] as const;
+
 /** The supplier report behind the figures under the stats. */
 export const SUPPLIER_REPORT_KEY = ['api', 'suppliers', 'report'] as const;
 

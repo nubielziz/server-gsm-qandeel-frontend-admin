@@ -5,6 +5,7 @@ import { createContentPage, getContentPage, listContentPages, updateContentPage 
 import { createHelpArticle, getHelpArticle, listHelpArticles, updateHelpArticle } from './helpArticles';
 import { createLegalDocument, getLegalDocument, listLegalDocuments } from './legalDocuments';
 import { createListing, getListing, listListings, updateListing } from './listings';
+import { listRetailPriceChanges, listRetailPriceRules } from './retailPricing';
 import { listHiddenTerms, listSearchPins, listSearchSynonyms } from './search';
 import { createTacEntry, getTacEntry, listTacEntries, updateTacEntry } from './tacCatalog';
 
@@ -13,6 +14,9 @@ import { createTacEntry, getTacEntry, listTacEntries, updateTacEntry } from './t
  * deleted, and the search rules are listed here and written through their own functions.
  */
 export const storefrontResources: ResourceRegistry = {
+  // The retail pricing tab's lists; its writes go through the typed functions and `useApiMutation`.
+  'retail-price-rules': { list: listRetailPriceRules },
+  'retail-price-changes': { list: listRetailPriceChanges },
   'service-listings': { list: listListings, show: getListing, create: createListing, update: updateListing },
   'content-pages': {
     list: listContentPages,

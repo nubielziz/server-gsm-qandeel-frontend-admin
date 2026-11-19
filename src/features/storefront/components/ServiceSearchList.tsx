@@ -35,7 +35,7 @@ const keepFocus = (event: MouseEvent) => event.preventDefault();
 /** The line under the options: what the list is doing, or why it is short. Null when the options say it all. */
 function stateText(rows: number, total: number, searching: boolean, q: string): string | null {
   if (searching) return 'Searching…';
-  if (rows === 0) return q ? `No service matches “${q}”.` : 'No active IMEI service yet.';
+  if (rows === 0) return q ? `No service matches “${q}”.` : 'No active IMEI, server or remote service yet.';
   if (total > rows) return `${num(rows)} of ${num(total)} shown. Type to search more.`;
   return null;
 }

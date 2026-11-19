@@ -1,4 +1,4 @@
-// Tests for the Add listing dialog: the Service search (a combobox over the server's list of active IMEI services: typing,
+// Tests for the Add listing dialog: the Service search (a combobox over the server's list of active IMEI, server and remote services: typing,
 // the keyboard, a long catalog, no match, a failed search), the suggested title, the create request and the server's refusals.
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -69,12 +69,13 @@ describe('the Service search', () => {
     await waitFor(() => expect(optionNames(dialog).length).toBeGreaterThan(5));
     expect(optionNames(dialog)).toContain(WARRANTY);
     const sent = requests.sent().find((one) => one.url.pathname.endsWith('/admin/services'))!;
-    expect(Object.fromEntries(sent.url.searchParams)).toEqual({
+    // The three types that can be on the shop are one repeated `type` key (an IN filter); a `file` service is not offered.
+    expect(sent.url.searchParams.getAll('type')).toEqual(['imei', 'server', 'remote']);
+    expect(Object.fromEntries(sent.url.searchParams)).toMatchObject({
       _start: '0',
       _end: '20',
       _sort: 'name',
       _order: 'asc',
-      type: 'imei',
       status: 'active',
     });
   });
@@ -144,6 +145,43 @@ describe('the Service search', () => {
     await user.click(dialog.getByRole('option', { name: 'Bulk Unlock 230 (BULK-230)' }));
     expect(service).toHaveValue('Bulk Unlock 230 (BULK-230)');
     expect(dialog.getByRole('textbox', { name: 'Public title' })).toHaveValue('Bulk Unlock 230');
+  });
+
+  it('says that IMEI, server and remote services are sold to the public', async () => {
+    const user = userEvent.setup();
+    const { dialog } = await openAdd(user);
+    expect(
+      dialog.getByText('Only active IMEI, server and remote services are sold to the public.'),
+    ).toBeInTheDocument();
+    expect(dialog.queryByText(/Only active IMEI services/)).not.toBeInTheDocument();
+  });
+
+  it('offers server and remote services, and never a file service', async () => {
+    const user = userEvent.setup();
+    const { dialog, service } = await openAdd(user);
+    await user.type(service, 'credits');
+    await waitFor(() => expect(optionNames(dialog)).toContain('Z3X Credits x10 (SRV-Z3X-10)'));
+    await user.clear(service);
+    await user.type(service, 'remote');
+    await waitFor(() => expect(optionNames(dialog)).toContain('Samsung FRP Remote (USB) (RMT-SAM-FRP)'));
+    // The demo's file services are active, but a file service cannot be ordered online: the search leaves them out.
+    await user.clear(service);
+    await user.type(service, 'file');
+    expect(await dialog.findByText('No service matches “file”.')).toBeInTheDocument();
+    expect(optionNames(dialog)).toEqual([]);
+  });
+
+  it('adds a listing for a server service', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    const { dialog, service } = await openAdd(user);
+    await user.type(service, 'z3x');
+    await user.click(await dialog.findByRole('option', { name: 'Z3X Credits x10 (SRV-Z3X-10)' }));
+    expect(dialog.getByRole('textbox', { name: 'Public title' })).toHaveValue('Z3X Credits x10');
+    await user.click(dialog.getByRole('button', { name: 'Add listing' }));
+    expect(await screen.findByText('Listing added')).toBeInTheDocument();
+    const created = requests.sent().find((one) => one.method === 'POST' && isListings(one.url))!;
+    expect(created.body).toEqual({ serviceId: 15, publicTitle: 'Z3X Credits x10' });
   });
 
   it('shows a failed search with Retry and lists the services when the server answers again', async () => {

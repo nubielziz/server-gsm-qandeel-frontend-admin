@@ -4,6 +4,9 @@
 import type { Decimal, Id, IsoDateTime, Money } from '@/lib/api';
 import type { ServiceListingRow } from '@/lib/api/schema.gen';
 
+/** Who wrote a retail price: a pricing rule (and it follows the cost), or a person. */
+export type RetailPriceSource = 'rule' | 'manual';
+
 /** The service behind a listing: the figures the table shows next to the retail price. */
 export type ListingService = {
   id: Id;
@@ -20,6 +23,9 @@ export type ListingService = {
  * console never computes them. A `locked` listing can never go on the public site and `lockedReason` says why.
  * Typed by hand beyond the generated row (the map's row has no `listedAt` or `imageUrl`, and a different `updatedAt`).
  * A service has one listing. `imageUrl` is a root-relative `/store/v1/media/<name>` path.
+ * The three `retailPrice*` keys (backend addition, B229) say who wrote the price: `retailPriceSource` is `rule` for a price a
+ * retail pricing rule wrote and keeps moving, `manual` for a typed one, `null` without a price; `retailPriceRule` names the
+ * rule of a following price; `retailPriceWaiting` is true while a price change waits for a person.
  */
 export type ServiceListing = Pick<
   ServiceListingRow,
@@ -44,6 +50,9 @@ export type ServiceListing = Pick<
   imageUrl: string | null;
   service: ListingService;
   retailPrice: Money | null;
+  retailPriceSource: RetailPriceSource | null;
+  retailPriceRule: { id: Id; label: string } | null;
+  retailPriceWaiting: boolean;
   floorPrice: Money;
   marginPct: Decimal | null;
   orders30d: number;
@@ -86,11 +95,14 @@ export type CreateListingBody = ListingContentFields & {
 
 /**
  * Body of `PATCH /admin/service-listings/:id`: any of these, at least one. The switch sends `isListed`, the price dialog
- * `retailPrice`, the editor the title, slug and content fields. A changed `slug` changes the public link.
+ * `retailPrice` (a typed price, which stops the price following a rule) or `retailPricing: 'rule'` (the server writes the rule's
+ * price now and the price follows the rule from then on; never together with `retailPrice`), the editor the title, slug and
+ * content fields. A changed `slug` changes the public link.
  */
 export type UpdateListingBody = ListingContentFields & {
   isListed?: boolean;
   retailPrice?: Money;
+  retailPricing?: 'rule';
   publicTitle?: string;
   slug?: string;
 };

@@ -48,6 +48,27 @@ export function useSetRetailPrice() {
   });
 }
 
+/**
+ * Prices a listing by the retail pricing rule: the server writes the rule's price now and keeps it up to date from then on. The
+ * dialog shows a refusal (no rule covers the service, the service has no cost) under the choice.
+ */
+export function useFollowRule() {
+  return useApiMutation({
+    mutationFn: (listing: ServiceListing) => updateListing(listing.id, { retailPricing: 'rule' }),
+    invalidates: [...staleResource(RESOURCE), ...staleResource('retail-price-changes')],
+    invalidateKeys: STOREFRONT_STALE_KEYS,
+    onSuccess: (updated, listing) => {
+      toast({
+        kind: 'success',
+        title: 'Price follows the rule',
+        body: `${listing.publicTitle} is now ${money(updated.retailPrice ?? listing.retailPrice ?? 0)} on the storefront.`,
+        ttl: 3200,
+      });
+    },
+    errorNotification: NO_ERROR_TOAST,
+  });
+}
+
 /** Adds a listing. The dialog shows a refusal (a service that cannot be public, a listing that already exists). */
 export function useCreateListing() {
   return useApiMutation({

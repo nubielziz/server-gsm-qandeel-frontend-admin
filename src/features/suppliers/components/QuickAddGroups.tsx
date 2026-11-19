@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
 import {
+  CheckboxField,
   EmptyState,
   ErrorState,
   RadioGroup,
@@ -20,6 +21,7 @@ import {
   MAX_QUICK_ADD_GROUPS,
   servicesText,
 } from '../lib/quickAdd';
+import { PUBLISH_HINT } from '../lib/quickAddPublish';
 import type { QuickAddServiceStatus, ServiceGroups } from '../types';
 import { QuickAddGroupTable } from './QuickAddGroupTable';
 import { SelectAllBox } from './SelectAllBox';
@@ -37,6 +39,13 @@ const STATUS_OPTIONS: readonly RadioOption[] = [
   },
 ];
 
+/** The tick box "Also put them on the shop": what it shows, why it is locked (the reason becomes its title), and the change. */
+export type QuickAddPublishChoice = {
+  checked: boolean;
+  lock: string | undefined;
+  onChange: (checked: boolean) => void;
+};
+
 export interface QuickAddGroupsProps {
   groups: Pick<UseQueryResult<ServiceGroups>, 'data' | 'isError' | 'error' | 'refetch'>;
   selection: RowSelection<string>;
@@ -44,6 +53,7 @@ export interface QuickAddGroupsProps {
   picked: { groups: number; services: number; tooMany: boolean };
   serviceStatus: QuickAddServiceStatus;
   onServiceStatus: (status: QuickAddServiceStatus) => void;
+  publish: QuickAddPublishChoice;
 }
 
 /** Step 1: search and tick groups. "Select all groups" ticks every group with something to add, whatever the search shows. */
@@ -53,6 +63,7 @@ export function QuickAddGroups({
   picked,
   serviceStatus,
   onServiceStatus,
+  publish,
 }: QuickAddGroupsProps) {
   const [text, setText] = useState('');
   const data = groups.data;
@@ -129,6 +140,15 @@ export function QuickAddGroups({
         value={serviceStatus}
         listClassName="grid gap-2 sm:grid-cols-2"
         onChange={(event) => onServiceStatus(event.target.value === 'disabled' ? 'disabled' : 'active')}
+      />
+      <CheckboxField
+        label="Also put them on the shop"
+        hint={PUBLISH_HINT}
+        align="start"
+        checked={publish.checked}
+        disabled={publish.lock !== undefined}
+        title={publish.lock}
+        onChange={(event) => publish.onChange(event.target.checked)}
       />
       {lastRunNote}
     </div>

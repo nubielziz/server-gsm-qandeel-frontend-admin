@@ -4,9 +4,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api';
 import { setupMockApi, signInAs } from '@/test/mockApi';
+import { storefrontStore } from '../mocks/store';
 import { recordRequests } from '../test/requests';
 import {
   createListing,
+  deleteRetailPriceRule,
   getListing,
   listListings,
   removeListingImage,
@@ -107,6 +109,59 @@ describe('updateListing', () => {
     const error = await updateListing(MDM, { isListed: true }).catch((e: unknown) => e);
     expect((error as ApiError).status).toBe(409);
     expect((error as ApiError).detail).toContain('cannot be listed publicly');
+  });
+});
+
+describe('who wrote the price, and retailPricing', () => {
+  it('always sends the three keys: the source, the rule and whether a change waits', async () => {
+    expect(await getListing(ICLOUD)).toMatchObject({
+      retailPriceSource: 'rule',
+      retailPriceRule: { id: 2, label: 'IMEI +30%' },
+      retailPriceWaiting: false,
+    });
+    expect(await getListing(5)).toMatchObject({
+      retailPriceSource: 'manual',
+      retailPriceRule: null,
+      retailPriceWaiting: false,
+    });
+    expect(await getListing(6)).toMatchObject({ retailPriceSource: 'rule', retailPriceWaiting: true });
+  });
+
+  it('writes the rule’s price when asked to follow the rule, and a typed price turns following off', async () => {
+    const requests = recordRequests();
+    const followed = await updateListing(13, { retailPricing: 'rule' });
+    expect(requests.last()).toMatchObject({ method: 'PATCH', body: { retailPricing: 'rule' } });
+    expect(followed).toMatchObject({
+      retailPrice: '15.5000',
+      retailPriceSource: 'rule',
+      retailPriceRule: { id: 2 },
+    });
+    const typed = await updateListing(13, { retailPrice: '16.9900' });
+    expect(typed).toMatchObject({
+      retailPrice: '16.9900',
+      retailPriceSource: 'manual',
+      retailPriceRule: null,
+    });
+  });
+
+  it('refuses retailPricing with a price, a service with no cost and a service no rule covers, on retailPricing', async () => {
+    const both = (await updateListing(13, { retailPricing: 'rule', retailPrice: '16.9900' }).catch(
+      (e: unknown) => e,
+    )) as ApiError;
+    expect(both.status).toBe(422);
+    expect(both.fieldErrors.retailPricing?.[0]).toBe('Send either a price or the pricing rule, not both.');
+    (await storefrontStore()).services.get(13)!.cost = 0;
+    const free = (await updateListing(13, { retailPricing: 'rule' }).catch((e: unknown) => e)) as ApiError;
+    expect(free.fieldErrors.retailPricing?.[0]).toBe('This service has no cost, so a rule cannot price it.');
+    for (const id of [1, 2, 3, 4]) await deleteRetailPriceRule(id);
+    (await storefrontStore()).services.get(13)!.cost = 7.5;
+    const bare = (await updateListing(13, { retailPricing: 'rule' }).catch((e: unknown) => e)) as ApiError;
+    expect(bare.fieldErrors.retailPricing?.[0]).toBe('No pricing rule covers this service.');
+  });
+
+  it('keeps the lock of a locked listing', async () => {
+    const error = (await updateListing(MDM, { retailPricing: 'rule' }).catch((e: unknown) => e)) as ApiError;
+    expect(error.status).toBe(409);
   });
 });
 

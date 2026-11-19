@@ -92,20 +92,25 @@ export function pickedTotals(
 /**
  * The body of the start request. When every group that has something to add is picked, the scope is `all` (no group list, no
  * limit of 500); otherwise it names the picked groups. `serviceStatus` is sent only for "Switched off": on sale is the
- * server's default.
+ * server's default. `publish` (the tick box "Also put them on the shop") adds `publish: { listed: true }`; the dialog passes
+ * it only for services added on sale, since the server refuses it for switched off ones.
  */
 export function quickAddBody(
   groups: readonly ServiceGroup[],
   picked: ReadonlySet<string>,
   serviceStatus: QuickAddServiceStatus,
+  publish = false,
 ): QuickAddBody {
   const chosen = pickedGroups(groups, picked);
-  const status = serviceStatus === 'disabled' ? ({ serviceStatus } as const) : {};
-  if (chosen.length > 0 && chosen.length === pickable(groups).length) return { scope: 'all', ...status };
+  const extras = {
+    ...(serviceStatus === 'disabled' ? ({ serviceStatus } as const) : {}),
+    ...(publish ? { publish: { listed: true } } : {}),
+  };
+  if (chosen.length > 0 && chosen.length === pickable(groups).length) return { scope: 'all', ...extras };
   return {
     scope: 'groups',
     groups: chosen.map(({ type, remoteGroup }) => ({ type, remoteGroup })),
-    ...status,
+    ...extras,
   };
 }
 

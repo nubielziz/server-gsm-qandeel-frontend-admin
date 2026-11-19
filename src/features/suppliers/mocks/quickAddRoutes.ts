@@ -1,7 +1,10 @@
 // Mock routes of Quick add (service-groups, quick-add and its run). Groups are counted with the real rule (imported, else
 // unavailable, else a type that cannot be imported, else addable). Services are created when the run starts; the first read
-// of a run then says half done and the next says finished (decision 014).
+// of a run then says half done and the next says finished (decision 014). A run that asks to publish (feature 31) is also handed to the
+// storefront mock, which makes the automatic publish run Quick add's step 3 reads.
 import { http, HttpResponse, type HttpHandler } from 'msw';
+import { denied } from '@/features/notifications/mocks/access';
+import { anyRetailRuleActive, handOverQuickAdd } from '@/features/storefront/mocks';
 import { invalid, notFound } from '@/mocks/handlers/accessShared';
 import { problem } from '@/mocks/problem';
 import { createFromItem } from './catalogueRoutes';
@@ -143,10 +146,15 @@ export const quickAddHandlers: HttpHandler[] = [
 
   http.post(
     '*/admin/suppliers/:id/quick-add',
-    secured(async ({ params, data, body }) => {
+    secured(async ({ request, params, data, body }) => {
       const supplier = data.suppliers.find(String(params.id));
       if (!supplier) return notFound('supplier', params.id);
       const input = await body();
+      // `publish` needs storefront:publish as well as catalog:create (plan 5.5): the controller checks it with `grants`.
+      if (input.publish !== undefined) {
+        const forbidden = await denied(request, 'storefront:publish');
+        if (forbidden) return forbidden;
+      }
       const scope = input.scope;
       if (scope !== 'all' && scope !== 'groups') {
         return invalid([{ field: 'scope', message: 'Choose to add all services or some groups.' }]);
@@ -159,6 +167,27 @@ export const quickAddHandlers: HttpHandler[] = [
         return invalid([{ field: 'groups', message: 'Pick at most 500 groups, or add all.' }]);
       }
       const serviceStatus = input.serviceStatus === 'disabled' ? 'disabled' : 'active';
+      const asked = input.publish;
+      if (
+        asked !== undefined &&
+        !(
+          typeof asked === 'object' &&
+          asked !== null &&
+          'listed' in asked &&
+          typeof asked.listed === 'boolean'
+        )
+      ) {
+        return invalid([
+          { field: 'publish', message: 'Send publish as { listed: true } or { listed: false }.' },
+        ]);
+      }
+      const publish = asked === undefined ? null : (asked as { listed: boolean });
+      if (publish && serviceStatus === 'disabled') {
+        return invalid([{ field: 'publish', message: 'Services added switched off cannot go on the shop.' }]);
+      }
+      if (publish && !(await anyRetailRuleActive())) {
+        return invalid([{ field: 'publish', message: 'Set a retail pricing rule first.' }]);
+      }
 
       if (supplier.status === 'disabled') {
         return problem(
@@ -206,6 +235,7 @@ export const quickAddHandlers: HttpHandler[] = [
         scope,
         groups: named,
         serviceStatus,
+        publish: publish === null ? 'none' : publish.listed ? 'listed' : 'unlisted',
         status: 'succeeded',
         total: items.length,
         processed: items.length,
@@ -222,6 +252,7 @@ export const quickAddHandlers: HttpHandler[] = [
       };
       const run: MockRun = { finished, reads: 0 };
       data.runs.push(run);
+      await handOverQuickAdd(finished.id, finished.created, publish === null ? null : publish.listed);
       return HttpResponse.json(viewOf(run), { status: 202 });
     }),
   ),

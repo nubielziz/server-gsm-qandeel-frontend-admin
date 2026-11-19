@@ -16,6 +16,7 @@ import { ListingTable } from './ListingTable';
 import { ListingsEmpty } from './ListingsEmpty';
 import { ListToolbar } from './ListToolbar';
 import { PriceDialog } from './PriceDialog';
+import { PublishServicesButton } from './PublishServicesButton';
 
 type Dialog =
   { kind: 'create' } | { kind: 'price'; listing: ServiceListing } | { kind: 'edit'; listing: ServiceListing };
@@ -42,24 +43,29 @@ export function ListingsTab({ grants }: { grants: StorefrontGrants }) {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const filtered = hasActiveFilters(view);
   const add = grants.needsAll('storefront:create', 'catalog:read');
+  // With no listing at all, publishing in bulk is the page's recommendation and Add listing is the default button.
+  const noListings = !filtered && list.query.isSuccess && list.total === 0;
 
   return (
     <>
       <ListingStats enabled={grants.can('storefront:read')} />
       <Panel
         title="What the public can buy"
-        sub="Only IMEI services are sold to the public. A retail price can never go below the floor the server sets for the service, so merchants never find it cheaper to buy on the storefront."
+        sub="A retail price can never go below the floor the server sets for the service, so merchants never find it cheaper to buy on the storefront."
         right={
-          <Button
-            variant="primary"
-            size="sm"
-            disabled={add.disabled}
-            title={add.title}
-            onClick={() => setDialog({ kind: 'create' })}
-          >
-            <Icon name="plus" className="ic-sm" />
-            Add listing…
-          </Button>
+          <>
+            <PublishServicesButton grants={grants} primary={noListings} />
+            <Button
+              variant={noListings ? 'default' : 'primary'}
+              size="sm"
+              disabled={add.disabled}
+              title={add.title}
+              onClick={() => setDialog({ kind: 'create' })}
+            >
+              <Icon name="plus" className="ic-sm" />
+              Add listing…
+            </Button>
+          </>
         }
         flush
       >
@@ -82,7 +88,13 @@ export function ListingsTab({ grants }: { grants: StorefrontGrants }) {
             onSortChange={setSort}
             pagination={{ page: view.page, pageSize: PAGE_SIZE, total: list.total ?? list.rows.length }}
             onPageChange={setPage}
-            empty={<ListingsEmpty noListings={!filtered && list.total === 0} onClear={clear} />}
+            empty={
+              <ListingsEmpty
+                noListings={!filtered && list.total === 0}
+                onClear={clear}
+                publish={<PublishServicesButton grants={grants} primary />}
+              />
+            }
             lock={grants.needs('storefront:update')}
             busyId={setListed.isPending ? setListed.variables?.listing.id : undefined}
             onToggle={(listing, on) => setListed.mutate({ listing, on })}

@@ -4,6 +4,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { ErrorState, Meter, SkeletonTable } from '@/components/ui';
 import { progressLine, progressRatio, resultLines } from '../lib/quickAdd';
 import type { QuickAddRun } from '../types';
+import { QuickAddPublishLine } from './QuickAddPublishLine';
 
 export interface QuickAddProgressProps {
   run: QuickAddRun | undefined;
@@ -68,13 +69,19 @@ export function QuickAddProgress({ run, query }: QuickAddProgressProps) {
           </p>
         </>
       )}
-      {run.status === 'succeeded' && <Outcome run={run} />}
+      {run.status === 'succeeded' && (
+        <>
+          <Outcome run={run} />
+          <QuickAddPublishLine run={run} />
+        </>
+      )}
       {run.status === 'failed' && (
         <>
           <p className="text-sm text-crit-fg" role="alert">
             {run.error ?? 'The quick add stopped before it finished.'}
           </p>
           <Outcome run={run} />
+          <QuickAddPublishLine run={run} />
           {/* A stalled run's error already ends with this hint. */}
           {!run.error?.endsWith('it continues with what is left.') && (
             <p className="text-sm text-ink2">Start it again: it continues with what is left.</p>

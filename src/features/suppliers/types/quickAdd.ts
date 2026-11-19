@@ -29,6 +29,15 @@ export type QuickAddRunStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 /** Whether the services of a run are added on sale or switched off. */
 export type QuickAddServiceStatus = 'active' | 'disabled';
 
+/**
+ * Whether a run asked to put what it adds on the shop: `none`, `listed` (on the shop at once) or `unlisted` (created switched
+ * off). Quick add's tick box sends `listed` only (feature 31, backend B231, MISMATCHES M10c).
+ */
+export type QuickAddPublish = 'none' | 'listed' | 'unlisted';
+
+/** The `publish` member of the start body: the services that need no look go on the shop (`listed: true`) when the run ends. */
+export type QuickAddPublishBody = { listed: boolean };
+
 /** A group as a run or a request names it: the stored text, never trimmed. */
 export type QuickAddGroupRef = Pick<ServiceGroup, 'type' | 'remoteGroup'>;
 
@@ -42,6 +51,8 @@ export type QuickAddRun = {
   scope: 'all' | 'groups';
   groups: QuickAddGroupRef[];
   serviceStatus: QuickAddServiceStatus;
+  /** Whether the run asked to publish what it adds (backend B231); `none` for a run started without the tick box. */
+  publish: QuickAddPublish;
   status: QuickAddRunStatus;
   total: number;
   processed: number;
@@ -66,8 +77,14 @@ export type ServiceGroups = {
 
 /**
  * Body of `POST /admin/suppliers/:id/quick-add`. The console sends a scope, never ids: `all` takes no groups, `groups` takes 1
- * to 500. `serviceStatus` is left out for the server's default, on sale.
+ * to 500. `serviceStatus` is left out for the server's default, on sale. `publish` is sent only when "Also put them on the shop"
+ * is ticked, and only for services added on sale (the server refuses it for switched off ones).
  */
 export type QuickAddBody =
-  | { scope: 'all'; serviceStatus?: QuickAddServiceStatus }
-  | { scope: 'groups'; groups: QuickAddGroupRef[]; serviceStatus?: QuickAddServiceStatus };
+  | { scope: 'all'; serviceStatus?: QuickAddServiceStatus; publish?: QuickAddPublishBody }
+  | {
+      scope: 'groups';
+      groups: QuickAddGroupRef[];
+      serviceStatus?: QuickAddServiceStatus;
+      publish?: QuickAddPublishBody;
+    };

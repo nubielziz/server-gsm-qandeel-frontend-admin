@@ -3,14 +3,19 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { deleteRetailPriceRule } from '../api';
+import { recordRequests } from '../test/requests';
+import { storefrontStore } from '../mocks/store';
 import { dialogOf, openStorefront, rowOf, tabTexts, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
+// `recordRequests` spies on fetch: put it back after each test so one test's requests are not read by the next.
+afterEach(() => vi.restoreAllMocks());
 
 const TABLE = 'Storefront listings';
 
@@ -125,6 +130,126 @@ describe('the price dialog', () => {
   });
 });
 
+describe('who wrote the price', () => {
+  it('marks a price a rule wrote with a Rule tag that says which rule, and a price that waits with Waiting', async () => {
+    await openStorefront();
+    const imei = await rowOf(TABLE, 'iCloud Clean / Lost Check');
+    expect(imei.getByText('Rule')).toBeInTheDocument();
+    expect(imei.getByTitle('IMEI +30%')).toBeInTheDocument();
+    expect(imei.queryByText('Waiting')).not.toBeInTheDocument();
+    const carrier = await rowOf(TABLE, 'T-Mobile USA Unlock');
+    expect(carrier.getByText('Rule')).toBeInTheDocument();
+    expect(carrier.getByTitle('Carrier unlock +20% +$0.50, up to 5 cents')).toBeInTheDocument();
+    expect(carrier.getByText('Waiting')).toBeInTheDocument();
+  });
+
+  it('shows no mark for a typed price', async () => {
+    await openStorefront();
+    const typed = await rowOf(TABLE, 'AT&T USA Premier Unlock');
+    expect(typed.queryByText('Rule')).not.toBeInTheDocument();
+    expect(typed.queryByText('Waiting')).not.toBeInTheDocument();
+  });
+});
+
+describe('the price dialog and the pricing rule', () => {
+  type User = ReturnType<typeof userEvent.setup>;
+  async function openPrice(user: User, name: string) {
+    await openStorefront();
+    const row = await rowOf(TABLE, name);
+    await user.click(row.getByRole('button', { name: `Edit the storefront price of ${name}` }));
+    return dialogOf('Storefront price');
+  }
+
+  it('offers the rule and a typed price, and starts on the way the price is set now', async () => {
+    const user = userEvent.setup();
+    const typed = await openPrice(user, 'AT&T USA Premier Unlock');
+    expect(typed.getByRole('radio', { name: /^Type a price/ })).toBeChecked();
+    expect(typed.getByRole('textbox', { name: /^Price shown to customers/ })).toBeInTheDocument();
+  });
+
+  it('starts on the rule for a price a rule wrote, names the rule and says a change waits, and hides the price field', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'T-Mobile USA Unlock');
+    expect(dialog.getByRole('radio', { name: /^Follow the pricing rule/ })).toBeChecked();
+    expect(
+      dialog.getByText(/Priced now by: Carrier unlock \+20% \+\$0\.50, up to 5 cents\./),
+    ).toBeInTheDocument();
+    expect(
+      dialog.getByText(/A price change waits for your approval on the Retail pricing tab\./),
+    ).toBeInTheDocument();
+    expect(dialog.queryByRole('textbox', { name: /^Price shown to customers/ })).not.toBeInTheDocument();
+  });
+
+  it('sends retailPricing rule alone, and the table then shows the server’s price with a Rule tag', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'Samsung KG Lock Fix');
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('radio', { name: /^Follow the pricing rule/ }));
+    expect(dialog.queryByRole('textbox', { name: /^Price shown to customers/ })).not.toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Save price' }));
+    expect(await screen.findByText('Price follows the rule')).toBeInTheDocument();
+    expect(screen.getByText('Samsung KG Lock Fix is now $15.50 on the storefront.')).toBeInTheDocument();
+    const patch = requests.sent().find((sent) => sent.method === 'PATCH')!;
+    expect(patch.body).toEqual({ retailPricing: 'rule' });
+    const row = await rowOf(TABLE, 'Samsung KG Lock Fix');
+    expect(await row.findByText('$15.50')).toBeInTheDocument();
+    expect(row.getByText('Rule')).toBeInTheDocument();
+  });
+
+  it('shows the server’s refusal when no rule covers the service, under the choice, and keeps the dialog open', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'Samsung KG Lock Fix');
+    for (const id of [1, 2, 3, 4]) await deleteRetailPriceRule(id);
+    await user.click(dialog.getByRole('radio', { name: /^Follow the pricing rule/ }));
+    await user.click(dialog.getByRole('button', { name: 'Save price' }));
+    expect(await dialog.findByText('No pricing rule covers this service.')).toBeInTheDocument();
+    expect(dialog.getByRole('radio', { name: /^Follow the pricing rule/ })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(screen.getByRole('dialog', { name: 'Storefront price' })).toBeInTheDocument();
+    expect(screen.queryByText('Price follows the rule')).not.toBeInTheDocument();
+  });
+
+  it('shows the server’s refusal when the service has no cost', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'Samsung KG Lock Fix');
+    // Samsung KG Lock Fix is service 13 of the mock.
+    (await storefrontStore()).services.get(13)!.cost = 0;
+    await user.click(dialog.getByRole('radio', { name: /^Follow the pricing rule/ }));
+    await user.click(dialog.getByRole('button', { name: 'Save price' }));
+    expect(
+      await dialog.findByText('This service has no cost, so a rule cannot price it.'),
+    ).toBeInTheDocument();
+  });
+
+  it('turns following off when a price is typed: the typed price goes out and the Rule tag goes', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'T-Mobile USA Unlock');
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('radio', { name: /^Type a price/ }));
+    const price = dialog.getByRole('textbox', { name: /^Price shown to customers/ });
+    expect(price).toHaveValue('19.99');
+    await user.clear(price);
+    await user.type(price, '21.99');
+    await user.click(dialog.getByRole('button', { name: 'Save price' }));
+    expect(await screen.findByText('Price saved')).toBeInTheDocument();
+    expect(requests.sent().find((sent) => sent.method === 'PATCH')!.body).toEqual({ retailPrice: '21.9900' });
+    const row = await rowOf(TABLE, 'T-Mobile USA Unlock');
+    await waitFor(() => expect(row.queryByText('Rule')).not.toBeInTheDocument());
+  });
+
+  it('sends the same price as a typed one when the price followed a rule: that is how it stops following', async () => {
+    const user = userEvent.setup();
+    const dialog = await openPrice(user, 'T-Mobile USA Unlock');
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('radio', { name: /^Type a price/ }));
+    await user.click(dialog.getByRole('button', { name: 'Save price' }));
+    expect(await screen.findByText('Price saved')).toBeInTheDocument();
+    expect(requests.sent().find((sent) => sent.method === 'PATCH')!.body).toEqual({ retailPrice: '19.9900' });
+  });
+});
+
 describe('search and sort in the address', () => {
   it('sends the search after a pause, keeps it in the address and clears it', async () => {
     const user = userEvent.setup();
@@ -175,5 +300,60 @@ describe('states of the table', () => {
     const app = await openStorefront('/storefront?page=9');
     expect(await rowOf(TABLE, 'EE UK Unlock')).toBeTruthy();
     expect(app.location()).toBe('/storefront');
+  });
+});
+
+describe('publishing in bulk', () => {
+  it('has a Publish services link beside Add listing, and the sub no longer says only IMEI services are sold', async () => {
+    const user = userEvent.setup();
+    const app = await openStorefront();
+    await rowOf(TABLE, 'EE UK Unlock');
+    const publish = screen.getByRole('link', { name: 'Publish services…' });
+    expect(publish).toHaveAttribute('href', '/storefront?tab=publish');
+    // With listings on the shop, Add listing stays the main button and Publish is the default one.
+    expect(screen.getByRole('button', { name: 'Add listing…' })).toHaveClass('btn-primary');
+    expect(publish).not.toHaveClass('btn-primary');
+    expect(screen.queryByText(/Only IMEI services are sold to the public/)).not.toBeInTheDocument();
+    expect(screen.getByText(/^A retail price can never go below the floor/)).toBeInTheDocument();
+    await user.click(publish);
+    expect(app.location()).toBe('/storefront?tab=publish');
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
+    ).toBeInTheDocument();
+  });
+
+  it('makes Publish services the main button, and the call to action of the empty state, when the shop has no listing', async () => {
+    const stores = await storefrontStore();
+    for (const listing of stores.listings.list()) stores.listings.remove(listing.id);
+    await openStorefront();
+    expect(await screen.findByText('No services yet')).toBeInTheDocument();
+    expect(
+      screen.getByText('Add services under Services & pricing or Suppliers, then publish them here.'),
+    ).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: 'Publish services…' });
+    // One in the panel's header, one in the empty state: both lead to the Publish tab and both are the main action.
+    expect(links).toHaveLength(2);
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', '/storefront?tab=publish');
+      expect(link).toHaveClass('btn-primary');
+    }
+    expect(screen.getByRole('button', { name: 'Add listing…' })).not.toHaveClass('btn-primary');
+  });
+
+  it('keeps the plain empty state of a search with no match, without a Publish button in it', async () => {
+    const user = userEvent.setup();
+    await openStorefront();
+    await user.type(await screen.findByRole('searchbox', { name: 'Search service, code, slug' }), 'zzzz');
+    expect(await screen.findByText('No listings match')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Publish services…' })).toHaveLength(1);
+  });
+
+  it('shows a disabled button with the permission named for a role that cannot create listings', async () => {
+    await openStorefront('/storefront', { permissions: ['storefront:read'] });
+    await rowOf(TABLE, 'EE UK Unlock');
+    expect(screen.queryByRole('link', { name: 'Publish services…' })).not.toBeInTheDocument();
+    const publish = screen.getByRole('button', { name: 'Publish services…' });
+    expect(publish).toBeDisabled();
+    expect(publish).toHaveAttribute('title', 'You need the storefront:create permission');
   });
 });

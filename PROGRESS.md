@@ -11,6 +11,39 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-18): bulk publish and retail pricing (feature 31), built on `feat/console-31`, not merged
+
+The console half of backend feature 31 (plan `../backend/docs/briefs/31-bulk-publish.md`, decision 040, rulings B228 to B231;
+the backend is on `feat/backend-31`). Built in four Sonnet slices after `main` (features 32 and 33, the brand) was merged in,
+each with its own checks; the lead reviews the branch before it is merged. M265 and M10c.
+
+- **Retail pricing tab** (C1): the rules (global, a service type, a category) with a server preview before every save, turn off
+  and delete, the price changes the follow pass made and the proposals that wait (apply or keep), the Rule / Typed / Waiting
+  tags in "Services on sale", and "follow the rule" in the price dialog. A rule for IMEI covers services that take a real IMEI;
+  services that ask for an ECID or a serial number count as Server (the hint in the rule dialog, plan correction 11).
+- **Publish tab** (C2, C3): start (everything, a category or a supplier; ticked services and a Quick add run start from their
+  own screens), the preview of up to
+  every service (the server's titles, slugs, prices, margins and flags; search, chips, edit one row with **Save and next**, bulk
+  actions by ticked rows or "all that match", **Check again**), the confirm dialog (a tick box above 500), progress, result,
+  **Review the rest**, **Continue**, **Prepare again** (a preview that never finished, or a Check again run discarded while it was prepared), the run switch (take a run off the shop and put it back) and the history. Entry points:
+  Services (ticked rows), Suppliers (a supplier's services), Services on sale and Quick add.
+- **Quick add** (C4): the tick box **Also put them on the shop** (locked while "Switched off" is chosen and without
+  `storefront:publish`), the review bullets, the server's "set a retail pricing rule first" refusal with a link to Retail pricing,
+  and a "Publishing to the shop" line in step 3 (read every 5 s while the publish run is live; "The shop preview was not
+  prepared." with **Prepare the shop preview** when no run exists 2 minutes after the end). The dialog opens on step 3 again
+  when the newest run ended after asking to publish, so the line and the button are not lost (the review of C4 fixed this).
+- **The console computes no price, title or slug** (M92 stands): every figure and every proposal is the server's.
+- **Checks on the branch (2026-11-19, after the review fixes of C4 and the approval of price changes):** `npm run typecheck`,
+  `npm run lint` (eslint, prettier, english-only) and `VITE_API_MOCKS=false npm run build` are green. The whole suite through the
+  slot (`with-slot.sh npm test`: 521 files, 5805 tests, 382 s) ran 5804 passed, 1 failed: `system-health/header/VerdictPanel.test.tsx`
+  "is warn when degraded" (not touched; it expects a time of day without a date for an incident that began 38 minutes ago, so it
+  fails in the first 38 minutes after local midnight, here at 00:19, alone and in the full run). `npm run routes:coverage`
+  (2026-11-18): 269 of 269 map endpoints covered; the 16 routes of this feature are beyond the map ("unknown tag" in
+  `docs/ROUTE_COVERAGE.md`, as the Quick add and search routes are).
+- **Not done on purpose:** `src/mocks/liveRoutes.gen.ts` is not regenerated (the new routes stay mocked in `unbuilt` mode until
+  the backend branch is merged); `storefront:create` is not in the Storefront page's permissions (a role that can create but
+  not read the storefront cannot open the page); feature 30's note is already in the 2026-11-17 status below.
+
 ## Status (2026-11-17): English only, the Add listing search, ready-made payment methods, the IMEI-HUB brand, the sync toast
 
 The merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS.md` has the whole story of each):
@@ -41,8 +74,8 @@ The merges of 2026-11-17, each with its backend commit (the backend's `PROGRESS.
   M267. The first commit ran the four commands (5342 tests); the second changed one sentence and ran the supplier tests
   (212), typecheck and lint only, at the owner's request to finish quickly.
 
-Checks after the merges are at the end of the backend's feature 32 paragraph. Parked, not merged: `feat/console-31` (bulk
-publish, postponed by the owner on 2026-11-17).
+Checks after the merges are at the end of the backend's feature 32 paragraph. Feature 31 (bulk publish) was parked on
+2026-11-17 and resumed on 2026-11-18: see the next status.
 
 ## Status (2026-11-08, evening): the console runs on the real backend with no mocks
 

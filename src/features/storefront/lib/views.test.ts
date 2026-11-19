@@ -6,7 +6,9 @@ import {
   HELP_VIEW,
   LANDING_VIEW,
   LISTING_VIEW,
+  PUBLISH_ITEMS_VIEW,
   parseView,
+  resetView,
   toRefineFilters,
   writeView,
 } from './views';
@@ -78,6 +80,19 @@ describe('hasActiveFilters and clearView', () => {
     expect(hasActiveFilters(parseView(base, LANDING_VIEW))).toBe(true);
     expect(hasActiveFilters(parseView(params('tab=landing'), LANDING_VIEW))).toBe(false);
     expect(clearView(base, LANDING_VIEW).toString()).toBe('tab=landing&sort=title&dir=asc');
+  });
+});
+
+describe('resetView', () => {
+  it('puts the search, the filters, the page and the sort back and keeps only the rest of the address', () => {
+    const base = params('tab=publish&run=5&q=att&state=review&page=2&sort=cost&dir=desc');
+    expect(resetView(base, PUBLISH_ITEMS_VIEW).toString()).toBe('tab=publish&run=5');
+    expect(parseView(resetView(base, PUBLISH_ITEMS_VIEW), PUBLISH_ITEMS_VIEW)).toEqual({
+      q: '',
+      page: 1,
+      sort: PUBLISH_ITEMS_VIEW.defaultSort,
+      filters: { result: '', state: '', included: '', flag: '', brandKind: '' },
+    });
   });
 });
 

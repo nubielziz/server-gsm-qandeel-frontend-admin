@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import type { SortState } from '@/components/ui';
-import { clearView, parseView, writeView, type ListView, type ViewSpec } from '../lib/views';
+import { clearView, parseView, resetView, writeView, type ListView, type ViewSpec } from '../lib/views';
 
 /** The tab's state from the address, and the functions that change it. A filter or search change goes back to page 1. */
 export function useListView(spec: ViewSpec) {
@@ -19,8 +19,19 @@ export function useListView(spec: ViewSpec) {
       setParams((prev) => writeView(prev, { filters: { [name]: value }, page: 1 }, spec), { replace: true }),
     [setParams, spec],
   );
+  // Several filters in one change: two calls of `setFilter` in a row would each start from the same address and the second would win.
+  const setFilters = useCallback(
+    (filters: Record<string, string>) =>
+      setParams((prev) => writeView(prev, { filters, page: 1 }, spec), { replace: true }),
+    [setParams, spec],
+  );
   const clear = useCallback(
     () => setParams((prev) => clearView(prev, spec), { replace: true }),
+    [setParams, spec],
+  );
+  // Search, filters, page and sort in one change: a list that another view of the same rows takes over starts clean.
+  const reset = useCallback(
+    () => setParams((prev) => resetView(prev, spec), { replace: true }),
     [setParams, spec],
   );
   const setPage = useCallback(
@@ -32,5 +43,5 @@ export function useListView(spec: ViewSpec) {
     [setParams, spec],
   );
 
-  return { view, setQuery, setFilter, clear, setPage, setSort };
+  return { view, setQuery, setFilter, setFilters, clear, reset, setPage, setSort };
 }

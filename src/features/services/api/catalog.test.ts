@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api';
 import { setupMockApi, signInAs } from '@/test/mockApi';
+import { servicesStore } from '../mocks/store';
 import { recordRequests } from '../test/requests';
 import {
   createCategory,
@@ -306,23 +307,92 @@ describe('the parts of a service', () => {
   it('replaces the group prices, for any group id (the merchants feature owns the groups)', async () => {
     const requests = recordRequests();
     const prices = [{ groupId: 2, price: '16.0000' }];
-    expect(await replaceServiceGroupPrices(ATT, { prices })).toEqual(prices);
-    expect(requests.last()).toMatchObject({ method: 'PUT', body: { prices } });
+    expect(await replaceServiceGroupPrices(ATT, { prices, retailPriceSeen: null })).toEqual(prices);
+    expect(requests.last()).toMatchObject({ method: 'PUT', body: { prices, retailPriceSeen: null } });
     expect(requests.last().url.pathname).toBe('/admin/services/5/group-prices');
     const unknown = [{ groupId: 99, price: '1.0000' }];
-    expect(await replaceServiceGroupPrices(ATT, { prices: unknown })).toEqual(unknown);
+    expect(await replaceServiceGroupPrices(ATT, { prices: unknown, retailPriceSeen: null })).toEqual(unknown);
     expect((await getService(ATT)).groupPrices).toEqual(unknown);
   });
 
   it('refuses a group price that names no group or has no price', async () => {
-    const noGroup = await replaceServiceGroupPrices(ATT, { prices: [{ groupId: 0, price: '1.0000' }] }).catch(
-      (e: unknown) => e,
-    );
+    const noGroup = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: 0, price: '1.0000' }],
+      retailPriceSeen: null,
+    }).catch((e: unknown) => e);
     expect((noGroup as ApiError).fieldErrors['prices.0.groupId']).toEqual(['Choose a merchant group.']);
-    const noPrice = await replaceServiceGroupPrices(ATT, { prices: [{ groupId: 2, price: '0.0000' }] }).catch(
-      (e: unknown) => e,
-    );
+    const noPrice = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: 2, price: '0.0000' }],
+      retailPriceSeen: null,
+    }).catch((e: unknown) => e);
     expect((noPrice as ApiError).fieldErrors['prices.0.price']).toEqual(['Enter a price greater than zero.']);
+  });
+});
+
+describe('replaceServiceGroupPrices: retailPriceSeen', () => {
+  const RETAIL = 9;
+
+  /** A retail group in the mock menu and a stored retail price of 19.99 on service 5, which already has VIP 15.90. */
+  async function withRetail() {
+    const stores = await servicesStore();
+    stores.groups.push({ id: RETAIL, name: 'Storefront retail', kind: 'b2c_retail', discountPercent: 0 });
+    const service = stores.services.find(String(ATT));
+    service?.groupPrices.push({ groupId: RETAIL, price: '19.9900' });
+  }
+
+  it('is refused on its own field unless it is null or money with four decimals', async () => {
+    for (const retailPriceSeen of ['19.99', 'abc', 19.99, '']) {
+      const refused = await replaceServiceGroupPrices(ATT, {
+        prices: [{ groupId: 2, price: '16.0000' }],
+        retailPriceSeen: retailPriceSeen as never,
+      }).catch((e: unknown) => e);
+      expect((refused as ApiError).fieldErrors['retailPriceSeen']).toHaveLength(1);
+    }
+    expect((await getService(ATT)).groupPrices).toEqual([{ groupId: 3, price: '15.9000' }]);
+  });
+
+  it('keeps the stored retail price when the retail row sent is the figure seen, even if the row sent is stale', async () => {
+    await withRetail();
+    const saved = await replaceServiceGroupPrices(ATT, {
+      prices: [
+        { groupId: 2, price: '16.0000' },
+        { groupId: RETAIL, price: '19.9900' },
+      ],
+      retailPriceSeen: '19.9900',
+    });
+    expect(saved).toContainEqual({ groupId: RETAIL, price: '19.9900' });
+    const service = (await servicesStore()).services.find(String(ATT));
+    if (service) service.groupPrices = [{ groupId: RETAIL, price: '20.4900' }];
+    const kept = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: RETAIL, price: '19.9900' }],
+      retailPriceSeen: '19.9900',
+    });
+    expect(kept).toEqual([{ groupId: RETAIL, price: '20.4900' }]);
+  });
+
+  it('writes the retail row when it differs from the figure seen, and every row as sent without the key', async () => {
+    await withRetail();
+    const typed = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: RETAIL, price: '21.0000' }],
+      retailPriceSeen: '19.9900',
+    });
+    expect(typed).toEqual([{ groupId: RETAIL, price: '21.0000' }]);
+    const asSent = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: RETAIL, price: '22.0000' }],
+    } as never);
+    expect(asSent).toEqual([{ groupId: RETAIL, price: '22.0000' }]);
+  });
+
+  it('with seen null, drops no retail price that was set since: no retail row sent means untouched', async () => {
+    await withRetail();
+    const kept = await replaceServiceGroupPrices(ATT, {
+      prices: [{ groupId: 2, price: '16.0000' }],
+      retailPriceSeen: null,
+    });
+    expect(kept).toEqual([
+      { groupId: 2, price: '16.0000' },
+      { groupId: RETAIL, price: '19.9900' },
+    ]);
   });
 });
 

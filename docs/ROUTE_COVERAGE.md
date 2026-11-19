@@ -45,25 +45,59 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 - `PATCH /admin/notification-campaigns/:id` at src/features/notifications/api/campaigns.ts:65
 - `DELETE /admin/notification-campaigns/:id` at src/features/notifications/api/campaigns.ts:73
 - `POST /admin/notification-campaigns/audience-preview` at src/features/notifications/api/campaigns.ts:82
-- `POST /admin/notification-campaigns/:id/preview` at src/features/notifications/api/campaigns.ts:91
-- `POST /admin/notification-campaigns/:id/test` at src/features/notifications/api/campaigns.ts:100
-- `POST /admin/notification-campaigns/:id/send` at src/features/notifications/api/campaigns.ts:114
-- `POST /admin/notification-campaigns/:id/schedule` at src/features/notifications/api/campaigns.ts:123
-- `POST /admin/notification-campaigns/:id/cancel` at src/features/notifications/api/campaigns.ts:136
-- `GET /admin/notification-campaigns/:id/recipients` at src/features/notifications/api/campaigns.ts:145
+- `POST /admin/notification-campaigns/:id/preview` at src/features/notifications/api/campaigns.ts:90
+- `POST /admin/notification-campaigns/:id/test` at src/features/notifications/api/campaigns.ts:99
+- `POST /admin/notification-campaigns/:id/send` at src/features/notifications/api/campaigns.ts:113
+- `POST /admin/notification-campaigns/:id/schedule` at src/features/notifications/api/campaigns.ts:122
+- `POST /admin/notification-campaigns/:id/cancel` at src/features/notifications/api/campaigns.ts:135
+- `GET /admin/notification-campaigns/:id/recipients` at src/features/notifications/api/campaigns.ts:144
 - `GET /admin/inbox` at src/features/notifications/api/inbox.ts:21
 - `GET /admin/inbox/unread-count` at src/features/notifications/api/inbox.ts:37
 - `POST /admin/inbox/:id/read` at src/features/notifications/api/inbox.ts:45
 - `POST /admin/inbox/read-all` at src/features/notifications/api/inbox.ts:54
+- `GET /admin/payment-gateway-presets` at src/features/settings/api/gateways.ts:70
+- `POST /admin/payment-gateways/:id/logo` at src/features/settings/api/gateways.ts:81
+- `DELETE /admin/payment-gateways/:id/logo` at src/features/settings/api/gateways.ts:90
 - `POST /admin/service-listings/:id/image` at src/features/storefront/api/listings.ts:66
 - `DELETE /admin/service-listings/:id/image` at src/features/storefront/api/listings.ts:76
+- `POST /admin/publish-runs` at src/features/storefront/api/publish.ts:36
+- `GET /admin/publish-runs` at src/features/storefront/api/publish.ts:45
+- `GET /admin/publish-runs/:id` at src/features/storefront/api/publish.ts:53
+- `GET /admin/publish-runs/:id/items` at src/features/storefront/api/publish.ts:63
+- `PATCH /admin/publish-runs/:id/items/:itemId` at src/features/storefront/api/publish.ts:77
+- `POST /admin/publish-runs/:id/items/bulk` at src/features/storefront/api/publish.ts:91
+- `POST /admin/publish-runs/:id/apply` at src/features/storefront/api/publish.ts:105
+- `POST /admin/publish-runs/:id/cancel` at src/features/storefront/api/publish.ts:114
+- `POST /admin/publish-runs/:id/listed` at src/features/storefront/api/publish.ts:128
+- `GET /admin/retail-price-rules` at src/features/storefront/api/retailPricing.ts:31
+- `POST /admin/retail-price-rules` at src/features/storefront/api/retailPricing.ts:44
+- `PATCH /admin/retail-price-rules/:id` at src/features/storefront/api/retailPricing.ts:55
+- `DELETE /admin/retail-price-rules/:id` at src/features/storefront/api/retailPricing.ts:68
+- `POST /admin/retail-price-rules/preview` at src/features/storefront/api/retailPricing.ts:78
+- `GET /admin/retail-price-changes` at src/features/storefront/api/retailPricing.ts:91
+- `POST /admin/retail-price-changes/resolve` at src/features/storefront/api/retailPricing.ts:105
+- `GET /admin/search/synonyms` at src/features/storefront/api/search.ts:35
+- `POST /admin/search/synonyms` at src/features/storefront/api/search.ts:49
+- `PATCH /admin/search/synonyms/:id` at src/features/storefront/api/search.ts:57
+- `DELETE /admin/search/synonyms/:id` at src/features/storefront/api/search.ts:65
+- `GET /admin/search/pins` at src/features/storefront/api/search.ts:74
+- `POST /admin/search/pins` at src/features/storefront/api/search.ts:86
+- `PATCH /admin/search/pins/:id` at src/features/storefront/api/search.ts:94
+- `DELETE /admin/search/pins/:id` at src/features/storefront/api/search.ts:102
+- `GET /admin/search/hidden-terms` at src/features/storefront/api/search.ts:110
+- `POST /admin/search/hidden-terms` at src/features/storefront/api/search.ts:120
+- `DELETE /admin/search/hidden-terms/:id` at src/features/storefront/api/search.ts:128
+- `GET /admin/search/report` at src/features/storefront/api/search.ts:137
+- `GET /admin/search/preview` at src/features/storefront/api/search.ts:147
+- `GET /admin/search/index` at src/features/storefront/api/search.ts:156
+- `POST /admin/search/index/rebuild` at src/features/storefront/api/search.ts:166
 - `GET /admin/suppliers/:id/service-groups` at src/features/suppliers/api/quickAdd.ts:12
-- `POST /admin/suppliers/:id/quick-add` at src/features/suppliers/api/quickAdd.ts:23
-- `GET /admin/suppliers/:id/quick-add/:runId` at src/features/suppliers/api/quickAdd.ts:33
-- `POST /admin/support-tickets/:id/read` at src/features/support/api/tickets.ts:87
-- `POST /admin/support-tickets/:id/typing` at src/features/support/api/tickets.ts:97
-- `POST /admin/support-tickets/:id/files` at src/features/support/api/tickets.ts:108
-- `GET /admin/support-tickets/:id/files/:fileId` at src/features/support/api/tickets.ts:120
+- `POST /admin/suppliers/:id/quick-add` at src/features/suppliers/api/quickAdd.ts:26
+- `GET /admin/suppliers/:id/quick-add/:runId` at src/features/suppliers/api/quickAdd.ts:36
+- `POST /admin/support-tickets/:id/read` at src/features/support/api/tickets.ts:89
+- `POST /admin/support-tickets/:id/typing` at src/features/support/api/tickets.ts:99
+- `POST /admin/support-tickets/:id/files` at src/features/support/api/tickets.ts:110
+- `GET /admin/support-tickets/:id/files/:fileId` at src/features/support/api/tickets.ts:123
 
 ## Endpoints tagged more than once
 
@@ -141,7 +175,7 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `DELETE /admin/services/:id` | services | src/features/services/api/services.ts:68 |
 | covered | `PUT /admin/services/:id/fields` | services | src/features/services/api/serviceParts.ts:18 |
 | covered | `PUT /admin/services/:id/options` | services | src/features/services/api/serviceParts.ts:31 |
-| covered | `PUT /admin/services/:id/group-prices` | services | src/features/services/api/serviceParts.ts:44 |
+| covered | `PUT /admin/services/:id/group-prices` | services | src/features/services/api/serviceParts.ts:46 |
 | covered | `GET /admin/client-prices` | merchants | src/features/merchants/api/prices.ts:21 |
 | covered | `POST /admin/client-prices` | merchants | src/features/merchants/api/prices.ts:31 |
 | covered | `PATCH /admin/client-prices/:id` | merchants | src/features/merchants/api/prices.ts:40 |
@@ -187,11 +221,11 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `POST /admin/orders/:id/dispatch` | orders | src/features/orders/api/actions.ts:89 |
 | covered | `POST /admin/orders/:id/fetch` | orders | src/features/orders/api/actions.ts:99 |
 | covered | `POST /admin/orders/:id/change-supplier` | orders | src/features/orders/api/actions.ts:109 |
-| covered | `GET /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:20 |
-| covered | `GET /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:29 |
-| covered | `POST /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:38 |
-| covered | `PATCH /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:48 |
-| covered | `DELETE /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:57 |
+| covered | `GET /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:21 |
+| covered | `GET /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:30 |
+| covered | `POST /admin/payment-gateways` | settings | src/features/settings/api/gateways.ts:41 |
+| covered | `PATCH /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:51 |
+| covered | `DELETE /admin/payment-gateways/:id` | settings | src/features/settings/api/gateways.ts:60 |
 | covered | `GET /admin/invoices` | finance | src/features/finance/api/invoices.ts:19 |
 | covered | `GET /admin/invoices/:id` | finance | src/features/finance/api/invoices.ts:28 |
 | covered | `POST /admin/invoices` | finance | src/features/finance/api/invoices.ts:38 |
@@ -287,11 +321,11 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/reports/vat` | finance | src/features/finance/api/reports.ts:35 |
 | covered | `GET /admin/reports/payments` | refunds | src/features/refunds/api/reports.ts:14 |
 | covered | `PATCH /admin/storefront/settings` | settings | src/features/settings/api/storefront.ts:10 |
-| covered | `GET /admin/support-tickets` | support | src/features/support/api/tickets.ts:32 |
-| covered | `GET /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:45 |
-| covered | `PATCH /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:55 |
-| covered | `POST /admin/support-tickets/:id/reply` | support | src/features/support/api/tickets.ts:66 |
-| covered | `POST /admin/support-tickets/:id/note` | support | src/features/support/api/tickets.ts:76 |
+| covered | `GET /admin/support-tickets` | support | src/features/support/api/tickets.ts:34 |
+| covered | `GET /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:47 |
+| covered | `PATCH /admin/support-tickets/:id` | support | src/features/support/api/tickets.ts:57 |
+| covered | `POST /admin/support-tickets/:id/reply` | support | src/features/support/api/tickets.ts:68 |
+| covered | `POST /admin/support-tickets/:id/note` | support | src/features/support/api/tickets.ts:78 |
 | covered | `GET /admin/reply-templates` | support | src/features/support/api/templates.ts:22 |
 | covered | `GET /admin/reply-templates/:id` | support | src/features/support/api/templates.ts:33 |
 | covered | `POST /admin/reply-templates` | support | src/features/support/api/templates.ts:42 |

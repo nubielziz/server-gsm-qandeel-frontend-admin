@@ -16,8 +16,8 @@ export interface ModalProps {
   size?: 'md' | 'lg';
   /** Content of the footer bar, normally the Cancel and Confirm buttons. Leave out for an info-only dialog. */
   footer?: ReactNode;
-  /** Text for the error slot under the body (a live region, announced when it changes). */
-  error?: string | null;
+  /** Text for the error slot under the body (a live region, announced when it changes). A node may add a link to the text. */
+  error?: ReactNode;
   /** False while a request runs: Escape, backdrop and the close button are ignored. */
   dismissible?: boolean;
   /** Submit handler of the form that wraps the dialog (header, body, footer). */

@@ -1,13 +1,14 @@
-// The server search behind the Add listing dialog's Service field: the active IMEI services whose name, code or category holds the
+// The server search behind the Add listing dialog's Service field: the active IMEI, server and remote services whose name, code or category holds the
 // typed text (`GET /admin/services?q=`, the services feature's own `listServices`, needs `catalog:read`). It replaces a menu capped at
 // 200 names, which hid most services after a supplier's Quick add.
 import { useEffect, useState } from 'react';
 import { listServices } from '@/features/services';
 import { useApiQuery } from '@/lib/query';
+import { SHOP_SERVICE_TYPES } from '../lib/publish';
 import { PICKER_STALE_MS, SERVICE_SEARCH_PAUSE_MS, SERVICE_SEARCH_ROWS, serviceSearchKey } from './keys';
 
 /** `value`, once it has stayed the same for `delay` ms. */
-function useSettledValue<T>(value: T, delay: number): T {
+export function useSettledValue<T>(value: T, delay: number): T {
   const [settled, setSettled] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setSettled(value), delay);
@@ -27,8 +28,9 @@ export function useServiceSearch(text: string, enabled: boolean) {
   const q = useSettledValue(typed, SERVICE_SEARCH_PAUSE_MS);
   const query = useApiQuery({
     queryKey: serviceSearchKey(q),
-    // The same rule as the menu it replaces: active IMEI services only. A service that already has a listing is still
-    // offered; the server refuses it under the field ("This service already has a listing.").
+    // Active services of the three types that can be on the shop (a `file` service cannot be ordered online): the repeated
+    // `type` key is an IN filter. A service that already has a listing is still offered; the server refuses it under the
+    // field ("This service already has a listing.").
     queryFn: ({ signal }) =>
       listServices(
         {
@@ -37,7 +39,7 @@ export function useServiceSearch(text: string, enabled: boolean) {
           sort: ['name'],
           order: ['asc'],
           q: q || undefined,
-          filters: { type: 'imei', status: 'active' },
+          filters: { type: [...SHOP_SERVICE_TYPES], status: 'active' },
         },
         { signal },
       ),

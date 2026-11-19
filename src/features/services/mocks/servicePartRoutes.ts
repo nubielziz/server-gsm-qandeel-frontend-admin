@@ -5,14 +5,36 @@ import { toMoney } from '@/mocks/seed';
 import { bodyOf, idOf, invalid, notFound, signedIn } from './http';
 import { servicesStore } from './store';
 import type { ServiceField, ServiceGroupPrice, ServiceOption } from '../types';
+import { RETAIL_GROUP_KIND } from '../lib/groupPrices';
 
 const FIELD_TYPES = ['text', 'number', 'select', 'textarea'];
 const OPTION_LISTS = ['model', 'network', 'mep'];
+/** Money on the wire: a decimal with exactly four fraction digits. */
+const MONEY_WIRE = /^-?\d+\.\d{4}$/;
 
 const rowsOf = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value)
     ? value.filter((row): row is Record<string, unknown> => typeof row === 'object' && row !== null)
     : [];
+
+/**
+ * Plays the server's `retailPriceSeen` rule: when the retail row sent is the figure the form loaded (or absent, when it loaded
+ * none), nobody touched the retail box, so the retail price stored now stays whatever the row says. Without the key every row
+ * counts as sent. The mock compares numbers; the real server compares exact decimals.
+ */
+function keepUntouchedRetail(
+  rows: ServiceGroupPrice[],
+  stored: readonly ServiceGroupPrice[],
+  retailGroupId: number | undefined,
+  seen: unknown,
+): ServiceGroupPrice[] {
+  if (seen === undefined || retailGroupId === undefined) return rows;
+  const sent = rows.find((row) => row.groupId === retailGroupId)?.price ?? null;
+  const untouched = sent === null || seen === null ? sent === seen : Number(sent) === Number(seen);
+  if (!untouched) return rows;
+  const kept = stored.find((row) => row.groupId === retailGroupId);
+  return [...rows.filter((row) => row.groupId !== retailGroupId), ...(kept ? [kept] : [])];
+}
 
 /** The fields, options and group prices routes. */
 export const servicePartRoutes: HttpHandler[] = [
@@ -81,9 +103,17 @@ export const servicePartRoutes: HttpHandler[] = [
       const stores = await servicesStore();
       const service = stores.services.find(String(params.id));
       if (!service) return notFound('service', params.id);
-      const rows = rowsOf((await bodyOf(request)).prices);
+      const body = await bodyOf(request);
+      const rows = rowsOf(body.prices);
+      const seen = body.retailPriceSeen;
       const problems: { field: string; message: string }[] = [];
       const prices: ServiceGroupPrice[] = [];
+      if (seen !== undefined && seen !== null && !(typeof seen === 'string' && MONEY_WIRE.test(seen))) {
+        problems.push({
+          field: 'retailPriceSeen',
+          message: 'Must be a decimal amount with exactly 4 decimals, like 12.4900.',
+        });
+      }
       for (const [index, row] of rows.entries()) {
         const groupId = idOf(row.groupId);
         const price = Number(row.price);
@@ -97,8 +127,9 @@ export const servicePartRoutes: HttpHandler[] = [
         }
       }
       if (problems.length > 0) return invalid(problems);
-      service.groupPrices = prices;
-      return HttpResponse.json(prices);
+      const retail = stores.groups.find((group) => group.kind === RETAIL_GROUP_KIND);
+      service.groupPrices = keepUntouchedRetail(prices, service.groupPrices, retail?.id, seen);
+      return HttpResponse.json(service.groupPrices);
     }),
   ),
 ];

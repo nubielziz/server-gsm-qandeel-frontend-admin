@@ -15,6 +15,8 @@ export interface QuickAddReviewProps {
   groups: readonly ServiceGroup[];
   services: number;
   serviceStatus: QuickAddServiceStatus;
+  /** "Also put them on the shop" is ticked (and allowed). */
+  publish: boolean;
   confirmed: boolean;
   onConfirmed: (confirmed: boolean) => void;
 }
@@ -26,6 +28,7 @@ export function QuickAddReview({
   groups,
   services,
   serviceStatus,
+  publish,
   confirmed,
   onConfirmed,
 }: QuickAddReviewProps) {
@@ -38,10 +41,8 @@ export function QuickAddReview({
       </p>
       <ul className="list-disc space-y-1 ps-5 text-sm text-ink2">
         <li>Each becomes a service in a category named after its group. Missing categories are created.</li>
-        <li>
-          Price: the supplier&rsquo;s cost plus the default minimum profit. Use Bulk price change on the
-          Services page afterwards.
-        </li>
+        <li>Price for merchants: the supplier&rsquo;s cost plus the default minimum profit.</li>
+        {publish && <li>They are also published to the shop at the retail pricing rules&rsquo; prices.</li>}
         <li>Order fields and quantities are copied from the supplier.</li>
         <li>Services already in the console are not changed.</li>
         <li>{serviceStatus === 'active' ? 'They are added on sale.' : 'They are added switched off.'}</li>

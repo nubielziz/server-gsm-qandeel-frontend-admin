@@ -3,7 +3,7 @@
 // in-memory array, the console asks the server (MISMATCHES M22 has the same reasoning for orders).
 import type { CrudFilters } from '@refinedev/core';
 import type { SortState } from '@/components/ui';
-import { LANDING_KINDS } from '../types';
+import { LANDING_KINDS, PUBLISH_FLAGS } from '../types';
 
 /** Rows per page (the demo's PAGE, as on the Orders page). */
 export const PAGE_SIZE = 25;
@@ -23,6 +23,40 @@ export const LISTING_VIEW: ViewSpec = {
   sortFields: ['publicTitle', 'isListed'],
   defaultSort: { field: 'publicTitle', order: 'asc' },
   filters: {},
+};
+
+/** The price changes of the Retail pricing tab: newest first; the proposals that wait are shown until `show=all`. */
+export const CHANGES_VIEW: ViewSpec = {
+  sortFields: ['id', 'createdAt'],
+  defaultSort: { field: 'id', order: 'desc' },
+  filters: { show: ['all'] },
+};
+
+/** Rows per page of a run's rows (the preview and the result): a run holds up to 5000. */
+export const PUBLISH_ITEMS_PAGE = 50;
+
+/** The earlier runs on the Publish tab's start: newest first. */
+export const PUBLISH_RUNS_VIEW: ViewSpec = {
+  sortFields: ['id', 'createdAt'],
+  defaultSort: { field: 'id', order: 'desc' },
+  filters: {},
+};
+
+/**
+ * The rows of one run, for the result of a finished run and for the preview of a draft: in the server's order of rows, or by
+ * title or cost. `result` is the chips Published, Left out and Refused (`skipped` is "Left out"). The preview adds its own filters:
+ * `state` (the chips Ready, Needs a look, Cannot publish), `included=false` (the chip Left out), `flag` and `brandKind`.
+ */
+export const PUBLISH_ITEMS_VIEW: ViewSpec = {
+  sortFields: ['id', 'title', 'cost'],
+  defaultSort: { field: 'id', order: 'asc' },
+  filters: {
+    result: ['published', 'skipped', 'refused'],
+    state: ['ready', 'review', 'blocked'],
+    included: ['false'],
+    flag: PUBLISH_FLAGS,
+    brandKind: ['device', 'tool', 'app'],
+  },
 };
 
 /** The landing pages tab: the most recently changed first, filtered by page type (`sf-kind`). */
@@ -117,6 +151,11 @@ export function hasActiveFilters(view: Pick<ListView, 'q' | 'filters'>): boolean
 export function clearView(base: URLSearchParams, spec: ViewSpec): URLSearchParams {
   const cleared = Object.fromEntries(Object.keys(spec.filters).map((name) => [name, '']));
   return writeView(base, { q: '', page: 1, filters: cleared }, spec);
+}
+
+/** The same address with the search text, the filters, the page and the sort all back to their defaults (only the tab stays). */
+export function resetView(base: URLSearchParams, spec: ViewSpec): URLSearchParams {
+  return writeView(clearView(base, spec), { sort: spec.defaultSort }, spec);
 }
 
 /**

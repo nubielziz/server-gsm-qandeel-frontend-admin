@@ -17,7 +17,13 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['notifications', 'Notifications', 'Operations', 'bell', 'broadcasts:read'],
     ['services', 'Services & pricing', 'Catalog', 'tag', ['catalog:read', 'pricing:read', 'inventory:read']],
     ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
-    ['storefront', 'Storefront', 'Catalog', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
+    [
+      'storefront',
+      'Storefront',
+      'Catalog',
+      'store',
+      ['storefront:read', 'legal:read', 'catalog:read', 'pricing:read'],
+    ],
     [
       'finance',
       'Finance',

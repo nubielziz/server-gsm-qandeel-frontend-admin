@@ -3,16 +3,18 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { recordRequests } from '../../storefront/test/requests';
 import { mocks, suppliersState } from '../mocks';
 import { detailOf, openSuppliers, toasts } from '../test/suppliersPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 beforeEach(() => mockServer.use(...mocks.handlers));
+afterEach(() => vi.restoreAllMocks());
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -389,5 +391,53 @@ describe('import services', () => {
     await user.selectOptions(group, 'All groups');
     await waitFor(() => expect(asked.at(-1)?.has('remoteGroup')).toBe(false));
     expect(asked.at(-1)?.has('type')).toBe(false);
+  });
+});
+
+describe('publish to the shop', () => {
+  it('starts a preview of the supplier’s services and opens it on the Publish tab', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    const app = await openSuppliers('/suppliers?supplier=3');
+    const detail = await detailOf('Rapid IMEI');
+    await detail.findByRole('table', { name: 'Services using Rapid IMEI' });
+    await user.click(detail.getByRole('button', { name: 'Publish to the shop…' }));
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish&run=8'));
+    const created = requests
+      .sent()
+      .find((sent) => sent.method === 'POST' && sent.url.pathname === '/admin/publish-runs')!;
+    expect(created.body).toEqual({ scope: { kind: 'supplier', supplierId: 3 } });
+    expect(await screen.findByText(/^Preparing the preview of \d+ services…$/)).toBeInTheDocument();
+  });
+
+  it('needs storefront:create, and says so', async () => {
+    await openSuppliers('/suppliers?supplier=3', { permissions: ['suppliers:read', 'catalog:create'] });
+    const detail = await detailOf('Rapid IMEI');
+    await detail.findByRole('table', { name: 'Services using Rapid IMEI' });
+    const publish = detail.getByRole('button', { name: 'Publish to the shop…' });
+    expect(publish).toBeDisabled();
+    expect(publish).toHaveAttribute('title', 'You need the storefront:create permission');
+  });
+
+  it('shows the server’s refusal as a toast and stays on the Suppliers page', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/publish-runs', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          {
+            field: 'scope',
+            message: 'Nothing to publish: every service of this choice is already on the shop.',
+          },
+        ]),
+      ),
+    );
+    const app = await openSuppliers('/suppliers?supplier=3');
+    const detail = await detailOf('Rapid IMEI');
+    await user.click(await detail.findByRole('button', { name: 'Publish to the shop…' }));
+    expect(await toasts().findByText('Could not prepare the preview')).toBeInTheDocument();
+    expect(
+      toasts().getByText('Nothing to publish: every service of this choice is already on the shop.'),
+    ).toBeInTheDocument();
+    expect(app.location()).toBe('/suppliers?supplier=3');
   });
 });

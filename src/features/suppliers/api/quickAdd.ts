@@ -19,7 +19,10 @@ export function listServiceGroups(id: Id, init?: ApiInit): Promise<ServiceGroups
  * Starts a quick add: the picked groups (1 to 500), or every service of the supplier. The server builds the list, creates only
  * what is not in the console yet, and answers at once with the queued run; the work goes on in the background. It refuses with
  * `JOB_ALREADY_RUNNING` while another run of the supplier is live, `SUPPLIER_DISABLED`, and a 422 (`scope`) when nothing is left to add.
- * Assumed contract: body `QuickAddBody`, answer `QuickAddRun` with status 202 (backend addition, B214).
+ * With `publish: { listed: true }` (the tick box "Also put them on the shop", feature 31) the server also puts what the run added on the
+ * shop when it ends, through an automatic publish run; it refuses `publish` with a 422 on that field (`needs_active` for services added
+ * switched off, `no_rule` when no retail price rule is active) and with a 403 naming `storefront:publish`.
+ * Assumed contract: body `QuickAddBody`, answer `QuickAddRun` with status 202 (backend additions, B214 and B231).
  * @route POST /admin/suppliers/:id/quick-add
  */
 export function startQuickAdd(id: Id, body: QuickAddBody, init?: ApiInit): Promise<QuickAddRun> {

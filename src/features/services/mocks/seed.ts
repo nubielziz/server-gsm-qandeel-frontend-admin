@@ -41,7 +41,7 @@ export type Stores = {
   categories: Collection<MockCategory>;
   rules: Collection<MockRule>;
   codes: Collection<MockCode>;
-  groups: readonly MockGroup[];
+  groups: MockGroup[];
   suppliers: ReadonlyMap<number, string>;
   merchants: ReadonlyMap<number, MockMerchant>;
   /** Merchant overrides by `${merchantId}|${serviceId}`; the merchants feature owns their editing. */
@@ -193,7 +193,7 @@ export function buildStores(state: DemoState): Stores {
     categories: new Collection(categories),
     rules: new Collection(rules),
     codes: new Collection(codes),
-    groups: GROUPS,
+    groups: [...GROUPS],
     suppliers,
     merchants,
     clientPrices,

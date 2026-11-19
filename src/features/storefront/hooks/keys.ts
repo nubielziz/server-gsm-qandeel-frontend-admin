@@ -63,3 +63,32 @@ export const REBUILD_POLL_MS = 5_000;
 
 /** How many listed services the pin picker shows for a search text. */
 export const PICKER_RESULTS = 8;
+
+/** Refine resources of the Retail pricing tab's lists (`retail-price-rules`, `retail-price-changes`). */
+export const RETAIL_RESOURCES = { rules: 'retail-price-rules', changes: 'retail-price-changes' } as const;
+
+/** The server's preview of one rule change (`['api', 'storefront', 'retail-rule-preview', <change>]`); never kept after the dialog. */
+export const retailPreviewKey = (change: unknown) =>
+  ['api', 'storefront', 'retail-rule-preview', change] as const;
+
+/** The categories the rule dialog's search offers for one search text. */
+export const categorySearchKey = (q: string) => ['api', 'storefront', 'category-search', q] as const;
+
+/** How many categories one search of the rule dialog asks for (the menus of the services pages stop at 200 without a word). */
+export const CATEGORY_SEARCH_ROWS = 20;
+
+/** One publish run, read again while it works (`['api', 'storefront', 'publish-run', id]`). */
+export const PUBLISH_RUN_KEY = ['api', 'storefront', 'publish-run'] as const;
+export const publishRunKey = (id: number) => [...PUBLISH_RUN_KEY, id] as const;
+
+/** The earlier runs (the history on the Publish tab's start, and the lists other tabs read by `quickAddRunId`). */
+export const PUBLISH_RUNS_KEY = ['api', 'storefront', 'publish-runs'] as const;
+
+/** The rows of one run (`['api', 'storefront', 'publish-items', runId, <query>]`): a change to a run makes every page stale. */
+export const PUBLISH_ITEMS_KEY = ['api', 'storefront', 'publish-items'] as const;
+
+/** The suppliers the Publish tab's "A supplier's services" menu offers. */
+export const PUBLISH_SUPPLIERS_KEY = ['api', 'storefront', 'publish-suppliers'] as const;
+
+/** The reads a run that ended (or a switch that ended) makes stale besides Refine's own: the history, the rows and the counts. */
+export const PUBLISH_STALE_KEYS: QueryKey[] = [PUBLISH_RUNS_KEY, PUBLISH_ITEMS_KEY, STOREFRONT_COUNTS_KEY];

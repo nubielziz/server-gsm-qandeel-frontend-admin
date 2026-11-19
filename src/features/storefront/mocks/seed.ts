@@ -4,6 +4,8 @@
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
 import type { ContentPage, HelpArticle, LegalDocument, PageKind, PageStatus, TacEntry } from '../types';
+import { buildPricingStores } from './pricingSeed';
+import { buildPublishStores } from './publishSeed';
 import { buildSearchStores } from './searchSeed';
 import type { MockListing, MockSales, MockService, Stores } from './types';
 
@@ -13,6 +15,8 @@ type DemoService = {
   id: string;
   code: string;
   name: string;
+  type: string;
+  category: string;
   status: 'active' | 'disabled';
   price: number;
   cost: number;
@@ -61,11 +65,26 @@ function listingStores(state: DemoState, now: number) {
   const services = new Map<number, MockService>();
   const retail = new Map<number, number>();
   const prices = (state.retail ?? {}) as Record<string, number>;
+  // The services mock numbers the categories by first appearance; the retail pricing rules point at the same ids.
+  const categoryIds = new Map<string, number>();
   for (const s of demoRows<DemoService>(state, 'services')) {
     const id = demoNumericId(s.id);
-    services.set(id, { id, name: s.name, code: s.code, status: s.status, basePrice: s.price, cost: s.cost });
+    if (!categoryIds.has(s.category)) categoryIds.set(s.category, categoryIds.size + 1);
+    services.set(id, {
+      id,
+      name: s.name,
+      code: s.code,
+      status: s.status,
+      basePrice: s.price,
+      cost: s.cost,
+      type: s.type.toLowerCase() as MockService['type'],
+      categoryId: categoryIds.get(s.category) ?? 0,
+    });
     if (prices[s.code]) retail.set(id, prices[s.code]);
   }
+  const categories = new Map<number, string>(
+    [...categoryIds].map(([name, id]): [number, string] => [id, name]),
+  );
   const listings = new Collection<MockListing>(
     demoRows<DemoListing>(state, 'listings').map((l, index) => ({
       id: index + 1,
@@ -98,7 +117,7 @@ function listingStores(state: DemoState, now: number) {
     const was = sales.get(id) ?? { orders: 0, revenue: 0 };
     sales.set(id, { orders: was.orders + 1, revenue: was.revenue + o.price });
   }
-  return { services, retail, listings, sales };
+  return { services, retail, listings, sales, categories };
 }
 
 const bodyFor = (title: string) => `# ${title}\n\nText for ${title} goes here.`;
@@ -191,7 +210,7 @@ function tacRows(state: DemoState): TacEntry[] {
 /** The stores for a fresh demo state. */
 export function buildStores(state: DemoState): Stores {
   const now = Date.now();
-  const { services, retail, listings, sales } = listingStores(state, now);
+  const { services, retail, listings, sales, categories } = listingStores(state, now);
   return {
     listings,
     services,
@@ -202,5 +221,12 @@ export function buildStores(state: DemoState): Stores {
     legal: new Collection(legalRows(state, now)),
     tac: new Collection(tacRows(state)),
     search: buildSearchStores(listings.list(), now),
+    pricing: buildPricingStores(services, categories, now),
+    publish: buildPublishStores(
+      services,
+      categories,
+      listings.list().map((listing) => listing.serviceId),
+      now,
+    ),
   };
 }

@@ -5,10 +5,12 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { money } from '@/lib/format';
 import { filePartOf } from './multipart';
 import { floorOf, toListing, toListingDetail } from './dto';
+import { ruleFor } from './pricingDto';
 import { readContent, type FieldProblem } from './listingFields';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, slugOf, textOf } from './http';
 import { problem } from '@/mocks/problem';
 import { storefrontStore } from './store';
+import type { MockService, Stores } from './types';
 
 const SEARCH_FIELDS = ['publicTitle', 'slug', 'service.name', 'service.code'];
 
@@ -30,6 +32,32 @@ function pictureUrl(file: { type: string; bytes: Uint8Array }, serviceId: number
   if (typeof URL.createObjectURL === 'function')
     return URL.createObjectURL(new Blob([file.bytes as BlobPart], { type: file.type }));
   return `/store/v1/media/mock-${serviceId}-${Date.now()}.${PICTURE_TYPES.get(file.type) ?? 'png'}`;
+}
+
+/** The refusals of `retailPricing: 'rule'` (and the write when there are none): a body that mixes it with a price, no cost, no rule. */
+function followRule(
+  stores: Stores,
+  service: MockService,
+  lockedReason: string | null,
+  body: Record<string, unknown>,
+): Response | null {
+  const refuse = (message: string) => invalid([{ field: 'retailPricing', message }]);
+  if (body.retailPricing !== 'rule') return refuse('Use "rule".');
+  if ('retailPrice' in body) return refuse('Send either a price or the pricing rule, not both.');
+  if (lockedReason) {
+    return conflict(
+      'LISTING_LOCKED',
+      'Can’t price this service',
+      `${lockedReason}. This service cannot be listed publicly.`,
+    );
+  }
+  if (service.cost <= 0) return refuse('This service has no cost, so a rule cannot price it.');
+  const rule = ruleFor(stores, service.id);
+  const price = stores.pricing.rulePrices.get(service.id);
+  if (!rule || price === undefined) return refuse('No pricing rule covers this service.');
+  stores.retail.set(service.id, Number(price));
+  stores.pricing.sources.set(service.id, { source: 'rule', ruleId: rule.id });
+  return null;
 }
 
 /** The listing routes. */
@@ -131,6 +159,11 @@ export const listingRoutes: HttpHandler[] = [
           return conflict('LISTING_EXISTS', 'Listing already exists', message, [{ field: 'slug', message }]);
       }
 
+      // "Follow the pricing rule": the server writes the rule's price now (a fixed figure in the mock) and the price follows from then on.
+      if ('retailPricing' in body) {
+        const refusal = followRule(stores, service, row.lockedReason, body);
+        if (refusal) return refusal;
+      }
       if ('retailPrice' in body) {
         const value = amountOf(body.retailPrice);
         if (value === null || value <= 0)
@@ -151,6 +184,8 @@ export const listingRoutes: HttpHandler[] = [
           ]);
         }
         stores.retail.set(service.id, Math.round(value * 100) / 100);
+        // A typed price stops the price following a rule.
+        stores.pricing.sources.set(service.id, { source: 'manual', ruleId: null });
       }
       if ('isListed' in body && typeof body.isListed === 'boolean') {
         if (body.isListed && row.lockedReason) {

@@ -37,6 +37,7 @@ const run = (changes: Partial<QuickAddRun> = {}): QuickAddRun => ({
   scope: 'groups',
   groups: [],
   serviceStatus: 'active',
+  publish: 'none',
   status: 'queued',
   total: 10,
   processed: 0,
@@ -301,8 +302,10 @@ describe('what the picks send', () => {
     expect(dialog.getByText('This adds 2 services from all groups of Nordic GSM.')).toBeInTheDocument();
     expect(dialog.getByText('They are added on sale.')).toBeInTheDocument();
     expect(
-      dialog.getByText(/^Price: the supplier.s cost plus the default minimum profit\./),
+      dialog.getByText('Price for merchants: the supplier\u2019s cost plus the default minimum profit.'),
     ).toBeInTheDocument();
+    // The tick box is off, so nothing says the services go on the shop.
+    expect(dialog.queryByText(/also published to the shop/)).not.toBeInTheDocument();
     const listed = within(dialog.getByRole('list', { name: 'Groups to add' }));
     expect(listed.getAllByRole('listitem')).toHaveLength(2);
     expect(dialog.queryByRole('checkbox')).not.toBeInTheDocument(); // 2 services need no tick box
