@@ -1,7 +1,7 @@
 // Turns the Retail pricing mock rows into what the routes send: a rule with the server's words for it (`label`) and its category's
 // name, and a price change joined with its service and rule. The label is the figures as typed, put into a sentence: the mock works
 // out no price (M92).
-import { TYPE_LABEL } from '@/features/orders';
+import { TYPE_LABEL } from '@/lib/serviceTypes';
 import { moneyInput } from '../lib/money';
 import { percentInput } from '../lib/retailRuleForm';
 import type { RetailPriceChange, RetailPriceRule, RetailRounding } from '../types';

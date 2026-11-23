@@ -3,6 +3,7 @@
 // contract, built from the generated rows in `src/lib/api/schema.gen.ts` and narrowed to what the screens use.
 import type { Id, IsoDateTime } from '@/lib/api';
 import type { OrderEventRow, OrderRow } from '@/lib/api/schema.gen';
+import type { ServiceType } from '@/lib/serviceTypes';
 
 // ---- Order ----
 
@@ -15,8 +16,8 @@ export type OrderQueue = 'pending' | 'manual' | 'needs_attention' | 'verificatio
 /** Merchant orders (API and portal) or storefront orders (customers who paid by card or crypto). */
 export type OrderChannel = 'b2b' | 'b2c';
 
-/** The four kinds of service (the map's order example), shown as IMEI, Server, Remote and File. */
-export type ServiceType = 'imei' | 'server' | 'remote' | 'file';
+/** The four kinds of service (the map's order example), shown as IMEI, Server, Remote and File. Kept in the shared layer. */
+export type { ServiceType };
 
 /** A record named in a join. */
 export type NamedRef = { id: Id; name: string };

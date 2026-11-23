@@ -3,7 +3,7 @@
 // the pricing rules table of the services page; every word about a price is the server's `label`.
 import type { ReactNode } from 'react';
 import { Badge, Button, DataTable, TypeTag, type DataTableColumn } from '@/components/ui';
-import { TYPE_LABEL } from '@/features/orders';
+import { TYPE_LABEL } from '@/lib/serviceTypes';
 import { num } from '@/lib/format';
 import type { StorefrontGrants } from '../../hooks/useStorefrontGrants';
 import { ruleTargetName } from '../../lib/retailPricing';

@@ -1,7 +1,7 @@
 // Words and lists of the "Retail pricing" tab: what a rule covers, its rounding, the badge of each price change and the
 // sentences for what a preview says. Every figure is the server's; this file only chooses words for the server's names.
 import type { BadgeTone, IconName, SelectOption } from '@/components/ui';
-import { TYPE_LABEL, type ServiceType } from '@/features/orders';
+import { TYPE_LABEL, type ServiceType } from '@/lib/serviceTypes';
 import { num } from '@/lib/format';
 import type {
   RetailChangeKind,

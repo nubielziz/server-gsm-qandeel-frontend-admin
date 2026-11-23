@@ -107,15 +107,8 @@ export function tabFilters(tab: OrderTab): OrderListFilters {
 
 // ---- Words for other fields ----
 
-/** Service types as the demo spells them (the API sends them in lower case). */
-export const TYPE_LABEL: Readonly<Record<ServiceType, string>> = {
-  imei: 'IMEI',
-  server: 'Server',
-  remote: 'Remote',
-  file: 'File',
-};
-
-export const SERVICE_TYPES: readonly ServiceType[] = ['imei', 'server', 'remote', 'file'];
+// Service types and their words live in the shared layer (src/lib/serviceTypes.ts); this feature keeps exporting them.
+export { SERVICE_TYPES, TYPE_LABEL } from '@/lib/serviceTypes';
 
 /** What the main input is called for each type (the drawer's second row). */
 export const INPUT_LABEL: Readonly<Record<ServiceType, string>> = {
