@@ -55,6 +55,8 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 - `GET /admin/inbox/unread-count` at src/features/notifications/api/inbox.ts:37
 - `POST /admin/inbox/:id/read` at src/features/notifications/api/inbox.ts:45
 - `POST /admin/inbox/read-all` at src/features/notifications/api/inbox.ts:54
+- `GET /admin/services/price-grid` at src/features/services/api/priceGrid.ts:12
+- `POST /admin/services/order` at src/features/services/api/priceGrid.ts:22
 - `GET /admin/payment-gateway-presets` at src/features/settings/api/gateways.ts:70
 - `POST /admin/payment-gateways/:id/logo` at src/features/settings/api/gateways.ts:81
 - `DELETE /admin/payment-gateways/:id/logo` at src/features/settings/api/gateways.ts:90
@@ -91,6 +93,7 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 - `GET /admin/search/preview` at src/features/storefront/api/search.ts:147
 - `GET /admin/search/index` at src/features/storefront/api/search.ts:156
 - `POST /admin/search/index/rebuild` at src/features/storefront/api/search.ts:166
+- `GET /admin/services/:id/supplier-links` at src/features/suppliers/api/links.ts:27
 - `GET /admin/suppliers/:id/service-groups` at src/features/suppliers/api/quickAdd.ts:12
 - `POST /admin/suppliers/:id/quick-add` at src/features/suppliers/api/quickAdd.ts:26
 - `GET /admin/suppliers/:id/quick-add/:runId` at src/features/suppliers/api/quickAdd.ts:36
@@ -215,7 +218,7 @@ Total: 269 covered, 0 excluded, 0 missing of 269 endpoints (100.0%).
 | covered | `GET /admin/suppliers/:id/services` | suppliers | src/features/suppliers/api/catalogue.ts:12 |
 | covered | `POST /admin/suppliers/:id/import/preview` | suppliers | src/features/suppliers/api/catalogue.ts:26 |
 | covered | `POST /admin/suppliers/:id/import` | suppliers | src/features/suppliers/api/catalogue.ts:36 |
-| covered | `PUT /admin/services/:id/supplier-links` | suppliers | src/features/suppliers/api/links.ts:11 |
+| covered | `PUT /admin/services/:id/supplier-links` | suppliers | src/features/suppliers/api/links.ts:12 |
 | covered | `GET /admin/supplier-api-logs` | suppliers | src/features/suppliers/api/logs.ts:11 |
 | covered | `GET /admin/supplier-api-logs/:id` | suppliers | src/features/suppliers/api/logs.ts:24 |
 | covered | `POST /admin/orders/:id/dispatch` | orders | src/features/orders/api/actions.ts:89 |

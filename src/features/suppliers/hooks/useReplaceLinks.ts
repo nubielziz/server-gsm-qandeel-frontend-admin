@@ -1,7 +1,7 @@
-// Saves the supplier chain of a service from the "Edit links" dialog or the Suppliers section of the Catalog panel. Both show a
+// Saves the supplier chain of a service from the "Edit links" dialog or the supplier connection of a service. Both show a
 // failed call themselves, so no error toast.
 import type { Id } from '@/lib/api';
-import { CATALOG_ROWS_KEY, useApiMutation } from '@/lib/query';
+import { SERVICE_ROWS_KEY, useApiMutation } from '@/lib/query';
 import { replaceSupplierLinks } from '../api';
 import type { ReplaceLinksBody } from '../types';
 import { staleSupplier, SUPPLIER_CATALOGUE_KEY, SUPPLIER_STALE_KEYS } from './keys';
@@ -17,7 +17,7 @@ export type ReplaceLinksVariables = {
 };
 
 /**
- * Replaces a service's chain. The suppliers that gained or lost the service, the service's own chain read and the Catalog table
+ * Replaces a service's chain. The suppliers that gained or lost the service, the service's own chain read and the services lists
  * are made stale; the `services` resource is too, so a detail that shows the primary supplier is read again.
  */
 export function useReplaceLinks() {
@@ -27,8 +27,8 @@ export function useReplaceLinks() {
       ...supplierIds.flatMap((id) => staleSupplier(id)),
       { resource: 'services', id: serviceId },
     ],
-    // The Catalog table's rows show the primary supplier and the no-supplier reason.
-    invalidateKeys: [SUPPLIER_CATALOGUE_KEY, SERVICE_CHAIN_KEY, ...SUPPLIER_STALE_KEYS, CATALOG_ROWS_KEY],
+    // The services lists' rows show the primary supplier and the no-supplier reason.
+    invalidateKeys: [SUPPLIER_CATALOGUE_KEY, SERVICE_CHAIN_KEY, ...SUPPLIER_STALE_KEYS, SERVICE_ROWS_KEY],
     successNotification: (_chain, { body, serviceName }) => ({
       message: 'Supplier links updated',
       description:

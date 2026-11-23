@@ -21,11 +21,27 @@ export interface SelectFieldProps extends Omit<SelectHTMLAttributes<HTMLSelectEl
   wrapperClassName?: string;
   /** Classes for the `select-wrap` span around the select, for example `w-full` or `min-w-[200px]`. */
   selectWrapClassName?: string;
+  /**
+   * `row`: the label in a column at the left of the control (the Product / Services forms); the row is drawn even without a label,
+   * so a select can line up under the others. Default `stacked`: above it, and no frame at all without a label.
+   */
+  layout?: 'stacked' | 'row';
 }
 
 /** The select sizes to its longest option, like the demo; pass `selectWrapClassName="w-full"` to stretch it. */
 export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
-  { options, label, hint, error, wrapperClassName, selectWrapClassName, className, id, ...rest },
+  {
+    options,
+    label,
+    hint,
+    error,
+    wrapperClassName,
+    selectWrapClassName,
+    layout = 'stacked',
+    className,
+    id,
+    ...rest
+  },
   ref,
 ) {
   const autoId = useId();
@@ -50,9 +66,17 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
       <Icon name="chevD" className="ic-sm" />
     </span>
   );
-  if (!label && !hint && !message) return control;
+  if (layout === 'stacked' && !label && !hint && !message) return control;
   return (
-    <FieldFrame id={fieldId} label={label} hint={hint} error={message} className={wrapperClassName}>
+    <FieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={message}
+      className={wrapperClassName}
+      layout={layout}
+      required={rest.required}
+    >
       {control}
     </FieldFrame>
   );

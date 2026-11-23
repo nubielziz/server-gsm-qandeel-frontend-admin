@@ -1,9 +1,8 @@
 // Tests for the pricing rule words and form: what a rule covers, what it does to the price, its dates, the request body built from the dialog and
-// the fields that changed on an edit; plus the Categories tab's small helpers.
+// the fields that changed on an edit.
 import { describe, expect, it } from 'vitest';
 import { fmtDay } from '@/lib/format';
 import type { PricingRule } from '../types';
-import { sameIds, visibleToText } from './categories';
 import { adjustmentText, appliesToText, datesText, ruleDetails } from './rules';
 import {
   buildRuleBody,
@@ -168,25 +167,5 @@ describe('changedRuleFields', () => {
     const dated = rule({ startsAt: dayStart('2026-03-05') });
     expect(changedRuleFields(body({ startsAt: '2026-03-05' }), dated)).toEqual({});
     expect(changedRuleFields(body({ startsAt: '' }), dated)).toEqual({ startsAt: null });
-  });
-});
-
-describe('categories', () => {
-  it('says who sees a category', () => {
-    const groups = [
-      { id: 2, name: 'Wholesale' },
-      { id: 3, name: 'VIP' },
-    ];
-    expect(visibleToText([], groups)).toBe('All groups');
-    expect(visibleToText([3, 2], groups)).toBe('VIP, Wholesale');
-    expect(visibleToText([2, 9], groups)).toBe('Wholesale, #9');
-    expect(visibleToText([2, 3], undefined)).toBe('2 groups');
-    expect(visibleToText([2], undefined)).toBe('1 group');
-  });
-
-  it('compares lists of ids in any order', () => {
-    expect(sameIds([1, 2], [2, 1])).toBe(true);
-    expect(sameIds([1, 2], [1])).toBe(false);
-    expect(sameIds([], [])).toBe(true);
   });
 });

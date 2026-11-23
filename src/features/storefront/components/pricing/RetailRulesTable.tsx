@@ -2,12 +2,13 @@
 // before a change waits, how many prices follow it and whether it is on, with Edit, Turn off / Turn on and Delete. Ports the look of
 // the pricing rules table of the services page; every word about a price is the server's `label`.
 import type { ReactNode } from 'react';
-import { Badge, Button, DataTable, TypeTag, type DataTableColumn } from '@/components/ui';
+import { Button, DataTable, type DataTableColumn } from '@/components/ui';
 import { TYPE_LABEL } from '@/lib/serviceTypes';
 import { num } from '@/lib/format';
 import type { StorefrontGrants } from '../../hooks/useStorefrontGrants';
 import { ruleTargetName } from '../../lib/retailPricing';
 import type { RetailPriceRule } from '../../types';
+import { StatusMark } from '../StatusMark';
 
 export interface RetailRulesTableProps {
   rules: readonly RetailPriceRule[];
@@ -21,10 +22,11 @@ export interface RetailRulesTableProps {
   onDelete: (rule: RetailPriceRule) => void;
 }
 
-/** "Every service", a type tag or the category's name. */
+/** "Every service", the type's name or the category's name. */
 function Applies({ rule }: { rule: RetailPriceRule }) {
   if (rule.scope === 'global') return <span className="font-medium">Every service</span>;
-  if (rule.scope === 'type' && rule.serviceType) return <TypeTag>{TYPE_LABEL[rule.serviceType]}</TypeTag>;
+  if (rule.scope === 'type' && rule.serviceType)
+    return <span className="font-medium">{TYPE_LABEL[rule.serviceType]}</span>;
   return <span className="font-medium">{rule.categoryName ?? `Category ${rule.categoryId ?? '?'}`}</span>;
 }
 
@@ -62,16 +64,9 @@ export function RetailRulesTable({
     {
       key: 'status',
       label: 'Status',
-      render: (rule) =>
-        rule.isActive ? (
-          <Badge tone="good" icon="checkCircle">
-            On
-          </Badge>
-        ) : (
-          <Badge tone="neutral" icon="ban">
-            Off
-          </Badge>
-        ),
+      render: (rule) => (
+        <StatusMark tone={rule.isActive ? 'good' : 'neutral'}>{rule.isActive ? 'On' : 'Off'}</StatusMark>
+      ),
     },
     {
       key: 'actions',
@@ -115,6 +110,8 @@ export function RetailRulesTable({
   ];
   return (
     <DataTable
+      skin="list"
+      footer={false}
       caption="Retail pricing rules"
       columns={columns}
       rows={rules}

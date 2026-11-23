@@ -25,20 +25,30 @@ function NavigationProbe() {
 const pageTitle = (name?: string) =>
   screen.findByRole('heading', { level: 1, ...(name ? { name } : {}) }, { timeout: 20_000 });
 
-describe('old addresses redirect to Catalog', () => {
+describe('old addresses redirect to Product / Services', () => {
   it.each([
-    ['/services', '/catalog'],
-    ['/services?status=disabled', '/catalog?chip=off'],
-    ['/services?q=unlock&belowFloor=true&page=2', '/catalog?q=unlock&belowFloor=true&page=2'],
-    ['/services?tab=rules', '/catalog?view=settings&tab=rules'],
+    ['/services', '/products?view=all'],
+    ['/services?status=disabled', '/products?view=all&show=disabled'],
+    ['/services?q=unlock&belowFloor=true&page=2', '/products?view=all&q=unlock&show=attention&page=2'],
+    ['/services?tab=rules', '/products?view=rules&tab=merchant'],
+    ['/services?tab=inventory&status=sold&service=16', '/products?view=inventory&status=sold&service=16'],
+    ['/catalog', '/products?view=all'],
     [
-      '/services?tab=inventory&status=sold&service=16',
-      '/catalog?view=settings&tab=inventory&status=sold&service=16',
+      '/catalog?q=unlock&categoryId=3&supplierId=2&chip=notonshop',
+      '/products?view=all&q=unlock&group=3&api=2&show=offshop',
     ],
-    ['/storefront?tab=publish&run=7', '/catalog?view=publish&run=7'],
-    ['/storefront?tab=pricing&show=all', '/catalog?view=settings&tab=shop-prices&show=all'],
-    ['/storefront?tab=listings&q=unlock', '/catalog?shop=on&q=unlock'],
-    ['/storefront?page=2', '/catalog?shop=on&page=2'],
+    ['/catalog?open=7&section=prices', '/products?view=edit&id=7&part=pricing'],
+    ['/catalog?add=6&from=groups', '/products?view=add&supplier=6&from=groups'],
+    ['/catalog?view=settings&tab=categories', '/products?view=groups'],
+    // The address in the mail about shop price changes.
+    ['/catalog?view=settings&tab=shop-prices', '/products?view=rules&tab=shop'],
+    ['/catalog?view=settings&tab=resolver&service=4', '/products?view=rules&tab=check&service=4'],
+    ['/catalog?view=settings&tab=inventory&service=16', '/products?view=inventory&service=16'],
+    ['/catalog?view=publish&run=7', '/products?view=publish&run=7'],
+    ['/storefront?tab=publish&run=7', '/products?view=publish&run=7'],
+    ['/storefront?tab=pricing&show=all', '/products?view=rules&tab=shop&show=all'],
+    ['/storefront?tab=listings&q=unlock', '/products?view=all&q=unlock'],
+    ['/storefront?page=2', '/products?view=all&page=2'],
   ])('%s goes to %s', async (old, target) => {
     await signInAs();
     const app = renderApp(old);
@@ -49,7 +59,7 @@ describe('old addresses redirect to Catalog', () => {
   it('replaces the entry, so Back does not return to the old address', async () => {
     await signInAs();
     render(
-      <MemoryRouter initialEntries={['/services?tab=categories']}>
+      <MemoryRouter initialEntries={['/catalog?view=settings&tab=categories']}>
         <AppProviders>
           <AppRoutes />
           <NavigationProbe />
@@ -58,29 +68,26 @@ describe('old addresses redirect to Catalog', () => {
     );
     // The redirect is a replace, not a push, so there is no history entry for the old address to go back to.
     await waitFor(
-      () =>
-        expect(screen.getByTestId('navigation')).toHaveTextContent(
-          'REPLACE /catalog?view=settings&tab=categories',
-        ),
+      () => expect(screen.getByTestId('navigation')).toHaveTextContent('REPLACE /products?view=groups'),
       { timeout: 10_000 },
     );
     await pageTitle();
   });
 
-  it('keeps the address when the Catalog page itself is the one asked for', async () => {
+  it('keeps the address when the Product / Services page itself is the one asked for', async () => {
     await signInAs();
-    const app = renderApp('/catalog?view=publish&run=7');
-    await pageTitle();
-    expect(app.location()).toBe('/catalog?view=publish&run=7');
+    const app = renderApp('/products?view=publish&run=7');
+    await pageTitle('Product / Services');
+    expect(app.location()).toBe('/products?view=publish&run=7');
   });
 });
 
 describe('before the permission gate', () => {
-  it('lets a role that may open Catalog but not Shop content follow an old pricing link', async () => {
-    // pricing:read opens Catalog (its shop price rules) and no longer opens Shop content, where the old Retail pricing tab was.
+  it('lets a role that may open Product / Services but not Shop content follow an old pricing link', async () => {
+    // pricing:read opens Product / Services (its shop price rules) and no longer opens Shop content, where the old Retail pricing tab was.
     mockMe({ permissions: ['pricing:read'] });
     const app = renderApp('/storefront?tab=pricing');
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices'), {
+    await waitFor(() => expect(app.location()).toBe('/products?view=rules&tab=shop'), {
       timeout: 10_000,
     });
     await pageTitle();
@@ -90,31 +97,32 @@ describe('before the permission gate', () => {
   it('lets a role that holds only storefront:read follow an old publish link', async () => {
     mockMe({ permissions: ['storefront:read'] });
     const app = renderApp('/storefront?tab=publish&run=7');
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=7'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=7'), { timeout: 10_000 });
     await pageTitle();
     expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
   });
 
   it.each([
-    [['pricing:read'], '/services?belowFloor=true', '/catalog?view=settings'],
-    [['storefront:read'], '/storefront?tab=listings&q=unlock', '/catalog?view=publish'],
-    [['inventory:read'], '/services?tab=categories', '/catalog?view=settings&tab=categories'],
+    [['pricing:read'], '/services?belowFloor=true', '/products?view=rules'],
+    [['storefront:read'], '/storefront?tab=listings&q=unlock', '/products?view=publish'],
+    [['inventory:read'], '/services?tab=categories', '/products?view=inventory'],
+    [['pricing:read'], '/catalog?open=7&section=prices', '/products?view=rules'],
   ])(
     'lands a role without catalog:read (%j) on a view it may use after %s',
     async (permissions, old, target) => {
       mockMe({ permissions });
       const app = renderApp(old);
       await waitFor(() => expect(app.location()).toBe(target), { timeout: 10_000 });
-      await pageTitle('Catalog');
+      await pageTitle('Product / Services');
       expect(screen.queryByRole('table', { name: 'Services' })).not.toBeInTheDocument();
       expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
     },
   );
 
-  it('still refuses a role with no Catalog permission, at the new address', async () => {
+  it('still refuses a role with no Product / Services permission, at the new address', async () => {
     mockMe({ permissions: ['orders:read'] });
     const app = renderApp('/services?q=unlock');
-    await waitFor(() => expect(app.location()).toBe('/catalog?q=unlock'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=all&q=unlock'), { timeout: 10_000 });
     expect(
       await screen.findByText('You do not have access to this page', {}, { timeout: 10_000 }),
     ).toBeInTheDocument();
@@ -136,11 +144,11 @@ describe('Shop content addresses', () => {
     expect(app.location()).toBe(expected);
   });
 
-  it('opens the bare page as Shop content and does not send it to Catalog', async () => {
+  it('opens the bare page as Shop content and does not send it to Product / Services', async () => {
     await signInAs();
     const app = renderApp('/storefront');
     expect(await pageTitle('Shop content')).toBeInTheDocument();
-    expect(app.location()).not.toMatch(/^\/catalog/);
+    expect(app.location()).not.toMatch(/^\/products/);
   });
 });
 
@@ -151,10 +159,19 @@ describe('around the redirects', () => {
     expect(app.location()).toBe('/login?to=%2Fservices%3Ftab%3Drules');
   });
 
-  it('does not redirect an address below the old page', async () => {
-    mockMe({ permissions: ['*'] });
-    const app = renderApp('/services/5');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
-    expect(app.location()).toBe('/services/5');
+  it.each(['/services/5', '/catalog/5'])(
+    'does not redirect an address below the old page (%s)',
+    async (address) => {
+      mockMe({ permissions: ['*'] });
+      const app = renderApp(address);
+      expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+      expect(app.location()).toBe(address);
+    },
+  );
+
+  it('keeps the old Catalog address in the sign-in screen of a signed-out visitor', async () => {
+    const app = renderApp('/catalog?view=settings&tab=shop-prices');
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(app.location()).toBe('/login?to=%2Fcatalog%3Fview%3Dsettings%26tab%3Dshop-prices');
   });
 });

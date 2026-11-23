@@ -1,4 +1,4 @@
-// The draft of one service's supplier chain while it is edited, for the "Edit links" dialog and the Suppliers section of the Catalog panel.
+// The draft of one service's supplier chain while it is edited, for the "Edit links" dialog and the supplier connection of a service.
 // It starts from the chain the server has, and follows the server's chain again as long as nothing was edited.
 import { useState } from 'react';
 import type { ChainStep, Supplier, SupplierService } from '../types';

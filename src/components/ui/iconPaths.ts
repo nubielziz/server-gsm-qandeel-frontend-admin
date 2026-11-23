@@ -89,6 +89,16 @@ export const ICON_PATHS = {
   bank: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.7 10v8M14.3 10v8M19 10v8"/><path d="M3 20.5h18"/>',
   coin: '<circle cx="12" cy="12" r="9"/><path d="M14.6 9.4c-.4-.9-1.4-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2 0 2.9 5.4 1.1 5.4 4 0 1.2-1.1 2-2.8 2-1.3 0-2.3-.5-2.8-1.4"/><path d="M12 6.6V8M12 16v1.4"/>',
   card: '<rect x="2.5" y="5" width="19" height="14" rx="2.2"/><path d="M2.5 10h19M6 15h4"/>',
+  // The four below are not in the demo set: the Product / Services page (the layout the owner asked for) needs them. Same grid, stroke only.
+  // The edit action of a row: a square with a pen over its corner.
+  squarePen:
+    '<path d="M11 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20h11a2.5 2.5 0 0 0 2.5-2.5V13"/><path d="M17.6 3.9a2.1 2.1 0 0 1 3 3L12 15.5l-4 1 1-4z"/>',
+  // First and last page of the footer pager: a bar and a chevron.
+  chevFirst: '<path d="M6 5.5v13"/><path d="m18 6-6 6 6 6"/>',
+  chevLast: '<path d="M18 5.5v13"/><path d="m6 6 6 6-6 6"/>',
+  // The price tool of a pricing row.
+  dollar:
+    '<path d="M12 3v18"/><path d="M16.5 7.5c-.6-1.4-2.2-2.2-4.5-2.2-2.6 0-4.2 1.1-4.2 2.9 0 4.3 8.7 1.9 8.7 6.2 0 1.8-1.7 3.1-4.5 3.1-2.3 0-4-.9-4.7-2.5"/>',
 } as const;
 
 /** Names accepted by <Icon name="..." />. */

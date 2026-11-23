@@ -1,13 +1,9 @@
-// Helpers shared by the Shop content page tests: open the page signed in (as the Owner, or as a staff member with fewer permissions)
-// and find the tab strip, tables, rows and dialogs by their accessible names. `openCatalogView` opens the listings, publish and retail
-// pricing components at the Catalog's addresses through a stand-in, since those parts are no longer tabs of the page. Import them from
-// tests only.
+// Helpers shared by the storefront tests: open the Shop content page signed in (as the Owner, or as a staff member with fewer
+// permissions), open the Product / Services page at an address that mounts a storefront view (the publish runs, the shop price rules), and
+// find the tab strip, tables, rows and dialogs by their accessible names. Import them from tests only.
 import { screen, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
-import { createElement } from 'react';
-import { Route } from 'react-router';
-import { mockMe, renderApp, renderShell, signInAs } from '@/test/renderApp';
-import { CatalogStandIn } from './CatalogStandIn';
+import { mockMe, renderApp, signInAs } from '@/test/renderApp';
 
 /** Signs in as Rami (the Owner), or as a staff member with fewer permissions (what `me` says before the page loads). */
 async function signIn(options: { permissions?: string[] }) {
@@ -24,18 +20,14 @@ export async function openStorefront(route = '/storefront', options: { permissio
 }
 
 /**
- * Signs in and mounts the listings, publish or retail pricing component the Catalog address names inside the shell, with the real
- * providers: `/catalog?view=publish&run=8`, `/catalog?view=settings&tab=shop-prices`, or `/catalog` for the listings. The caller waits
- * for what it needs to see.
+ * Signs in and opens the Product / Services page at an address whose view is a storefront one, with the real providers and routes:
+ * `/products?view=publish&run=8` (a publish run) or `/products?view=rules&tab=shop` (the shop price rules). The caller waits for what it
+ * needs to see.
  */
-export async function openCatalogView(route: string, options: { permissions?: string[] } = {}) {
+export async function openProductsView(route: string, options: { permissions?: string[] } = {}) {
   await signIn(options);
-  const app = renderShell(
-    route,
-    createElement(Route, { path: '/catalog', element: createElement(CatalogStandIn) }),
-  );
-  // As the page tests wait for the page's heading, this waits (longer than a query would) for the shell and the view to be there.
-  await screen.findByTestId('catalog-view', {}, { timeout: 10_000 });
+  const app = renderApp(route);
+  await screen.findByRole('heading', { level: 1, name: 'Product / Services' }, { timeout: 10_000 });
   return app;
 }
 
@@ -48,11 +40,11 @@ export const tabTexts = () =>
     .getAllByRole('tab')
     .map((tab) => tab.textContent);
 
-/** The text of the stand-in's settings tab, with its chip when it has one, such as "Retail pricing3". */
+/** The text of every link of the Price Rules view, with the waiting count as plain words when it has one, such as "Shop price rules (3 waiting)". */
 export const settingsTabTexts = () =>
-  within(screen.getByRole('tablist', { name: 'Catalog settings sections' }))
-    .getAllByRole('tab')
-    .map((tab) => tab.textContent);
+  within(screen.getByRole('navigation', { name: 'Price rules sections' }))
+    .getAllByRole('link')
+    .map((link) => link.textContent);
 
 /** Opens a tab by its name and waits for its panel. */
 export async function openTab(user: UserEvent, name: string) {

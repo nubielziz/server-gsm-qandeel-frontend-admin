@@ -1,7 +1,8 @@
-// PublishStart: the start of the Publish tab (no run in the address): what to publish, the note about prices and the button that
-// asks the server to prepare a preview, then the earlier runs. Nothing is published here: the preview is a draft the server keeps.
-import { useState, type FormEvent } from 'react';
-import { Button } from '@/components/ui';
+// PublishStart: the start of the Publish view (no run in the address): what to publish and the note about prices, then the earlier runs, and
+// in the pinned bar the one primary button that asks the server to prepare a preview. Nothing is published here: the preview is a draft the
+// server keeps.
+import { useId, useState, type FormEvent } from 'react';
+import { Button, PinnedBar } from '@/components/ui';
 import { useCreatePublishRun } from '../../hooks/usePublishMutations';
 import { useCounts } from '../../hooks/useCounts';
 import type { StorefrontGrants } from '../../hooks/useStorefrontGrants';
@@ -33,13 +34,14 @@ function scopeOf(values: ScopeValues): PublishScope | string {
   return { kind: 'all' };
 }
 
-/** The choices, the price note, the Prepare button and the history. */
+/** The choices, the price note and the history, then the pinned bar with the Prepare button (it submits the form above it). */
 export function PublishStart({ grants, onOpen }: PublishStartProps) {
   const [values, setValues] = useState<ScopeValues>({ kind: 'all', categoryId: '', supplierId: '' });
   // `missing` is the form's own check (nothing picked), shown under the picker; `error` is the server's refusal, shown by the button.
   const [missing, setMissing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const create = useCreatePublishRun();
+  const formId = useId();
   const lock = grants.needs('storefront:create');
   // Without pricing:read the plain line stays: the preview says the same, row by row.
   const rules = useCounts(
@@ -63,36 +65,38 @@ export function PublishStart({ grants, onOpen }: PublishStartProps) {
   };
 
   return (
-    <div className="grid gap-0 divide-y divide-line">
-      <PricingSection
-        title="Publish services to the shop"
-        sub="Choose which services to put on the shop. You review a preview first: nothing is on the shop until you confirm."
-      >
-        <form className="space-y-3 px-3.5 pb-4" onSubmit={submit} noValidate>
-          <PublishScopeFields
-            values={values}
-            onChange={(next) => {
-              setValues(next);
-              setMissing(null);
-              setError(null);
-            }}
-            grants={grants}
-            error={missing ?? undefined}
-          />
-          <PublishRuleNote noRule={noRule} />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" variant="primary" loading={create.isPending} {...lock}>
-              Prepare the preview
-            </Button>
+    <div className="view-frame">
+      <div className="grid gap-8">
+        <PricingSection
+          title="Publish services to the shop"
+          sub="Choose which services to put on the shop. You review a preview first: nothing is on the shop until you confirm."
+        >
+          <form id={formId} className="space-y-3" onSubmit={submit} noValidate>
+            <PublishScopeFields
+              values={values}
+              onChange={(next) => {
+                setValues(next);
+                setMissing(null);
+                setError(null);
+              }}
+              grants={grants}
+              error={missing ?? undefined}
+            />
+            <PublishRuleNote noRule={noRule} />
             {error && (
               <p className="text-sm text-crit-fg" role="alert">
                 {error}
               </p>
             )}
-          </div>
-        </form>
-      </PricingSection>
-      <PublishHistory grants={grants} />
+          </form>
+        </PricingSection>
+        <PublishHistory grants={grants} />
+      </div>
+      <PinnedBar>
+        <Button type="submit" form={formId} variant="primary" loading={create.isPending} {...lock}>
+          Prepare the preview
+        </Button>
+      </PinnedBar>
     </div>
   );
 }

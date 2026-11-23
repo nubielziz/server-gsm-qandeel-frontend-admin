@@ -1,4 +1,4 @@
-// Tests for the retail pricing rules (mounted at the Catalog's settings address through the test stand-in): the table and its words, the empty state with the owner's example, the two-step
+// Tests for the retail pricing rules (the Shop price rules tab of the Price Rules view, opened through the real app): the table and its words, the empty state with the owner's example, the two-step
 // dialog (the form, the server's preview, Save the rule) for a new rule and an edit, the server's refusals under their fields,
 // and the review before a rule is turned off, turned on or deleted. The price changes block has its own file.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -9,19 +9,19 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { recordRequests } from '../test/requests';
-import { dialogOf, openCatalogView, rowOf, tableNamed } from '../test/storefrontPage';
+import { dialogOf, openProductsView, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 afterEach(() => vi.restoreAllMocks());
 
 const RULES = 'Retail pricing rules';
-const PRICING = '/catalog?view=settings&tab=shop-prices';
+const PRICING = '/products?view=rules&tab=shop';
 type User = ReturnType<typeof userEvent.setup>;
 
 /** Opens the tab and waits for the rules. */
 async function openPricing(options: { permissions?: string[] } = {}) {
-  const app = await openCatalogView(PRICING, options);
+  const app = await openProductsView(PRICING, options);
   await tableNamed(RULES);
   return app;
 }
@@ -43,9 +43,9 @@ function noRules() {
   );
 }
 
-/** Opens New rule from the panel header. */
+/** Opens New rule from the pinned bar. */
 async function openNewRule(user: User) {
-  await user.click((await screen.findAllByRole('button', { name: 'New rule' }))[0]);
+  await user.click(await screen.findByRole('button', { name: 'New rule' }));
   return dialogOf('New retail pricing rule');
 }
 
@@ -77,13 +77,32 @@ describe('the rules table', () => {
     expect(server.getByRole('button', { name: 'Turn on the rule for Server services' })).toBeInTheDocument();
   });
 
+  it('draws the status as a square and a word, and the applies-to as plain words, with no badge or tag', async () => {
+    await openPricing();
+    const table = await screen.findByRole('table', { name: RULES });
+    expect(table.querySelector('.badge, .tag')).toBeNull();
+    const global = await rowOf(RULES, 'Every service');
+    expect(global.getByText('On').previousElementSibling).toHaveClass('status-sq', 'status-sq-ok');
+    const server = await rowOf(RULES, 'Server');
+    expect(server.getByText('Off').previousElementSibling).toHaveClass('status-sq', 'status-sq-off');
+    expect((await rowOf(RULES, 'IMEI')).getByText('IMEI')).toHaveClass('font-medium');
+  });
+
+  it('keeps New rule, the view’s one primary button, in the pinned bar and not in a header', async () => {
+    await openPricing();
+    const button = await screen.findByRole('button', { name: 'New rule' });
+    expect(button.className).toContain('btn-primary');
+    expect(button.closest('.pinned-bar')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Shop price rules' }).querySelector('.panel')).toBeNull();
+  });
+
   it('says there is no rule yet and starts the first rule on the owner’s example', async () => {
     const user = userEvent.setup();
     noRules();
-    await openCatalogView(PRICING);
+    await openProductsView(PRICING);
     expect(await screen.findByText('No retail pricing rule yet')).toBeInTheDocument();
     expect(screen.getByText("A rule prices the shop from each service's cost.")).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: 'New rule' })[1]);
+    await user.click(screen.getByRole('button', { name: 'New rule' }));
     const dialog = dialogOf('New retail pricing rule');
     expect(dialog.getByRole('combobox', { name: 'Applies to' })).toHaveDisplayValue('A service type');
     expect(dialog.getByRole('combobox', { name: 'Service type' })).toHaveDisplayValue('IMEI');
@@ -401,7 +420,7 @@ describe('the permissions of the rules', () => {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('title', `You need the ${permission} permission`);
     }
-    expect(screen.getAllByRole('button', { name: 'New rule' })[0]).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'New rule' })).toBeDisabled();
   });
 
   it('enables each button with its own permission', async () => {
@@ -409,6 +428,6 @@ describe('the permissions of the rules', () => {
     const carrier = await rowOf(RULES, 'Carrier unlock');
     expect(carrier.getByRole('button', { name: 'Edit the rule for Carrier unlock' })).toBeEnabled();
     expect(carrier.getByRole('button', { name: 'Delete the rule for Carrier unlock' })).toBeDisabled();
-    expect(screen.getAllByRole('button', { name: 'New rule' })[0]).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'New rule' })).toBeEnabled();
   });
 });

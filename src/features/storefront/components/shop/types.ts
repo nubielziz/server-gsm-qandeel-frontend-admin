@@ -1,4 +1,4 @@
-// The plain values the shop parts take from their host (the Catalog panel). No type of another feature is used here.
+// The plain values the shop parts take from their host (the service editor). No type of another feature is used here.
 import type { Id } from '@/lib/api';
 
 /**

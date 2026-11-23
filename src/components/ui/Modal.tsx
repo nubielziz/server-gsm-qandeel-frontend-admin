@@ -61,7 +61,7 @@ export function Modal({
               <h2 id={titleId} className="text-lg font-semibold">
                 {title}
               </h2>
-              {/* A div, not a p: a sub may hold block content, such as the Steps line of a flow. */}
+              {/* A div, not a p: a sub may hold block content, such as a short list. */}
               {sub && <div className="mt-0.5 text-sm text-ink2">{sub}</div>}
             </div>
             <Button

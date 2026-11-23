@@ -13,7 +13,7 @@ export interface PublishResultProps {
   onReread: () => void;
 }
 
-/** Outcome, switch and rows, split by hairlines. */
+/** Outcome, switch and rows, split by hairlines (no card around them). */
 export function PublishResult({ run, grants, onOpen, onReread }: PublishResultProps) {
   return (
     <>

@@ -60,6 +60,8 @@ export type MockService = {
   minQty: number;
   maxQty: number;
   qtyOptions: number[];
+  /** The category an import was told to use (decision 063); absent when the service went into the category of its supplier group. */
+  categoryId?: number;
 };
 /** A quantity rule as a Dhru supplier states it. */
 export type MockQuantity = { minQty: number; maxQty: number; qtyOptions: number[] };

@@ -1,12 +1,9 @@
-// FormSection: a form frame for one section that saves and stays open (a SidePanelSection). FormDialog's sibling.
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+// FormSection: a form frame for one section that saves and stays open (one part of a record's edit view). FormDialog's sibling.
+import { useId, type FormEvent, type ReactNode } from 'react';
 import { Button } from './Button';
 import { cx } from './cx';
-import { errorText } from './errorText';
-import { Icon } from './Icon';
-
-/** How long "Saved" stays on screen. */
-const SAVED_MS = 4000;
+import { SavedStatus } from './SaveNote';
+import { useSaveFlow } from './useSaveFlow';
 
 export interface FormSectionProps {
   /**
@@ -45,67 +42,35 @@ export function FormSection({
   children,
   className,
 }: FormSectionProps) {
-  const form = useRef<HTMLFormElement>(null);
-  // A ref as well as state: two submits in the same tick would both see a stale `pending` state.
-  const running = useRef(false);
-  const [pending, setPending] = useState(false);
-  const [failure, setFailure] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [focusRequest, setFocusRequest] = useState(0);
+  const flow = useSaveFlow();
   const reasonId = useId();
   const blocked = submitDisabled || dirty === false;
   const reason = submitDisabled ? submitTitle : undefined;
 
-  // Focus the first invalid field after React has rendered the failure, so a field that became invalid because of it
-  // already carries aria-invalid.
-  useEffect(() => {
-    if (focusRequest) form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [focusRequest]);
-
-  // The status clears itself; a new save starts a new timer because it clears `saved` first.
-  useEffect(() => {
-    if (!saved) return;
-    const timer = setTimeout(() => setSaved(false), SAVED_MS);
-    return () => clearTimeout(timer);
-  }, [saved]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (running.current || blocked) return;
-    running.current = true;
-    setPending(true);
-    setFailure(null);
-    setSaved(false);
-    const stay = (text: string | null) => {
-      setFailure(text);
-      setFocusRequest((n) => n + 1);
-    };
-    try {
-      const result = await onSubmit(event);
-      if (result === false) stay(null);
-      else if (typeof result === 'string') stay(result);
-      else setSaved(true);
-    } catch (error) {
-      stay(errorText(error));
-    } finally {
-      running.current = false;
-      setPending(false);
-    }
+    if (blocked) return;
+    void flow.run(() => onSubmit(event));
   }
 
   return (
-    <form ref={form} noValidate onSubmit={handleSubmit} className={cx('flex flex-col gap-3', className)}>
+    <form
+      ref={flow.formRef}
+      noValidate
+      onSubmit={handleSubmit}
+      className={cx('flex flex-col gap-3', className)}
+    >
       {children}
       {/* Always in the DOM so screen readers announce the text when it appears. */}
-      <p className={failure ? 'text-sm text-crit-fg' : 'hidden'} role="alert">
-        {failure}
+      <p className={flow.failure ? 'text-sm text-crit-fg' : 'hidden'} role="alert">
+        {flow.failure}
       </p>
       <div className="flex flex-wrap items-center gap-3">
         {/* The title sits on a wrapper: a disabled button takes no pointer events, so it would never show a tooltip. */}
         <span title={reason} className="inline-flex">
           <Button
             type="submit"
-            loading={pending}
+            loading={flow.pending}
             disabled={blocked}
             aria-describedby={reason ? reasonId : undefined}
           >
@@ -117,18 +82,7 @@ export function FormSection({
             {reason}
           </span>
         )}
-        <span
-          role="status"
-          aria-live="polite"
-          className="inline-flex items-center gap-1.5 text-xs text-good-fg"
-        >
-          {saved && (
-            <>
-              <Icon name="check" className="ic-sm" />
-              {savedText}
-            </>
-          )}
-        </span>
+        <SavedStatus saved={flow.saved} text={savedText} />
       </div>
     </form>
   );

@@ -12,7 +12,7 @@ const STATUS_OPTIONS: readonly RadioOption[] = [
   {
     value: 'disabled',
     label: 'Switched off',
-    description: 'Check them in the Catalog and switch them on yourself.',
+    description: 'Check them in Product / Services and switch them on yourself.',
   },
 ];
 

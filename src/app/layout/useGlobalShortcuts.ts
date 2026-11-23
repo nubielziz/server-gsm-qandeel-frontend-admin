@@ -1,7 +1,7 @@
 // Keyboard shortcuts of the whole console. Ports the keydown handler of boot() in 90-app.js.
 import { useEffect, useRef } from 'react';
 
-/** "g then …" jumps: the key after `g` and the page it opens. The demo's map: `p` (pricing) opens Catalog, `t` opens Shop content. */
+/** "g then …" jumps: the key after `g` and the page it opens. The demo's map: `p` (pricing) opens Product / Services, `t` opens Shop content. */
 export const GO_SHORTCUTS: Readonly<Record<string, string>> = {
   d: 'dashboard',
   o: 'orders',
@@ -9,7 +9,7 @@ export const GO_SHORTCUTS: Readonly<Record<string, string>> = {
   k: 'customers',
   s: 'support',
   i: 'risk',
-  p: 'catalog',
+  p: 'products',
   u: 'suppliers',
   t: 'storefront',
   f: 'finance',

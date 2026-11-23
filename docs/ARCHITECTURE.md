@@ -16,7 +16,7 @@ src/
   lib/query/               useApiQuery / useApiMutation (TanStack Query + Refine invalidation + toasts)
   lib/format/              money, numbers, dates, relative time (ports of the demo's money/ago/fmtDate…)
   lib/auth/                permission matching, current-staff hook
-  components/ui/           shared kit ported from demo 20-ui.js / input.css (Button, Panel, DataTable, Modal…)
+  components/ui/           shared kit ported from demo 20-ui.js / input.css (Button, Panel, DataTable, Modal…), plus the layout pieces of decision 022 (strips, pinned bars, record parts)
   components/charts/       React SVG charts ported from demo 30-charts.js
   features/<name>/
     api/                   one exported function per endpoint (+ resources.ts: data-provider registry entries)
@@ -89,12 +89,14 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/orders?tab=…&type=…&channel=b2b\|b2c&pastSla=true&supplierId=…&clientId=…&q=…` | the Orders list with those filters (`ordersListPath` in `@/features/orders`) |
 | `/orders?order=<id>` (on any page that mounts `OrderDrawerHost`) | that order's drawer (`orderPath`) |
 | `/suppliers?supplier=<id>` | Suppliers with that supplier selected |
-| `/catalog?belowFloor=true` | Catalog table: services priced below cost plus minimum profit (`catalogPath` in `@/features/services` builds every Catalog address) |
-| `/catalog?shop=on`, `/catalog?chip=attention\|notonshop\|off` | Catalog table: services on the shop; a chip |
-| `/catalog?open=<id>&section=…` | Catalog with one service in the side panel |
-| `/catalog?add=new`, `/catalog?add=<supplier id>[&from=groups\|services]` | Catalog with the Add services flow open: on its first step, with that supplier marked, or on that supplier's path (the Suppliers page links here) |
-| `/catalog?view=settings&tab=categories\|rules\|shop-prices\|resolver\|inventory` | Catalog settings, on one tab (the resolver and the code stock keep `service`, `merchant`, `status`, `page` in the same address) |
-| `/catalog?view=publish[&run=<id>]` | Catalog publish view: start, earlier runs, or one run |
+| `/products?view=all[&type=…&q=…&group=<id>&api=<id>&show=attention\|offshop\|disabled&page=…&size=…]` | Product / Services, the list of one kind of service with its filters (`productsPath` in `@/features/services` builds every address of the page; `show=attention` is the services that need a person, among them those priced below cost plus minimum profit) |
+| `/products?view=pricing\|groups\|add-group[&type=…]` | Product / Services: the price grid, the groups, a new group |
+| `/products?view=add[&supplier=<id>&from=groups\|services]` | Product / Services, +Add Service, with the supplier form ticked and that supplier chosen (the Suppliers page links here) |
+| `/products?view=edit&id=<id>&part=overview\|pricing\|fields\|api\|shop\|inventory\|activity` | Product / Services: one service as a record with many parts, on one part |
+| `/products?view=rules&tab=merchant\|shop\|check` | Price Rules: the merchant price rules, the shop price rules (`show=all` lists every price change), the price check (`service`, `merchant`) |
+| `/products?view=inventory` | the code stock (`service`, `status`, `page` in the same address) |
+| `/products?view=publish[&run=<id>]` | Shop Publish: start, earlier runs, or one run |
+| `/products?view=edit-group&id=<id>` | Product / Services: one group, as the label-left form of +Add Group with Save |
 | `/storefront?tab=landing\|content\|help\|tac\|search` | Shop content on that tab |
 | `/finance?tab=payments` | Finance on the pending deposits |
 | `/merchants?tab=pending`, `/merchants/<id>` | merchants waiting for approval; one merchant |
@@ -106,7 +108,7 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/settings?tab=tax` | tax and exchange rates |
 | `/access?tab=…` | an Admins and access tab |
 
-Old addresses keep working for good: `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Catalog addresses above by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decision 019). Links inside the app use the new addresses.
+Old addresses keep working for good: `/catalog…`, `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Product / Services addresses above by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decisions 019 and 022; the table of cases is in MISMATCHES M270). The backend's mail about shop price changes still links to `/catalog?view=settings&tab=shop-prices`. Links inside the app use the new addresses.
 
 ## 6. Naming
 

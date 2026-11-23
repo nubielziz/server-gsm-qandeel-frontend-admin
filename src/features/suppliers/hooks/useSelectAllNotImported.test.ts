@@ -26,6 +26,18 @@ function listOf(total: number, most = 1_000) {
   return asked;
 }
 
+/** A service list whose rows (ids 1…) have these supplier type texts, answered whole in one call. */
+function typedList(types: string[]) {
+  mockServer.use(
+    http.get('*/admin/suppliers/:id/services', () =>
+      HttpResponse.json(
+        types.map((type, index) => ({ id: index + 1, type })),
+        { headers: { 'x-total-count': String(types.length) } },
+      ),
+    ),
+  );
+}
+
 describe('readNotImportedIds', () => {
   it('reads pages of 500 until the total is reached, for the services not imported yet in the picker’s order', async () => {
     const asked = listOf(1_203);
@@ -55,6 +67,32 @@ describe('readNotImportedIds', () => {
     expect(asked[0].get('remoteGroup')).toBe('Apple');
     expect(asked[0].get('type')).toBe('imei');
     expect(asked[0].has('q')).toBe(false);
+  });
+
+  it('sends only the type when the picker has no group, and the group’s own type when it has one', async () => {
+    const asked = listOf(3);
+    await readNotImportedIds(1, { q: '', type: 'server' });
+    await readNotImportedIds(1, { q: '', type: 'server', group: { type: 'imei', remoteGroup: 'Apple' } });
+    expect(asked).toHaveLength(2);
+    expect(asked[0].get('type')).toBe('server');
+    expect(asked[0].has('remoteGroup')).toBe(false);
+    expect(asked[1].get('type')).toBe('imei');
+    expect(asked[1].get('remoteGroup')).toBe('Apple');
+  });
+
+  it('keeps only the ids of the page’s kind, however the supplier spells it, when asked for a kind with no group and no type', async () => {
+    typedList(['imei', 'IMEI', 'server', ' Imei ', 'remote', 'file']);
+    expect(await readNotImportedIds(1, { q: '', kind: 'imei' })).toEqual([1, 2, 4]);
+    expect(await readNotImportedIds(1, { q: '', kind: 'server' })).toEqual([3]);
+  });
+
+  it('narrows nothing when the server already does: a type or a group is sent, or no kind is given', async () => {
+    typedList(['imei', 'server', 'remote']);
+    expect(await readNotImportedIds(1, { q: '', kind: 'imei', type: 'imei' })).toEqual([1, 2, 3]);
+    expect(
+      await readNotImportedIds(1, { q: '', kind: 'imei', group: { type: 'imei', remoteGroup: 'Apple' } }),
+    ).toEqual([1, 2, 3]);
+    expect(await readNotImportedIds(1, { q: '' })).toEqual([1, 2, 3]);
   });
 
   it('is done after one call when everything fits, and after none beyond an empty list', async () => {

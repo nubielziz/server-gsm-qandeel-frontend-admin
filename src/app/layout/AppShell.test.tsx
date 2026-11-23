@@ -23,7 +23,7 @@ const OWNER_PAGES = [
   'Risk & checks',
   'Abandoned checkouts',
   'Notifications',
-  'Catalog',
+  'Product / Services',
   'Suppliers',
   'Finance',
   'Commissions',
@@ -44,12 +44,12 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 18 pages (the demo’s, with Catalog, Notifications and System health) in four groups, and marks the current one', async () => {
+  it('lists the 18 pages (the demo’s, with Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
     expect(nav.getAllByRole('link').map(labelOf)).toEqual(OWNER_PAGES);
-    // The Catalog group and the Catalog page share a word, so the headings are the group labels (paragraphs), in order.
+    // The headings are the group labels (paragraphs), in order.
     const headings = nav
       .getAllByText(/^(Operations|Catalog|Money|System)$/)
       .filter((el) => el.tagName === 'P');
@@ -84,13 +84,13 @@ describe('sidebar', () => {
   });
 
   it('follows the permission each page declares, not its name', async () => {
-    // Merchants are `clients:read`, Catalog `catalog:read`, Admins `staff:read` in the map.
+    // Merchants are `clients:read`, Product / Services `catalog:read`, Admins `staff:read` in the map.
     mockMe({ permissions: ['clients:read', 'catalog:*', 'staff:read'] });
     renderApp('/merchants');
     const nav = await primaryNav();
     expect(nav.getAllByRole('link').map(labelOf)).toEqual([
       'Merchants',
-      'Catalog',
+      'Product / Services',
       'Admins & access',
       // catalog:* opens Shop content too (its TAC catalogue tab; the page takes any of three permissions). It is in the System
       // group, after Settings.
@@ -99,28 +99,28 @@ describe('sidebar', () => {
   });
 
   it.each(['pricing:read', 'inventory:read', 'storefront:read'])(
-    'opens Catalog for a role that holds only %s (one view’s read permission)',
+    'opens Product / Services for a role that holds only %s (one view’s read permission)',
     async (permission) => {
       mockMe({ permissions: ['dashboard:read', permission] });
       renderApp('/dashboard');
-      expect((await primaryNav()).getAllByRole('link').map(labelOf)).toContain('Catalog');
+      expect((await primaryNav()).getAllByRole('link').map(labelOf)).toContain('Product / Services');
     },
   );
 
-  it('keeps Catalog from a role that holds none of its views’ read permissions', async () => {
+  it('keeps Product / Services from a role that holds none of its views’ read permissions', async () => {
     mockMe({ permissions: ['dashboard:read', 'suppliers:read'] });
     renderApp('/dashboard');
     expect((await primaryNav()).getAllByRole('link').map(labelOf)).toEqual(['Dashboard', 'Suppliers']);
   });
 
-  it('lists Catalog first in its group and Shop content in System, after Settings', async () => {
+  it('lists Product / Services first in its group and Shop content in System, after Settings', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/dashboard');
     const links = (await primaryNav()).getAllByRole('link');
     const labels = links.map(labelOf);
-    expect(labels.indexOf('Catalog')).toBe(labels.indexOf('Suppliers') - 1);
+    expect(labels.indexOf('Product / Services')).toBe(labels.indexOf('Suppliers') - 1);
     expect(labels.indexOf('Shop content')).toBe(labels.indexOf('Settings') + 1);
-    expect(links[labels.indexOf('Catalog')]).toHaveAttribute('href', '/catalog');
+    expect(links[labels.indexOf('Product / Services')]).toHaveAttribute('href', '/products');
     expect(links[labels.indexOf('Shop content')]).toHaveAttribute('href', '/storefront');
   });
 

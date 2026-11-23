@@ -7,16 +7,22 @@ import { useMerchantOptions, useServiceChoices } from '../hooks/useChoices';
 import { useResolution } from '../hooks/useResolution';
 import { useResolverView } from '../hooks/useSelectionView';
 import { useServiceGrants } from '../hooks/useServiceGrants';
+import type { ServiceType } from '../types';
 import { ResolverControls } from './ResolverControls';
 import { ResolverSummary } from './ResolverSummary';
 import { TraceSteps } from './TraceSteps';
 
+export interface ResolverTabProps {
+  /** Only the services of this kind are offered (the Product / Services page's strip); without it every service is. */
+  type?: ServiceType;
+}
+
 /** Menus, then the server's resolution for the chosen merchant and service. */
-export function ResolverTab() {
+export function ResolverTab({ type }: ResolverTabProps) {
   const grants = useServiceGrants();
   const view = useResolverView();
   const canMerchants = grants.can('clients:read');
-  const services = useServiceChoices(grants.ready);
+  const services = useServiceChoices(grants.ready, type);
   const merchants = useMerchantOptions(grants.ready && canMerchants);
 
   // The demo listed merchants that are not waiting for approval; an unset choice falls back to the first of each list.

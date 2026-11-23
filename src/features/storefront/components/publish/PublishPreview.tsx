@@ -1,8 +1,8 @@
 // PublishPreview: the draft of a run, the preview staff review before anything is published: the figures, the no-rule warning, the
-// toolbar with Check again, the server-paged table (50 a page), the bulk actions, the row dialog and the sticky bar with Publish.
-// A preview changes nothing on the shop. Every figure, price, title and slug is the server's; the console works out none.
+// toolbar with Check again, the server-paged table (50 a page), the bulk actions, the row dialog and the pinned footer: Publish and Discard
+// in its first row, the pager under them. A preview changes nothing on the shop. Every figure, price, title and slug is the server's; the console works out none.
 import { useState } from 'react';
-import { EmptyState, usePageClamp, Button } from '@/components/ui';
+import { EmptyState, FooterPager, usePageClamp, Button } from '@/components/ui';
 import { usePublishItems } from '../../hooks/usePublishItems';
 import { useRereadPublishRun, useUpdatePublishItem } from '../../hooks/usePublishMutations';
 import { usePublishSelection } from '../../hooks/usePublishSelection';
@@ -28,6 +28,9 @@ export interface PublishPreviewProps {
   /** Goes back to the start of the tab (after the draft is discarded). */
   onClose: () => void;
 }
+
+// The server's page is fixed (50 rows): the pager's size menu has that one choice.
+const PAGE_SIZES = [PUBLISH_ITEMS_PAGE] as const;
 
 /** The whole preview: it owns the address state (search, filters, page, sort), the ticked rows and the open dialog. */
 export function PublishPreview({ run, grants, onOpen, onClose }: PublishPreviewProps) {
@@ -72,78 +75,86 @@ export function PublishPreview({ run, grants, onOpen, onClose }: PublishPreviewP
   };
 
   return (
-    <div className="divide-y divide-line">
-      <PublishPreviewStats run={run} />
-      <PublishCheckAgain run={run} grants={grants} onOpen={onOpen} />
-      <div>
-        <PublishPreviewToolbar
-          run={run}
-          view={view}
-          total={list.total}
-          filtered={filtered}
-          onQuery={setQuery}
-          onChip={(chip) => setFilters(chipFilters(chip))}
-          onFilter={setFilter}
-          onClear={clear}
-        />
-        <PublishBulkBar
-          runId={run.id}
-          select={bulkSelect([...selection.selected], allMatching, view)}
-          ticked={ticked}
-          allMatching={allMatching}
-          total={total}
-          offerAll={pageTicked && total > list.rows.length}
-          onSelectAll={selectAll}
-          onClear={clearTicks}
-        />
-        {error && (
-          <p className="border-t border-line px-3.5 py-2 text-sm text-crit-fg" role="alert">
-            {error}
-          </p>
-        )}
-        <div className="border-t border-line">
-          <PublishPreviewTable
-            rows={list.rows}
-            state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
-            error={list.query.error}
-            onRetry={() => void list.query.refetch()}
-            selection={shown}
-            sort={view.sort}
-            onSortChange={setSort}
-            pagination={{ page: view.page, pageSize: PUBLISH_ITEMS_PAGE, total }}
-            onPageChange={setPage}
-            empty={
-              <EmptyState icon="filter" title="No rows here">
-                {filtered ? 'No row matches the search or the filters.' : 'This preview has no rows.'}
-                {filtered && (
-                  <>
-                    {' '}
-                    <Button variant="ghost" size="sm" onClick={clear}>
-                      Clear filters
-                    </Button>
-                  </>
-                )}
-              </EmptyState>
-            }
-            busyId={update.isPending ? update.variables?.itemId : undefined}
-            onInclude={include}
-            onEdit={setEditing}
+    <div>
+      <div className="grid gap-4">
+        <PublishPreviewStats run={run} />
+        <PublishCheckAgain run={run} grants={grants} onOpen={onOpen} />
+        <div>
+          <PublishPreviewToolbar
+            run={run}
+            view={view}
+            total={list.total}
+            filtered={filtered}
+            onQuery={setQuery}
+            onChip={(chip) => setFilters(chipFilters(chip))}
+            onFilter={setFilter}
+            onClear={clear}
           />
+          <PublishBulkBar
+            runId={run.id}
+            select={bulkSelect([...selection.selected], allMatching, view)}
+            ticked={ticked}
+            allMatching={allMatching}
+            total={total}
+            offerAll={pageTicked && total > list.rows.length}
+            onSelectAll={selectAll}
+            onClear={clearTicks}
+          />
+          {error && (
+            <p className="border-t border-line py-2 text-sm text-crit-fg" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="border-t border-line">
+            <PublishPreviewTable
+              rows={list.rows}
+              state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
+              error={list.query.error}
+              onRetry={() => void list.query.refetch()}
+              selection={shown}
+              sort={view.sort}
+              onSortChange={setSort}
+              empty={
+                <EmptyState icon="filter" title="No rows here">
+                  {filtered ? 'No row matches the search or the filters.' : 'This preview has no rows.'}
+                  {filtered && (
+                    <>
+                      {' '}
+                      <Button variant="ghost" size="sm" onClick={clear}>
+                        Clear filters
+                      </Button>
+                    </>
+                  )}
+                </EmptyState>
+              }
+              busyId={update.isPending ? update.variables?.itemId : undefined}
+              onInclude={include}
+              onEdit={setEditing}
+            />
+          </div>
         </div>
+        {editing && (
+          <PublishItemDialog
+            key={editing.id}
+            runId={run.id}
+            item={editing}
+            grants={grants}
+            q={view.q}
+            filters={filters}
+            onOpenItem={setEditing}
+            onClose={() => setEditing(null)}
+          />
+        )}
       </div>
-      <PublishActionBar run={run} grants={grants} onClose={onClose} onApplied={reset} />
-      {editing && (
-        <PublishItemDialog
-          key={editing.id}
-          runId={run.id}
-          item={editing}
-          grants={grants}
-          q={view.q}
-          filters={filters}
-          onOpenItem={setEditing}
-          onClose={() => setEditing(null)}
-        />
-      )}
+      <FooterPager
+        page={view.page}
+        pageSize={PUBLISH_ITEMS_PAGE}
+        total={total}
+        sizes={PAGE_SIZES}
+        onPage={setPage}
+        onPageSize={() => undefined}
+        actions={<PublishActionBar run={run} grants={grants} onClose={onClose} onApplied={reset} />}
+      />
     </div>
   );
 }

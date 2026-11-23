@@ -1,4 +1,4 @@
-// LinksBody: the body of the supplier chain editor, shared by the "Edit links" dialog and the panel's Suppliers section: the places
+// LinksBody: the body of the supplier chain editor, shared by the "Edit links" dialog and the edit view's API Connection part: the places
 // in order (or a note when there is none) and the menu that adds a supplier. It holds no state; the draft hook does.
 import { Button, SelectField } from '@/components/ui';
 import type { SuppliersStatus } from '../hooks/useSuppliers';

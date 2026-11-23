@@ -36,7 +36,7 @@ describe('a run that succeeded', () => {
     expect(screen.getByRole('button', { name: 'Review the 3 left out' })).toBeEnabled();
     expect(screen.getByRole('link', { name: 'See the services on the shop' })).toHaveAttribute(
       'href',
-      '/catalog?shop=on',
+      '/products?view=all',
     );
     expect(screen.getByRole('button', { name: 'Take these 9 off the shop' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('a run that succeeded', () => {
     const requests = recordRequests();
     const app = await openRun(ON_SHOP);
     await user.click(await screen.findByRole('button', { name: 'Review the 3 left out' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=8'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
       scope: { kind: 'run', runId: 1 },
     });
@@ -169,7 +169,7 @@ describe('a run that stopped or was discarded', () => {
     expect(screen.queryByText(/it continues with what is left/)).not.toBeInTheDocument();
     expect(screen.queryByRole('table', { name: RESULT })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Prepare again' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=8'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
       scope: { kind: 'all' },
       listed: true,
@@ -183,7 +183,7 @@ describe('a run that stopped or was discarded', () => {
     expect(screen.queryByRole('table', { name: RESULT })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Take these|^Put these/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Open the newer run' }));
-    expect(app.location()).toBe('/catalog?view=publish&run=5');
+    expect(app.location()).toBe('/products?view=publish&run=5');
     expect(await screen.findByLabelText('Publish preview')).toBeInTheDocument();
   });
 
@@ -249,7 +249,7 @@ describe('a "Check again" run that was discarded while it was prepared', () => {
     expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Prepare again' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=9'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=9'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
       scope: { kind: 'run', runId: DRAFT },
       listed: true,
@@ -261,7 +261,7 @@ describe('a "Check again" run that was discarded while it was prepared', () => {
     expect(await screen.findByText(/This preview was checked again\./)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open the newer run' })).toHaveAttribute(
       'href',
-      '/catalog?view=publish&run=9',
+      '/products?view=publish&run=9',
     );
   });
 
@@ -345,7 +345,7 @@ describe('a "Check again" run that failed or stalled while it was prepared', () 
       expect(screen.queryByRole('table', { name: RESULT })).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Prepare again' }));
-      await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=9'));
+      await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=9'));
       expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
         scope: { kind: 'run', runId: DRAFT },
         listed: true,
@@ -355,7 +355,7 @@ describe('a "Check again" run that failed or stalled while it was prepared', () 
       await openRun(DRAFT);
       expect(await screen.findByRole('link', { name: 'Open the newer run' })).toHaveAttribute(
         'href',
-        '/catalog?view=publish&run=9',
+        '/products?view=publish&run=9',
       );
     },
   );
@@ -457,7 +457,7 @@ describe('the table of rows', () => {
     await waitFor(() =>
       expect(lastOf(requests, 'GET', /\/items$/).url.searchParams.get('result')).toBe('skipped'),
     );
-    expect(app.location()).toBe('/catalog?view=publish&run=1&result=skipped');
+    expect(app.location()).toBe('/products?view=publish&run=1&result=skipped');
     await waitFor(async () => expect((await tableNamed(RESULT)).getAllByRole('row')).toHaveLength(3));
     expect(chips.getByRole('button', { name: 'Left out (2)' })).toHaveAttribute('aria-pressed', 'true');
     await user.click(chips.getByRole('button', { name: 'All (12)' }));
@@ -540,9 +540,9 @@ describe('the table of rows', () => {
     );
     const requests = recordRequests();
     await openRun(ON_SHOP);
-    expect(await screen.findByText('1–50 of 120')).toBeInTheDocument();
+    expect(await screen.findByText('Results: 1 - 50 of 120')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
-    expect(await screen.findByText('51–100 of 120')).toBeInTheDocument();
+    expect(await screen.findByText('Results: 51 - 100 of 120')).toBeInTheDocument();
     const second = lastOf(requests, 'GET', /\/items$/).url.searchParams;
     expect([second.get('_start'), second.get('_end')]).toEqual(['50', '100']);
     expect(await rowOf(RESULT, 'Row 51')).toBeTruthy();

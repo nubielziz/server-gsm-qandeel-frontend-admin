@@ -1,4 +1,4 @@
-// The draft of a service's supplier chain while the "Edit links" dialog or the Suppliers section of the panel is open: the steps in
+// The draft of a service's supplier chain while the "Edit links" dialog or the API Connection part of the edit view is open: the steps in
 // order, moving and removing them, and the body that replaces the chain. Pure helpers; the server checks the result (`PUT /admin/services/:id/supplier-links`).
 import type { Id } from '@/lib/api';
 import type { ChainStep, ReplaceLinksBody } from '../types';

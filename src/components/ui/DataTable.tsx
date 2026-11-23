@@ -40,6 +40,11 @@ export interface DataTableProps<T, K extends RowKey = RowKey> {
    * example a list of problems above a "12 components operational · Show" line. A pager is always drawn.
    */
   footer?: boolean;
+  /**
+   * `list`: the skin of the Product / Services lists: small bold headers over a strong rule, thin rules between rows, no fill.
+   * Inside a cell, `cell-sub` draws the small italic second line and `input-sm` a 28 px input. Default: the table of every other page.
+   */
+  skin?: 'list';
 }
 
 /**
@@ -65,6 +70,7 @@ export function DataTable<T, K extends RowKey = RowKey>({
   cursorKey,
   skeletonRows = 8,
   footer = true,
+  skin,
 }: DataTableProps<T, K>) {
   if (state === 'loading') {
     return <SkeletonTable cols={columns.length + (selection ? 1 : 0)} rows={skeletonRows} />;
@@ -81,7 +87,7 @@ export function DataTable<T, K extends RowKey = RowKey>({
   return (
     <div>
       <div className="tbl-wrap">
-        <table className="tbl" aria-label={caption}>
+        <table className={skin === 'list' ? 'tbl tbl-list' : 'tbl'} aria-label={caption}>
           <DataTableHead
             columns={columns}
             pageKeys={keys}

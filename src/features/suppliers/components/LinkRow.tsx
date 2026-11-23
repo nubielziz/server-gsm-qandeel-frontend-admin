@@ -1,4 +1,4 @@
-// LinkRow: one place in a service's supplier chain, inside the "Edit links" dialog and the panel's Suppliers section: its role
+// LinkRow: one place in a service's supplier chain, inside the "Edit links" dialog and the edit view's API Connection part: its role
 // (Primary, Fallback…), the supplier and the supplier's service it uses, and the buttons that move it up or down or take it out. A
 // supplier just added has no service picked yet, so the row shows a menu of that supplier's own services.
 import { Button, Icon } from '@/components/ui';

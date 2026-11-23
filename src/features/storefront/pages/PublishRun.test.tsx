@@ -6,7 +6,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { DASHBOARD_KEY } from '@/lib/query';
+import { SERVICE_ROWS_KEY, DASHBOARD_KEY } from '@/lib/query';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { roleStore } from '@/mocks/roles';
@@ -14,7 +14,7 @@ import { setupMockApi, signInAs } from '@/test/renderApp';
 import { applyPublishRun, createPublishRun } from '../api';
 import { recordRequests } from '../test/requests';
 import { lastOf, openPublishStart, openRun, PUBLISH_PERMISSIONS, publishRoute } from '../test/publishPage';
-import { openCatalogView, tableNamed } from '../test/storefrontPage';
+import { openProductsView, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 40_000 });
@@ -23,12 +23,17 @@ afterEach(() => vi.restoreAllMocks());
 const POLL = { timeout: 8_000 };
 const DRAFT = 5;
 
-/** Counts how many times the page made the dashboard's reads stale (it does when a run it watched ends). */
-function watchDashboard() {
+/** Counts how many times the page made the reads under a key stale (it does for these two when a run it watched ends). */
+function watchStale() {
   const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
-  return () =>
-    spy.mock.calls.filter(([filters]) => JSON.stringify(filters?.queryKey) === JSON.stringify(DASHBOARD_KEY))
-      .length;
+  return (key: readonly unknown[]) =>
+    spy.mock.calls.filter(([filters]) => JSON.stringify(filters?.queryKey) === JSON.stringify(key)).length;
+}
+
+/** The same for the dashboard's reads alone. */
+function watchDashboard() {
+  const stale = watchStale();
+  return () => stale(DASHBOARD_KEY);
 }
 
 /** Starts publishing the draft (run 5) on the server, so the page opens on a run that is queued. */
@@ -58,7 +63,7 @@ describe('a preview being prepared', () => {
     const app = await openPublishStart();
     await user.click(screen.getByRole('button', { name: 'Prepare the preview' }));
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs\/8\/cancel$/).body).toEqual({});
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
@@ -90,6 +95,9 @@ describe('the draft', () => {
     expect(header).toHaveTextContent('Everything not on the shop yet');
     expect(header).toHaveTextContent('by Rami K.');
     expect(screen.getByText('Draft')).toBeInTheDocument();
+    // The status is a square and a word, not a badge.
+    expect(screen.getByText('Draft').closest('.badge')).toBeNull();
+    expect(screen.getByText('Draft').previousElementSibling).toHaveClass('status-sq', 'status-sq-warn');
     // The preview itself (its own tests are PublishPreview.test.tsx): the figures of the draft above the table of its rows.
     expect(await screen.findByRole('table', { name: 'Publish preview' })).toBeInTheDocument();
     const figures = within(screen.getByLabelText('Preview figures'));
@@ -101,7 +109,7 @@ describe('the draft', () => {
     const user = userEvent.setup();
     const app = await openRun(DRAFT);
     await user.click(screen.getByRole('link', { name: 'All runs' }));
-    expect(app.location()).toBe('/catalog?view=publish');
+    expect(app.location()).toBe('/products?view=publish');
     expect(await screen.findByRole('heading', { level: 2, name: 'Earlier runs' })).toBeInTheDocument();
   });
 
@@ -110,7 +118,7 @@ describe('the draft', () => {
     mockServer.use(
       http.get('*/admin/publish-runs/:id', () => problem(500, 'INTERNAL', 'Server error', 'The run failed.')),
     );
-    await openCatalogView(publishRoute(DRAFT));
+    await openProductsView(publishRoute(DRAFT));
     expect(await screen.findByText('Could not load this run')).toBeInTheDocument();
     mockServer.resetHandlers();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -136,18 +144,18 @@ describe('publishing in the background', () => {
     expect(screen.queryByRole('meter', { name: 'Publish progress' })).not.toBeInTheDocument();
   });
 
-  it('refreshes the listings count and the dashboard, and says how many were published, when a run it watched ends', async () => {
+  it('refreshes the services lists and the dashboard, and says how many were published, when a run it watched ends', async () => {
     await startPublishing();
-    const requests = recordRequests();
-    const dashboardReads = watchDashboard();
+    const stale = watchStale();
+    const rowReads = () => stale(SERVICE_ROWS_KEY);
+    const dashboardReads = () => stale(DASHBOARD_KEY);
     await openRun(DRAFT);
     await screen.findByRole('meter', { name: 'Publish progress' });
     expect(dashboardReads()).toBe(0);
     await screen.findByText('29 services are on the shop', {}, POLL);
     expect(await screen.findByText('29 services published')).toBeInTheDocument();
-    // The number on the table's tab (a stand-in of the Catalog's) and the other counts are asked again: the shop has new listings.
-    const listings = () => requests.sent().filter((sent) => sent.url.pathname === '/admin/service-listings');
-    await waitFor(() => expect(listings().length).toBeGreaterThanOrEqual(2));
+    // The services lists (their shop facts) are asked again: the shop has new listings.
+    await waitFor(() => expect(rowReads()).toBeGreaterThan(0));
     // So are the dashboard's figures (the shop's listings feed them).
     expect(dashboardReads()).toBeGreaterThan(0);
   });

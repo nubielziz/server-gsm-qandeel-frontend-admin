@@ -20,8 +20,8 @@ export function DeleteServiceDialog({ service, onClose, onDeleted }: DeleteServi
       title={`Delete ${service.name}?`}
       body={
         <p>
-          The service and its prices are removed from the catalog. To only stop new orders and keep the
-          history, turn off its Enabled switch instead.
+          The service and its prices are removed. To only stop new orders and keep the history, set its Status
+          to Inactive in the Overview instead.
         </p>
       }
       confirm="Delete service"

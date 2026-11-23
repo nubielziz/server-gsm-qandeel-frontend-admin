@@ -1,5 +1,5 @@
-// LinkServicePicker: the menu of a supplier's own services inside the supplier chain editor (the "Edit links" dialog and the panel's
-// Suppliers section), for a supplier that was just added to the chain and has no service picked yet. It reads the supplier's service
+// LinkServicePicker: the menu of a supplier's own services inside the supplier chain editor (the "Edit links" dialog and the edit
+// view's API Connection part), for a supplier that was just added to the chain and has no service picked yet. It reads the supplier's service
 // list (`GET /admin/suppliers/:id/services`), and its search box asks the server, so a supplier with thousands of services is
 // reachable by name.
 import { useState } from 'react';

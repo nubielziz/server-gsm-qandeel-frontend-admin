@@ -10,7 +10,7 @@ export const manifest: FeatureManifest = {
     name: 'storefront',
     heading: 'Shop content',
     list: () => import('./pages').then((pages) => pages.StorefrontPage),
-    // Any tab's read permission opens the page; each tab then shows only what the role may read (the Catalog page works the same way).
+    // Any tab's read permission opens the page; each tab then shows only what the role may read (the Product / Services page works the same way).
     permission: PAGE_PERMISSIONS,
   },
   registry: storefrontResources,

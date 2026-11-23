@@ -1,5 +1,6 @@
-// Tests for what a service change makes stale: creating, moving or deleting a service refreshes the category lists, so the count of
-// services in each category (`serviceCount`) stays true without a reload. A hook reads the categories while another changes a service.
+// Tests for what a service change makes stale: moving or deleting a service refreshes the category lists, so the count of services in each
+// category (`serviceCount`) stays true without a reload. A hook reads the categories while another changes a service. (Creating one is the
+// +Add Service view's hook, tested with that view.)
 import { useQueryClient } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -9,7 +10,7 @@ import { createService, listServices } from '../api';
 import { AppWrapper } from '../test/AppWrapper';
 import { useCategories } from './useChoices';
 import { useReplaceGroupPrices } from './useServicePartMutations';
-import { useCreateService, useDeleteService, useUpdatePrice, useUpdateService } from './useServiceMutations';
+import { useDeleteService, useUpdatePrice, useUpdateService } from './useServiceMutations';
 import { SERVICE_STALE_KEYS, staleServices, staleServicesAndCategories } from './keys';
 
 setupMockApi();
@@ -30,7 +31,6 @@ function rig() {
   return renderHook(
     () => ({
       categories: useCategories(true),
-      create: useCreateService(),
       update: useUpdateService(),
       remove: useDeleteService(),
     }),
@@ -43,14 +43,6 @@ const countOf = (result: Rig, id: number) =>
   result.current.categories.categories.find((category) => category.id === id)?.serviceCount;
 
 describe('the category counts', () => {
-  it('go up when a service is created', async () => {
-    await signInAs();
-    const { result } = rig();
-    await waitFor(() => expect(countOf(result, APPLE)).toBe(4));
-    await act(() => result.current.create.mutateAsync(body));
-    await waitFor(() => expect(countOf(result, APPLE)).toBe(5));
-  });
-
   it('move when a service changes category', async () => {
     await signInAs();
     const [service] = (await listServices({ q: 'EE UK' })).data;
@@ -94,7 +86,7 @@ describe('the listing read', () => {
       () => ({ client: useQueryClient(), price: useUpdatePrice(), groups: useReplaceGroupPrices() }),
       { wrapper: AppWrapper },
     );
-    // A copy of the listing, as the panel's shop price block keeps it (it is kept for good until a write makes it old).
+    // A copy of the listing, as the edit view's Retail Purchase part keeps it (it is kept for good until a write makes it old).
     const key = [...LISTING_DETAILS_KEY, service.id];
     const keep = () => result.current.client.setQueryData(key, { id: service.id });
     const old = () => result.current.client.getQueryState(key)?.isInvalidated;

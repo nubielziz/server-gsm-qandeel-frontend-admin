@@ -402,12 +402,12 @@ describe('publish to the shop', () => {
     const detail = await detailOf('Rapid IMEI');
     await detail.findByRole('table', { name: 'Services using Rapid IMEI' });
     await user.click(detail.getByRole('button', { name: 'Publish to the shop…' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=8'), { timeout: 10_000 });
     const created = requests
       .sent()
       .find((sent) => sent.method === 'POST' && sent.url.pathname === '/admin/publish-runs')!;
     expect(created.body).toEqual({ scope: { kind: 'supplier', supplierId: 3 } });
-    // The Catalog page that draws the run ("Preparing the preview of N services…") is built apart from this test; it proves that line.
+    // The Shop Publish view that draws the run ("Preparing the preview of N services…") is built apart from this test; it proves that line.
   });
 
   it('needs storefront:create, and says so', async () => {

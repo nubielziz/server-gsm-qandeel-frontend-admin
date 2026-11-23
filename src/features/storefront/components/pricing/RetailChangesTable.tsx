@@ -1,18 +1,12 @@
-// RetailChangesTable: the price changes the server made or proposes: the service, what happened (a badge with an icon and words),
-// the cost and the shop price before and after, the rule and when. It draws what it is given; every figure and every word of why
-// is the server's. A row can be ticked so the proposals that wait are approved or kept together.
+// RetailChangesTable: the price changes the server made or proposes: the service, what happened (a square and words), the cost and the shop
+// price before and after, the rule and when. It draws what it is given; every figure and every word of why is the server's. A row can be
+// ticked so the proposals that wait are approved or kept together. The footer pager is the section's.
 import type { ReactNode } from 'react';
-import {
-  Badge,
-  DataTable,
-  type DataTableColumn,
-  type PaginationState,
-  type RowSelection,
-  type SortState,
-} from '@/components/ui';
+import { DataTable, type DataTableColumn, type RowSelection, type SortState } from '@/components/ui';
 import { fmtDate, price } from '@/lib/format';
 import { changeWords } from '../../lib/retailPricing';
 import type { RetailPriceChange } from '../../types';
+import { StatusMark } from '../StatusMark';
 
 export interface RetailChangesTableProps {
   rows: readonly RetailPriceChange[];
@@ -22,8 +16,6 @@ export interface RetailChangesTableProps {
   selection: RowSelection<number>;
   sort: SortState;
   onSortChange: (sort: SortState) => void;
-  pagination: PaginationState;
-  onPageChange: (page: number) => void;
   empty: ReactNode;
 }
 
@@ -55,10 +47,8 @@ const COLUMNS: DataTableColumn<RetailPriceChange>[] = [
       const words = changeWords(change);
       return (
         <>
-          <Badge tone={words.tone} icon={words.icon}>
-            {words.label}
-          </Badge>
-          {words.note && <p className="mt-0.5 text-2xs text-ink3">{words.note}</p>}
+          <StatusMark tone={words.tone}>{words.label}</StatusMark>
+          {words.note && <span className="cell-sub">{words.note}</span>}
         </>
       );
     },
@@ -95,12 +85,12 @@ export function RetailChangesTable({
   selection,
   sort,
   onSortChange,
-  pagination,
-  onPageChange,
   empty,
 }: RetailChangesTableProps) {
   return (
     <DataTable
+      skin="list"
+      footer={false}
       caption="Price changes"
       columns={COLUMNS}
       rows={rows}
@@ -108,8 +98,6 @@ export function RetailChangesTable({
       selection={selection}
       sort={sort}
       onSortChange={onSortChange}
-      pagination={pagination}
-      onPageChange={onPageChange}
       state={state}
       error={error}
       errorTitle="Could not load the price changes"

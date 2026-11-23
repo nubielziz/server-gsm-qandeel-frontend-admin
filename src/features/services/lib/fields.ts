@@ -1,4 +1,4 @@
-// The Fields dialog's form rows and how they become a service's custom fields. A select field's choices are one comma-separated
+// The Custom Fields section's form rows (the edit view's Field part) and how they become a service's custom fields. A select field's choices are one comma-separated
 // line in the form and a list in the request. The checks are hints; the server validates the fields for real.
 import { choicesText, parseChoices } from './options';
 import type { ServiceField, ServiceFieldType } from '../types';

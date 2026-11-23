@@ -73,18 +73,18 @@ describe('storefrontListPath', () => {
   });
 });
 
-describe('the Catalog addresses', () => {
-  it('names the publish view, and a run in it', () => {
-    expect(storefrontPublishPath()).toBe('/catalog?view=publish');
-    expect(storefrontPublishPath(12)).toBe('/catalog?view=publish&run=12');
+describe('the Product / Services addresses', () => {
+  it('names the Shop Publish view, and a run in it', () => {
+    expect(storefrontPublishPath()).toBe('/products?view=publish');
+    expect(storefrontPublishPath(12)).toBe('/products?view=publish&run=12');
   });
 
-  it('names the shop price rules of the Catalog settings, and their All view', () => {
-    expect(storefrontPricingPath()).toBe('/catalog?view=settings&tab=shop-prices');
-    expect(storefrontPricingPath({ show: 'all' })).toBe('/catalog?view=settings&tab=shop-prices&show=all');
+  it('names the shop price rules of the Price Rules view, and their All view', () => {
+    expect(storefrontPricingPath()).toBe('/products?view=rules&tab=shop');
+    expect(storefrontPricingPath({ show: 'all' })).toBe('/products?view=rules&tab=shop&show=all');
   });
 
-  it('names the Catalog table narrowed to the services on the shop', () => {
-    expect(storefrontOnShopPath()).toBe('/catalog?shop=on');
+  it('names the list of services, where a finished run points to', () => {
+    expect(storefrontOnShopPath()).toBe('/products?view=all');
   });
 });

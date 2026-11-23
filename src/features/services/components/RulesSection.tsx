@@ -1,7 +1,8 @@
-// RulesSection: "Pricing rules" of the Rules and groups tab: the rules table with New rule, and the create, edit and delete dialogs.
+// RulesSection: "Pricing rules" of the Merchant price rules view: the rules table, and the create, edit and delete dialogs. New rule is the view's
+// primary button, so it sits in the pinned bar of RulesTab, which tells this block to open the create dialog (`creating`).
 // Ports the "Category rules" block of rulesTab and its `cat-on` / `cat-off` actions in 43-p-services.js, as a full list of rules.
 import { useState } from 'react';
-import { Button, EmptyState, Icon } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
 import { usePricingRules, useToggleRule } from '../hooks/usePricingRules';
 import type { ServiceGrants } from '../hooks/useServiceGrants';
 import type { PricingRule } from '../types';
@@ -10,34 +11,26 @@ import { RuleDialog } from './RuleDialog';
 import { RuleSection } from './RuleSection';
 import { RulesTable } from './RulesTable';
 
-type Dialog = { kind: 'create' } | { kind: 'edit' | 'delete'; rule: PricingRule };
+type Dialog = { kind: 'edit' | 'delete'; rule: PricingRule };
+
+export interface RulesSectionProps {
+  grants: ServiceGrants;
+  /** The New rule button of the pinned bar was pressed: the create dialog is open until `onCloseCreate`. */
+  creating: boolean;
+  onCloseCreate: () => void;
+}
 
 /** The rules table with its dialogs. */
-export function RulesSection({ grants }: { grants: ServiceGrants }) {
+export function RulesSection({ grants, creating, onCloseCreate }: RulesSectionProps) {
   const { rules, query } = usePricingRules(grants.ready);
   const toggle = useToggleRule();
   const [dialog, setDialog] = useState<Dialog | null>(null);
-  const createLock = grants.needs('pricing:create');
-
-  const newButton = (
-    <Button
-      size="sm"
-      variant="primary"
-      disabled={createLock.disabled}
-      title={createLock.title}
-      onClick={() => setDialog({ kind: 'create' })}
-    >
-      <Icon name="plus" className="ic-sm" />
-      New rule
-    </Button>
-  );
 
   return (
     <>
       <RuleSection
         title="Pricing rules"
         sub="Margin and discount rules and promos. Applied before the group discount. Changes affect new orders only."
-        right={newButton}
       >
         <RulesTable
           rules={rules}
@@ -57,7 +50,7 @@ export function RulesSection({ grants }: { grants: ServiceGrants }) {
           onDelete={(rule) => setDialog({ kind: 'delete', rule })}
         />
       </RuleSection>
-      {dialog?.kind === 'create' && <RuleDialog onClose={() => setDialog(null)} />}
+      {creating && <RuleDialog onClose={onCloseCreate} />}
       {dialog?.kind === 'edit' && <RuleDialog rule={dialog.rule} onClose={() => setDialog(null)} />}
       {dialog?.kind === 'delete' && <DeleteRuleDialog rule={dialog.rule} onClose={() => setDialog(null)} />}
     </>

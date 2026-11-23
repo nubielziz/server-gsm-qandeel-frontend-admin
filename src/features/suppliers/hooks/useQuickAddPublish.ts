@@ -1,12 +1,12 @@
 // Step 3 of Quick add: the publish run the server made from the Quick add run ("Also put them on the shop"), read every 5 seconds
 // while it is going. The runs list is the storefront feature's API, reached through its index; the answer is one run or none. When a
-// run this step saw working ends, the Catalog table is made stale: its rows show which services went on the shop.
+// run this step saw working ends, the services lists is made stale: its rows show which services went on the shop.
 import { useInvalidate } from '@refinedev/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { listPublishRuns, type PublishRun } from '@/features/storefront';
 import type { Id } from '@/lib/api';
-import { CATALOG_ROWS_KEY, useApiQuery } from '@/lib/query';
+import { SERVICE_ROWS_KEY, useApiQuery } from '@/lib/query';
 import { publishPollDelay, wantsPublishLine } from '../lib/quickAddPublish';
 import type { QuickAddRun } from '../types';
 import { SUPPLIER_QUICK_ADD_PUBLISH_KEY } from './keys';
@@ -24,7 +24,7 @@ export function useQuickAddPublishRun(quick: QuickAddRun) {
   const wanted = wantsPublishLine(quick);
   const invalidate = useInvalidate();
   const queryClient = useQueryClient();
-  // The runs seen working here: only those that end while the step watches refresh the Catalog table.
+  // The runs seen working here: only those that end while the step watches refresh the services lists.
   const seenWorking = useRef(new Set<Id>());
   const query = useApiQuery({
     queryKey: [...SUPPLIER_QUICK_ADD_PUBLISH_KEY, quick.id],
@@ -49,7 +49,7 @@ export function useQuickAddPublishRun(quick: QuickAddRun) {
     }
     if (!seenWorking.current.delete(run.id)) return;
     void invalidate({ resource: 'services', invalidates: ['list', 'many', 'detail'] });
-    void queryClient.invalidateQueries({ queryKey: CATALOG_ROWS_KEY });
+    void queryClient.invalidateQueries({ queryKey: SERVICE_ROWS_KEY });
   }, [run, invalidate, queryClient]);
 
   return { wanted, run, readAt: query.dataUpdatedAt, query };

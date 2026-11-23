@@ -1,5 +1,6 @@
 // ListingFormBody: the fields of the shop page (listing) form: the picture, the texts, the facts about the service and the search
-// texts. Shared by the Edit listing dialog and the Catalog panel's shop page section; each makes its own form and its own save.
+// texts. Shared by the Edit listing dialog (stacked) and the Product / Services edit view's Retail Purchase part (label-left rows);
+// each makes its own form and its own save.
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { ListingFormValues } from '../../lib/listingForm';
@@ -18,10 +19,12 @@ export interface ListingFormBodyProps {
    * picture saves at once on its own requests, so it is switched off with the rest. The server decides in any case.
    */
   disabledReason?: string;
+  /** `row`: label-left rows (the edit view). Default `stacked`: the dialog's two-column grid. */
+  layout?: 'stacked' | 'row';
 }
 
 /** The four groups of fields. The picture saves at once (its own requests); the rest is the form's Save. */
-export function ListingFormBody({ form, listing, disabledReason }: ListingFormBodyProps) {
+export function ListingFormBody({ form, listing, disabledReason, layout = 'stacked' }: ListingFormBodyProps) {
   const [imageUrl, setImageUrl] = useState(listing.imageUrl);
   const {
     register,
@@ -29,16 +32,21 @@ export function ListingFormBody({ form, listing, disabledReason }: ListingFormBo
     formState: { errors },
   } = form;
   return (
-    <fieldset disabled={disabledReason !== undefined} title={disabledReason} className="min-w-0 space-y-4">
-      <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} />
-      <ListingContentFields register={register} errors={errors} />
+    <fieldset
+      disabled={disabledReason !== undefined}
+      title={disabledReason}
+      className={layout === 'row' ? 'min-w-0' : 'min-w-0 space-y-4'}
+    >
+      <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} layout={layout} />
+      <ListingContentFields register={register} errors={errors} layout={layout} />
       <ListingFactsFields
         register={register}
         errors={errors}
         control={control}
         savedCountry={listing.country}
+        layout={layout}
       />
-      <ListingSeoFields register={register} errors={errors} />
+      <ListingSeoFields register={register} errors={errors} layout={layout} />
     </fieldset>
   );
 }

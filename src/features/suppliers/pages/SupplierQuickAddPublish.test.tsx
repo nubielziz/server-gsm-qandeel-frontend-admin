@@ -196,7 +196,7 @@ describe('the tick box', () => {
     expect(box(dialog)).toBeEnabled();
     expect(box(dialog)).not.toHaveAttribute('title');
     expect(box(dialog)).toHaveAccessibleDescription(
-      'Each gets a clean title and a price from the retail pricing rules. The ones that need a look wait in Catalog, Publish runs.',
+      'Each gets a clean title and a price from the retail pricing rules. The ones that need a look wait in Product / Services, Shop Publish.',
     );
     const status = dialog.getByRole('radio', { name: /^On sale/ });
     expect(status.compareDocumentPosition(box(dialog))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -284,13 +284,13 @@ describe('what the server refuses', () => {
     const alert = (await dialog.findByText(/Set a retail pricing rule first\./)).closest('p') as HTMLElement;
     expect(alert).toHaveAttribute('role', 'alert');
     const link = within(alert).getByRole('link', { name: 'Open Retail pricing' });
-    expect(link).toHaveAttribute('href', '/catalog?view=settings&tab=shop-prices');
+    expect(link).toHaveAttribute('href', '/products?view=rules&tab=shop');
     // Back on step 1, where the tick box is, still ticked.
     expect(await dialog.findByRole('table', { name: 'Supplier groups' })).toBeInTheDocument();
     expect(box(dialog)).toBeChecked();
 
     await user.click(link);
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices'), {
+    await waitFor(() => expect(app.location()).toBe('/products?view=rules&tab=shop'), {
       timeout: 10_000,
     });
     await waitFor(() =>
@@ -372,7 +372,7 @@ describe('the publishing line of step 3', () => {
     );
     expect(within(line).getByRole('link', { name: 'Open the run' })).toHaveAttribute(
       'href',
-      '/catalog?view=publish&run=11',
+      '/products?view=publish&run=11',
     );
     expect(dialog.queryByRole('button', { name: 'Prepare the shop preview' })).not.toBeInTheDocument();
   });
@@ -450,7 +450,7 @@ describe('the publishing line of step 3', () => {
 
     await user.click(button);
     await waitFor(() => expect(prepared).toEqual({ scope: { kind: 'quickAddRun', runId: 1 } }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=8'), { timeout: 10_000 });
   });
 
   it('says the same for a run that failed before its preview was ready', async () => {
@@ -560,7 +560,7 @@ describe('Quick add opened again after the run ended', () => {
     );
     expect(within(line).getByRole('link', { name: 'Open the run' })).toHaveAttribute(
       'href',
-      '/catalog?view=publish&run=11',
+      '/products?view=publish&run=11',
     );
     expect(reads[0].searchParams.get('quickAddRunId')).toBe('9');
     expect(dialog.queryByRole('table', { name: 'Supplier groups' })).not.toBeInTheDocument();
@@ -587,7 +587,7 @@ describe('Quick add opened again after the run ended', () => {
     ).toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Prepare the shop preview' }));
     await waitFor(() => expect(prepared).toEqual({ scope: { kind: 'quickAddRun', runId: 1 } }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=8'), { timeout: 10_000 });
   });
 
   it('opens on step 3 for a run that failed after it made some services, with its line and its error', async () => {
@@ -602,7 +602,7 @@ describe('Quick add opened again after the run ended', () => {
     );
     expect(within(line).getByRole('link', { name: 'Open the run' })).toHaveAttribute(
       'href',
-      '/catalog?view=publish&run=11',
+      '/products?view=publish&run=11',
     );
     expect(dialog.getByText(error)).toBeInTheDocument();
     expect(dialog.queryByRole('table', { name: 'Supplier groups' })).not.toBeInTheDocument();
@@ -636,7 +636,7 @@ describe('Quick add opened again after the run ended', () => {
     ).toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Prepare the shop preview' }));
     await waitFor(() => expect(prepared).toEqual({ scope: { kind: 'quickAddRun', runId: 1 } }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'), { timeout: 10_000 });
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=8'), { timeout: 10_000 });
   });
 
   it('shows checking, not the button, while a reopened Quick add reads again after an empty answer', async () => {

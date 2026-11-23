@@ -1,13 +1,6 @@
-// Tests for the service details form's values and bodies: what the inputs start with, which names have an error line, the body of
-// a new service and the body of an edit, which holds only what changed.
+// Tests for the body of an edit of the service details, which holds only what changed.
 import { describe, expect, it } from 'vitest';
-import {
-  createServiceBody,
-  serviceDetailsDefaults,
-  serviceDetailsFields,
-  updateServiceBody,
-  type ServiceDetailsValues,
-} from './serviceDetails';
+import { updateServiceBody, type ServiceDetailsValues } from './serviceDetails';
 import type { Service } from '../types';
 
 const SERVICE: Service = {
@@ -30,102 +23,26 @@ const SERVICE: Service = {
   minQty: 1,
   maxQty: 1,
   qtyOptions: [],
+  allowCancel: false,
+  allowVerify: false,
+  verifyWindowH: 0,
   supplier: null,
   fallbackSupplier: null,
 };
 
+// The service as the form shows it.
 const values = (changes: Partial<ServiceDetailsValues> = {}): ServiceDetailsValues => ({
-  ...serviceDetailsDefaults(SERVICE),
+  name: 'Sample Unlock',
+  code: 'IMEI-SAMPLE',
+  categoryId: '3',
+  type: 'imei',
+  slaMinutes: '60',
+  basePrice: '',
+  quantityMode: 'single',
+  minQty: '1',
+  maxQty: '',
+  qtyOptions: '',
   ...changes,
-});
-
-describe('serviceDetailsDefaults', () => {
-  it('starts a new service blank, at one per order and 60 minutes', () => {
-    expect(serviceDetailsDefaults()).toEqual({
-      name: '',
-      code: '',
-      categoryId: '',
-      type: 'imei',
-      slaMinutes: '60',
-      basePrice: '',
-      quantityMode: 'single',
-      minQty: '1',
-      maxQty: '',
-      qtyOptions: '',
-    });
-  });
-
-  it('starts an edit with the service as it is, and no price box', () => {
-    expect(serviceDetailsDefaults({ ...SERVICE, slaMinutes: 15, minQty: 2, maxQty: 9 })).toEqual({
-      name: 'Sample Unlock',
-      code: 'IMEI-SAMPLE',
-      categoryId: '3',
-      type: 'imei',
-      slaMinutes: '15',
-      basePrice: '',
-      quantityMode: 'range',
-      minQty: '2',
-      maxQty: '9',
-      qtyOptions: '',
-    });
-  });
-});
-
-describe('serviceDetailsFields', () => {
-  it('names the price only while a service is created', () => {
-    expect(serviceDetailsFields(true)).toContain('basePrice');
-    expect(serviceDetailsFields(false)).not.toContain('basePrice');
-    expect(serviceDetailsFields(false)).toEqual(
-      expect.arrayContaining([
-        'name',
-        'code',
-        'categoryId',
-        'type',
-        'slaMinutes',
-        'minQty',
-        'maxQty',
-        'qtyOptions',
-      ]),
-    );
-  });
-});
-
-describe('createServiceBody', () => {
-  it('sends every field, trimmed, with numbers and the price as money text', () => {
-    const body = createServiceBody(
-      values({
-        name: '  New one ',
-        code: ' NEW-1 ',
-        categoryId: '4',
-        type: 'file',
-        slaMinutes: '30',
-        basePrice: '2.5',
-      }),
-    );
-    expect(body).toEqual({
-      name: 'New one',
-      code: 'NEW-1',
-      categoryId: 4,
-      type: 'file',
-      slaMinutes: 30,
-      basePrice: '2.5000',
-    });
-  });
-
-  it('adds the quantity keys of a range and of packs, and none for one per order', () => {
-    expect(createServiceBody(values({ basePrice: '1', quantityMode: 'range', maxQty: '50' }))).toMatchObject({
-      minQty: 1,
-      maxQty: 50,
-    });
-    expect(
-      createServiceBody(values({ basePrice: '1', quantityMode: 'packs', qtyOptions: '25, 5' })),
-    ).toMatchObject({
-      qtyOptions: [5, 25],
-    });
-    const single = createServiceBody(values({ basePrice: '1' }));
-    expect(single).not.toHaveProperty('minQty');
-    expect(single).not.toHaveProperty('qtyOptions');
-  });
 });
 
 describe('updateServiceBody', () => {

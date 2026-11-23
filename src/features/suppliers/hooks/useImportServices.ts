@@ -4,7 +4,7 @@
 import { useInvalidate } from '@refinedev/core';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Id } from '@/lib/api';
-import { CATALOG_ROWS_KEY, type InvalidateTarget } from '@/lib/query';
+import { SERVICE_ROWS_KEY, type InvalidateTarget } from '@/lib/query';
 import { importServices, previewImport } from '../api';
 import { importToast, mergePreviews, mergeResults } from '../lib/importPlan';
 import type { ImportPreview, ImportPreviewItem, ImportResult } from '../types';
@@ -13,13 +13,13 @@ import { useBatchedMutation } from './useBatchedMutation';
 
 export const NO_ERROR_TOAST = () => false as const;
 
-/** What an import makes stale: this supplier's records, the services, and the reads behind the supplier page and the Catalog table. */
+/** What an import makes stale: this supplier's records, the services, and the reads behind the supplier page and the services lists. */
 const staleResources = (supplierId: Id): InvalidateTarget[] => [
   ...staleSupplier(supplierId),
   { resource: 'services' },
 ];
-// The Catalog table's rows and counts read the new services and their supplier chain (they are keyed under the shared rows key).
-const STALE_KEYS = [SUPPLIER_CATALOGUE_KEY, ...SUPPLIER_STALE_KEYS, CATALOG_ROWS_KEY];
+// The services lists' rows and counts read the new services and their supplier chain (they are keyed under the shared rows key).
+const STALE_KEYS = [SUPPLIER_CATALOGUE_KEY, ...SUPPLIER_STALE_KEYS, SERVICE_ROWS_KEY];
 
 /**
  * What an import of this supplier refreshes, as the options of a batched mutation: after the last call (`invalidates`,
@@ -54,7 +54,7 @@ export function usePreviewImport(supplierId: Id) {
 }
 
 /**
- * Imports the services, 500 at a time. One toast counts what the server did over all calls. The Catalog table and this supplier's
+ * Imports the services, 500 at a time. One toast counts what the server did over all calls. The services lists and this supplier's
  * table are made stale after the last call, or after a call that failed once some had gone through.
  */
 export function useImportServices(supplierId: Id) {

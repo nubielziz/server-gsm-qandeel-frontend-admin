@@ -1,4 +1,4 @@
-// The Options and Fields dialogs' text forms. An option list is edited as lines of text (a model list can have hundreds
+// The text forms of the Options and Custom Fields sections of the edit view's Field part. An option list is edited as lines of text (a model list can have hundreds
 // of entries, which rows of inputs would make slow to edit); a select field's choices are one comma-separated line.
 import type { SelectOption } from '@/components/ui';
 import type { ServiceFieldType, ServiceOption, ServiceOptionList } from '../types';

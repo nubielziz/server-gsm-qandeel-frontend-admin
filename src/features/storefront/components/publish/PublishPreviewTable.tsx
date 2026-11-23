@@ -7,9 +7,7 @@ import {
   DataTable,
   Icon,
   Switch,
-  TypeTag,
   type DataTableColumn,
-  type PaginationState,
   type RowSelection,
   type SortState,
 } from '@/components/ui';
@@ -29,8 +27,6 @@ export interface PublishPreviewTableProps {
   selection: RowSelection<number>;
   sort: SortState;
   onSortChange: (sort: SortState) => void;
-  pagination: PaginationState;
-  onPageChange: (page: number) => void;
   empty: ReactNode;
   /** The row whose Include switch is saving: only its switch waits. */
   busyId?: number;
@@ -38,7 +34,7 @@ export interface PublishPreviewTableProps {
   onEdit: (item: PublishItem) => void;
 }
 
-/** A tool or an app brand carries a small neutral tag, so staff see it is not a device maker. */
+/** A tool or an app brand carries a small italic word, so staff see it is not a device maker. */
 const KIND_TAG = { tool: 'Tool', app: 'App' } as const;
 
 /** Why a blocked row cannot be ticked, and what staff can do about it. */
@@ -57,8 +53,6 @@ export function PublishPreviewTable({
   selection,
   sort,
   onSortChange,
-  pagination,
-  onPageChange,
   empty,
   busyId,
   onInclude,
@@ -83,7 +77,7 @@ export function PublishPreviewTable({
           <>
             <PublishFacts item={item} />
             {tagged && (kind === 'tool' || kind === 'app') && (
-              <TypeTag className="ms-1.5">{KIND_TAG[kind]}</TypeTag>
+              <span className="ms-1.5 text-xs italic text-ink3">{KIND_TAG[kind]}</span>
             )}
           </>
         );
@@ -149,6 +143,7 @@ export function PublishPreviewTable({
 
   return (
     <DataTable
+      skin="list"
       caption="Publish preview"
       columns={columns}
       rows={rows}
@@ -156,14 +151,12 @@ export function PublishPreviewTable({
       selection={selection}
       sort={sort}
       onSortChange={onSortChange}
-      pagination={pagination}
-      onPageChange={onPageChange}
       state={state}
       error={error}
       errorTitle="Could not load the rows"
       onRetry={onRetry}
       empty={empty}
-      // The toolbar above already counts the rows.
+      // The footer pager under the table counts the rows.
       footer={false}
     />
   );

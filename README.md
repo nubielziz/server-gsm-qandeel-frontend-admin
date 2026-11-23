@@ -117,7 +117,13 @@ A change is done when `npm run typecheck && npm run lint && npm run build && npm
 - `src/lib/format`, `src/lib/query`, `src/lib/auth`: formatting (money stays a 4-decimal string), query helpers, permission checks.
 - `src/components/ui`, `src/components/charts`: the shared kit, in the demo's design tokens.
 - `src/features/<name>`: one folder per page: `api/` (one function per endpoint with `@route`), `types/`, `hooks/`,
-  `components/`, `pages/`, `mocks/`, tests, `index.ts` (what other features may use) and `manifest.ts`.
+  `components/`, `pages/`, `mocks/`, tests, `index.ts` (what other features may use) and `manifest.ts`. The `services` folder
+  holds the Product / Services page (`/products`, decision 022): a strip of kinds and a row of views, each view one folder
+  of `components/products/` and one row of the registry in `lib/productsViews.tsx`; a service's edit view takes its parts
+  from `lib/serviceParts.tsx` (the API Connection part and the supplier form of +Add Service live in the suppliers feature,
+  the Retail Purchase part in the storefront feature, each mounted by a thin adapter); `productsPath` writes every address
+  of the page. The kit's `PartForm`, `SectionForm`, `useReportDirty` and `FooterPager` are what a record's parts and a
+  view's footer are made of.
 - `src/mocks`: the dev mock layer (shared stores and helpers; each feature's own mocks are found automatically).
 
 The server is the authority for money, risk, validation and permissions: the console hides or disables what a role may

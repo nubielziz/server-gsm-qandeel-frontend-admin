@@ -72,6 +72,9 @@ export const categoryRoutes: HttpHandler[] = [
       );
       if (!('name' in body)) problems.push({ field: 'name', message: 'Enter a name.' });
       if (problems.length > 0) return invalid(problems);
+      // A position left out puts the new group last, as the server does.
+      if (!('sort' in body))
+        draft.sort = stores.categories.list().reduce((last, row) => Math.max(last, row.sort), -1) + 1;
       const { id: _id, ...fields } = draft;
       return HttpResponse.json(toCategory(stores, stores.categories.insert(fields)), { status: 201 });
     }),

@@ -26,7 +26,7 @@ describe('STOREFRONT_TABS', () => {
     expect(opens(['catalog:read'])).toEqual(['tac']);
     expect(opens(['storefront:read'])).toEqual(['landing', 'content', 'help', 'search']);
     expect(opens(['storefront:*', 'catalog:*'])).toHaveLength(5);
-    // The parts that moved to the Catalog page no longer open this page: pricing and publishing have no tab here.
+    // The parts that moved to the Product / Services page no longer open this page: pricing and publishing have no tab here.
     expect(opens(['pricing:read'])).toEqual([]);
     expect(opens(['storefront:create'])).toEqual([]);
     expect(opens(['orders:read'])).toEqual([]);

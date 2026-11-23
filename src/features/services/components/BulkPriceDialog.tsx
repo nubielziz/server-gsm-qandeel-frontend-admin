@@ -1,19 +1,25 @@
 // BulkPriceDialog: "Bulk price change" in two steps (`POST /admin/services/bulk-price/preview`, then `/apply` with the same body).
 // Step one picks the services (a category or the ticked ones) and the change; Preview shows every old and new price with the
 // server's below-floor warnings; Apply saves them. The map adds this action; the demo changed prices one service at a time.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, dialogSubmit, FormDialog } from '@/components/ui';
+import type { Id } from '@/lib/api';
+import { TYPE_LABEL } from '@/lib/serviceTypes';
 import { useApplyBulkPrice, usePreviewBulkPrice } from '../hooks/useBulkPrice';
 import { useCategories } from '../hooks/useChoices';
 import { buildBulkBody, describeChange, servicesText, type BulkValues } from '../lib/bulk';
-import type { BulkPriceBody, BulkPricePreview } from '../types';
+import type { BulkPriceBody, BulkPricePreview, ServiceType } from '../types';
 import { BulkPriceFields } from './BulkPriceFields';
 import { BulkPriceLines } from './BulkPriceLines';
 
 export interface BulkPriceDialogProps {
   /** The ids of the services ticked in the table. */
   selectedIds: readonly number[];
+  /** The kind the page shows (the Pricing view's strip): only the groups of that kind are offered. All kinds when left out. */
+  type?: ServiceType;
+  /** The group the page is on: the dialog opens with it chosen (when it is a group of `type`). */
+  categoryId?: Id;
   onClose: () => void;
   /** Called after the prices were applied, so the page can untick the services. */
   onApplied: () => void;
@@ -23,15 +29,21 @@ export interface BulkPriceDialogProps {
 type Previewed = { body: BulkPriceBody; result: BulkPricePreview };
 
 /** The two steps in one dialog: the form, then the server's preview with Apply. */
-export function BulkPriceDialog({ selectedIds, onClose, onApplied }: BulkPriceDialogProps) {
+export function BulkPriceDialog({ selectedIds, type, categoryId, onClose, onApplied }: BulkPriceDialogProps) {
   const categories = useCategories();
+  // The grid shows one kind, so the change covers a group of that kind, never one of another kind.
+  const choices = type
+    ? categories.categories.filter((category) => category.type === type)
+    : categories.categories;
+  const startKnown = categoryId !== undefined && choices.some((category) => category.id === categoryId);
+  const start = startKnown ? String(categoryId) : '';
   const preview = usePreviewBulkPrice();
   const apply = useApplyBulkPrice();
   const [previewed, setPreviewed] = useState<Previewed | null>(null);
   const form = useForm<BulkValues>({
     defaultValues: {
       scope: selectedIds.length > 0 ? 'selected' : 'category',
-      categoryId: '',
+      categoryId: start,
       direction: 'raise',
       type: 'percent',
       amount: '',
@@ -39,6 +51,12 @@ export function BulkPriceDialog({ selectedIds, onClose, onApplied }: BulkPriceDi
   });
 
   const scope = form.watch('scope');
+
+  // The groups may arrive after the dialog opened (the menu had no option to show then): choose the starting group once it is there.
+  const { setValue } = form;
+  useEffect(() => {
+    if (startKnown) setValue('categoryId', String(categoryId));
+  }, [startKnown, categoryId, setValue]);
 
   const previewStep = dialogSubmit(
     form,
@@ -78,7 +96,7 @@ export function BulkPriceDialog({ selectedIds, onClose, onApplied }: BulkPriceDi
       sub={
         previewed
           ? 'Check the new prices, then apply them.'
-          : 'Preview first: nothing is saved until you apply.'
+          : `${type ? `${TYPE_LABEL[type]} groups only. ` : ''}Preview first: nothing is saved until you apply.`
       }
       confirm={previewed ? `Apply to ${servicesText(count)}` : 'Preview'}
       onClose={onClose}
@@ -104,7 +122,7 @@ export function BulkPriceDialog({ selectedIds, onClose, onApplied }: BulkPriceDi
       ) : (
         <BulkPriceFields
           form={form}
-          categories={categories.categories}
+          categories={choices}
           categoriesQuery={categories.query}
           selectedCount={selectedIds.length}
         />

@@ -740,6 +740,10 @@
 #toasts:empty {
   display: none !important;
 }
+/* A view with a pinned bar (components/ui/PinnedBar.tsx): the toasts sit above it, not on its buttons. */
+body:has(.pinned-bar) #toasts {
+  inset-block-end: 72px;
+}
 
 @layer components {
   .switch {
@@ -885,5 +889,234 @@
   }
   .count-out-down {
     animation: count-out-down var(--duration-count) var(--ease-glide) both;
+  }
+}
+
+/*
+ * The Product / Services kit (the layout the owner asked for): the two levels of links, the legend box, the pinned bar, the two-part
+ * switch, the label-left form row, the menu of a record's parts, the status square and the "list" skin of the table. Colours come only
+ * from the tokens above, so both themes work; sizes are the kit's (28 px small controls, 32 px rows in compact density).
+ */
+:root {
+  /* Width of the label column of a form row (components/ui/FormRow.tsx). */
+  --form-label-w: 220px;
+}
+
+@layer components {
+  /* level 1: one tab per kind of service; the current one is raised on the surface colour and joins the rule under the strip */
+  .strip-tabs {
+    @apply flex items-end gap-1 overflow-x-auto border-b border-line;
+  }
+  .strip-tabs a {
+    @apply relative inline-flex h-9 items-center whitespace-nowrap rounded-t-md border border-transparent px-4 text-sm font-medium text-ink3 hover:bg-hover hover:text-ink;
+  }
+  .strip-tabs a[aria-current='page'] {
+    @apply -mb-px border-line border-b-surface bg-surface text-ink;
+  }
+  /* The strip scrolls sideways on a phone, which would clip an outside focus ring: draw it inside. */
+  .strip-tabs a:focus-visible,
+  .view-links a:focus-visible {
+    outline-offset: -2px;
+  }
+
+  /* level 2: plain text links, the active one bold and underlined; each one is a full view of the page */
+  .view-links {
+    @apply flex flex-wrap items-center gap-y-1 text-sm;
+    /* The first link's text lines up with the content edge, as the padding of the links is only their hit area. */
+    margin-inline-start: -0.625rem;
+  }
+  .view-links a {
+    @apply inline-flex h-8 items-center rounded px-2.5 text-ink2 hover:text-ink;
+  }
+  .view-links a[aria-current='page'] {
+    @apply font-semibold text-ink underline decoration-ink decoration-2 underline-offset-8;
+  }
+  .view-links-divider {
+    @apply mx-2 hidden h-4 w-px bg-line2 sm:block;
+  }
+
+  /* a bordered box whose legend sits on its border (the Quick Search box) */
+  .legend-box {
+    @apply m-0 min-w-0 rounded-md border border-line px-3.5 pb-3.5 pt-2;
+  }
+  .legend-box > legend {
+    @apply ms-2 rounded-full border border-line px-2.5 text-xs leading-5 text-ink3;
+  }
+  .legend-box-body {
+    @apply flex flex-wrap items-center gap-x-2 gap-y-2;
+  }
+
+  /*
+   * A bar pinned to the foot of the view. <main> pads its content by 16 px (24 px from lg), so the bar reaches the edges
+   * with the opposite margins; it is sticky, so it stays on screen while a long view scrolls and ends the view when it is short.
+   */
+  .pinned-bar {
+    @apply sticky bottom-0 z-10 -mx-4 -mb-4 mt-6 flex flex-wrap items-center gap-3 border-t border-line bg-surface px-4 py-2.5 lg:-mx-6 lg:-mb-5 lg:px-6;
+  }
+  .pinned-bar-between {
+    @apply justify-between;
+  }
+  /* A pinned bar with two rows: the buttons of a view above the footer of its list (FooterPager's `actions`). */
+  .pinned-bar-stack {
+    @apply flex-col items-stretch gap-0 p-0 lg:p-0;
+  }
+  .pinned-bar-row {
+    @apply flex flex-wrap items-center gap-3 px-4 py-2.5 lg:px-6;
+  }
+  .pinned-bar-row + .pinned-bar-row {
+    @apply border-t border-line;
+  }
+  /* The footer of a list inside a form whose own bar is the pinned one (FooterPager's `inline`). */
+  .pager-inline {
+    @apply flex flex-wrap items-center gap-3 border-t border-line px-3.5 py-2.5;
+  }
+  /*
+   * A short view should still end with its bar at the foot of the window and without a scrollbar. The page (.page-frame) is as tall as
+   * <main> inside the window (48 px is the top bar, the rest is the padding of <main>); the heading and the two rows of links keep their
+   * height and the view takes what is left: it is a flex-1 child of the page, and wrapping the view and its bar in .view-frame (the bar
+   * last) makes the bar sit at the foot. Each wrapper between the page and a .view-frame has to be a flex column with flex-1 too; the
+   * right column of the parts layout is one.
+   */
+  .page-frame {
+    @apply flex min-h-[calc(100dvh-48px-2rem)] flex-col lg:min-h-[calc(100dvh-48px-2.5rem)];
+  }
+  .view-frame {
+    @apply flex flex-1 flex-col;
+  }
+  .view-frame > .pinned-bar {
+    margin-top: auto;
+  }
+  .view-frame > :not(.pinned-bar):nth-last-child(2) {
+    padding-bottom: 1.5rem;
+  }
+
+  /* the footer pager's page numbers: the current one is bold and underlined */
+  .pager-num {
+    @apply inline-flex h-7 min-w-7 items-center justify-center rounded px-1.5 text-sm tabular-nums text-ink2 hover:bg-hover hover:text-ink;
+  }
+  .pager-num[aria-current='page'] {
+    @apply font-semibold text-ink underline decoration-2 underline-offset-4;
+  }
+  .select-wrap-sm select {
+    @apply h-7 text-xs;
+  }
+
+  /* the two-part switch: both words are shown, the chosen one is filled and bold */
+  .yesno {
+    @apply inline-flex h-7 flex-none select-none overflow-hidden rounded-md border border-line2 bg-sunken text-xs font-medium text-ink3 transition-colors hover:border-ink3 disabled:pointer-events-none disabled:opacity-45;
+  }
+  .yesno > span {
+    @apply inline-flex min-w-10 items-center justify-center px-2.5;
+  }
+  .yesno > span + span {
+    @apply border-s border-line2;
+  }
+  .yesno[aria-checked='true'] > .yesno-on {
+    @apply bg-accent-soft font-semibold text-accent-ink;
+    box-shadow: inset 0 0 0 1px rgb(var(--accent));
+  }
+  .yesno[aria-checked='false'] > .yesno-off {
+    @apply bg-surface font-semibold text-ink;
+  }
+
+  /* a form row: the label in a fixed column, the control and its notes beside it; stacked on a phone */
+  .form-row {
+    @apply gap-x-6 gap-y-1 py-2.5 md:grid-cols-[var(--form-label-w)_minmax(0,1fr)];
+    display: grid;
+  }
+  .form-row-label {
+    @apply flex min-h-8 items-center text-sm text-ink2;
+  }
+  /* A blank label column (a lone checkbox) takes no room when the row is stacked. */
+  .form-row-label:empty {
+    @apply hidden md:flex;
+  }
+  .form-row-body {
+    @apply min-w-0;
+  }
+  /* A text input in a row does not fill a wide view (TextField and TextareaField add this class in the row layout). A utility on the control still wins. */
+  .row-control {
+    max-width: 28rem;
+  }
+  .section-heading {
+    @apply mb-1 text-lg font-semibold tracking-tight text-ink;
+  }
+  * + .section-heading {
+    @apply mt-6 border-t border-line pt-5;
+  }
+
+  /*
+   * the menu of the parts of one record, with the part's own view on its right. It takes what is left of the page (flex-1) so that the
+   * part's own .view-frame fills the window: a column on a phone (the menu above, the part below it taking the rest), a two-column grid
+   * from lg whose one row stretches to the layout.
+   */
+  .parts-layout {
+    @apply flex flex-1 flex-col gap-x-8 gap-y-4;
+  }
+  @screen lg {
+    .parts-layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+    }
+  }
+  .parts-main {
+    @apply flex min-w-0 flex-1 flex-col;
+  }
+  .parts-side {
+    @apply min-w-0 lg:sticky lg:top-16 lg:self-start;
+  }
+  .parts-back {
+    @apply mb-2 inline-flex items-center gap-1 text-xs text-ink3 hover:text-ink;
+  }
+  .parts-title {
+    @apply break-words text-lg font-semibold tracking-tight text-ink;
+  }
+  .parts-sub {
+    @apply mt-0.5 break-words text-xs text-ink3;
+  }
+  .parts-menu {
+    @apply mt-3 flex flex-wrap gap-x-1 gap-y-0.5 border-t border-line pt-3 lg:flex-col lg:flex-nowrap;
+  }
+  .parts-menu a {
+    @apply flex min-h-8 items-center gap-2 rounded-md px-2.5 py-1 text-sm text-ink2 hover:bg-hover hover:text-ink;
+  }
+  .parts-menu a[aria-current='page'] {
+    @apply bg-sunken font-semibold text-ink;
+  }
+
+  /* the small status square; "off" is hollow, so the two states differ in shape and not only in colour */
+  .status-sq {
+    @apply inline-block h-2.5 w-2.5 flex-none rounded-[2px];
+  }
+  .status-sq-ok {
+    @apply bg-good-dot;
+  }
+  .status-sq-off {
+    @apply border border-neutral-dot bg-transparent;
+  }
+  .status-sq-warn {
+    @apply bg-warn-dot;
+  }
+  .status-sq-crit {
+    @apply bg-crit-dot;
+  }
+  .square-toggle {
+    @apply inline-flex h-6 w-6 flex-none items-center justify-center rounded hover:bg-hover disabled:cursor-not-allowed disabled:opacity-45;
+  }
+
+  /* the "list" skin of DataTable: small bold headers over a stronger rule, thin rules between rows, no fill */
+  .tbl.tbl-list th {
+    @apply bg-bg px-3 text-xs font-semibold text-ink border-line2;
+  }
+  .tbl.tbl-list td {
+    @apply py-1.5;
+  }
+  /* the second line of a cell (the number under a name, the fallback under a supplier) */
+  .cell-sub {
+    @apply block text-xs italic leading-4 text-ink3;
+  }
+  /* an input inside a table cell: it fits a 32 px row */
+  .input-sm {
+    @apply input h-7 px-2;
   }
 }

@@ -1,4 +1,4 @@
-// Tests for the Merchant price rules tab of the Catalog settings (the old Rules and groups tab), run through the whole app against the
+// Tests for the Merchant price rules tab of the Price Rules view (the old Rules and groups tab), run through the whole app against the
 // dev mock API: the merchant groups (read-only, with a link to the merchants page), the pricing rules table with New rule, Edit, Turn
 // off and Delete, the server's refusals, and the notes.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -11,14 +11,14 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { getPricingRule, listPricingRules } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
-import { dialogOf, openServices, settingsRoute } from '../test/servicesPage';
+import { dialogOf, openProducts } from '../test/productsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 // The merchants feature serves the group list; these tests bring their own copy of it.
 beforeEach(() => mockServer.use(...groupHandlers));
 
-const RULES = settingsRoute('rules');
+const RULES = '/products?view=rules&tab=merchant';
 const START = new Date(2026, 2, 5);
 const END = new Date(2026, 2, 20);
 
@@ -30,7 +30,7 @@ async function ruleRow(text: string) {
 
 describe('merchant groups', () => {
   it('lists the groups with their discount and merchants, read-only, and links to where they are managed', async () => {
-    await openServices(RULES);
+    await openProducts(RULES);
     const table = within(await screen.findByRole('table', { name: 'Price groups' }));
     expect(
       within(table.getByText('Standard').closest('tr') as HTMLElement).getByText('None'),
@@ -46,7 +46,7 @@ describe('merchant groups', () => {
   });
 
   it('needs groups:read to show the groups', async () => {
-    await openServices(RULES, { permissions: ['pricing:read'] });
+    await openProducts(RULES, { permissions: ['pricing:read'] });
     expect(
       await screen.findByText('You need the groups:read permission to see the merchant groups.'),
     ).toBeInTheDocument();
@@ -54,8 +54,25 @@ describe('merchant groups', () => {
 });
 
 describe('the rules table', () => {
+  it('draws the status as a square and its word and the type as plain words, with no badge or tag', async () => {
+    await openProducts(RULES);
+    const row = await ruleRow('Carrier unlock (category)');
+    expect(row.getByText('On').firstElementChild).toHaveClass('status-sq', 'status-sq-ok');
+    expect(row.getByText('Discount').closest('.tag')).toBeNull();
+    const table = screen.getByRole('table', { name: 'Pricing rules' });
+    expect(table.querySelector('.badge, .tag')).toBeNull();
+    expect(screen.getByRole('region', { name: 'Merchant price rules' }).querySelector('.panel')).toBeNull();
+  });
+
+  it('keeps New rule, the view’s one primary button, in the pinned bar', async () => {
+    await openProducts(RULES);
+    const button = await screen.findByRole('button', { name: 'New rule' });
+    expect(button.className).toContain('btn-primary');
+    expect(button.closest('.pinned-bar')).not.toBeNull();
+  });
+
   it('shows the demo’s Carrier unlock promo as a discount rule', async () => {
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     expect(row.getByText('Discount')).toBeInTheDocument();
     expect(row.getByText('−2%')).toBeInTheDocument();
@@ -67,7 +84,7 @@ describe('the rules table', () => {
 
   it('turns a rule off and back on without losing it', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     await user.click(row.getByRole('button', { name: 'Turn off rule 1' }));
     expect(await screen.findByText('Rule turned off')).toBeInTheDocument();
@@ -82,7 +99,7 @@ describe('the rules table', () => {
 
   it('deletes a rule after a review step', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     await user.click(row.getByRole('button', { name: 'Delete rule 1' }));
     const dialog = dialogOf('Delete this rule?');
@@ -106,7 +123,7 @@ describe('New rule and Edit rule', () => {
 
   it('adds a promo for a category with dates', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Category' }), 'Credits');
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Type' }), 'Promo (a discount for a time)');
@@ -133,7 +150,7 @@ describe('New rule and Edit rule', () => {
 
   it('adds a margin rule for one merchant group with a fixed amount and rounding', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Applies to' }), 'Every service');
     expect(dialog.queryByRole('combobox', { name: 'Category' })).not.toBeInTheDocument();
@@ -151,7 +168,7 @@ describe('New rule and Edit rule', () => {
 
   it('asks for an adjustment and a target before it calls the server', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
     expect(await dialog.findByText('Choose the category.')).toBeInTheDocument();
@@ -168,7 +185,7 @@ describe('New rule and Edit rule', () => {
 
   it('shows the server’s words under the field it names', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     mockServer.use(
       http.post('*/admin/pricing-rules', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
@@ -195,7 +212,7 @@ describe('New rule and Edit rule', () => {
         ]),
       ),
     );
-    await openServices(RULES);
+    await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Category' }), 'Credits');
     await user.type(dialog.getByRole('textbox', { name: 'Percentage' }), '5');
@@ -217,7 +234,7 @@ describe('New rule and Edit rule', () => {
         ]),
       ),
     );
-    await openServices(RULES);
+    await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Applies to' }), 'Every service');
     await user.type(dialog.getByRole('textbox', { name: 'Percentage' }), '5');
@@ -233,7 +250,7 @@ describe('New rule and Edit rule', () => {
         once: true,
       }),
     );
-    await openServices(RULES);
+    await openProducts(RULES);
     await user.click(await screen.findByRole('button', { name: 'New rule' }));
     const dialog = dialogOf('New rule');
     expect(await dialog.findByText(/Could not load merchant groups\./)).toBeInTheDocument();
@@ -249,7 +266,7 @@ describe('New rule and Edit rule', () => {
 
   it('edits a rule, sending only the field that changed', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     await user.click(row.getByRole('button', { name: 'Edit rule 1' }));
     const dialog = dialogOf('Edit rule');
@@ -264,7 +281,7 @@ describe('New rule and Edit rule', () => {
 
   it('keeps the rule’s category chosen, and clears it when the rule is made to cover a service', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     await user.click(row.getByRole('button', { name: 'Edit rule 1' }));
     const dialog = dialogOf('Edit rule');
@@ -279,7 +296,7 @@ describe('New rule and Edit rule', () => {
 
   it('says so when nothing changed', async () => {
     const user = userEvent.setup();
-    await openServices(RULES);
+    await openProducts(RULES);
     const row = await ruleRow('Carrier unlock (category)');
     await user.click(row.getByRole('button', { name: 'Edit rule 1' }));
     await user.click(dialogOf('Edit rule').getByRole('button', { name: 'Save rule' }));
@@ -289,7 +306,7 @@ describe('New rule and Edit rule', () => {
 
 describe('permissions', () => {
   it('lets a reader see the rules but not change them', async () => {
-    await openServices(RULES, { permissions: ['pricing:read', 'groups:read'] });
+    await openProducts(RULES, { permissions: ['pricing:read', 'groups:read'] });
     const row = await ruleRow('Carrier unlock (category)');
     expect(row.getByRole('button', { name: 'Edit rule 1' })).toBeDisabled();
     expect(row.getByRole('button', { name: 'Turn off rule 1' })).toBeDisabled();

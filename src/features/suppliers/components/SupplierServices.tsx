@@ -1,7 +1,7 @@
 // SupplierServices: the "Services" panel of the detail: the services of the console that use this supplier, as primary or as
 // fallback, with the supplier's cost and the SLA. Ports `svcTbl` of supDetail in 44-p-suppliers.js, and adds the buttons
 // the API allows: "Quick add…" and "Import services…" to bring services in, "Edit links…" for one service's chain, and the link to
-// the Catalog's Add services flow with this supplier chosen (the two older dialogs stay beside it).
+// the Add Service view of the Product / Services page with this supplier chosen (the two older dialogs stay beside it).
 import {
   Badge,
   Button,
@@ -12,7 +12,7 @@ import {
   Icon,
   SkeletonTable,
 } from '@/components/ui';
-import { catalogPath } from '@/features/services';
+import { productsPath } from '@/features/services';
 import { money } from '@/lib/format';
 import type { SupplierGrants } from '../hooks/useSupplierGrants';
 import { minutesText } from '../lib/metrics';
@@ -29,7 +29,7 @@ export interface SupplierServicesProps {
   grants: SupplierGrants;
   onImport: () => void;
   onQuickAdd: () => void;
-  /** Starts a publish preview of this supplier's services in the Catalog page's publish view. */
+  /** Starts a publish preview of this supplier's services in the Shop Publish view. */
   onPublish: () => void;
   /** True while the request that starts the preview is on its way. */
   publishing: boolean;
@@ -56,7 +56,7 @@ export function SupplierServices({
   const rows = [...(links ?? [])].sort(
     (a, b) => a.priority - b.priority || a.serviceName.localeCompare(b.serviceName),
   );
-  // Quick add creates services too, so it needs the same permission as the import, and so does the link to the Add services flow.
+  // Quick add creates services too, so it needs the same permission as the import, and so does the link to the Add Service view.
   const addButtons = (
     <>
       {importLock.disabled ? (
@@ -65,7 +65,7 @@ export function SupplierServices({
           Add services from this supplier
         </Button>
       ) : (
-        <ButtonLink size="sm" to={catalogPath({ add: supplier.id })}>
+        <ButtonLink size="sm" to={productsPath({ view: 'add', supplier: supplier.id })}>
           <Icon name="plus" className="ic-sm" />
           Add services from this supplier
         </ButtonLink>

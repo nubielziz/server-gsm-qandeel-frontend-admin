@@ -1,4 +1,4 @@
-// The one "On the shop" switch of a Catalog row. A shop page is switched on or off. A service without one goes on the shop through a run of
+// The one "On the shop" switch of a service row. A shop page is switched on or off. A service without one goes on the shop through a run of
 // that one service, read until its preview is ready and applied ONLY when the server says its row is ready, then read until it ends; any
 // other answer discards the draft and tells the server's reason with the next step. A run whose apply was sent is never cancelled, and one
 // that is still working after the wait is told as news, not as a refusal. The console decides nothing.
@@ -19,7 +19,7 @@ import {
 import { isApiError, type Id } from '@/lib/api';
 import { outcomeOf, readinessOf, refusalSentence, serverWords, type ShopRefusal } from '../lib/shopSwitch';
 import type { Service } from '../types';
-import { useCatalogRefresh } from './useCatalogRefresh';
+import { useServicesRefresh } from './useServicesRefresh';
 
 /**
  * How the run is read while the server works on it: `pollMs` apart, `maxReads` times (about a minute). A run still working after
@@ -63,7 +63,7 @@ const isLive = (run: PublishRun) => run.status === 'queued' || run.status === 'r
  */
 export function usePutOnShop() {
   const navigate = useNavigate();
-  const refresh = useCatalogRefresh();
+  const refresh = useServicesRefresh();
   // The ref answers a double press at once; the state draws the busy rows.
   const working = useRef(new Set<Id>());
   const [busy, setBusy] = useState<ReadonlySet<Id>>(() => new Set());

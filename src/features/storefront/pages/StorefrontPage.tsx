@@ -1,7 +1,7 @@
 // StorefrontPage: "Shop content" (`/storefront`, the demo's `pageStorefront` in 50-p-storefront.js): a header and five tabs kept in the
 // address (`?tab=`), the demo's Landing pages, Content and legal and Help centre, the TAC catalogue the map adds in place of Live
 // preview (M4) and the Search tab of the shop's search engine (backend feature 29). A tab the role may not read is hidden. The
-// services on the shop, publishing and retail pricing live on the Catalog page. The page only composes; each tab owns its data,
+// services on the shop, publishing and retail pricing live on the Product / Services page. The page only composes; each tab owns its data,
 // and the server decides every status and refusal.
 import { EmptyState, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
 import { ContentTab } from '../components/ContentTab';

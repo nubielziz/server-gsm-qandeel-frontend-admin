@@ -1,7 +1,7 @@
 // The five tabs of the Shop content page and the permissions each one needs. Ports the `tabs` of pageStorefront in
 // 50-p-storefront.js (Landing pages, Content and legal, Help centre), swaps the demo's Live preview for the TAC catalogue the map
 // adds (MISMATCHES M4 has the preview) and ends with the Search tab of the shop's search engine. The listings, publish and retail
-// pricing parts of the old Storefront page moved to the Catalog page; their components stay in this feature.
+// pricing parts of the old Storefront page moved to the Product / Services page; their components stay in this feature.
 
 export type StorefrontTab = 'landing' | 'content' | 'help' | 'tac' | 'search';
 

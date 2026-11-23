@@ -161,8 +161,16 @@ export type SupplierService = Pick<
   | 'priceChangedAt'
 > & { imported: boolean; linkedServiceId: Id | null };
 
-/** What the import preview and the import take (assumed contract): the supplier services to look at or bring in. */
-export type ImportBody = { supplierServiceIds: Id[] };
+/** What a service made new by an import starts as (decision 063): on sale, or switched off (a switched off service is never orderable). */
+export type ImportServiceStatus = 'active' | 'disabled';
+
+/**
+ * What the import preview and the import take (assumed contract): the supplier services to look at or bring in. The two optional keys
+ * change only what a NEW service becomes (decision 063): `status` (the server's default is `active`) and `categoryId` (a category of the
+ * kind of every new service; without it each service goes into the category named after its supplier group). An updated or unchanged
+ * item is not touched by either. The console leaves a key out when it asks for the default.
+ */
+export type ImportBody = { supplierServiceIds: Id[]; status?: ImportServiceStatus; categoryId?: Id };
 
 /** What the preview says will happen to one item: it is new, it matches a service already imported, or its cost changed. */
 export type ImportItemState = 'new' | 'matching' | 'changed';
@@ -184,6 +192,13 @@ export type ImportPreviewItem = {
   qtyOptions: number[];
   /** True when a linked service has a quantity rule other than the supplier's; the import never changes it. */
   quantityDiffers: boolean;
+  /**
+   * Only when the request carried `status` or `categoryId` (decision 063): the state a `new` item would be created in, and the category it
+   * would go into: the picked one, else the one the import finds for the supplier's group, else `{ id: null, name }` with the cleaned name
+   * the import makes the category under (it does not exist yet). Both are `null` for an item the import would not create.
+   */
+  status?: ImportServiceStatus | null;
+  category?: { id: Id | null; name: string } | null;
 };
 
 /** Answer of `POST /admin/suppliers/:id/import/preview` (assumed contract). */

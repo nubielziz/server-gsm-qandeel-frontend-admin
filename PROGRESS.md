@@ -11,7 +11,33 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
-## Status (2026-11-23): one Catalog page (decision 019), built on `feat/catalog`, merged
+## Status (2026-11-24): the Product / Services page (decision 022), built on `feat/products-services`, merged
+
+The owner found the one-page Catalog too complex and asked for a page in the layout their staff already know. The Catalog page of
+2026-11-23 is removed completely (its table, side panel, settings and publish views, the three-step add dialogs and the kit pieces only
+they used); `/catalog`, `/services` and the older Storefront tabs redirect to the new addresses with their parameters.
+
+- **The page** `/products` ("Product / Services"): a strip of service kinds (IMEI, Server, Remote, File) and a row of views:
+  All, Pricing, +Add Service, Group, +Add Group, and Price Rules, Shop Publish, Inventory. Every view is a full view; lists end in a
+  footer bar (results, go to, pager, page size), forms are label-left and end in a pinned action bar.
+- **All**: a Quick Search box (group, search, supplier, show), the list (name with number and code, supplier connection with its
+  fallback, group, a status square, a shop square, the edit link) and the "With selected" strip (enable, disable, put on the shop, take
+  off, move to a group, delete).
+- **Pricing**: a grid with the purchase cost, the supplier's price, the base price, the shop price and one column per merchant rank,
+  edited in place and saved row by row; every figure and margin is the server's. "Display Enable/Disable Service" and "Set Order".
+- **+Add Service**: one form for a service made by hand, and, with the box ticked, for services of a supplier (whole groups or single
+  services, the group, the status, on the shop or not). A new service is completed in its editor.
+- **The editor** of one service: a left menu of parts, each saved on its own: Overview, Set Pricing, Field, API Connection (the primary
+  connection and the secondary ones in order), Retail Purchase, Inventory, Activity. A part with unsaved edits asks before it is left.
+- **Group / +Add Group**: the groups of a kind with their order, status and visibility.
+- **Backend needed** (its decision 063): `GET /admin/services/price-grid`, `POST /admin/services/order` with the stored order of
+  services, and the optional `status` and `categoryId` of the supplier import. The two repositories are released together.
+- **Checks**: typecheck, lint and the production build pass. The tests were written and are run by the checks on GitHub, not locally.
+  Three reviews (the layout against the reference, behaviour, tests and contract), a fix round, and a look at every view in a browser.
+- **Not in this version**: the purchase cost cannot be typed (it comes from the supplier connection); the bulk price change and the
+  editors of the price rules, publish runs and code imports are still dialogs.
+
+## Status (2026-11-23, replaced on 2026-11-24 by the Product / Services page): one Catalog page (decision 019), built on `feat/catalog`, merged
 
 Owner request: adding and pricing a service took three pages (Services and pricing, Suppliers, Storefront). Now one page does it.
 

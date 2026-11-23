@@ -3,7 +3,7 @@
 // rule and a masked inventory code.
 import { toMoney } from '@/mocks/seed';
 import type { InventoryCode, PricingRule, Service, ServiceCategory, ServiceDetail } from '../types';
-import { factsOf, type CatalogJoin } from './catalog';
+import { factsOf, type ServiceJoin } from './serviceFacts';
 import { floorOf, groupOf, isBelowFloor, marginOf } from './pricing';
 import type { Stores } from './seed';
 import type { MockCategory, MockCode, MockRule, MockService } from './types';
@@ -12,7 +12,7 @@ import type { MockCategory, MockCode, MockRule, MockService } from './types';
  * `GET /admin/services` row (also the answer of create and change). The supplier names, the shop page and price and the attention
  * reasons are joined from the other mocks at this moment; a key the session may not read is left out, never `null` or `false`.
  */
-export function toService(stores: Stores, row: MockService, join: CatalogJoin): Service {
+export function toService(stores: Stores, row: MockService, join: ServiceJoin): Service {
   const category = stores.categories.find(row.categoryId);
   const { shop, chain, attention, shopBlocked } = factsOf(stores, row, join);
   return {
@@ -35,6 +35,9 @@ export function toService(stores: Stores, row: MockService, join: CatalogJoin): 
     minQty: row.minQty,
     maxQty: row.maxQty,
     qtyOptions: row.qtyOptions,
+    allowCancel: row.allowCancel,
+    allowVerify: row.allowVerify,
+    verifyWindowH: row.verifyWindowH,
     supplier: chain.primary,
     fallbackSupplier: chain.fallback,
     attention,
@@ -52,7 +55,7 @@ export function toService(stores: Stores, row: MockService, join: CatalogJoin): 
 }
 
 /** `GET /admin/services/:id`: the row plus its fields, options and group prices, and the failed publish with `storefront:read`. */
-export function toDetail(stores: Stores, row: MockService, join: CatalogJoin): ServiceDetail {
+export function toDetail(stores: Stores, row: MockService, join: ServiceJoin): ServiceDetail {
   return {
     ...toService(stores, row, join),
     fields: row.fields,

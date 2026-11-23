@@ -94,7 +94,7 @@ export function PublishOutcome({ run, grants, onOpen, onReread }: PublishOutcome
   };
 
   return (
-    <div className="space-y-2 px-3.5 py-4">
+    <div className="space-y-2 py-4">
       {run.status === 'succeeded' || stopped ? (
         <>
           <p className="text-base font-semibold">{headline(run)}</p>

@@ -1,44 +1,27 @@
-// The actions on listings, each with the toast the demo showed and the reads it makes stale. Ports the toasts of `sf-list` and
-// `sf-price` in 50-p-storefront.js; the editor's save and the picture upload and removal are new (feature 22). The switch leaves a failed call to the default error toast (the server's words); the hooks
-// used from a dialog leave it to that dialog, which shows it under the field or in its error slot.
+// The actions on listings, each with the toast the demo showed and the reads it makes stale. Ports the toast of `sf-price` in
+// 50-p-storefront.js; the editor's save and the picture upload and removal are new (feature 22). (The shop switch of a service is the
+// services feature's usePutOnShop.) The hooks leave a refusal to the form that called them, which shows it under the field or in its error
+// slot.
 import { toast } from '@/components/ui';
 import type { Id } from '@/lib/api';
 import { money } from '@/lib/format';
-import { CATALOG_ROWS_KEY, LISTING_DETAILS_KEY, useApiMutation, type InvalidateTarget } from '@/lib/query';
-import { createListing, removeListingImage, updateListing, uploadListingImage } from '../api';
-import type { CreateListingBody, ServiceListing, UpdateListingBody } from '../types';
+import { SERVICE_ROWS_KEY, LISTING_DETAILS_KEY, useApiMutation, type InvalidateTarget } from '@/lib/query';
+import { removeListingImage, updateListing, uploadListingImage } from '../api';
+import type { ServiceListing, UpdateListingBody } from '../types';
 import { STOREFRONT_STALE_KEYS, staleResource } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 const RESOURCE = 'service-listings';
-// A listing change also moves the shop facts of the Catalog table's rows (shop page, shop price, attention), and makes the read copy of
-// the listing old (an editor open on it, like the Catalog panel's, takes the new one).
-const STALE_KEYS = [...STOREFRONT_STALE_KEYS, CATALOG_ROWS_KEY, LISTING_DETAILS_KEY];
+// A listing change also moves the shop facts of the services lists' rows (shop page, shop price, attention), and makes the read copy of
+// the listing old (an editor open on it, like the service editor's, takes the new one).
+const STALE_KEYS = [...STOREFRONT_STALE_KEYS, SERVICE_ROWS_KEY, LISTING_DETAILS_KEY];
 
 /**
- * The service records a shop price write makes stale: every list, and the service's own record, which the Catalog panel keeps open (its
+ * The service records a shop price write makes stale: every list, and the service's own record, which the service editor keeps open (its
  * group prices and its attention reasons carry the shop price). The `services` resource is the services feature's; only its name is used.
  */
 export function staleServiceRecords(...ids: readonly Id[]): InvalidateTarget[] {
   return [{ resource: 'services' }, ...ids.map((id) => ({ resource: 'services', id }))];
-}
-
-/** The "On the site" switch: the service goes on the public site, or comes off it. */
-export function useSetListed() {
-  return useApiMutation({
-    mutationFn: ({ listing, on }: { listing: ServiceListing; on: boolean }) =>
-      updateListing(listing.id, { isListed: on }),
-    invalidates: staleResource(RESOURCE),
-    invalidateKeys: STALE_KEYS,
-    onSuccess: (_updated, { listing, on }) => {
-      toast({
-        kind: 'success',
-        title: on ? 'Now on the storefront' : 'Removed from the storefront',
-        body: listing.publicTitle,
-        ttl: 2600,
-      });
-    },
-  });
 }
 
 /** Saves a new storefront price. The toast says the price the server stored; a refusal under the floor shows in the dialog. */
@@ -81,24 +64,6 @@ export function useFollowRule() {
         kind: 'success',
         title: 'Price follows the rule',
         body: `${listing.publicTitle} is now ${money(updated.retailPrice ?? listing.retailPrice ?? 0)} on the storefront.`,
-        ttl: 3200,
-      });
-    },
-    errorNotification: NO_ERROR_TOAST,
-  });
-}
-
-/** Adds a listing. The dialog shows a refusal (a service that cannot be public, a listing that already exists). */
-export function useCreateListing() {
-  return useApiMutation({
-    mutationFn: (body: CreateListingBody) => createListing(body),
-    invalidates: staleResource(RESOURCE),
-    invalidateKeys: STALE_KEYS,
-    onSuccess: (created) => {
-      toast({
-        kind: 'success',
-        title: 'Listing added',
-        body: `${created.publicTitle} is ready. Set its price, then switch it on.`,
         ttl: 3200,
       });
     },

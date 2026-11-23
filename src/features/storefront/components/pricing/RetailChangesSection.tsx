@@ -1,9 +1,17 @@
-// RetailChangesSection: the "Price changes" block: what the server did when a cost moved (a price followed it, a rule or the floor
+// RetailChangesSection: the "Price changes" section: what the server did when a cost moved (a price followed it, a rule or the floor
 // moved, a price stopped following) and the proposals that wait for a person, newest first. Waiting is shown by default. Ticked
-// proposals are approved (with the figure on screen as `seen`) or kept together; the ids the server skips are listed in a note.
-// Needs pricing:read; resolving needs pricing:update. The page, sort and filter live in the address.
+// proposals are approved (with the figure on screen as `seen`) or kept together with the "With selected" strip; the ids the server skips are
+// listed in a note. The list ends in the footer pager (the server's page is fixed, so its size menu offers that one size). Needs pricing:read;
+// resolving needs pricing:update. The page, sort and filter live in the address.
 import { useState } from 'react';
-import { EmptyState, Button, SegmentedControl, useRowSelection, usePageClamp } from '@/components/ui';
+import {
+  EmptyState,
+  Button,
+  FooterPager,
+  SegmentedControl,
+  useRowSelection,
+  usePageClamp,
+} from '@/components/ui';
 import { useListView } from '../../hooks/useListView';
 import { useResolveRetailChanges, useRetailChanges } from '../../hooks/useRetailPricing';
 import type { StorefrontGrants } from '../../hooks/useStorefrontGrants';
@@ -13,6 +21,9 @@ import type { ResolveRetailPriceChangesBody } from '../../types';
 import { PricingSection } from './PricingSection';
 import { RetailChangesBar } from './RetailChangesBar';
 import { RetailChangesTable } from './RetailChangesTable';
+
+// The page holds a fixed number of rows: the pager's size menu has that one choice.
+const PAGE_SIZES = [PAGE_SIZE] as const;
 
 const SHOW_ITEMS = [
   { value: 'waiting', label: 'Waiting' },
@@ -76,17 +87,9 @@ export function RetailChangesSection({ grants }: { grants: StorefrontGrants }) {
         />
       }
     >
-      <RetailChangesBar
-        count={selection.selected.size}
-        grants={grants}
-        busy={resolve.isPending}
-        onApply={() => void send('apply').catch(() => undefined)}
-        onKeep={() => void send('keep').catch(() => undefined)}
-        onClear={selection.clear}
-      />
       {skipped.length > 0 && (
         <div
-          className="border-b border-line bg-warn-bg px-3.5 py-2 text-sm text-warn-fg"
+          className="mb-3 rounded-md bg-warn-bg px-3 py-2 text-sm text-warn-fg"
           role="status"
           aria-label="Skipped price changes"
         >
@@ -108,8 +111,6 @@ export function RetailChangesSection({ grants }: { grants: StorefrontGrants }) {
         selection={selection}
         sort={view.sort}
         onSortChange={fresh(setSort)}
-        pagination={{ page: view.page, pageSize: PAGE_SIZE, total: list.total ?? list.rows.length }}
-        onPageChange={fresh(setPage)}
         empty={
           show === 'waiting' ? (
             <EmptyState
@@ -125,6 +126,29 @@ export function RetailChangesSection({ grants }: { grants: StorefrontGrants }) {
             </EmptyState>
           )
         }
+      />
+      <RetailChangesBar
+        count={selection.selected.size}
+        grants={grants}
+        busy={resolve.isPending}
+        onCheckAll={() =>
+          selection.setMany(
+            list.rows.map((row) => row.id),
+            true,
+          )
+        }
+        onUncheckAll={selection.clear}
+        onApply={() => void send('apply').catch(() => undefined)}
+        onKeep={() => void send('keep').catch(() => undefined)}
+      />
+      <FooterPager
+        inline
+        page={view.page}
+        pageSize={PAGE_SIZE}
+        total={list.total ?? list.rows.length}
+        sizes={PAGE_SIZES}
+        onPage={fresh(setPage)}
+        onPageSize={() => undefined}
       />
     </PricingSection>
   );

@@ -15,7 +15,7 @@ export interface ResolverSummaryProps {
 /** The price the merchant pays, its profit and source, and the other groups. */
 export function ResolverSummary({ resolution, merchantName, groupId }: ResolverSummaryProps) {
   return (
-    <div className="p-3.5">
+    <div className="pt-4 xl:ps-6 xl:pt-0">
       <p className="text-xs text-ink3">{merchantName} pays</p>
       <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight">{money(resolution.price)}</p>
       <p className="mt-1 text-sm text-ink2">

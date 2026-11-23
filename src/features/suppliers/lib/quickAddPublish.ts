@@ -15,7 +15,7 @@ export const PUBLISH_WAIT_MS = 120_000;
 
 /** The hint under the tick box (the plan's words). */
 export const PUBLISH_HINT =
-  'Each gets a clean title and a price from the retail pricing rules. The ones that need a look wait in Catalog, Publish runs.';
+  'Each gets a clean title and a price from the retail pricing rules. The ones that need a look wait in Product / Services, Shop Publish.';
 
 /** Why the tick box is locked for services added switched off: the server's own words for `needs_active`. */
 export const PUBLISH_SWITCHED_OFF = 'Services added switched off cannot go on the shop.';

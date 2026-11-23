@@ -1,4 +1,4 @@
-// The menus the pricing, inventory and Catalog screens choose from: the services (by name), the categories, the merchant groups, the
+// The menus the pricing, inventory and services screens choose from: the services (by name), the categories, the merchant groups, the
 // merchants and the suppliers. The group, merchant and supplier lists are read once and kept for a few minutes: they change rarely,
 // and a menu should not wait for a request each time a dialog opens.
 import { useList } from '@refinedev/core';
@@ -6,15 +6,21 @@ import { listSuppliers } from '@/features/suppliers';
 import { useApiQuery } from '@/lib/query';
 import { listServices } from '../api';
 import { listGroupOptions, listMerchantOptions } from '../api/lookups';
-import type { ServiceCategory } from '../types';
+import type { ServiceCategory, ServiceType } from '../types';
 import { LOOKUP_STALE_MS, PICKER_CAP, SERVICE_LOOKUP_KEY, SERVICE_PICKER_KEY } from './keys';
 
-/** The services by name, for the resolver, the inventory filter and the import dialog. Needs `catalog:read`. */
-export function useServiceChoices(enabled = true) {
+/**
+ * The services by name, for the resolver, the inventory filter and the import dialog. Needs `catalog:read`. With `type` only the
+ * services of that kind are listed (the Product / Services page's strip); the key carries it, under the same prefix.
+ */
+export function useServiceChoices(enabled = true, type?: ServiceType) {
   return useApiQuery({
-    queryKey: [...SERVICE_PICKER_KEY],
+    queryKey: type ? [...SERVICE_PICKER_KEY, type] : [...SERVICE_PICKER_KEY],
     queryFn: ({ signal }) =>
-      listServices({ start: 0, end: PICKER_CAP, sort: ['name'], order: ['asc'] }, { signal }),
+      listServices(
+        { start: 0, end: PICKER_CAP, sort: ['name'], order: ['asc'], ...(type ? { filters: { type } } : {}) },
+        { signal },
+      ),
     select: (result) => result.data,
     enabled,
     staleTime: LOOKUP_STALE_MS,
@@ -45,7 +51,7 @@ export function useGroupOptions(enabled = true) {
 }
 
 /**
- * The suppliers by name, for the Catalog table's supplier filter (ids and names only). The suppliers feature owns
+ * The suppliers by name, for the services list's supplier filter (ids and names only). The suppliers feature owns
  * `GET /admin/suppliers`; pass `enabled: false` when the staff member lacks `suppliers:read`.
  */
 export function useSupplierChoices(enabled = true) {

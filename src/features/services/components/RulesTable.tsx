@@ -2,10 +2,11 @@
 // Turn off / Turn on and Delete. Ports the category-rules table of rulesTab in 43-p-services.js (whose "Turn off" button deleted the
 // rule); a rule can now also be edited, switched off without losing it, or deleted.
 import type { ReactNode } from 'react';
-import { Badge, Button, DataTable, TypeTag, type DataTableColumn } from '@/components/ui';
+import { Button, DataTable, type DataTableColumn } from '@/components/ui';
 import type { ServiceGrants } from '../hooks/useServiceGrants';
 import { adjustmentText, appliesToText, datesText, KIND_LABEL, ruleDetails } from '../lib/rules';
 import type { PricingRule } from '../types';
+import { RuleStatus } from './RuleStatus';
 
 export interface RulesTableProps {
   rules: readonly PricingRule[];
@@ -43,11 +44,11 @@ export function RulesTable({
       render: (rule) => (
         <>
           <span className="font-medium">{appliesToText(rule)}</span>
-          {rule.group && <p className="text-xs text-ink3">{rule.group.name} group only</p>}
+          {rule.group && <span className="cell-sub">{rule.group.name} group only</span>}
         </>
       ),
     },
-    { key: 'kind', label: 'Type', hide: 'sm', render: (rule) => <TypeTag>{KIND_LABEL[rule.kind]}</TypeTag> },
+    { key: 'kind', label: 'Type', hide: 'sm', render: (rule) => KIND_LABEL[rule.kind] },
     {
       key: 'adjustment',
       label: 'Adjustment',
@@ -55,25 +56,12 @@ export function RulesTable({
       render: (rule) => (
         <>
           <span className="font-medium">{adjustmentText(rule)}</span>
-          <p className="text-xs text-ink3">{ruleDetails(rule)}</p>
+          <span className="cell-sub">{ruleDetails(rule)}</span>
         </>
       ),
     },
     { key: 'dates', label: 'Dates', hide: 'md', render: (rule) => datesText(rule) || '–' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (rule) =>
-        rule.isActive ? (
-          <Badge tone="good" icon="checkCircle">
-            On
-          </Badge>
-        ) : (
-          <Badge tone="neutral" icon="ban">
-            Off
-          </Badge>
-        ),
-    },
+    { key: 'status', label: 'Status', render: (rule) => <RuleStatus on={rule.isActive} /> },
     {
       key: 'actions',
       label: '',
@@ -113,6 +101,8 @@ export function RulesTable({
   ];
   return (
     <DataTable
+      skin="list"
+      footer={false}
       caption="Pricing rules"
       columns={columns}
       rows={rules}

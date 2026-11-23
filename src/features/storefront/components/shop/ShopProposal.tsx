@@ -1,7 +1,18 @@
-// ShopProposal: the shop price change that waits for a person (a proposal of the follow pass) for one service, with Apply and Keep.
-// It reads GET /admin/retail-price-changes for the service and settles it through the same resolve call the shop price rules use.
+// ShopProposal: the shop price change that waits for a person (a proposal of the follow pass) for one service, with Apply and Keep, as a
+// section of the Retail Purchase part (label-left rows, a plain square for its state). It reads GET /admin/retail-price-changes for the
+// service and settles it through the same resolve call the shop price rules use. Nothing is drawn while no proposal waits.
 import { useState } from 'react';
-import { Badge, Button, ErrorState, Icon, KeyValue } from '@/components/ui';
+import {
+  Button,
+  ErrorState,
+  FormRow,
+  Icon,
+  SectionHeading,
+  StatusSquare,
+  type BadgeTone,
+  type SquareTone,
+  ReadValue,
+} from '@/components/ui';
 import { money } from '@/lib/format';
 import type { Id } from '@/lib/api';
 import { useResolveRetailChanges, useServiceProposal } from '../../hooks/useRetailPricing';
@@ -14,6 +25,16 @@ export interface ShopProposalProps {
   grants: StorefrontGrants;
 }
 
+/** The square of a proposal's state: what waits for a person is a warning, a closed one is plain. */
+const SQUARE: Record<BadgeTone, SquareTone> = {
+  good: 'ok',
+  neutral: 'off',
+  accent: 'warn',
+  warn: 'warn',
+  serious: 'warn',
+  crit: 'crit',
+};
+
 /** Nothing while no proposal waits. Needs pricing:read to read; Apply and Keep need pricing:update. */
 export function ShopProposal({ serviceId, grants }: ShopProposalProps) {
   const proposal = useServiceProposal(serviceId, grants.ready && grants.can('pricing:read'));
@@ -23,11 +44,14 @@ export function ShopProposal({ serviceId, grants }: ShopProposalProps) {
 
   if (proposal.isError && !change) {
     return (
-      <ErrorState
-        title="Could not load the waiting price change"
-        error={proposal.error}
-        onRetry={() => void proposal.refetch()}
-      />
+      <>
+        <SectionHeading>Waiting price change</SectionHeading>
+        <ErrorState
+          title="Could not load the waiting price change"
+          error={proposal.error}
+          onRetry={() => void proposal.refetch()}
+        />
+      </>
     );
   }
   if (!change) return null;
@@ -44,7 +68,7 @@ export function ShopProposal({ serviceId, grants }: ShopProposalProps) {
         ? { action, ids: [change.id], seen: [{ id: change.id, newPrice: change.newPrice }] }
         : { action, ids: [change.id] };
     try {
-      // The service goes along (never sent) so its record is read again: the panel then shows the new price and drops the waiting mark.
+      // The service goes along (never sent) so its record is read again: the edit view then shows the new price and drops the waiting mark.
       const result = await resolve.mutateAsync({ ...body, serviceIds: [serviceId] });
       const skip = result.skipped[0];
       setSkipped(skip ? skippedText(skip, change.service.name) : null);
@@ -54,47 +78,55 @@ export function ShopProposal({ serviceId, grants }: ShopProposalProps) {
   };
 
   return (
-    <div
-      role="group"
-      aria-label="Waiting price change"
-      className="space-y-2 rounded-md border border-line p-3"
-    >
-      <Badge tone={words.tone} icon={words.icon}>
-        {words.label}
-      </Badge>
-      <KeyValue
-        rows={[
-          ['Shop price now', money(change.oldPrice)],
-          ['New price', change.newPrice === null ? 'None' : money(change.newPrice)],
-          ['Cost', `${money(change.oldCost)} to ${money(change.newCost)}`],
-          change.rule && ['Rule', change.rule.label],
-        ]}
-      />
-      {words.note && <p className="hint">{words.note}</p>}
-      <div className="flex flex-wrap gap-2">
-        <span title={applyTitle} className="inline-flex">
-          <Button
-            size="sm"
-            variant="primary"
-            loading={resolve.isPending}
-            disabled={lock.disabled || noPrice}
-            onClick={() => void send('apply')}
-          >
-            <Icon name="check" className="ic-sm" />
-            Apply the new price
-          </Button>
-        </span>
-        <span title={lock.title} className="inline-flex">
-          <Button size="sm" disabled={lock.disabled || resolve.isPending} onClick={() => void send('keep')}>
-            Keep the current price
-          </Button>
-        </span>
+    <>
+      <SectionHeading>Waiting price change</SectionHeading>
+      <div role="group" aria-label="Waiting price change">
+        <FormRow label="Status">
+          <p className="flex items-center gap-2 text-sm md:min-h-8">
+            <StatusSquare tone={SQUARE[words.tone]} label={words.label} />
+            <span>{words.label}</span>
+          </p>
+          {words.note && <p className="hint">{words.note}</p>}
+        </FormRow>
+        <FormRow label="Shop price now">
+          <ReadValue>{money(change.oldPrice)}</ReadValue>
+        </FormRow>
+        <FormRow label="New price">
+          <ReadValue>{change.newPrice === null ? 'None' : money(change.newPrice)}</ReadValue>
+        </FormRow>
+        <FormRow label="Cost">
+          <ReadValue>{`${money(change.oldCost)} to ${money(change.newCost)}`}</ReadValue>
+        </FormRow>
+        {change.rule && (
+          <FormRow label="Rule">
+            <ReadValue>{change.rule.label}</ReadValue>
+          </FormRow>
+        )}
+        <FormRow label={null}>
+          <div className="flex flex-wrap gap-2">
+            <span title={applyTitle} className="inline-flex">
+              <Button
+                loading={resolve.isPending}
+                disabled={lock.disabled || noPrice}
+                onClick={() => void send('apply')}
+              >
+                <Icon name="check" className="ic-sm" />
+                Apply the new price
+              </Button>
+            </span>
+            <span title={lock.title} className="inline-flex">
+              <Button disabled={lock.disabled || resolve.isPending} onClick={() => void send('keep')}>
+                Keep the current price
+              </Button>
+            </span>
+          </div>
+          {skipped && (
+            <p role="status" className="mt-2 text-sm text-warn-fg">
+              {skipped}
+            </p>
+          )}
+        </FormRow>
       </div>
-      {skipped && (
-        <p role="status" className="text-sm text-warn-fg">
-          {skipped}
-        </p>
-      )}
-    </div>
+    </>
   );
 }

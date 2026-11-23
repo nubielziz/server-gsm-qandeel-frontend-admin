@@ -22,7 +22,7 @@ export function listSupplierServices(
 /**
  * Shows what an import would do with the picked supplier services: which are new, which match a service already in the
  * console, and which changed their cost, with the price the server suggests for a new one. Changes nothing.
- * Assumed contract: body `{ supplierServiceIds }`, answer `{ items }`.
+ * Assumed contract: body `{ supplierServiceIds, status?, categoryId? }` (decision 063), answer `{ items }`.
  * @route POST /admin/suppliers/:id/import/preview
  */
 export function previewImport(id: Id, body: ImportBody, init?: ApiInit): Promise<ImportPreview> {
@@ -32,7 +32,7 @@ export function previewImport(id: Id, body: ImportBody, init?: ApiInit): Promise
 /**
  * Imports the picked supplier services as services of the console, with their fields and a link to the supplier. The
  * server decides prices and what to skip; the answer counts what it did.
- * Assumed contract: body `{ supplierServiceIds }`, answer `{ created, updated, unchanged }`.
+ * Assumed contract: body `{ supplierServiceIds, status?, categoryId? }` (decision 063), answer `{ created, updated, unchanged }`.
  * @route POST /admin/suppliers/:id/import
  */
 export function importServices(id: Id, body: ImportBody, init?: ApiInit): Promise<ImportResult> {

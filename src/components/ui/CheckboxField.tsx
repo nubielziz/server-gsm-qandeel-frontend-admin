@@ -2,6 +2,7 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react';
 import { cx } from './cx';
 import { errorId, errorMessage, hintId, describedBy, type FieldErrorLike } from './fieldA11y';
+import { FormRow } from './FormRow';
 
 export interface CheckboxFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: ReactNode;
@@ -10,17 +11,19 @@ export interface CheckboxFieldProps extends Omit<InputHTMLAttributes<HTMLInputEl
   /** `start` lines the box up with the first line of a long, wrapping label. */
   align?: 'center' | 'start';
   wrapperClassName?: string;
+  /** `row`: the checkbox sits in the control column of a label-left form, under the controls above it (the label column stays blank). */
+  layout?: 'stacked' | 'row';
 }
 
 export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(function CheckboxField(
-  { label, hint, error, align = 'center', wrapperClassName, className, id, ...rest },
+  { label, hint, error, align = 'center', wrapperClassName, layout = 'stacked', className, id, ...rest },
   ref,
 ) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const message = errorMessage(error);
-  return (
-    <div className={wrapperClassName}>
+  const body = (
+    <>
       <label
         className={cx(
           'flex cursor-pointer gap-2 text-sm',
@@ -48,6 +51,14 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(fu
           {message}
         </p>
       )}
-    </div>
+    </>
   );
+  if (layout === 'row') {
+    return (
+      <FormRow label={null} className={wrapperClassName}>
+        {body}
+      </FormRow>
+    );
+  }
+  return <div className={wrapperClassName}>{body}</div>;
 });

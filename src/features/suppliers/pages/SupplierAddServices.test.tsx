@@ -1,4 +1,4 @@
-// Tests for "Add services from this supplier" on the Services panel: a link to the Catalog's Add services flow with this supplier chosen,
+// Tests for "Add services from this supplier" on the Services panel: a link to the Add Service view of the Product / Services page with this supplier chosen,
 // shown with the permission of Quick add, in the header and in the empty state, before the two older buttons that stay. They run through
 // the whole app against the dev mock API.
 import { screen } from '@testing-library/react';
@@ -19,11 +19,11 @@ const before = (first: HTMLElement, second: HTMLElement) =>
   Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe('the link', () => {
-  it('goes to the Catalog flow for this supplier, before Quick add and Import services', async () => {
+  it('goes to the Add Service view for this supplier, before Quick add and Import services', async () => {
     await openSuppliers();
     const detail = await detailOf('Nordic GSM');
     const link = await detail.findByRole('link', { name: LABEL });
-    expect(link).toHaveAttribute('href', `/catalog?add=${NORDIC_GSM}`);
+    expect(link).toHaveAttribute('href', `/products?view=add&supplier=${NORDIC_GSM}`);
     expect(before(link, detail.getByRole('button', { name: 'Quick add…' }))).toBe(true);
     expect(before(link, detail.getByRole('button', { name: 'Import services…' }))).toBe(true);
   });
@@ -31,7 +31,10 @@ describe('the link', () => {
   it('names the chosen supplier, not the first one', async () => {
     await openSuppliers('/suppliers?supplier=3');
     const detail = await detailOf('Rapid IMEI');
-    expect(await detail.findByRole('link', { name: LABEL })).toHaveAttribute('href', '/catalog?add=3');
+    expect(await detail.findByRole('link', { name: LABEL })).toHaveAttribute(
+      'href',
+      '/products?view=add&supplier=3',
+    );
   });
 
   it('keeps Quick add… and Import services… as they were', async () => {
@@ -41,15 +44,15 @@ describe('the link', () => {
     expect(detail.getByRole('button', { name: 'Import services…' })).toBeEnabled();
   });
 
-  it('opens the Catalog page on that address', async () => {
+  it('opens the Product / Services page on that address', async () => {
     const user = userEvent.setup();
     const app = await openSuppliers();
     const detail = await detailOf('Nordic GSM');
     await user.click(await detail.findByRole('link', { name: LABEL }));
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Catalog' }, { timeout: 10_000 }),
+      await screen.findByRole('heading', { level: 1, name: 'Product / Services' }, { timeout: 10_000 }),
     ).toBeInTheDocument();
-    expect(app.location()).toBe(`/catalog?add=${NORDIC_GSM}`);
+    expect(app.location()).toBe(`/products?view=add&supplier=${NORDIC_GSM}`);
   });
 
   it('is in the empty state too, next to Quick add… and Import services…', async () => {

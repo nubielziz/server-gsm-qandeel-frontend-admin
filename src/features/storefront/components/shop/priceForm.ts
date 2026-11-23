@@ -1,4 +1,4 @@
-// The shop price form shared by the Storefront price dialog and the Catalog panel's price block: its values, where it starts
+// The shop price form shared by the Storefront price dialog and the service editor's price block: its values, where it starts
 // from, and what a save sends. Pure reshaping; every rule (the floor, the rule, the lock) is the server's.
 import type { Money } from '@/lib/api';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from '../../lib/money';
@@ -41,7 +41,7 @@ export function ruleHint(
       ? `Priced now by: ${listing.retailPriceRule.label}.`
       : 'The server prices it from the cost and keeps it up to date.',
     listing.retailPriceWaiting
-      ? 'A price change waits for your approval on the Shop price rules tab of the Catalog settings.'
+      ? 'A price change waits for your approval on the Shop price rules tab of the Price Rules view.'
       : '',
   ];
   return parts.filter(Boolean).join(' ');

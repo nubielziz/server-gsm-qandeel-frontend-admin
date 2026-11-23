@@ -1,7 +1,8 @@
-// Creating, editing and deleting service categories. A category change also refreshes the service lists and the Catalog table, which
-// show category names (and a switched-off category keeps its services off the shop), and the service menus. The dialogs show a failed call themselves (for example a category that services still use).
-import { CATALOG_ROWS_KEY, useApiMutation } from '@/lib/query';
-import { createCategory, deleteCategory, updateCategory } from '../api';
+// Creating and editing service categories (a delete is a bulk action of the Group view: hooks/useGroupActions.ts). A category change also
+// refreshes the service lists, which show category names (and a switched-off category keeps its services off the shop), and the service menus.
+// The Add Group and Edit Group forms show a failed call themselves (a name that is taken, a rank that does not exist).
+import { SERVICE_ROWS_KEY, useApiMutation } from '@/lib/query';
+import { createCategory, updateCategory } from '../api';
 import type { CreateCategoryBody, ServiceCategory, UpdateCategoryBody } from '../types';
 import { SERVICE_PICKER_KEY } from './keys';
 
@@ -26,18 +27,8 @@ export function useUpdateCategory() {
       { resource: 'service-categories', id: category.id },
       { resource: 'services' },
     ],
-    invalidateKeys: [SERVICE_PICKER_KEY, CATALOG_ROWS_KEY],
+    invalidateKeys: [SERVICE_PICKER_KEY, SERVICE_ROWS_KEY],
     successNotification: (category) => ({ message: `${category.name} updated` }),
-    errorNotification: NO_ERROR_TOAST,
-  });
-}
-
-/** Deletes a category. The server refuses one that services still use. */
-export function useDeleteCategory() {
-  return useApiMutation({
-    mutationFn: (category: ServiceCategory) => deleteCategory(category.id),
-    invalidates: (_result, category) => [{ resource: 'service-categories', id: category.id }],
-    successNotification: (_result, category) => ({ message: `${category.name} deleted` }),
     errorNotification: NO_ERROR_TOAST,
   });
 }

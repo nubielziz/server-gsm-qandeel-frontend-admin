@@ -1,4 +1,4 @@
-// Tests for the words of the Catalog row's shop switch: a publish row is "ready" only when the server says so, every other answer
+// Tests for the words of a service row's shop switch: a publish row is "ready" only when the server says so, every other answer
 // becomes the server's reason with the next step, and an applied run is read back the same way. Also the switch's lock per move.
 import { describe, expect, it } from 'vitest';
 import type { PublishItem, PublishRun } from '@/features/storefront';

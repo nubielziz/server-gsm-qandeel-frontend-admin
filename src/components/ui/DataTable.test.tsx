@@ -266,3 +266,52 @@ describe('DataTable row click', () => {
     expect(screen.getByText('Alpha').closest('tr')).not.toHaveAttribute('data-cursor');
   });
 });
+
+describe('DataTable list skin', () => {
+  const subColumns: DataTableColumn<Row>[] = [
+    {
+      key: 'name',
+      label: 'Service Name',
+      render: (r) => (
+        <>
+          <span className="block">{r.name}</span>
+          <span className="cell-sub">#{r.id}</span>
+        </>
+      ),
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      render: (r) => <input className="input-sm" aria-label={`Price ${r.id}`} defaultValue={r.amount} />,
+    },
+  ];
+
+  it('draws the plain table by default and the list skin when asked', () => {
+    const { rerender } = render(<DataTable columns={columns} rows={rows} rowKey={(r) => r.id} />);
+    expect(screen.getByRole('table')).toHaveClass('tbl');
+    expect(screen.getByRole('table')).not.toHaveClass('tbl-list');
+    rerender(<DataTable columns={columns} rows={rows} rowKey={(r) => r.id} skin="list" />);
+    expect(screen.getByRole('table')).toHaveClass('tbl', 'tbl-list');
+  });
+
+  it('keeps the selection column, the second line of a cell and the inputs inside cells', () => {
+    function Harness() {
+      const selection = useRowSelection<number>();
+      return (
+        <DataTable
+          columns={subColumns}
+          rows={rows}
+          rowKey={(r) => r.id}
+          selection={selection}
+          skin="list"
+          footer={false}
+        />
+      );
+    }
+    render(<Harness />);
+    expect(screen.getByRole('checkbox', { name: 'Select all rows on this page' })).toBeInTheDocument();
+    expect(screen.getByText('#2')).toHaveClass('cell-sub');
+    expect(screen.getByRole('textbox', { name: 'Price 2' })).toHaveClass('input-sm');
+    expect(screen.queryByText('3 rows')).not.toBeInTheDocument();
+  });
+});

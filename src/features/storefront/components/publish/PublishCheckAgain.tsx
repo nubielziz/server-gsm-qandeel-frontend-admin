@@ -39,7 +39,7 @@ export function PublishCheckAgain({ run, grants, onOpen }: PublishCheckAgainProp
     );
   };
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
       <p className="flex-1 text-xs text-ink3">
         {run.preparedAt ? `Prices as of ${fmtDate(run.preparedAt)}` : 'Prices are as of today'}
       </p>

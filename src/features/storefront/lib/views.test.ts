@@ -5,7 +5,6 @@ import {
   hasActiveFilters,
   HELP_VIEW,
   LANDING_VIEW,
-  LISTING_VIEW,
   PUBLISH_ITEMS_VIEW,
   parseView,
   resetView,
@@ -35,10 +34,7 @@ describe('parseView', () => {
   });
 
   it('knows the sorts of each tab', () => {
-    expect(parseView(params('sort=isListed'), LISTING_VIEW).sort).toEqual({
-      field: 'isListed',
-      order: 'asc',
-    });
+    expect(parseView(params('sort=title'), LANDING_VIEW).sort).toEqual({ field: 'title', order: 'asc' });
     expect(parseView(params('sort=isPublished&dir=desc'), HELP_VIEW).sort).toEqual({
       field: 'isPublished',
       order: 'desc',

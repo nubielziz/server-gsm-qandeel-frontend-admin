@@ -67,9 +67,9 @@ describe('useGlobalShortcuts', () => {
     expect(handlers.goTo).toHaveBeenCalledExactlyOnceWith(page);
   });
 
-  it('opens pages that exist: "p" is Catalog and "t" is Shop content, and no key names a page without a resource', () => {
+  it('opens pages that exist: "p" is Product / Services and "t" is Shop content, and no key names a page without a resource', () => {
     // A key that names a missing page does nothing in the shell, and a missing page answers "allowed" to an access check.
-    expect(GO_SHORTCUTS.p).toBe('catalog');
+    expect(GO_SHORTCUTS.p).toBe('products');
     expect(GO_SHORTCUTS.t).toBe('storefront');
     const pages = resources.map((resource) => resource.name);
     for (const page of Object.values(GO_SHORTCUTS)) expect(pages).toContain(page);

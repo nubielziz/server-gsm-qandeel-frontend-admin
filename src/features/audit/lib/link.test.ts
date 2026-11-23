@@ -18,12 +18,20 @@ describe('recordTarget', () => {
     });
   });
 
-  it('sends a service to the Catalog table searched by its name', () => {
+  it('sends a service to its edit view on Product / Services', () => {
     expect(recordTarget('service', 6, 'T-Mobile USA Unlock')).toEqual({
-      page: 'catalog',
-      to: '/catalog?q=T-Mobile+USA+Unlock',
+      page: 'products',
+      to: '/products?view=edit&id=6',
     });
-    expect(recordTarget('service', 6, '  ')).toEqual({ page: 'catalog', to: '/catalog' });
+    expect(recordTarget('service', 6, '  ')).toEqual({ page: 'products', to: '/products?view=edit&id=6' });
+  });
+
+  it('sends a service with no id to the list searched by its name', () => {
+    expect(recordTarget('service', 0, 'T-Mobile USA Unlock')).toEqual({
+      page: 'products',
+      to: '/products?view=all&q=T-Mobile+USA+Unlock',
+    });
+    expect(recordTarget('service', 0, '  ')).toEqual({ page: 'products', to: '/products?view=all' });
   });
 
   it('sends the other pages to the tab that holds the record', () => {

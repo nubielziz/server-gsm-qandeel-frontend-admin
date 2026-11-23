@@ -4,10 +4,10 @@
 import { chainOf } from './seed';
 import { suppliersState } from './store';
 
-/** A supplier as a Catalog row names it. */
+/** A supplier as a service row names it. */
 export type SupplierRef = { id: number; name: string };
 
-/** The chain of one service as the Catalog rows need it. */
+/** The chain of one service as the service rows need it. */
 export type ChainFacts = {
   /** The first link by priority (the primary supplier), or `null` when the service has no supplier link. */
   primary: SupplierRef | null;

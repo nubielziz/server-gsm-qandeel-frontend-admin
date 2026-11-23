@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from '@/components/ui';
 import type { Id } from '@/lib/api';
-import { CATALOG_ROWS_KEY, DASHBOARD_KEY, useApiQuery } from '@/lib/query';
+import { SERVICE_ROWS_KEY, DASHBOARD_KEY, useApiQuery } from '@/lib/query';
 import { getPublishRun } from '../api';
 import { isSwitchLive, isWorking, RUN_POLL_MS, servicesText } from '../lib/publish';
 import type { PublishRun } from '../types';
@@ -18,8 +18,8 @@ function useMadeStale() {
   const queryClient = useQueryClient();
   return useCallback(() => {
     void invalidate({ resource: 'service-listings', invalidates: ['list', 'many', 'detail'] });
-    // The Catalog table's rows show the shop page and the failed publish of each service.
-    for (const queryKey of [...PUBLISH_STALE_KEYS, DASHBOARD_KEY, CATALOG_ROWS_KEY]) {
+    // The services lists' rows show the shop page and the failed publish of each service.
+    for (const queryKey of [...PUBLISH_STALE_KEYS, DASHBOARD_KEY, SERVICE_ROWS_KEY]) {
       void queryClient.invalidateQueries({ queryKey });
     }
   }, [invalidate, queryClient]);

@@ -29,11 +29,18 @@ export * from './Stars';
 
 // Navigation and controls
 export * from './Tabs';
-export * from './Steps';
 export * from './SectionTabs';
 export * from './SegmentedControl';
 export * from './Switch';
+export * from './YesNo';
+export * from './StripTabs';
+export * from './ViewLinks';
+export * from './LegendBox';
+export * from './PartsLayout';
+export * from './StatusSquare';
 export * from './SearchInput';
+export * from './QuickSearchText';
+export * from './RefreshTool';
 export * from './TableToolbar';
 
 // Form fields and dialogs
@@ -41,6 +48,8 @@ export * from './TextField';
 export * from './TextareaField';
 export * from './SelectField';
 export * from './CheckboxField';
+export * from './FormRow';
+export * from './SectionHeading';
 export * from './IndeterminateCheckbox';
 export * from './RadioGroup';
 export type { FieldErrorLike } from './fieldA11y';
@@ -49,8 +58,16 @@ export * from './FormDialog';
 export * from './ConfirmDialog';
 export * from './BulkSummaryDialog';
 export * from './Drawer';
-export * from './SidePanel';
 export * from './FormSection';
+export * from './SectionForm';
+export * from './PartForm';
+export * from './SaveBar';
+export * from './SaveNote';
+export * from './ReadValue';
+export { outcomeOf, SAVED_MS, useSaveFlow } from './useSaveFlow';
+export type { SaveOutcome } from './useSaveFlow';
+export { useDirtySections, useReportDirty } from './useReportDirty';
+export type { ReportSection } from './useReportDirty';
 export * from './Menu';
 export * from './FloatingPanel';
 export * from './CommandPalette';
@@ -74,6 +91,9 @@ export type { ErrorLike } from './errorText';
 // Tables
 export * from './DataTable';
 export * from './Pager';
+export * from './FooterPager';
+export * from './PinnedBar';
+export * from './WithSelected';
 export { usePageClamp } from './usePageClamp';
 export { SEARCH_PAUSE_MS, useDebouncedCommit } from './useDebouncedCommit';
 export type { PageClampArgs } from './usePageClamp';

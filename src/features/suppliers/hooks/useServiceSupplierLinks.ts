@@ -1,4 +1,4 @@
-// Reads the supplier chain of one service (`GET /admin/services/:id/supplier-links`) for the Suppliers section of the Catalog panel.
+// Reads the supplier chain of one service (`GET /admin/services/:id/supplier-links`) for the supplier connection of a service.
 // Its key lives here, beside the only read that uses it; a saved chain makes it stale.
 import type { Id } from '@/lib/api';
 import { useApiQuery } from '@/lib/query';

@@ -1,13 +1,7 @@
 // GroupsSection: "Price groups" of the Rules and groups tab, read-only: each merchant group with its discount and how many merchants it
 // has. Ports the groups table of rulesTab in 43-p-services.js. Groups are managed on the merchants page, so a button links there.
-import {
-  ButtonLink,
-  DataTable,
-  EmptyState,
-  QueryState,
-  SkeletonTable,
-  type DataTableColumn,
-} from '@/components/ui';
+import { Link } from 'react-router';
+import { DataTable, EmptyState, QueryState, SkeletonTable, type DataTableColumn } from '@/components/ui';
 import { useGroupOptions } from '../hooks/useChoices';
 import type { ServiceGrants } from '../hooks/useServiceGrants';
 import { percentText } from '../lib/money';
@@ -36,9 +30,9 @@ export function GroupsSection({ grants }: { grants: ServiceGrants }) {
       title="Price groups"
       sub="Discount applied to base prices"
       right={
-        <ButtonLink size="sm" to={MERCHANT_GROUPS_PATH}>
+        <Link className="link text-sm" to={MERCHANT_GROUPS_PATH}>
           Manage groups
-        </ButtonLink>
+        </Link>
       }
     >
       {allowed ? (
@@ -51,6 +45,8 @@ export function GroupsSection({ grants }: { grants: ServiceGrants }) {
           skeleton={<SkeletonTable cols={3} rows={3} />}
         >
           <DataTable
+            skin="list"
+            footer={false}
             caption="Price groups"
             columns={COLUMNS}
             rows={groups.data ?? []}
@@ -63,9 +59,7 @@ export function GroupsSection({ grants }: { grants: ServiceGrants }) {
           />
         </QueryState>
       ) : (
-        <p className="px-3.5 pb-3.5 text-sm text-ink3">
-          You need the groups:read permission to see the merchant groups.
-        </p>
+        <p className="text-sm text-ink3">You need the groups:read permission to see the merchant groups.</p>
       )}
     </RuleSection>
   );

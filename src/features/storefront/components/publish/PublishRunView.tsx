@@ -31,7 +31,7 @@ export function PublishRunView({ runId, grants, onOpen, onClose }: PublishRunVie
   }
   const reread = () => void query.refetch();
   return (
-    <div className="grid gap-0 divide-y divide-line">
+    <div className="grid gap-6">
       <PublishRunHeader run={run} />
       {run.status === 'preparing' && (
         <PublishPreparing run={run} canCancel={grants.needs('storefront:create')} onClose={onClose} />
@@ -44,7 +44,7 @@ export function PublishRunView({ runId, grants, onOpen, onClose }: PublishRunVie
       )}
       {isFinished(run) && <PublishResult run={run} grants={grants} onOpen={onOpen} onReread={reread} />}
       {query.isError && (
-        <p className="px-3.5 py-2 text-xs text-ink3">
+        <p className="py-2 text-xs text-ink3">
           Could not refresh this run; the last answer is shown.{' '}
           <button type="button" className="link" onClick={reread}>
             Retry

@@ -5,9 +5,10 @@
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { money } from '@/lib/format';
 import { orderStore } from '@/mocks/orders';
-import { catalogJoin, factsOf, passesCatalogFilters, readCatalogFilters } from './catalog';
+import { serviceJoin, factsOf, passesListFilters, readListFilters } from './serviceFacts';
 import { toDetail, toService } from './dto';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
+import { storedOrder } from './priceGridRoutes';
 import { floorOf, round } from './pricing';
 import { applyQuantity } from './quantityRule';
 import { servicesStore } from './store';
@@ -15,6 +16,8 @@ import type { MockService } from './types';
 
 const SEARCH_FIELDS = ['name', 'code', 'category.name'];
 const TYPES = ['imei', 'server', 'remote', 'file'];
+/** The longest verification window the server accepts, in hours (30 days). */
+const MAX_VERIFY_WINDOW_H = 720;
 
 /** A body amount (`"12.5"` or `12.5`) as a number, or null when it is not one. */
 function amountOf(value: unknown): number | null {
@@ -65,6 +68,17 @@ function applyFields(row: MockService, body: Record<string, unknown>, problems: 
       draft.auto = body.executionMode === 'auto';
     else problems.push({ field: 'executionMode', message: 'Use auto or manual.' });
   }
+  for (const key of ['allowCancel', 'allowVerify'] as const) {
+    if (!(key in body)) continue;
+    if (typeof body[key] === 'boolean') draft[key] = body[key];
+    else problems.push({ field: key, message: 'Use true or false.' });
+  }
+  if ('verifyWindowH' in body) {
+    const hours = amountOf(body.verifyWindowH);
+    if (hours !== null && Number.isInteger(hours) && hours >= 0 && hours <= MAX_VERIFY_WINDOW_H)
+      draft.verifyWindowH = hours;
+    else problems.push({ field: 'verifyWindowH', message: `Enter hours, 0 to ${MAX_VERIFY_WINDOW_H}.` });
+  }
   Object.assign(draft, applyQuantity(draft, body, problems));
   return draft;
 }
@@ -74,13 +88,18 @@ export const serviceRoutes: HttpHandler[] = [
   http.get('*/admin/services', ({ request }) =>
     signedIn(request, async () => {
       const stores = await servicesStore();
-      const join = await catalogJoin();
-      const query = readCatalogFilters(new URL(request.url).searchParams, join);
+      const join = await serviceJoin();
+      const query = readListFilters(new URL(request.url).searchParams, join);
       if (query instanceof Response) return query;
-      const rows = stores.services
+      const kept = stores.services
         .list()
-        .filter((row) => passesCatalogFilters(query.filters, row, factsOf(stores, row, join)))
-        .map((row) => toService(stores, row, join));
+        .filter((row) => passesListFilters(query.filters, row, factsOf(stores, row, join)));
+      // `sort` is the stored order (the rows carry no such field): put them in it here; the generic sort below then keeps their order.
+      if (query.rest.get('_sort') === 'sort') {
+        kept.sort(storedOrder(stores));
+        if (query.rest.get('_order')?.toLowerCase() === 'desc') kept.reverse();
+      }
+      const rows = kept.map((row) => toService(stores, row, join));
       return listAnswer(rows, request, SEARCH_FIELDS, query.rest);
     }),
   ),
@@ -90,7 +109,7 @@ export const serviceRoutes: HttpHandler[] = [
       const stores = await servicesStore();
       const row = stores.services.find(String(params.id));
       return row
-        ? HttpResponse.json(toDetail(stores, row, await catalogJoin()))
+        ? HttpResponse.json(toDetail(stores, row, await serviceJoin()))
         : notFound('service', params.id);
     }),
   ),
@@ -118,6 +137,9 @@ export const serviceRoutes: HttpHandler[] = [
         minQty: 1,
         maxQty: 1,
         qtyOptions: [],
+        allowCancel: false,
+        allowVerify: false,
+        verifyWindowH: 0,
         status: 'active',
         auto: true,
         fields: [],
@@ -136,7 +158,7 @@ export const serviceRoutes: HttpHandler[] = [
       }
       const { id: _id, ...fields } = draft;
       const created = stores.services.insert(fields);
-      return HttpResponse.json(toService(stores, created, await catalogJoin()), { status: 201 });
+      return HttpResponse.json(toService(stores, created, await serviceJoin()), { status: 201 });
     }),
   ),
 
@@ -174,7 +196,7 @@ export const serviceRoutes: HttpHandler[] = [
       }
       const { id: _id, ...changes } = draft;
       const changed = stores.services.patch(row.id, changes) ?? row;
-      return HttpResponse.json(toService(stores, changed, await catalogJoin()));
+      return HttpResponse.json(toService(stores, changed, await serviceJoin()));
     }),
   ),
 

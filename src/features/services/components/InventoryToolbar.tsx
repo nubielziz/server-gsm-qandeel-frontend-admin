@@ -1,38 +1,35 @@
-// InventoryToolbar: the filters above the code stock (service and status), Clear filters and the live count. The service menu
-// is left out without `catalog:read`, because the names come from the services list.
-import { Button, SelectField, TableToolbar, type SelectOption } from '@/components/ui';
-import { num } from '@/lib/format';
+// InventoryToolbar: the Quick Search box above the code stock (service and status, Clear filters) and the refresh tool at its right, in the list
+// grammar of the Product / Services page (the same box as the Inventory part of the editor, with the service menu added). The filters apply
+// as soon as they are chosen. The service menu is left out without `catalog:read`, because the names come from the services list.
+import { Button, LegendBox, RefreshTool, SelectField } from '@/components/ui';
 import { withChosen } from '../lib/select';
 import type { NamedRef } from '../types';
-
-const STATUS_OPTIONS: readonly SelectOption[] = [
-  { value: '', label: 'All statuses' },
-  { value: 'available', label: 'Available' },
-  { value: 'reserved', label: 'Reserved' },
-  { value: 'sold', label: 'Sold' },
-  { value: 'void', label: 'Void' },
-];
+import { statusFilterOptions } from './products/edit/parts/inventory/stockStatus';
 
 export interface InventoryToolbarProps {
   serviceId: number | null;
   status: string;
   /** The names for the service menu; `undefined` leaves the menu out. */
   services?: readonly NamedRef[];
-  total: number | undefined;
   onService: (id: string) => void;
   onStatus: (status: string) => void;
   onClear: () => void;
+  /** Reads the list again. */
+  onRefresh: () => void;
+  /** A read is running: the refresh icon turns. */
+  busy?: boolean;
 }
 
-/** Service and status filters above the code stock. */
+/** Service and status filters, and the refresh tool. */
 export function InventoryToolbar({
   serviceId,
   status,
   services,
-  total,
   onService,
   onStatus,
   onClear,
+  onRefresh,
+  busy = false,
 }: InventoryToolbarProps) {
   // A linked service stays visible while the names load.
   const options = withChosen(
@@ -44,26 +41,31 @@ export function InventoryToolbar({
     `Service ${serviceId}`,
   );
   return (
-    <TableToolbar count={total === undefined ? undefined : `${num(total)} ${total === 1 ? 'code' : 'codes'}`}>
-      {services && (
+    <>
+      <LegendBox legend="Quick Search">
+        {services && (
+          <SelectField
+            aria-label="Filter by service"
+            selectWrapClassName="min-w-[14rem]"
+            value={serviceId ?? ''}
+            options={options}
+            onChange={(event) => onService(event.target.value)}
+          />
+        )}
         <SelectField
-          aria-label="Filter by service"
-          value={serviceId ?? ''}
-          options={options}
-          onChange={(event) => onService(event.target.value)}
+          aria-label="Filter by status"
+          selectWrapClassName="min-w-[12rem]"
+          value={status}
+          options={statusFilterOptions()}
+          onChange={(event) => onStatus(event.target.value)}
         />
-      )}
-      <SelectField
-        aria-label="Filter by status"
-        value={status}
-        options={STATUS_OPTIONS}
-        onChange={(event) => onStatus(event.target.value)}
-      />
-      {(serviceId !== null || status !== '') && (
-        <Button variant="ghost" size="sm" onClick={onClear}>
-          Clear filters
-        </Button>
-      )}
-    </TableToolbar>
+        {(serviceId !== null || status !== '') && (
+          <Button variant="ghost" size="sm" onClick={onClear}>
+            Clear filters
+          </Button>
+        )}
+      </LegendBox>
+      <RefreshTool onRefresh={onRefresh} busy={busy} />
+    </>
   );
 }

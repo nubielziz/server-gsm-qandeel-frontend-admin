@@ -7,8 +7,8 @@ import { TraceStepRow } from './TraceStepRow';
 /** The sentence and the numbered list of steps. */
 export function TraceSteps({ resolution }: { resolution: PriceResolution }) {
   return (
-    <div className="border-b border-line xl:border-b-0 xl:border-e">
-      <p className="px-3.5 pt-3 text-xs text-ink3">
+    <div className="border-b border-line pb-3 xl:border-b-0 xl:border-e xl:pb-0 xl:pe-6">
+      <p className="hint">
         First match wins: a client override, then a group service price. Otherwise the base price takes the
         category rule and then the group discount.
       </p>

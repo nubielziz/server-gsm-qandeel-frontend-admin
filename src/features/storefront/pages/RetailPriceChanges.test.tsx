@@ -1,6 +1,7 @@
-// Tests for the price changes block of the shop price rules (the Retail pricing component): the proposals that wait (shown first), the badge and the figures of
-// each kind of change, the Waiting and All views kept in the address, approving and keeping proposals together, the ids the server
-// skips, the chip on the settings tab and the permission of the buttons. The rules block has its own file.
+// Tests for the price changes section of the shop price rules (the Retail pricing component): the proposals that wait (shown first), the square and the
+// words and the figures of each kind of change, the Waiting and All views kept in the address, the footer pager, approving and keeping proposals
+// together with the "With selected" strip, the ids the server skips, the waiting count on the Shop price rules link and the permission of the
+// buttons. The rules section has its own file.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -10,19 +11,19 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { storefrontStore } from '../mocks/store';
 import { recordRequests } from '../test/requests';
-import { openCatalogView, rowOf, settingsTabTexts, tableNamed } from '../test/storefrontPage';
+import { openProductsView, rowOf, settingsTabTexts, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 afterEach(() => vi.restoreAllMocks());
 
 const CHANGES = 'Price changes';
-const PRICING = '/catalog?view=settings&tab=shop-prices';
+const PRICING = '/products?view=rules&tab=shop';
 type User = ReturnType<typeof userEvent.setup>;
 
 /** Opens the tab and waits for the price changes. */
 async function openChanges(route = PRICING, options: { permissions?: string[] } = {}) {
-  const app = await openCatalogView(route, options);
+  const app = await openProductsView(route, options);
   await tableNamed(CHANGES);
   return app;
 }
@@ -66,22 +67,25 @@ describe('the list', () => {
     expect(vodafone.getByText('–')).toBeInTheDocument();
   });
 
-  it('shows every change in the All view, kept in the address, with a badge for each kind', async () => {
+  it('shows every change in the All view, kept in the address, with a square and words for each kind', async () => {
     const user = userEvent.setup();
     const app = await openChanges();
     await user.click(screen.getByRole('button', { name: 'All' }));
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(8));
-    expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices&show=all');
+    expect(app.location()).toBe('/products?view=rules&tab=shop&show=all');
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
     const table = await tableNamed(CHANGES);
     expect(table.getAllByText('Waiting for approval')).toHaveLength(3);
     for (const word of ['Followed the cost', 'Rule changed', 'Floor changed', 'Stopped following']) {
       expect(table.getByText(word)).toBeInTheDocument();
+      // A status is a small square and its word, not a badge.
+      expect(table.getByText(word).closest('.badge')).toBeNull();
+      expect(table.getByText(word).previousElementSibling).toHaveClass('status-sq');
     }
     expect(table.getByText('The price was changed outside the rule.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Waiting' }));
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(4));
-    expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices');
+    expect(app.location()).toBe('/products?view=rules&tab=shop');
   });
 
   it('asks the server for the waiting proposals, newest first, 25 to a page', async () => {
@@ -96,7 +100,7 @@ describe('the list', () => {
 
   it('opens on the All view from an address with show=all and then asks for every change', async () => {
     const requests = recordRequests();
-    await openChanges('/catalog?view=settings&tab=shop-prices&show=all');
+    await openChanges('/products?view=rules&tab=shop&show=all');
     const asked = requests
       .sent()
       .filter((sent) => sent.url.pathname.endsWith('/admin/retail-price-changes'))
@@ -111,36 +115,43 @@ describe('the list', () => {
         HttpResponse.json([], { headers: { 'x-total-count': '0' } }),
       ),
     );
-    await openCatalogView(PRICING);
+    await openProductsView(PRICING);
     expect(await screen.findByText('Nothing is waiting for you')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Show every change' }));
     expect(await screen.findByText('No price changes yet')).toBeInTheDocument();
+  });
+
+  it('ends in the footer pager, with the size of the page the server holds', async () => {
+    await openChanges();
+    const pager = within(screen.getByRole('navigation', { name: 'Pagination' }));
+    expect(pager.getByText('Results: 1 - 3 of 3')).toBeInTheDocument();
+    expect(pager.getByRole('combobox', { name: 'Page size:' })).toHaveDisplayValue('25');
   });
 
   it('shows the server’s error with Retry', async () => {
     mockServer.use(
       http.get('*/admin/retail-price-changes', () => problem(500, 'INTERNAL', 'Server error', 'No answer.')),
     );
-    await openCatalogView(PRICING);
+    await openProductsView(PRICING);
     expect(await screen.findByText('Could not load the price changes')).toBeInTheDocument();
   });
 });
 
-describe('the chip on the tab', () => {
+describe('the count on the link', () => {
   it('shows the count to a role with pricing:read alone', async () => {
     await openChanges(PRICING, { permissions: ['pricing:read'] });
-    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing3'));
+    await waitFor(() => expect(settingsTabTexts()[1]).toBe('Shop price rules (3 waiting)'));
   });
 
   it('counts the proposals that wait from the server’s total and drops once none waits', async () => {
     const user = userEvent.setup();
     await openChanges();
-    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing3'));
+    await waitFor(() => expect(settingsTabTexts()[1]).toBe('Shop price rules (3 waiting)'));
     for (const service of ['T-Mobile USA Unlock', 'Vodafone UK iPhone Unlock', 'Orange France Unlock']) {
       await tick(user, service);
     }
     await user.click(screen.getByRole('button', { name: 'Keep the current price' }));
-    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing'));
+    await waitFor(() => expect(settingsTabTexts()[1]).toBe('Shop price rules'));
     expect(await screen.findByText('Nothing is waiting for you')).toBeInTheDocument();
   });
 });
@@ -151,8 +162,7 @@ describe('approving and keeping proposals', () => {
     await openChanges();
     const requests = recordRequests();
     await tick(user, 'T-Mobile USA Unlock');
-    const bar = within(screen.getByRole('region', { name: 'Selected price changes' }));
-    expect(bar.getByText('1 selected')).toBeInTheDocument();
+    const bar = within(screen.getByRole('group', { name: 'With selected (1):' }));
     await user.click(bar.getByRole('button', { name: 'Apply the new price' }));
     expect(await screen.findByText('Price changes resolved')).toBeInTheDocument();
     expect(screen.getByText('1 applied')).toBeInTheDocument();
@@ -162,10 +172,11 @@ describe('approving and keeping proposals', () => {
       seen: [{ id: 7, newPrice: '24.9900' }],
     });
     expect(lastWrite(requests, 'POST').url.pathname).toBe('/admin/retail-price-changes/resolve');
-    // The proposal left the waiting list and the bar is gone.
+    // The proposal left the waiting list and nothing is ticked: the strip stays, with its buttons off.
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(3));
-    expect(screen.queryByRole('region', { name: 'Selected price changes' })).not.toBeInTheDocument();
-    expect(settingsTabTexts()[0]).toBe('Retail pricing2');
+    expect(screen.getByRole('group', { name: 'With selected:' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply the new price' })).toBeDisabled();
+    expect(settingsTabTexts()[1]).toBe('Shop price rules (2 waiting)');
   });
 
   it('lists the ids the server skipped, in its words, and leaves them waiting', async () => {
@@ -261,20 +272,29 @@ describe('approving and keeping proposals', () => {
     expect((await storefrontStore()).retail.get(6)).toBe(25.99);
   });
 
-  it('clears the ticks with Clear and when the view changes', async () => {
+  it('clears the ticks with Uncheck All and when the view changes', async () => {
     const user = userEvent.setup();
     await openChanges();
     await tick(user, 'T-Mobile USA Unlock');
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(screen.queryByRole('region', { name: 'Selected price changes' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Uncheck All' }));
+    expect(screen.getByRole('group', { name: 'With selected:' })).toBeInTheDocument();
     await tick(user, 'T-Mobile USA Unlock');
     await user.click(screen.getByRole('button', { name: 'All' }));
-    expect(screen.queryByRole('region', { name: 'Selected price changes' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'With selected:' })).toBeInTheDocument();
+  });
+
+  it('ticks every row of the page with Check All', async () => {
+    const user = userEvent.setup();
+    await openChanges();
+    expect(screen.getByRole('button', { name: 'Apply the new price' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Check All' }));
+    expect(screen.getByRole('group', { name: 'With selected (3):' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply the new price' })).toBeEnabled();
   });
 
   it('skips a change that was already resolved when it is ticked in the All view', async () => {
     const user = userEvent.setup();
-    await openChanges('/catalog?view=settings&tab=shop-prices&show=all');
+    await openChanges('/products?view=rules&tab=shop&show=all');
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(8));
     const requests = recordRequests();
     await user.click((await rowOf(CHANGES, 'Samsung KG Lock Fix')).getByRole('checkbox'));
@@ -299,7 +319,7 @@ describe('approving and keeping proposals', () => {
     await tick(user, 'T-Mobile USA Unlock');
     await user.click(screen.getByRole('button', { name: 'Apply the new price' }));
     expect(await screen.findByText(/You may not resolve price changes\./)).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Selected price changes' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'With selected (1):' })).toBeInTheDocument();
   });
 });
 

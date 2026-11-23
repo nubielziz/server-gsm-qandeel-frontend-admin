@@ -1,4 +1,4 @@
-// The Catalog row's one shop switch, as pure functions: why a service cannot go on the shop, what the server found when the switch tried
+// A service row's one shop switch, as pure functions: why a service cannot go on the shop, what the server found when the switch tried
 // (a publish row's state or result) with the next step, the switch's lock per move, and the server's words for a refused call. Every
 // reason is the server's; this only words it, as the storefront feature does on its publish screens.
 import type {
@@ -162,6 +162,11 @@ export function shopLock(service: Service, grants: ServiceGrants): { disabled: b
   return listed
     ? grants.needs('storefront:update')
     : grants.needsAll('storefront:update', 'storefront:publish');
+}
+
+/** What the switch says while it works: a shop page is being saved, or a service without one is being put on the shop by a run. */
+export function shopBusyWords(service: Service): string {
+  return service.listingId != null ? 'Saving…' : 'Putting it on the shop…';
 }
 
 /** The server's words for a refused call: the first field message (a 422 on `scope` names why), else its detail. */

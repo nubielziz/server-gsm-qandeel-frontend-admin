@@ -1,6 +1,6 @@
 // The pricing rules (a Refine list) and the actions on them: create, change, turn off and on, delete. Ports `cat-on` and
 // `cat-off` of 43-p-services.js with the demo's toasts. A rule change makes the price resolutions stale, and the services with them: a
-// rule's minimum profit sets the floor, which the Catalog rows and the below-floor counts show. The dialogs show a refusal.
+// rule's minimum profit sets the floor, which the service rows and the below-floor counts show. The dialogs show a refusal.
 import { useList } from '@refinedev/core';
 import { toast } from '@/components/ui';
 import { useApiMutation } from '@/lib/query';

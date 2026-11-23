@@ -9,22 +9,32 @@ export interface TextareaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaE
   hint?: ReactNode;
   error?: FieldErrorLike;
   wrapperClassName?: string;
+  /** `row`: the label in a column at the left of the control (the Product / Services forms). Default `stacked`: above it. */
+  layout?: 'stacked' | 'row';
 }
 
 export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>(function TextareaField(
-  { label, hint, error, wrapperClassName, className, id, rows = 3, ...rest },
+  { label, hint, error, wrapperClassName, layout, className, id, rows = 3, ...rest },
   ref,
 ) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const message = errorMessage(error);
   return (
-    <FieldFrame id={fieldId} label={label} hint={hint} error={message} className={wrapperClassName}>
+    <FieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={message}
+      className={wrapperClassName}
+      layout={layout}
+      required={rest.required}
+    >
       <textarea
         ref={ref}
         id={fieldId}
         rows={rows}
-        className={cx('input', INVALID_BORDER, className)}
+        className={cx('input', layout === 'row' && 'row-control', INVALID_BORDER, className)}
         aria-invalid={message ? true : undefined}
         aria-describedby={describedBy(fieldId, Boolean(hint), Boolean(message))}
         {...rest}

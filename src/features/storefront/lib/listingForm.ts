@@ -22,10 +22,14 @@ export type ListingFormValues = {
   sort: string;
 };
 
-/** What each group of fields of the editor takes from the form. */
+/**
+ * What each group of fields of the editor takes from the form. `layout` is how the rows are drawn: `stacked` (the default) is the dialogs'
+ * grid with the label above each control; `row` is the label-left rows of the Product / Services edit view.
+ */
 export type ListingFieldsProps = {
   register: UseFormRegister<ListingFormValues>;
   errors: FieldErrors<ListingFormValues>;
+  layout?: 'stacked' | 'row';
 };
 
 /** The longest text each field accepts (the server's limits, used as `maxLength` hints). */

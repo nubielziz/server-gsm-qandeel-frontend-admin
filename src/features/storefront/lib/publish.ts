@@ -22,9 +22,6 @@ export const THIN_MARGIN_PCT = 15;
  */
 export const SHOP_SERVICE_TYPES: readonly ServiceType[] = ['imei', 'server', 'remote'];
 
-/** What the Add listing dialog's Service field says about which services are offered. */
-export const SHOP_TYPES_HINT = 'Only active IMEI, server and remote services are sold to the public.';
-
 /** "1 service", "12 services". */
 export function servicesText(count: number): string {
   return `${num(count)} ${count === 1 ? 'service' : 'services'}`;

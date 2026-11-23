@@ -1,5 +1,5 @@
 // Tests for the storefront mock's publish apply: a service a run published gets its shop page and price, as the server writes them
-// with the row's result, so the Catalog shows it as on the shop afterwards. The run switch moves those pages too. They go through the
+// with the row's result, so the services list shows it as on the shop afterwards. The run switch moves those pages too. They go through the
 // API functions against the whole mock server, as the screens do.
 import { beforeEach, describe, expect, it } from 'vitest';
 import { getService } from '@/features/services';
@@ -55,7 +55,7 @@ describe('the publish apply', () => {
     expect(page?.retailPriceRule?.label).toEqual(expect.any(String));
   });
 
-  it('shows the service as on the shop in the Catalog afterwards, with the id of its page', async () => {
+  it('shows the service as on the shop in the services list afterwards, with the id of its page', async () => {
     expect(await getService(UNLOCKTOOL)).toMatchObject({ listingId: null, isListed: false });
     await publish([UNLOCKTOOL]);
     const row = await getService(UNLOCKTOOL);

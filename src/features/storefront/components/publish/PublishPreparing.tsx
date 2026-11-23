@@ -17,7 +17,7 @@ export interface PublishPreparingProps {
 export function PublishPreparing({ run, canCancel, onClose }: PublishPreparingProps) {
   const cancel = useCancelPublishRun();
   return (
-    <div className="flex flex-wrap items-center gap-3 px-3.5 py-4">
+    <div className="flex flex-wrap items-center gap-3 py-4">
       <p className="flex flex-1 items-center gap-2 text-sm text-ink2" role="status" aria-live="polite">
         <Icon name="loader" className="ic-sm animate-spin" />
         Preparing the preview of {servicesText(run.total)}…

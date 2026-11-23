@@ -1,4 +1,5 @@
-// ResolverControls: the two menus above the resolver, Merchant and Service. Ports `controls` of resolverTab in 43-p-services.js.
+// ResolverControls: the two menus above the resolver, Merchant and Service, as label-left rows (the form grammar of the Product / Services page).
+// Ports `controls` of resolverTab in 43-p-services.js.
 // A menu shows the chosen id even when the first 200 names do not include it (a link can name any service), so a deep link never
 // shows the wrong choice.
 import { SelectField } from '@/components/ui';
@@ -37,17 +38,17 @@ export function ResolverControls({
     `Service ${serviceId}`,
   );
   return (
-    <div className="grid gap-3 border-b border-line p-3.5 sm:grid-cols-2">
+    <div className="mb-4">
       <SelectField
+        layout="row"
         label="Merchant"
-        selectWrapClassName="w-full"
         value={merchantId ?? ''}
         options={merchantOptions}
         onChange={(event) => onMerchant(event.target.value)}
       />
       <SelectField
+        layout="row"
         label="Service"
-        selectWrapClassName="w-full"
         value={serviceId ?? ''}
         options={serviceOptions}
         onChange={(event) => onService(event.target.value)}

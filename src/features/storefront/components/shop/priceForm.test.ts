@@ -88,7 +88,7 @@ describe('ruleHint', () => {
 
   it('adds the sentence about a price change that waits', () => {
     expect(ruleHint(priced({ retailPriceWaiting: true }))).toBe(
-      'The server prices it from the cost and keeps it up to date. A price change waits for your approval on the Shop price rules tab of the Catalog settings.',
+      'The server prices it from the cost and keeps it up to date. A price change waits for your approval on the Shop price rules tab of the Price Rules view.',
     );
   });
 });

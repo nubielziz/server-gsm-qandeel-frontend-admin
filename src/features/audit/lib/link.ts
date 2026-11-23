@@ -4,13 +4,13 @@
 import { customerPath } from '@/features/customers';
 import { merchantPath } from '@/features/merchants';
 import { refundsPath } from '@/features/refunds';
-import { catalogPath } from '@/features/services';
+import { productsPath } from '@/features/services';
 import { supplierPath } from '@/features/suppliers';
 import { entityKind } from './entities';
 
 /** The console pages an entry can lead to, named like the page resources (they decide whether the staff member may open it). */
 export type RecordPage =
-  'orders' | 'merchants' | 'customers' | 'suppliers' | 'catalog' | 'risk' | 'refunds' | 'access';
+  'orders' | 'merchants' | 'customers' | 'suppliers' | 'products' | 'risk' | 'refunds' | 'access';
 
 /** An order opens its drawer here (`?order=<id>`, shown by `OrderDrawerHost`); every other record is a link to its page. */
 export type RecordTarget =
@@ -23,8 +23,8 @@ export const BLOCKLIST_PATH = '/risk?tab=block';
 export const ADMINS_PATH = '/access?tab=admins';
 
 /**
- * The target of an entry's record, or null when there is nothing to open. `label` is the record's name: a service has no page of
- * its own, so the link opens the Catalog table searched by its name, as the demo does.
+ * The target of an entry's record, or null when there is nothing to open. `label` is the record's name: it names the search of a
+ * service that has no id (the demo opened the services table searched by the name); a service with an id opens its edit view.
  */
 export function recordTarget(
   entityType: string,
@@ -43,7 +43,14 @@ export function recordTarget(
     case 'supplier':
       return id === null ? null : { page: 'suppliers', to: supplierPath(id) };
     case 'service':
-      return { page: 'catalog', to: catalogPath(name ? { q: name } : {}) };
+      // The edit view of the service (it shows the service's own kind on the strip); a record with no id opens the list, searched by its name.
+      return {
+        page: 'products',
+        to:
+          id === null
+            ? productsPath({ view: 'all', q: name || undefined })
+            : productsPath({ view: 'edit', id }),
+      };
     case 'blocklist':
       return { page: 'risk', to: BLOCKLIST_PATH };
     case 'refund':

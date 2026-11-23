@@ -1,10 +1,10 @@
-// PublishResultTable: the rows of an applied run: what happened to each (published, left out, refused, and why), its facts, cost, shop price
-// and whether its listing is on the shop now. Chips filter by result (the run's own counts); the table is server-paged (50) and
-// server-sorted. The page, sort and chip live in the address.
+// PublishResultTable: the rows of an applied run: what happened to each (a square and a word: published, left out, refused, and why), its facts,
+// cost, shop price and whether its listing is on the shop now. A segmented filter picks the result (the run's own counts); the table is
+// server-paged (50) and server-sorted, and ends in the pinned footer pager. The page, sort and filter live in the address.
 import {
-  Badge,
   DataTable,
   EmptyState,
+  FooterPager,
   SegmentedControl,
   usePageClamp,
   type DataTableColumn,
@@ -16,7 +16,11 @@ import { usePublishItems } from '../../hooks/usePublishItems';
 import { resultWords } from '../../lib/publishWords';
 import { PUBLISH_ITEMS_PAGE, PUBLISH_ITEMS_VIEW } from '../../lib/views';
 import type { PublishItem, PublishResult, PublishRun } from '../../types';
+import { StatusMark } from '../StatusMark';
 import { PublishFacts, PublishOnShopCell, PublishPriceCell, PublishServiceCell } from './PublishItemCells';
+
+// The server's page is fixed (50 rows): the pager's size menu has that one choice.
+const PAGE_SIZES = [PUBLISH_ITEMS_PAGE] as const;
 
 const COLUMNS: readonly DataTableColumn<PublishItem>[] = [
   {
@@ -26,10 +30,8 @@ const COLUMNS: readonly DataTableColumn<PublishItem>[] = [
       const words = resultWords(item);
       return (
         <>
-          <Badge tone={words.tone} icon={words.icon}>
-            {words.label}
-          </Badge>
-          {words.note && <p className="mt-0.5 max-w-[16rem] text-2xs text-ink3">{words.note}</p>}
+          <StatusMark tone={words.tone}>{words.label}</StatusMark>
+          {words.note && <span className="cell-sub max-w-[16rem]">{words.note}</span>}
         </>
       );
     },
@@ -93,32 +95,42 @@ export function PublishResultTable({ run, runId }: { run: PublishRun; runId: Id 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 px-3.5 py-2.5">
-        <SegmentedControl
-          items={chipsOf(run)}
-          value={result}
-          onChange={(next) => setFilter('result', next)}
-          label="Show rows"
+      <div>
+        <div className="flex flex-wrap items-center gap-3 py-2.5">
+          <SegmentedControl
+            items={chipsOf(run)}
+            value={result}
+            onChange={(next) => setFilter('result', next)}
+            label="Show rows"
+          />
+        </div>
+        <DataTable
+          skin="list"
+          footer={false}
+          caption="Publish result"
+          columns={COLUMNS}
+          rows={list.rows}
+          rowKey={(item) => item.id}
+          sort={view.sort}
+          onSortChange={setSort}
+          state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
+          error={list.query.error}
+          errorTitle="Could not load the rows"
+          onRetry={() => void list.query.refetch()}
+          empty={
+            <EmptyState icon="filter" title="No rows here">
+              No row of this run has that result.
+            </EmptyState>
+          }
         />
       </div>
-      <DataTable
-        caption="Publish result"
-        columns={COLUMNS}
-        rows={list.rows}
-        rowKey={(item) => item.id}
-        sort={view.sort}
-        onSortChange={setSort}
-        pagination={{ page: view.page, pageSize: PUBLISH_ITEMS_PAGE, total: list.total ?? list.rows.length }}
-        onPageChange={setPage}
-        state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
-        error={list.query.error}
-        errorTitle="Could not load the rows"
-        onRetry={() => void list.query.refetch()}
-        empty={
-          <EmptyState icon="filter" title="No rows here">
-            No row of this run has that result.
-          </EmptyState>
-        }
+      <FooterPager
+        page={view.page}
+        pageSize={PUBLISH_ITEMS_PAGE}
+        total={list.total ?? list.rows.length}
+        sizes={PAGE_SIZES}
+        onPage={setPage}
+        onPageSize={() => undefined}
       />
     </div>
   );

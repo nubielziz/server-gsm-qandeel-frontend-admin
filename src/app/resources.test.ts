@@ -15,10 +15,10 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
     // No demo page (feature 23, backend addition): campaigns and their detail.
     ['notifications', 'Notifications', 'Operations', 'bell', 'broadcasts:read'],
-    // The one Catalog page: any view's read permission opens it (the services manifest).
+    // The one Product / Services page: any view's read permission opens it (the services manifest).
     [
-      'catalog',
-      'Catalog',
+      'products',
+      'Product / Services',
       'Catalog',
       'tag',
       ['catalog:read', 'pricing:read', 'inventory:read', 'storefront:read'],
@@ -60,16 +60,17 @@ describe('page resources', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
   });
 
-  it('hold Catalog and Suppliers in the Catalog group, and Shop content in System right after Settings', () => {
+  it('hold Product / Services and Suppliers in the Catalog group, and Shop content in System right after Settings', () => {
     const names = (group: string) =>
       resources.filter((resource) => resource.meta?.group === group).map((resource) => resource.name);
-    expect(names('Catalog')).toEqual(['catalog', 'suppliers']);
+    expect(names('Catalog')).toEqual(['products', 'suppliers']);
     expect(names('System')).toEqual(['access', 'settings', 'storefront', 'audit', 'system-health']);
   });
 
-  it('keep no page for the old Services & pricing name, so a name-keyed access check cannot pass by accident', () => {
+  it('keep no page for the old Services & pricing and Catalog names, so a name-keyed access check cannot pass by accident', () => {
     // A `can` check for a resource that does not exist answers yes, so a left-over name would let anyone through.
     expect(resources.some((resource) => resource.name === 'services')).toBe(false);
+    expect(resources.some((resource) => resource.name === 'catalog')).toBe(false);
   });
 
   it.each(EXPECTED)('%s: label, group, icon and permission', (name, label, group, icon, permission) => {

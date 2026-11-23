@@ -54,7 +54,7 @@ export function PublishSwitch({ run, grants, onReread }: PublishSwitchProps) {
   };
 
   return (
-    <div className="space-y-2 px-3.5 py-3">
+    <div className="space-y-2 py-3">
       <div className="flex flex-wrap items-center gap-3">
         {live ? (
           <div className="min-w-[14rem] flex-1 space-y-1.5" aria-live="polite">

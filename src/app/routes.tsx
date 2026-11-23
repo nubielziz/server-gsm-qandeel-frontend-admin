@@ -1,5 +1,5 @@
 // The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate, with the
-// old addresses of Services & pricing and Storefront redirected before that gate (legacyRedirects.ts).
+// old addresses of Catalog, Services & pricing and Storefront redirected before that gate (legacyRedirects.ts).
 import { Authenticated } from '@refinedev/core';
 import { lazy, type ComponentType } from 'react';
 import { Outlet, Route, Routes } from 'react-router';
@@ -32,6 +32,9 @@ const PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
 const DETAIL_PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
   featureManifests.flatMap(({ page }) => (page?.detail ? [[page.name, lazyLoaded(page.detail)]] : [])),
 );
+
+// The addresses of pages that are gone: they have a route (and no resource) only to be redirected.
+const LEGACY_PAGE_PATHS = ['/services', '/catalog'] as const;
 
 const PAGE_RESOURCES = resources
   .map(toPageResource)
@@ -69,15 +72,18 @@ export function AppRoutes() {
             element={<PageRoute page={page} action="show" Page={DETAIL_PAGES[page.name]} />}
           />
         ))}
-        {/* The old Services & pricing page has no resource any more; its address is sent to Catalog for good. */}
-        <Route
-          path="/services"
-          element={
-            <LegacyRedirect>
-              <NotFoundPage />
-            </LegacyRedirect>
-          }
-        />
+        {/* The old Services & pricing and Catalog pages have no resource any more; their addresses are sent to Product / Services for good. */}
+        {LEGACY_PAGE_PATHS.map((path) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              <LegacyRedirect>
+                <NotFoundPage />
+              </LegacyRedirect>
+            }
+          />
+        ))}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

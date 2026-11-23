@@ -18,13 +18,6 @@ export type ViewSpec = {
   filters: Readonly<Record<string, readonly string[]>>;
 };
 
-/** The listings tab: sorted by the public title, as a catalogue is easiest to scan. */
-export const LISTING_VIEW: ViewSpec = {
-  sortFields: ['publicTitle', 'isListed'],
-  defaultSort: { field: 'publicTitle', order: 'asc' },
-  filters: {},
-};
-
 /** The price changes of the Retail pricing tab: newest first; the proposals that wait are shown until `show=all`. */
 export const CHANGES_VIEW: ViewSpec = {
   sortFields: ['id', 'createdAt'],

@@ -8,7 +8,7 @@ import { storefrontPricingPath } from '../../lib/paths';
 import { servicesText } from '../../lib/publish';
 import type { PublishRun } from '../../types';
 
-/** The stat grid, flat inside the panel, and the no-rule note. */
+/** The stat grid (flat, no card of its own) and the no-rule note. */
 export function PublishPreviewStats({ run }: { run: PublishRun }) {
   const { ready, review, blocked, included, noRule } = run.counts;
   return (
@@ -33,7 +33,7 @@ export function PublishPreviewStats({ run }: { run: PublishRun }) {
         ]}
       />
       {noRule > 0 && (
-        <p className="m-3.5 rounded-md bg-warn-bg p-2.5 text-sm text-warn-fg" role="status">
+        <p className="my-3 rounded-md bg-warn-bg p-2.5 text-sm text-warn-fg" role="status">
           {servicesText(noRule)} {noRule === 1 ? 'has' : 'have'} no price because no pricing rule covers{' '}
           {noRule === 1 ? 'it' : 'them'}.{' '}
           <Link className="link" to={storefrontPricingPath()}>

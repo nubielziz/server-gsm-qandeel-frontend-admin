@@ -12,7 +12,7 @@ import { retailPricingRoutes } from './retailPricingRoutes';
 import { resetStorefrontStore } from './store';
 import { tacRoutes } from './tacRoutes';
 
-export { shopFactsReader, type MockPublishFailure, type ShopFacts } from './catalogFacts';
+export { shopFactsReader, type MockPublishFailure, type ShopFacts } from './shopFacts';
 export { anyRetailRuleActive, handOverQuickAdd } from './publishQuickAdd';
 
 /** What the mock layer finds: the routes and how to reset them. */

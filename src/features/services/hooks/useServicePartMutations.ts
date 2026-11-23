@@ -1,6 +1,6 @@
 // Saving the parts of a service that are replaced as a whole list: group prices, custom fields and option lists. A save makes
-// the service's own record stale (the dialogs read it) and, for group prices, the price resolutions and the listing read (the shop
-// price block prints the shop floor and the B2B price, and keeps its copy until a write). The dialogs show a refusal.
+// the service's own record stale (the edit view's parts read it) and, for group prices, the price resolutions and the listing read (the shop
+// price block prints the shop floor and the B2B price, and keeps its copy until a write). The part that saves shows the refusal.
 import { useApiMutation } from '@/lib/query';
 import { replaceServiceFields, replaceServiceGroupPrices, replaceServiceOptions } from '../api';
 import type { ReplaceFieldsBody, ReplaceGroupPricesBody, ReplaceOptionsBody, Service } from '../types';

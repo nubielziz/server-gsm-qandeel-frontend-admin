@@ -1,7 +1,7 @@
 // Addresses of the pages this feature links to. Shop content (`/storefront?tab=landing&kind=carrier`) is built with
-// `storefrontListPath`; the page reads the same parameters. The publish, pricing and on-the-shop addresses are the Catalog page's
-// (`/catalog?view=publish&run=12`, `/catalog?view=settings&tab=shop-prices`, `/catalog?shop=on`), written by its own `catalogPath`.
-import { catalogPath } from '@/features/services';
+// `storefrontListPath`; the page reads the same parameters. The publish, pricing and on-the-shop addresses are the Product / Services
+// page's (`/products?view=publish&run=12`, `/products?view=rules&tab=shop`, `/products?view=all`), written by its own `productsPath`.
+import { productsPath } from '@/features/services';
 import { LANDING_KINDS, type LandingKind } from '../types';
 import { DEFAULT_TAB, type StorefrontTab } from './tabs';
 
@@ -36,24 +36,24 @@ export function storefrontListPath(link: StorefrontLink = {}): string {
 }
 
 /**
- * The address of the Catalog page's publish view, for the screens that start a run (Services, Suppliers, Quick add) and for the
- * links between runs: `storefrontPublishPath()` is the start of the view, `storefrontPublishPath(12)` is run 12 (its preview,
- * progress or result).
+ * The address of the Product / Services page's Shop Publish view, for the screens that start a run (Services, Suppliers, Quick add)
+ * and for the links between runs: `storefrontPublishPath()` is the start of the view, `storefrontPublishPath(12)` is run 12 (its
+ * preview, progress or result).
  */
 export function storefrontPublishPath(runId?: number): string {
-  return catalogPath({ view: 'publish', run: runId });
+  return productsPath({ view: 'publish', run: runId });
 }
 
 /**
- * The address of the shop price rules in the Catalog settings, for the screens that send staff there (Publish says "make a
+ * The address of the shop price rules in the Price Rules view, for the screens that send staff there (Publish says "make a
  * pricing rule", Quick add says "set a retail pricing rule first"). `show: 'all'` lists every price change instead of the
  * proposals that wait.
  */
 export function storefrontPricingPath(link: { show?: 'all' } = {}): string {
-  return catalogPath({ view: 'settings', tab: 'shop-prices', show: link.show });
+  return productsPath({ view: 'rules', tab: 'shop', show: link.show });
 }
 
-/** The address of the Catalog table narrowed to the services that are on the shop (where a finished run points to). */
+/** The address of the services list (where a finished run points to; the list has no filter for "on the shop" yet). */
 export function storefrontOnShopPath(): string {
-  return catalogPath({ shop: 'on' });
+  return productsPath({ view: 'all' });
 }

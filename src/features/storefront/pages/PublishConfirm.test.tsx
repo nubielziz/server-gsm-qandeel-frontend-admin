@@ -1,4 +1,4 @@
-// Tests for the sticky bar of the preview and the dialog behind Publish: the bar's line and buttons, the permission that Publish
+// Tests for the pinned bar of the preview and the dialog behind Publish: the bar's line and buttons, the permission that Publish
 // needs, the dialog's body (what is put on the shop, what stays out, the note about prices, "On the shop"), the tick box above 500
 // services, the body of the apply, and the refusals (a run already going re-reads the run). The draft is run 5 of the mock.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -43,14 +43,21 @@ async function openConfirm(user: ReturnType<typeof userEvent.setup>, included = 
   return within(await screen.findByRole('dialog', { name: `Publish ${included} services?` }));
 }
 
-describe('the sticky bar', () => {
-  it('says how many services will be published, and offers Discard this preview and the primary Publish', async () => {
+describe('the pinned bar', () => {
+  it('says how many services will be published, and offers the primary Publish and Discard this preview', async () => {
     await openPreview();
     expect(screen.getByText('30 services will be published.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Discard this preview' })).toBeEnabled();
     expect(publishButton()).toBeEnabled();
     expect(publishButton().className).toContain('btn-primary');
-    expect(publishButton().closest('div')).toHaveClass('sticky', 'bottom-0', 'border-t', 'bg-surface');
+  });
+
+  it('is one bar with the footer pager: the buttons in its first row, the pager under them', async () => {
+    await openPreview();
+    const bar = publishButton().closest('.pinned-bar');
+    expect(bar).not.toBeNull();
+    expect(within(bar as HTMLElement).getByRole('navigation', { name: 'Pagination' })).toBeInTheDocument();
+    expect(document.querySelectorAll('.pinned-bar')).toHaveLength(1);
   });
 
   it('moves with the Include switches: one more row, one more service', async () => {
@@ -151,11 +158,11 @@ describe('the dialog behind Publish', () => {
     expect(await screen.findByText('51–60 of 60')).toBeInTheDocument();
     const dialog = await openConfirm(user);
     await user.click(dialog.getByRole('button', { name: 'Publish 30 services' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=5'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=5'));
     // The result of the run shows its first rows in the order of the run, not page 2 of the preview's sort.
     expect(await screen.findByText('29 services are on the shop', {}, POLL)).toBeInTheDocument();
     expect(await screen.findByText('1–50 of 60')).toBeInTheDocument();
-    expect(app.location()).toBe('/catalog?view=publish&run=5');
+    expect(app.location()).toBe('/products?view=publish&run=5');
   });
 
   it('keeps the address as it is when the server refuses the run', async () => {

@@ -1,12 +1,12 @@
-// Tests for how the services feature plugs into the app: it fills the Catalog page, and the page opens for any role that reads one of its views.
+// Tests for how the services feature plugs into the app: it fills the Product / Services page, and the page opens for any role that reads one of its views.
 import { describe, expect, it } from 'vitest';
 import { hasPermission } from '@/lib/auth/permissions';
 import { manifest } from './manifest';
 
 describe('services manifest', () => {
-  it('fills the Catalog page at its own name and heading', () => {
+  it('fills the Product / Services page at its own name and heading', () => {
     expect(manifest.id).toBe('services');
-    expect(manifest.page).toMatchObject({ name: 'catalog', heading: 'Catalog' });
+    expect(manifest.page).toMatchObject({ name: 'products', heading: 'Product / Services' });
   });
 
   it('opens the page for any one of the catalog, pricing, inventory and storefront read permissions', () => {
@@ -25,5 +25,9 @@ describe('services manifest', () => {
     for (const held of ['suppliers:read', 'legal:read', 'orders:read', 'storefront:create']) {
       expect(hasPermission([held], permission ?? [])).toBe(false);
     }
+  });
+
+  it('keeps the service search of the command palette', () => {
+    expect(manifest.palette?.map((source) => source.id)).toEqual(['services']);
   });
 });

@@ -2,7 +2,7 @@
 // rows exist, how severe they are and their order; this file writes the demo's sentence for each kind and picks where its
 // button goes. Ports the `title`, `meta`, `cta` and `go` of attention() and attentionB2C() in 11-state.js and 12-state-b2c.js.
 import { ordersListPath } from '@/features/orders';
-import { catalogPath } from '@/features/services';
+import { productsPath } from '@/features/services';
 import { ageText, ago, money, money0, pct } from '@/lib/format';
 import type { AttentionItem, DashboardScope } from '../types';
 import { channelOf, merchantTarget, supplierTarget, type PageTarget } from './links';
@@ -81,7 +81,8 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
       return {
         title: `${some(item.count, 'service is', 'services are')} priced below cost plus minimum profit`,
         meta: `${names ? `${names} (supplier cost changed). ` : ''}Orders are charged the floor price until you update it`,
-        action: go('Fix pricing', 'catalog', catalogPath({ belowFloor: true })),
+        // Below the floor is one of the reasons a service needs attention, so the list narrows to those that need a person.
+        action: go('Fix pricing', 'products', productsPath({ view: 'all', show: 'attention' })),
       };
     }
     case 'deposits_pending':

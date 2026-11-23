@@ -11,6 +11,8 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
   error?: FieldErrorLike;
   /** Classes for the wrapper (width, grid placement). `className` goes to the input itself. */
   wrapperClassName?: string;
+  /** `row`: the label in a column at the left of the control (the Product / Services forms). Default `stacked`: above it. */
+  layout?: 'stacked' | 'row';
 }
 
 /**
@@ -18,18 +20,26 @@ export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElemen
  * (it needs the element to read the value and to focus the first invalid field).
  */
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
-  { label, hint, error, wrapperClassName, className, id, ...rest },
+  { label, hint, error, wrapperClassName, layout, className, id, ...rest },
   ref,
 ) {
   const autoId = useId();
   const fieldId = id ?? autoId;
   const message = errorMessage(error);
   return (
-    <FieldFrame id={fieldId} label={label} hint={hint} error={message} className={wrapperClassName}>
+    <FieldFrame
+      id={fieldId}
+      label={label}
+      hint={hint}
+      error={message}
+      className={wrapperClassName}
+      layout={layout}
+      required={rest.required}
+    >
       <input
         ref={ref}
         id={fieldId}
-        className={cx('input', INVALID_BORDER, className)}
+        className={cx('input', layout === 'row' && 'row-control', INVALID_BORDER, className)}
         aria-invalid={message ? true : undefined}
         aria-describedby={describedBy(fieldId, Boolean(hint), Boolean(message))}
         {...rest}

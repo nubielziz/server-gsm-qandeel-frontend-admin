@@ -20,9 +20,9 @@ export interface RuleScopeFieldsProps {
 /** Covers, target, type and merchant group of a rule. */
 export function RuleScopeFields({ form, rule }: RuleScopeFieldsProps) {
   const grants = useServiceGrants();
-  const canCatalog = grants.can('catalog:read');
-  const categories = useCategories(canCatalog);
-  const services = useServiceChoices(canCatalog);
+  const canReadServices = grants.can('catalog:read');
+  const categories = useCategories(canReadServices);
+  const services = useServiceChoices(canReadServices);
   const groups = useGroupOptions(grants.can('groups:read'));
   const {
     register,

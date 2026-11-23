@@ -20,7 +20,7 @@ import type { CreateServiceBody, Service, ServiceDetail, UpdateServiceBody } fro
  * `needsAttention`, `hasSupplier`, `supplierId` (primary supplier), `isListed`, `notOnShop` (these two need storefront:read, else 403);
  * sort on `name`, `type`, `cost`, `basePrice` or `retailPrice`. The counts above the table are this call with `_start=0&_end=1`.
  * Assumed contract: rows carry the server's figures (`floorPrice`, `marginPct`, `belowFloor`), `code`, `slaMinutes`, `executionMode`,
- * `{ id, name }` joins, and the optional Catalog keys (`attention`, `retailPrice`, `listingId`, `isListed`, `shopBlocked`, see Service).
+ * `{ id, name }` joins, and the optional shop and attention keys (`attention`, `retailPrice`, `listingId`, `isListed`, `shopBlocked`, see Service).
  * @route GET /admin/services
  */
 export function listServices(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Service>> {

@@ -1,7 +1,7 @@
 // Tests for the page as a whole: the heading, the tab strip kept in the address (the default tab written there too), the "Open the
 // storefront" link with and without VITE_STOREFRONT_URL (it replaces the demo's Live preview tab), what each permission opens and
 // disables, and the page gate. The listings, publish and retail pricing parts are not tabs of this page any more; their own tests mount
-// them at the Catalog's addresses.
+// them at the Product / Services page's addresses.
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -27,7 +27,7 @@ describe('the tab strip', () => {
     expect(screen.queryByRole('tab', { name: /preview/i })).not.toBeInTheDocument();
   });
 
-  it('has no tab for the services on sale, the publishing or the retail pricing: they live on the Catalog page', async () => {
+  it('has no tab for the services on sale, the publishing or the retail pricing: they live on the Product / Services page', async () => {
     await openStorefront();
     await screen.findByRole('tab', { name: 'Landing pages' });
     for (const name of [/^Services on sale/, /^Publish/, /^Retail pricing/]) {
@@ -55,7 +55,7 @@ describe('the tab strip', () => {
   });
 
   it('names the tab in an address that has a page type but no tab', async () => {
-    // A search, a page or a sort with no tab is the old list of services on the shop: the shell sends it to the Catalog table.
+    // A search, a page or a sort with no tab is the old list of services on the shop: the shell sends it to the list of services.
     const app = await openStorefront('/storefront?kind=carrier');
     await waitFor(() => expect(app.location()).toBe('/storefront?kind=carrier&tab=landing'));
   });
@@ -66,7 +66,7 @@ describe('the tab strip', () => {
     expect(app.location()).toBe('/storefront?tab=help');
   });
 
-  // The old tabs that moved to the Catalog page (listings, publish, pricing) never reach the page: the shell redirects them first.
+  // The old tabs that moved to the Product / Services page (listings, publish, pricing) never reach the page: the shell redirects them first.
   it.each(['preview', 'nothing'])(
     'falls back to Landing pages, and says so in the address, for the tab "%s" that is not here',
     async (old) => {
@@ -224,14 +224,14 @@ describe('the page gate', () => {
     expect(screen.getByText('storefront:read or legal:read or catalog:read')).toBeInTheDocument();
   });
 
-  it('does not let in a role that only reads the retail pricing: that part moved to the Catalog page', async () => {
+  it('does not let in a role that only reads the retail pricing: that part moved to the Product / Services page', async () => {
     await openAs(['pricing:read']);
     // The refusal is headed with the page's label, so the page itself is told by its tab strip.
     expect(screen.queryByRole('tablist', { name: 'Shop content sections' })).not.toBeInTheDocument();
     expect(screen.getByText('storefront:read or legal:read or catalog:read')).toBeInTheDocument();
   });
 
-  it('does not let in a role that only creates on the storefront: publishing moved to the Catalog page', async () => {
+  it('does not let in a role that only creates on the storefront: publishing moved to the Product / Services page', async () => {
     await openAs(['storefront:create']);
     expect(screen.queryByRole('tablist', { name: 'Shop content sections' })).not.toBeInTheDocument();
   });

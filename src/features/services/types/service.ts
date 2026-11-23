@@ -1,4 +1,4 @@
-// Types of the services catalog (the rows of the Catalog table, `/catalog`): a service as the API sends it, its detail with the custom
+// Types of the services catalog (the rows of the services lists): a service as the API sends it, its detail with the custom
 // fields, option lists and group prices, and the bodies of the catalog endpoints. The map gives the tables but no bodies
 // (MISMATCHES M10), so every shape below is an assumed contract, narrowed from the generated rows in `schema.gen.ts`.
 import type { NamedRef, ServiceType } from '@/features/orders';
@@ -57,9 +57,11 @@ export type PublishFailure = { runId: Id; reason: string; detail: string | null;
  * `belowFloor` says the base price is under the floor. The console never computes them. `code`, `slaMinutes` and
  * `executionMode` are the demo's columns; the supplier names are joins. `minQty`, `maxQty` and `qtyOptions` are the quantity
  * rule: with pack sizes the buyer picks one of them (and `minQty`/`maxQty` are the smallest and largest pack), without them any
- * whole quantity from `minQty` to `maxQty`.
+ * whole quantity from `minQty` to `maxQty`. `allowCancel` says a merchant may cancel an order of the service that was never sent,
+ * `allowVerify` that a merchant may ask for the verification of a completed order, and `verifyWindowH` for how many hours after
+ * completion (0 to 720; `0` means no window). The server always sends the three.
  *
- * The Catalog keys at the end are optional: the server leaves a key out (it is never `null` or `false` instead) when the session
+ * The shop and attention keys at the end are optional: the server leaves a key out (it is never `null` or `false` instead) when the session
  * may not read it, so a missing key means "not allowed", not "none". `attention` lists the reasons this session may see.
  * `retailPrice` and `retailPriceSource` go to everyone (`null`: no shop price yet). `retailPriceRule` and `retailPriceWaiting`
  * need `pricing:read`; `listingId`, `isListed` and `shopBlocked` need `storefront:read`. `shopBlocked` is `null` when nothing
@@ -67,7 +69,16 @@ export type PublishFailure = { runId: Id; reason: string; detail: string | null;
  */
 export type Service = Pick<
   ServiceRow,
-  'id' | 'name' | 'basePrice' | 'cost' | 'minQty' | 'maxQty' | 'qtyOptions'
+  | 'id'
+  | 'name'
+  | 'basePrice'
+  | 'cost'
+  | 'minQty'
+  | 'maxQty'
+  | 'qtyOptions'
+  | 'allowCancel'
+  | 'allowVerify'
+  | 'verifyWindowH'
 > & {
   code: string;
   type: ServiceType;
@@ -140,6 +151,11 @@ export type CreateServiceBody = {
   minQty?: number;
   maxQty?: number;
   qtyOptions?: number[];
+  /** What a merchant may do with an order of the service; all three start off (`false`, `false`, `0`) when left out. */
+  allowCancel?: boolean;
+  allowVerify?: boolean;
+  /** Hours after completion that a merchant may ask for verification, 0 to 720; `0` means no window. */
+  verifyWindowH?: number;
 };
 
 /** Body of `PATCH /admin/services/:id` (assumed contract): only the fields that change. */
@@ -165,7 +181,7 @@ export type ReplaceGroupPricesBody = { prices: ServiceGroupPrice[]; retailPriceS
 
 /**
  * What `GET /admin/services` filters by (simple-rest field filters plus `q`). `belowFloor` asks for the services
- * priced under their floor; the server decides which ones those are. The Catalog filters (boolean ones take only `eq`):
+ * priced under their floor; the server decides which ones those are. The shop and attention filters (boolean ones take only `eq`):
  * `needsAttention` is any of the reasons this session may see; `hasSupplier` is an active supplier link; `supplierId` is the
  * primary supplier (the first active link by priority); `isListed` is a shop page that is switched on; `notOnShop` is an active
  * service that is not listed and that nothing blocks. `isListed` and `notOnShop` need `storefront:read`: without it the server
@@ -184,6 +200,17 @@ export type ServiceListFilters = {
   notOnShop?: boolean;
 };
 
-/** The columns `GET /admin/services` sorts by (`_sort`): `retailPrice` is the shop price, with services that have none last. */
-export const SERVICE_SORT_FIELDS = ['name', 'type', 'cost', 'basePrice', 'retailPrice'] as const;
+/**
+ * The columns `GET /admin/services` sorts by (`_sort`): `retailPrice` is the shop price, with services that have none last; `sort` is the stored
+ * order merchants see (the group's position, then the service's own position, then the name), the All view's order.
+ */
+export const SERVICE_SORT_FIELDS = [
+  'name',
+  'type',
+  'cost',
+  'basePrice',
+  'retailPrice',
+  'sort',
+  'id',
+] as const;
 export type ServiceSortField = (typeof SERVICE_SORT_FIELDS)[number];

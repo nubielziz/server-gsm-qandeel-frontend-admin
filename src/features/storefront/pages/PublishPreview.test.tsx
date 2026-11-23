@@ -78,7 +78,7 @@ describe('the figures', () => {
     );
     expect(within(note).getByRole('link', { name: 'Make a shop price rule' })).toHaveAttribute(
       'href',
-      '/catalog?view=settings&tab=shop-prices',
+      '/products?view=rules&tab=shop',
     );
   });
 
@@ -115,7 +115,7 @@ describe('the table', () => {
       'Actions',
     ]);
     expect(table.getAllByRole('row')).toHaveLength(51);
-    expect(screen.getByText('1–50 of 60')).toBeInTheDocument();
+    expect(screen.getByText('Results: 1 - 50 of 60')).toBeInTheDocument();
   });
 
   it('shows a ready row as the server sent it: title, supplier’s name, code, slug, facts, cost, price, floor, tag and margin', async () => {
@@ -201,26 +201,30 @@ describe('the table', () => {
 });
 
 describe('the status of each state', () => {
-  it('Ready: a good badge, no reason', async () => {
+  it('Ready: a green square and the word, no reason', async () => {
     await openPreview();
     const row = await previewRow(codeOf(2));
     expect(row.getByText('Ready')).toBeInTheDocument();
+    expect(row.getByText('Ready').closest('.badge')).toBeNull();
+    expect(row.getByText('Ready').previousElementSibling).toHaveClass('status-sq', 'status-sq-ok');
     expect(row.queryByText(/^The /)).not.toBeInTheDocument();
   });
 
-  it('Needs a look: a warn badge and the reason in the words of the flag', async () => {
+  it('Needs a look: an amber square and the reason in the words of the flag', async () => {
     await openPreview();
     const row = await previewRow(codeOf(21));
     expect(row.getByText('Needs a look')).toBeInTheDocument();
+    expect(row.getByText('Needs a look').previousElementSibling).toHaveClass('status-sq-warn');
     expect(row.getByText('The title is over 100 characters.')).toBeInTheDocument();
     expect(row.getByRole('switch', { name: /^Include Unlock iPhone 11/ })).not.toBeChecked();
     expect(row.getByRole('switch', { name: /^Include Unlock iPhone 11/ })).toBeEnabled();
   });
 
-  it('Cannot publish: a crit badge, the reason, and a switch that is off and locked with the way out in its title', async () => {
+  it('Cannot publish: a red square, the reason, and a switch that is off and locked with the way out in its title', async () => {
     await openPreview();
     const row = await previewRow(codeOf(32));
     expect(row.getByText('Cannot publish')).toBeInTheDocument();
+    expect(row.getByText('Cannot publish').previousElementSibling).toHaveClass('status-sq-crit');
     expect(row.getByText('The service is switched off.')).toBeInTheDocument();
     const include = row.getByRole('switch', { name: 'Include Huawei ID Removal' });
     expect(include).toBeDisabled();
@@ -372,7 +376,7 @@ describe('the toolbar asks the server', () => {
     expect((await screen.findAllByText('Samsung Combination File')).length).toBeGreaterThan(0);
     const row = (await screen.findAllByText('Qualcomm Dump File'))[0].closest('tr')!;
     expect(within(row).getByText('It cannot be ordered online.')).toBeInTheDocument();
-    expect(screen.getByText('51–60 of 60')).toBeInTheDocument();
+    expect(screen.getByText('Results: 51 - 60 of 60')).toBeInTheDocument();
   });
 
   it('says so when no row matches, with a way to clear the search', async () => {
@@ -454,7 +458,7 @@ describe('Check again', () => {
     const requests = recordRequests();
     const app = await openPreview();
     await user.click(screen.getByRole('button', { name: 'Check again' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=8'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
       scope: { kind: 'run', runId: 5 },
     });
@@ -492,7 +496,7 @@ describe('Check again', () => {
     const app = await openPreview();
     await user.click(screen.getByRole('button', { name: 'Check again' }));
     expect(await screen.findByText('That run is still working.')).toBeInTheDocument();
-    expect(app.location()).toBe('/catalog?view=publish&run=5');
+    expect(app.location()).toBe('/products?view=publish&run=5');
   });
 });
 
@@ -506,7 +510,7 @@ describe('Discard this preview', () => {
     expect(dialog.getByText('Your edits are thrown away. Nothing has been published.')).toBeInTheDocument();
     expect(itemReads(requests).length).toBeGreaterThan(0);
     await user.click(dialog.getByRole('button', { name: 'Discard preview' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs\/5\/cancel$/).body).toEqual({});
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
@@ -540,7 +544,7 @@ describe('Discard this preview', () => {
     expect(
       await within(screen.getByRole('dialog')).findByText('This run is already finished.'),
     ).toBeInTheDocument();
-    expect(app.location()).toBe('/catalog?view=publish&run=5');
+    expect(app.location()).toBe('/products?view=publish&run=5');
     await waitFor(() => expect(runReads(requests)).toBeGreaterThan(before));
   });
 
@@ -550,6 +554,6 @@ describe('Discard this preview', () => {
     roleStore().patch(1, { permissions: PUBLISH_PERMISSIONS.filter((one) => one !== 'storefront:publish') });
     await user.click(screen.getByRole('button', { name: 'Discard this preview' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Discard preview' }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei'));
   });
 });

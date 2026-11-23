@@ -11,7 +11,7 @@ export function FixedPricesNote() {
       title="Fixed prices"
       sub="Group service prices and client overrides. These skip every other rule."
     >
-      <p className="px-3.5 pb-3.5 text-sm text-ink2">
+      <p className="text-sm text-ink2">
         Set a group price from the row menu of a service (Group prices…). Set a merchant’s own price on the
         Pricing tab of that merchant’s page, under{' '}
         <Link className="link" to="/merchants">

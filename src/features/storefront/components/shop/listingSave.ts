@@ -1,4 +1,4 @@
-// What a save of the listing form sends, shared by the Edit listing dialog and the Catalog panel's shop page section.
+// What a save of the listing form sends, shared by the Edit listing dialog and the service editor's shop page section.
 import { changedBody, type ListingFormValues } from '../../lib/listingForm';
 import type { ServiceListing, ServiceListingDetail, UpdateListingBody } from '../../types';
 

@@ -1,3 +1,5 @@
+> **Replaced by decision 022 (2026-11-23): the Catalog page was removed completely and the Product / Services page took its place. This file is kept as history; what 022 carries over is listed there.**
+
 # 019 One Catalog page, Shop content, and old addresses that redirect
 
 **Context.** The console had two pages for one job. Services & pricing held the services, their prices and rules; Storefront held the list of services on the shop, publishing and the retail price rules next to the shop's own content (landing pages, legal documents, help, the TAC catalogue, search). Staff moved between the two to answer one question about a service. Both names are also used outside the pages: the "g then p" and "g then t" jumps, the audit "Open record" link, the dashboard "Fix pricing" button, the palette, and stored links (an alert mail about a waiting retail price change, notifications in the bell, bookmarks).

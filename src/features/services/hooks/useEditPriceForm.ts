@@ -1,5 +1,5 @@
-// The form behind "Edit price": the two boxes, the save, and what the server last said about the service. The Edit price dialog and
-// the panel's Prices section use it, so both send the same request and show the same refusals (a price under the floor).
+// The form behind the credit and the minimum profit of the edit view's Set Pricing part: the two boxes, the save, and what the server last said
+// about the service. A price under the floor is refused by the server and shows under its box.
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, toast } from '@/components/ui';
@@ -9,14 +9,14 @@ import { useUpdatePrice } from './useServiceMutations';
 
 export interface EditPriceFormOptions {
   /**
-   * True for a form that stays open after a save (the panel). When nothing changed the save then says so and stays, instead
-   * of reading as a save; the dialog closes either way.
+   * True for a form that stays open after a save (a part of the edit view). When nothing changed the save then says so and stays, instead
+   * of reading as a save.
    */
   stay?: boolean;
 }
 
 /**
- * The form and its `submit` (plug it into a FormDialog or a FormSection). `saved` is the service as the server last sent it:
+ * The form and its `submit` (plug it into a form's onSubmit). `saved` is the service as the server last sent it:
  * the one the form started from, then the answer of each save, so the floor, the margin and the "only what changed" check follow
  * the saved price. After a save the boxes are reset to the saved values, which also clears the form's dirty state.
  * Side effects: `PATCH /admin/services/:id` with the changed price and/or minimum profit, the toast with the server's figures, and

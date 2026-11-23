@@ -1,4 +1,4 @@
-// Tests for the Price resolver tab of the Catalog settings, run through the whole app against the dev mock API: the price and the
+// Tests for the price check (the old Price resolver tab) of the Price Rules view, run through the whole app against the dev mock API: the price and the
 // steps the server gives for a merchant and a service (a client override, a group price, the base price with the category rule, a
 // price raised to the floor), the choice kept in the address, and the states when the server cannot answer.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { openServices, settingsRoute } from '../test/servicesPage';
+import { openProducts } from '../test/productsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -20,14 +20,14 @@ const CAIRO = 5; // VIP, client override 15.20 on the AT&T unlock
 const ZAIN = 1; // VIP, no override: pays the VIP group price 15.90
 const ERBIL = 6; // Standard: pays the base price with the category rule
 
-const RESOLVER = settingsRoute('resolver');
+const RESOLVER = '/products?view=rules&tab=check';
 
 const steps = () => within(screen.getByRole('list', { name: 'Resolution steps' }));
 const step = (label: string) => within(steps().getByText(label).closest('li') as HTMLElement);
 
 describe('the price and the steps', () => {
   it('shows a merchant’s own price first: the client override wins and the rest is skipped', async () => {
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${CAIRO}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${CAIRO}`);
     expect(await screen.findByText('Cairo GSM Lab pays')).toBeInTheDocument();
     expect(screen.getByText('$15.20', { selector: 'p.text-3xl' })).toBeInTheDocument();
     expect(screen.getByText('client override', { selector: 'strong' })).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('the price and the steps', () => {
   });
 
   it('uses the group price when the merchant has no override', async () => {
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${ZAIN}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${ZAIN}`);
     expect(await screen.findByText('Zain Mobile Hub pays')).toBeInTheDocument();
     expect(screen.getByText('$15.90', { selector: 'p.text-3xl' })).toBeInTheDocument();
     expect(screen.getByText('group price', { selector: 'strong' })).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('the price and the steps', () => {
   });
 
   it('takes the base price through the category rule for a merchant with no fixed price', async () => {
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
     expect(await screen.findByText('Erbil Mobile Parts pays')).toBeInTheDocument();
     expect(screen.getByText('$16.93', { selector: 'p.text-3xl' })).toBeInTheDocument();
     expect(screen.getByText('base price', { selector: 'strong' })).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('the price and the steps', () => {
   });
 
   it('shows what the same service costs every group', async () => {
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
     const table = within(await screen.findByRole('table', { name: 'Same service, other groups' }));
     expect(table.getAllByRole('row')).toHaveLength(3);
     expect(
@@ -96,7 +96,7 @@ describe('the price and the steps', () => {
         ),
       ),
     );
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
     const merchant = await screen.findByRole('combobox', { name: 'Merchant' });
     expect(
       within(merchant)
@@ -110,7 +110,7 @@ describe('the price and the steps', () => {
   });
 
   it('says the price was raised to the floor, with the price before and after', async () => {
-    await openServices(`${RESOLVER}&service=${CHIMERA}&merchant=${ERBIL}`);
+    await openProducts(`${RESOLVER}&service=${CHIMERA}&merchant=${ERBIL}`);
     expect(await screen.findByText('Erbil Mobile Parts pays')).toBeInTheDocument();
     expect(screen.getByText('$20.99', { selector: 'p.text-3xl' })).toBeInTheDocument();
     const floor = step('Floor check');
@@ -122,7 +122,7 @@ describe('the price and the steps', () => {
 describe('the choice', () => {
   it('opens on the first service and merchant, and keeps a change in the address', async () => {
     const user = userEvent.setup();
-    const app = await openServices(RESOLVER);
+    const app = await openProducts(RESOLVER);
     const service = await screen.findByRole('combobox', { name: 'Service' });
     await waitFor(() => expect(service).toHaveDisplayValue('Apple Warranty & Activation Date'));
     expect(await screen.findByText(/ pays$/)).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe('the choice', () => {
   });
 
   it('keeps a service from the address that is not among the first names', async () => {
-    await openServices(`${RESOLVER}&service=999&merchant=5`);
+    await openProducts(`${RESOLVER}&service=999&merchant=5`);
     expect(await screen.findByRole('combobox', { name: 'Service' })).toHaveDisplayValue('Service 999');
   });
 });
@@ -151,15 +151,25 @@ describe('when the server cannot answer', () => {
         problem(404, 'NOT_FOUND', 'Not found', 'That merchant has no price list yet.'),
       ),
     );
-    await openServices(`${RESOLVER}&service=${ATT}&merchant=${CAIRO}`);
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${CAIRO}`);
     expect(await screen.findByText('Could not resolve the price')).toBeInTheDocument();
     expect(screen.getByText(/That merchant has no price list yet\./)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
   });
 
   it('needs clients:read to choose a merchant', async () => {
-    await openServices(RESOLVER, { permissions: ['catalog:read', 'pricing:read'] });
+    await openProducts(RESOLVER, { permissions: ['catalog:read', 'pricing:read'] });
     expect(await screen.findByText('Choose a merchant')).toBeInTheDocument();
     expect(screen.getByText(/You need the clients:read permission/)).toBeInTheDocument();
+  });
+});
+
+describe('the layout', () => {
+  it('draws the two menus as label-left rows and the check with no card', async () => {
+    await openProducts(`${RESOLVER}&service=${ATT}&merchant=${CAIRO}`);
+    const merchant = await screen.findByRole('combobox', { name: 'Merchant' });
+    expect(merchant.closest('.form-row')).not.toBeNull();
+    expect(screen.getByRole('combobox', { name: 'Service' }).closest('.form-row')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Price check' }).querySelector('.panel')).toBeNull();
   });
 });

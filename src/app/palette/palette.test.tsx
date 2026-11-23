@@ -41,20 +41,21 @@ describe('buildPaletteItems', () => {
     ]);
   });
 
-  it('offers Catalog and Shop content, not the old page names', () => {
+  it('offers Product / Services and Shop content, not the old page names', () => {
     const goTo = items(ALL_PAGES)
       .filter((row) => row.group === 'Go to')
       .map((row) => row.label);
-    expect(goTo).toContain('Catalog');
+    expect(goTo).toContain('Product / Services');
     expect(goTo).toContain('Shop content');
     expect(goTo).not.toContain('Services & pricing');
+    expect(goTo).not.toContain('Catalog');
     expect(goTo).not.toContain('Storefront');
-    // Catalog opens the Catalog page.
+    // Product / Services opens its page.
     const go = vi.fn();
-    items(pagesNamed('catalog'), { go })
-      .find((row) => row.label === 'Catalog')
+    items(pagesNamed('products'), { go })
+      .find((row) => row.label === 'Product / Services')
       ?.run();
-    expect(go).toHaveBeenCalledExactlyOnceWith('/catalog');
+    expect(go).toHaveBeenCalledExactlyOnceWith('/products');
   });
 
   it('leaves out the demo’s simulations', () => {

@@ -1,5 +1,5 @@
-// The text and the request bodies of the two price forms (Edit price and Group prices), shared by their dialogs and by the panel's
-// Prices section. They only reshape text: no amount is added, compared or rounded here, the server owns every price.
+// The text and the request bodies of the two price forms (the price and the group prices), used by the edit view's Set Pricing part and the
+// Pricing view's save. They only reshape text: no amount is added, compared or rounded here, the server owns every price.
 import type { ClientGroup, Service, ServiceGroupPrice, UpdateServiceBody } from '../types';
 import { RETAIL_GROUP_KIND } from './groupPrices';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
@@ -36,7 +36,7 @@ export type GroupValues = Record<string, string>;
 export const groupFieldOf = (group: Pick<ClientGroup, 'id'>) => `group_${group.id}`;
 
 /**
- * The groups that get a box. The dialog lists every group. The panel leaves out the storefront's retail group, whose price has its
+ * The groups that get a box. The dialog lists every group. a part of the edit view leaves out the storefront's retail group, whose price has its
  * own block there: its saved row is not a box, so it goes back unchanged with the other unlisted rows.
  */
 export function listedGroups(groups: readonly ClientGroup[], hideRetail: boolean): ClientGroup[] {

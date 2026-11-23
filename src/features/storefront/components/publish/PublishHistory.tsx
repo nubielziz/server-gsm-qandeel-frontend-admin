@@ -1,10 +1,11 @@
-// PublishHistory: "Earlier runs" on the Publish tab's start: every run, newest first, with what it took, how it ended and who
-// started it. A draft says Continue (the preview is still waiting); every other run opens its page. Needs storefront:read.
+// PublishHistory: "Earlier runs" on the Publish view's start: every run, newest first, with what it took, how it ended (a square and a word) and
+// who started it. A draft says Continue (the preview is still waiting); every other run opens its page. The list ends in the footer pager
+// (the server's page is fixed, so its size menu offers that one size). Needs storefront:read.
 import {
-  Badge,
   ButtonLink,
   DataTable,
   EmptyState,
+  FooterPager,
   usePageClamp,
   type DataTableColumn,
 } from '@/components/ui';
@@ -17,12 +18,16 @@ import { scopeText, statusWords } from '../../lib/publish';
 import { PAGE_SIZE, PUBLISH_RUNS_VIEW } from '../../lib/views';
 import type { PublishRun } from '../../types';
 import { PricingSection } from '../pricing/PricingSection';
+import { StatusMark } from '../StatusMark';
 
 /** The three results of a run that was applied as "12 / 2 / 0"; a draft or a preview being prepared has none yet. */
 function resultsOf(run: PublishRun): string {
   if (run.status === 'preparing' || run.status === 'draft') return '–';
   return `${run.counts.published} / ${run.counts.skipped} / ${run.counts.refused}`;
 }
+
+// The page holds a fixed number of rows: the pager's size menu has that one choice.
+const PAGE_SIZES = [PAGE_SIZE] as const;
 
 const COLUMNS: readonly DataTableColumn<PublishRun>[] = [
   {
@@ -46,11 +51,7 @@ const COLUMNS: readonly DataTableColumn<PublishRun>[] = [
     label: 'Status',
     render: (run) => {
       const words = statusWords(run);
-      return (
-        <Badge tone={words.tone} icon={words.icon}>
-          {words.label}
-        </Badge>
-      );
+      return <StatusMark tone={words.tone}>{words.label}</StatusMark>;
     },
   },
   {
@@ -111,25 +112,36 @@ export function PublishHistory({ grants }: { grants: StorefrontGrants }) {
           You need the storefront:read permission to see them.
         </EmptyState>
       ) : (
-        <DataTable
-          caption="Publish runs"
-          columns={COLUMNS}
-          rows={list.rows}
-          rowKey={(run) => run.id}
-          sort={view.sort}
-          onSortChange={setSort}
-          pagination={{ page: view.page, pageSize: PAGE_SIZE, total: list.total ?? list.rows.length }}
-          onPageChange={setPage}
-          state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
-          error={list.query.error}
-          errorTitle="Could not load the earlier runs"
-          onRetry={() => void list.query.refetch()}
-          empty={
-            <EmptyState icon="history" title="No runs yet">
-              A run you prepare shows here, with its result once it is published.
-            </EmptyState>
-          }
-        />
+        <>
+          <DataTable
+            skin="list"
+            footer={false}
+            caption="Publish runs"
+            columns={COLUMNS}
+            rows={list.rows}
+            rowKey={(run) => run.id}
+            sort={view.sort}
+            onSortChange={setSort}
+            state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
+            error={list.query.error}
+            errorTitle="Could not load the earlier runs"
+            onRetry={() => void list.query.refetch()}
+            empty={
+              <EmptyState icon="history" title="No runs yet">
+                A run you prepare shows here, with its result once it is published.
+              </EmptyState>
+            }
+          />
+          <FooterPager
+            inline
+            page={view.page}
+            pageSize={PAGE_SIZE}
+            total={list.total ?? list.rows.length}
+            sizes={PAGE_SIZES}
+            onPage={setPage}
+            onPageSize={() => undefined}
+          />
+        </>
       )}
     </PricingSection>
   );

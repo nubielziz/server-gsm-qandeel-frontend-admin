@@ -1,0 +1,171 @@
+// Tests for the Overview part's values and body: what the inputs start with, the body of a save (only what changed, the shared fields through
+// the details mapping, the switches, the verification window) and the checks that run before the server is called.
+import { describe, expect, it } from 'vitest';
+import type { Service } from '../../../../types';
+import {
+  MAX_VERIFY_WINDOW_H,
+  OVERVIEW_ALIASES,
+  OVERVIEW_FIELDS,
+  overviewBody,
+  overviewDefaults,
+  windowProblem,
+  type OverviewValues,
+} from './overviewForm';
+
+const SERVICE: Service = {
+  id: 7,
+  name: 'Sample Unlock',
+  code: 'IMEI-SAMPLE',
+  type: 'imei',
+  status: 'active',
+  executionMode: 'auto',
+  categoryId: 3,
+  category: { id: 3, name: 'Sample category' },
+  basePrice: '10.0000',
+  cost: '8.0000',
+  costChangedFrom: null,
+  minProfit: '1.0000',
+  floorPrice: '9.0000',
+  marginPct: '20.0000',
+  belowFloor: false,
+  slaMinutes: 1440,
+  minQty: 1,
+  maxQty: 1,
+  qtyOptions: [],
+  allowCancel: false,
+  allowVerify: false,
+  verifyWindowH: 0,
+  supplier: null,
+  fallbackSupplier: null,
+};
+
+const values = (changes: Partial<OverviewValues> = {}, service: Service = SERVICE): OverviewValues => ({
+  ...overviewDefaults(service),
+  ...changes,
+});
+
+describe('overviewDefaults', () => {
+  it('starts with the service as it is, the delivery time in its own unit', () => {
+    expect(overviewDefaults(SERVICE)).toEqual({
+      active: true,
+      name: 'Sample Unlock',
+      code: 'IMEI-SAMPLE',
+      categoryId: '3',
+      delivery: '1',
+      unit: 'days',
+      auto: true,
+      verify: false,
+      verifyWindowH: '0',
+      cancel: false,
+    });
+  });
+
+  it('reads the switches from the service', () => {
+    const defaults = overviewDefaults({
+      ...SERVICE,
+      status: 'disabled',
+      executionMode: 'manual',
+      allowVerify: true,
+      verifyWindowH: 48,
+      allowCancel: true,
+      slaMinutes: 90,
+    });
+    expect(defaults).toMatchObject({
+      active: false,
+      auto: false,
+      verify: true,
+      verifyWindowH: '48',
+      cancel: true,
+      delivery: '90',
+      unit: 'minutes',
+    });
+  });
+});
+
+describe('overviewBody', () => {
+  it('is empty when nothing changed, even if a word only gained spaces', () => {
+    expect(overviewBody(values(), SERVICE)).toEqual({});
+    expect(overviewBody(values({ name: ' Sample Unlock ' }), SERVICE)).toEqual({});
+  });
+
+  it('is empty when the delivery time is written another way that means the same minutes', () => {
+    expect(overviewBody(values({ delivery: '24', unit: 'hours' }), SERVICE)).toEqual({});
+    expect(overviewBody(values({ delivery: '1440', unit: 'minutes' }), SERVICE)).toEqual({});
+  });
+
+  it('sends the name, code, group and delivery time through the details mapping, as the old dialog did', () => {
+    expect(
+      overviewBody(
+        values({ name: ' New name ', code: 'IMEI-NEW', categoryId: '5', delivery: '2', unit: 'hours' }),
+        SERVICE,
+      ),
+    ).toEqual({ name: 'New name', code: 'IMEI-NEW', categoryId: 5, slaMinutes: 120 });
+  });
+
+  it('never sends the type or the quantity rule: the part does not edit them', () => {
+    const packs: Service = { ...SERVICE, minQty: 5, maxQty: 25, qtyOptions: [5, 10, 25] };
+    expect(overviewBody(values({ name: 'Other' }, packs), packs)).toEqual({ name: 'Other' });
+    const range: Service = { ...SERVICE, minQty: 2, maxQty: 9 };
+    expect(overviewBody(values({ cancel: true }, range), range)).toEqual({ allowCancel: true });
+  });
+
+  it('sends the status and the order handling only when they change', () => {
+    expect(overviewBody(values({ active: false }), SERVICE)).toEqual({ status: 'disabled' });
+    expect(overviewBody(values({ auto: false }), SERVICE)).toEqual({ executionMode: 'manual' });
+    const off: Service = { ...SERVICE, status: 'disabled', executionMode: 'manual' };
+    expect(overviewBody(values({ active: true, auto: true }, off), off)).toEqual({
+      status: 'active',
+      executionMode: 'auto',
+    });
+  });
+
+  it('sends the verification switch with its window when it goes on', () => {
+    expect(overviewBody(values({ verify: true, verifyWindowH: '24' }), SERVICE)).toEqual({
+      allowVerify: true,
+      verifyWindowH: 24,
+    });
+  });
+
+  it('sends only the window when verification stays on and the window changes', () => {
+    const on: Service = { ...SERVICE, allowVerify: true, verifyWindowH: 24 };
+    expect(overviewBody(values({ verifyWindowH: '72' }, on), on)).toEqual({ verifyWindowH: 72 });
+    expect(overviewBody(values({}, on), on)).toEqual({});
+  });
+
+  it('leaves the window out when verification goes off, whatever was typed in it', () => {
+    const on: Service = { ...SERVICE, allowVerify: true, verifyWindowH: 24 };
+    expect(overviewBody(values({ verify: false, verifyWindowH: '999' }, on), on)).toEqual({
+      allowVerify: false,
+    });
+    expect(overviewBody(values({ verifyWindowH: '999' }), SERVICE)).toEqual({});
+  });
+
+  it('sends the cancel switch when it changes', () => {
+    expect(overviewBody(values({ cancel: true }), SERVICE)).toEqual({ allowCancel: true });
+  });
+});
+
+describe('windowProblem', () => {
+  it('is fine while verification is off, whatever the box holds', () => {
+    expect(windowProblem({ verify: false, verifyWindowH: 'abc' })).toBe(true);
+  });
+
+  it('accepts whole hours from 0 to the largest window', () => {
+    expect(windowProblem({ verify: true, verifyWindowH: '0' })).toBe(true);
+    expect(windowProblem({ verify: true, verifyWindowH: String(MAX_VERIFY_WINDOW_H) })).toBe(true);
+  });
+
+  it('names the range for anything else', () => {
+    const message = 'Enter hours, 0 to 720.';
+    expect(windowProblem({ verify: true, verifyWindowH: '' })).toBe(message);
+    expect(windowProblem({ verify: true, verifyWindowH: '-1' })).toBe(message);
+    expect(windowProblem({ verify: true, verifyWindowH: '1.5' })).toBe(message);
+    expect(windowProblem({ verify: true, verifyWindowH: '721' })).toBe(message);
+  });
+});
+
+describe('the names the form shares with the API', () => {
+  it('gives every API field that has no row of its own name a row', () => {
+    for (const row of Object.values(OVERVIEW_ALIASES)) expect(OVERVIEW_FIELDS).toContain(row);
+  });
+});

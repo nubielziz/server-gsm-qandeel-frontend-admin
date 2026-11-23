@@ -48,7 +48,7 @@ describe('listedGroups', () => {
     expect(listedGroups(GROUPS, false).map((group) => group.id)).toEqual([1, 2, 9]);
   });
 
-  it('leaves the retail group out for the panel', () => {
+  it('leaves the retail group out for a part of the edit view', () => {
     expect(listedGroups(GROUPS, true).map((group) => group.id)).toEqual([1, 2]);
   });
 });

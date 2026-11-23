@@ -4,7 +4,7 @@
 // the server's words under the field or in its error slot.
 import { toast, type SortState } from '@/components/ui';
 import type { Id } from '@/lib/api';
-import { CATALOG_ROWS_KEY, LISTING_DETAILS_KEY, useApiMutation, useApiQuery } from '@/lib/query';
+import { SERVICE_ROWS_KEY, LISTING_DETAILS_KEY, useApiMutation, useApiQuery } from '@/lib/query';
 import {
   createRetailPriceRule,
   deleteRetailPriceRule,
@@ -31,9 +31,9 @@ import { useStorefrontList } from './useStorefrontList';
 
 const NO_ERROR_TOAST = () => false as const;
 
-// A rule or a decided proposal moves the shop prices (and the waiting reason) of the Catalog table's rows too, and the price of a listing
-// that is open in an editor (the Catalog panel's).
-const STALE_KEYS = [...STOREFRONT_STALE_KEYS, CATALOG_ROWS_KEY, LISTING_DETAILS_KEY];
+// A rule or a decided proposal moves the shop prices (and the waiting reason) of the services lists' rows too, and the price of a listing
+// that is open in an editor (the service editor's).
+const STALE_KEYS = [...STOREFRONT_STALE_KEYS, SERVICE_ROWS_KEY, LISTING_DETAILS_KEY];
 
 /** What a write to a rule makes stale: both lists, the listings (their prices move soon) and the counts. */
 const RULE_STALE = [
@@ -75,12 +75,12 @@ export function useWaitingCount(enabled: boolean): number | undefined {
 
 /**
  * The price change that waits for one service (a proposal of the follow pass that needs a person), or undefined when none waits.
- * The Catalog panel's shop price block shows it with Apply and Keep. Needs `pricing:read`. The key starts with the shared Catalog
+ * The service editor's shop price block shows it with Apply and Keep. Needs `pricing:read`. The key starts with the shared services
  * rows key, so every write that moves a shop price or decides a proposal makes this read stale too.
  */
 export function useServiceProposal(serviceId: Id, enabled: boolean) {
   return useApiQuery({
-    queryKey: [...CATALOG_ROWS_KEY, 'retail-proposal', serviceId],
+    queryKey: [...SERVICE_ROWS_KEY, 'retail-proposal', serviceId],
     queryFn: ({ signal }) =>
       listRetailPriceChanges({ start: 0, end: 5, filters: { serviceId, waiting: true } }, { signal }),
     select: (result) => result.data.find((change) => change.waiting),
@@ -160,7 +160,7 @@ export function useDeleteRetailRule() {
 
 /**
  * What a decision sends, and the services it is about. `serviceIds` is never sent: it names the service records to make stale (a
- * Catalog panel open on one of them shows its shop price and its waiting mark). A caller that does not know them leaves it out.
+ * the service editor open on one of them shows its shop price and its waiting mark). A caller that does not know them leaves it out.
  */
 export type ResolveChangesInput = ResolveRetailPriceChangesBody & { serviceIds?: readonly Id[] };
 

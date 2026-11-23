@@ -12,7 +12,7 @@ export function TraceStepRow({ step, number }: { step: PriceStep; number: number
   const value = stepValueText(step);
   const after = stepAfterText(step);
   return (
-    <li className={cx('flex items-start gap-3 px-3.5 py-2.5', live && 'bg-sunken')}>
+    <li className={cx('flex items-start gap-3 px-3 py-2.5', live && 'bg-sunken')}>
       <span className="mono mt-0.5 w-4 flex-none text-ink3">{number}</span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2">

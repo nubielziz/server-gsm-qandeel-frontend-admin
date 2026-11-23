@@ -18,7 +18,7 @@ export function PublishProgress({ run, canStop }: PublishProgressProps) {
   const [confirming, setConfirming] = useState(false);
   const cancel = useCancelPublishRun();
   return (
-    <div className="space-y-3 px-3.5 py-4">
+    <div className="space-y-3 py-4">
       {run.status === 'queued' ? (
         <p className="text-sm text-ink2" aria-live="polite">
           Waiting to start…

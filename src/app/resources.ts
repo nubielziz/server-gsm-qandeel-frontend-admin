@@ -1,4 +1,4 @@
-// Refine resources of the app: the pages of the demo's ROUTES (90-app.js), with Catalog in place of Services & pricing, plus Notifications
+// Refine resources of the app: the pages of the demo's ROUTES (90-app.js), with Product / Services in place of Services & pricing, plus Notifications
 // and System health (no demo page), with the data the sidebar, palette and access checks need, and the registry that serves Refine's data hooks.
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
@@ -32,7 +32,7 @@ function page(name: string, meta: PageMeta, detail = false): ResourceProps {
   };
 }
 
-/** Page resources: the ids, labels, groups and icons are the demo's (Catalog and Shop content are the console's); permissions follow the map. */
+/** Page resources: the ids, labels, groups and icons are the demo's (Product / Services and Shop content are the console's); permissions follow the map. */
 export const resources: ResourceProps[] = [
   page('dashboard', {
     label: 'Dashboard',
@@ -65,9 +65,14 @@ export const resources: ResourceProps[] = [
     { label: 'Notifications', group: 'Operations', icon: 'bell', permission: 'broadcasts:read' },
     true,
   ),
-  // Services & pricing and the shop's service list became one page (the services feature's manifest widens this to any view's
-  // read permission). The Catalog group holds this page and Suppliers only.
-  page('catalog', { label: 'Catalog', group: 'Catalog', icon: 'tag', permission: 'catalog:read' }),
+  // Services & pricing and the shop's service list became one page, Product / Services (the services feature's manifest widens this to
+  // any view's read permission). The Catalog group holds this page and Suppliers only.
+  page('products', {
+    label: 'Product / Services',
+    group: 'Catalog',
+    icon: 'tag',
+    permission: 'catalog:read',
+  }),
   page('suppliers', { label: 'Suppliers', group: 'Catalog', icon: 'server', permission: 'suppliers:read' }),
   page('finance', { label: 'Finance', group: 'Money', icon: 'wallet', permission: 'ledger:read' }),
   page('commissions', {

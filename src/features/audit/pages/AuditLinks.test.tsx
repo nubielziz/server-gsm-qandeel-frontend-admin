@@ -51,7 +51,7 @@ describe('the links', () => {
       return href;
     };
     expect(await link('customer', 'Jack Turner')).toBe('/customers/19');
-    expect(await link('service', 'T-Mobile USA Unlock')).toBe('/catalog?q=T-Mobile+USA+Unlock');
+    expect(await link('service', 'T-Mobile USA Unlock')).toBe('/products?view=edit&id=6');
     expect(await link('blocklist', 'IMEI 35 389011 884201 9')).toBe('/risk?tab=block');
     expect(await link('refund', 'Goodwill refund on a delayed unlock')).toBe('/refunds');
   });
@@ -125,15 +125,15 @@ describe('permissions', () => {
     expect(merchant.getByText('Cairo GSM Lab, AT&T USA Premier')).toHaveClass('font-medium');
   });
 
-  it('offers a service link with a Catalog permission, and plain text without one', async () => {
+  it('offers a service link with a catalog permission, and plain text without one', async () => {
     // The link is offered only when the page named by the record's target exists and the role may open it; a page name that no
     // longer matches a resource would be answered "allowed" for every role.
     await openAudit('/audit?type=service', { permissions: [...AUDIT_ONLY, 'catalog:read'] });
     const link = await screen.findByRole('link', { name: 'T-Mobile USA Unlock' });
-    expect(link).toHaveAttribute('href', '/catalog?q=T-Mobile+USA+Unlock');
+    expect(link).toHaveAttribute('href', '/products?view=edit&id=6');
   });
 
-  it('shows a service as text to a staff member who may not open Catalog', async () => {
+  it('shows a service as text to a staff member who may not open Product / Services', async () => {
     await openAudit('/audit?type=service', { permissions: [...AUDIT_ONLY, 'orders:read'] });
     const row = await entryWith('T-Mobile USA Unlock');
     expect(row.queryByRole('link')).not.toBeInTheDocument();

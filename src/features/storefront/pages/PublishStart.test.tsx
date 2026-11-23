@@ -37,12 +37,20 @@ describe('the choices', () => {
     expect(screen.getByRole('button', { name: PREPARE })).toBeEnabled();
   });
 
+  it('keeps Prepare the preview, the view’s one primary button, in the pinned bar', async () => {
+    await openPublishStart();
+    const button = screen.getByRole('button', { name: PREPARE });
+    expect(button.className).toContain('btn-primary');
+    expect(button.closest('.pinned-bar')).not.toBeNull();
+    expect(button).toHaveAttribute('type', 'submit');
+  });
+
   it('prepares a preview of everything: the request, then the run in the address', async () => {
     const user = userEvent.setup();
     const requests = recordRequests();
     const app = await openPublishStart();
     await user.click(screen.getByRole('button', { name: PREPARE }));
-    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/products?view=publish&type=imei&run=8'));
     expect(lastOf(requests, 'POST', RUNS).body).toEqual({ scope: { kind: 'all' } });
     expect(await screen.findByRole('heading', { level: 2, name: 'Publish run 8' })).toBeInTheDocument();
     expect(await screen.findByText('Preparing the preview of 60 services…')).toBeInTheDocument();
@@ -118,7 +126,7 @@ describe('the refusals', () => {
     expect(alert).toHaveTextContent(
       'Nothing to publish: every service of this choice is already on the shop.',
     );
-    expect(app.location()).toBe('/catalog?view=publish');
+    expect(app.location()).toBe('/products?view=publish');
   });
 
   it('shows the 422 of a scope with too many services', async () => {
@@ -165,7 +173,7 @@ describe('the note about prices', () => {
   it('says prices come from the retail pricing rules, with a link to the shop price rules', async () => {
     await openPublishStart();
     const link = await screen.findByRole('link', { name: 'retail pricing rules' });
-    expect(link).toHaveAttribute('href', '/catalog?view=settings&tab=shop-prices');
+    expect(link).toHaveAttribute('href', '/products?view=rules&tab=shop');
     expect(screen.getByText(/Prices come from the/)).toBeInTheDocument();
     expect(screen.queryByText(/No retail pricing rule is active/)).not.toBeInTheDocument();
   });
@@ -179,7 +187,7 @@ describe('the note about prices', () => {
     );
     expect(within(note).getByRole('link', { name: 'Make a rule' })).toHaveAttribute(
       'href',
-      '/catalog?view=settings&tab=shop-prices',
+      '/products?view=rules&tab=shop',
     );
   });
 

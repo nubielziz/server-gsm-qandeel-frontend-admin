@@ -1,8 +1,9 @@
 // RetailPreviewLines: the services a rule change would move: each with its cost, its price now, its price after and the floor.
-// Every figure is the server's answer; nothing is priced here. A price held at its floor carries a warning badge.
-import { Badge, DataTable, type DataTableColumn } from '@/components/ui';
+// Every figure is the server's answer; nothing is priced here. A price held at its floor carries an amber square.
+import { DataTable, type DataTableColumn } from '@/components/ui';
 import { money } from '@/lib/format';
 import type { RetailRulePreviewLine } from '../../types';
+import { StatusMark } from '../StatusMark';
 
 const COLUMNS: DataTableColumn<RetailRulePreviewLine>[] = [
   {
@@ -33,9 +34,7 @@ const COLUMNS: DataTableColumn<RetailRulePreviewLine>[] = [
     label: 'Floor',
     render: (line) =>
       line.atFloor ? (
-        <Badge tone="warn" icon="alert">
-          At {money(line.floorPrice)}
-        </Badge>
+        <StatusMark tone="warn">At {money(line.floorPrice)}</StatusMark>
       ) : (
         <span className="text-ink3">{money(line.floorPrice)}</span>
       ),

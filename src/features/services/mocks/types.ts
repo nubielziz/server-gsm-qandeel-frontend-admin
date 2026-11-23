@@ -28,6 +28,10 @@ export type MockService = {
   minQty: number;
   maxQty: number;
   qtyOptions: number[];
+  /** What a merchant may do with an order of the service; the window is in hours, 0 to 720, and 0 means none. */
+  allowCancel: boolean;
+  allowVerify: boolean;
+  verifyWindowH: number;
   status: 'active' | 'disabled';
   auto: boolean;
   fields: ServiceField[];

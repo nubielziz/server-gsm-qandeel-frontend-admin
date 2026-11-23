@@ -4,6 +4,7 @@
 export * from './categories';
 export * from './inventory';
 export * from './pricing';
+export * from './priceGrid';
 export * from './pricingRules';
 export * from './resources';
 export * from './serviceParts';

@@ -56,6 +56,25 @@ describe('the list', () => {
     ]);
   });
 
+  it('draws how a run ended as a square and a word, not as a badge', async () => {
+    await openPublishStart();
+    const done = (await rowOfRun(1)).getByText('Done');
+    expect(done.closest('.badge')).toBeNull();
+    expect(done.previousElementSibling).toHaveClass('status-sq', 'status-sq-ok');
+    expect((await rowOfRun(3)).getByText('Failed').previousElementSibling).toHaveClass('status-sq-crit');
+    expect((await rowOfRun(4)).getByText('Cancelled').previousElementSibling).toHaveClass('status-sq-off');
+    expect((await rowOfRun(5)).getByText('Draft').previousElementSibling).toHaveClass('status-sq-warn');
+  });
+
+  it('ends in the footer pager, in the flow above the pinned bar of the view', async () => {
+    await openPublishStart();
+    await rowOfRun(1);
+    const pager = screen.getByRole('navigation', { name: 'Pagination' });
+    expect(pager).toHaveTextContent('Results: 1 - 7 of 7');
+    expect(pager.closest('.pager-inline')).not.toBeNull();
+    expect(pager.closest('.pinned-bar')).toBeNull();
+  });
+
   it('shows what each run took, how it ended, its three counts and who started it', async () => {
     await openPublishStart();
     const first = await rowOfRun(1);
@@ -89,10 +108,10 @@ describe('the list', () => {
     expect(draft.getByRole('link', { name: 'Continue run 5' })).toHaveTextContent('Continue');
     expect(draft.getByRole('link', { name: 'Continue run 5' })).toHaveAttribute(
       'href',
-      '/catalog?view=publish&run=5',
+      '/products?view=publish&run=5',
     );
     await user.click((await rowOfRun(1)).getByRole('link', { name: 'Open run 1' }));
-    expect(app.location()).toBe('/catalog?view=publish&run=1');
+    expect(app.location()).toBe('/products?view=publish&run=1');
     expect(await screen.findByRole('heading', { level: 2, name: 'Publish run 1' })).toBeInTheDocument();
   });
 
@@ -131,10 +150,10 @@ describe('paging, and the states of the table', () => {
     );
     const requests = recordRequests();
     const app = await openPublishStart();
-    expect(await screen.findByText('1–25 of 60')).toBeInTheDocument();
+    expect(await screen.findByText('Results: 1 - 25 of 60')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
-    expect(await screen.findByText('26–50 of 60')).toBeInTheDocument();
-    expect(app.location()).toBe('/catalog?view=publish&page=2');
+    expect(await screen.findByText('Results: 26 - 50 of 60')).toBeInTheDocument();
+    expect(app.location()).toBe('/products?view=publish&page=2');
     const second = lastOf(requests, 'GET', /\/admin\/publish-runs$/).url.searchParams;
     expect([second.get('_start'), second.get('_end')]).toEqual(['25', '50']);
     expect(await screen.findByRole('link', { name: 'Open run 35' })).toBeInTheDocument();
