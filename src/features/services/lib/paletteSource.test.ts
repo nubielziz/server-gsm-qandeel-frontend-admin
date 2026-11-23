@@ -35,11 +35,11 @@ describe('servicesPaletteSource', () => {
     expect(hits.map((hit) => hit.label)).toEqual(['AT&T USA Premier Unlock']);
   });
 
-  it('opens the Services tab filtered by that service’s name', async () => {
+  it('opens the Catalog table filtered by that service’s name', async () => {
     const go = vi.fn();
     const [hit] = await search('Chimera', go);
     hit.run();
-    expect(go).toHaveBeenCalledExactlyOnceWith('/services?q=Chimera+Tool+1+Month');
+    expect(go).toHaveBeenCalledExactlyOnceWith('/catalog?q=Chimera+Tool+1+Month');
   });
 
   it('lists at most five services, A to Z', async () => {

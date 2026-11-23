@@ -41,6 +41,22 @@ describe('buildPaletteItems', () => {
     ]);
   });
 
+  it('offers Catalog and Shop content, not the old page names', () => {
+    const goTo = items(ALL_PAGES)
+      .filter((row) => row.group === 'Go to')
+      .map((row) => row.label);
+    expect(goTo).toContain('Catalog');
+    expect(goTo).toContain('Shop content');
+    expect(goTo).not.toContain('Services & pricing');
+    expect(goTo).not.toContain('Storefront');
+    // Catalog opens the Catalog page.
+    const go = vi.fn();
+    items(pagesNamed('catalog'), { go })
+      .find((row) => row.label === 'Catalog')
+      ?.run();
+    expect(go).toHaveBeenCalledExactlyOnceWith('/catalog');
+  });
+
   it('leaves out the demo’s simulations', () => {
     expect(items(ALL_PAGES).some((row) => /simulate/i.test(row.label))).toBe(false);
   });

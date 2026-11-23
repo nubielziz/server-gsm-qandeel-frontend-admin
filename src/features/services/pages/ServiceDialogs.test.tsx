@@ -1,7 +1,7 @@
 // Tests for the dialogs opened from the Services tab: edit price (the floor and margin the server returns, and its refusal under
 // the field), New service and Edit service, group prices, fields, options and delete. Each saves through the dev mock API, so a
 // test reads the service again to see what was stored.
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,7 +10,8 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi, signInAs } from '@/test/renderApp';
 import { createService, getService, listServices, updateService } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
-import { dialogOf, openServices, pickFromRowMenu, serviceRow } from '../test/servicesPage';
+import { openNewServiceForm } from '../test/addServices';
+import { catalogRoute, dialogOf, openServices, pickFromRowMenu, serviceRow } from '../test/servicesPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -98,10 +99,10 @@ describe('Edit price', () => {
 });
 
 describe('New service', () => {
-  it('creates a service and tells the admin to link it to a supplier', async () => {
+  it('creates a service, tells the admin to link it to a supplier and opens its panel', async () => {
     const user = userEvent.setup();
-    await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    const app = await openServices();
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     await dialog.findByRole('option', { name: 'Apple' });
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Test Unlock');
@@ -117,12 +118,14 @@ describe('New service', () => {
     const [created] = (await listServices({ q: 'IMEI-TEST-1' })).data;
     expect(created).toMatchObject({ name: 'Test Unlock', type: 'file', slaMinutes: 30, basePrice: '2.5000' });
     expect(created.category?.name).toBe('Apple');
+    // "A service of my own" ends on the new service: the address names it, so the side panel opens on it.
+    await waitFor(() => expect(app.location()).toBe(catalogRoute(`open=${created.id}`)));
   });
 
   it('shows a code that is taken under the Code field, in the server’s words', async () => {
     const user = userEvent.setup();
     await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     await dialog.findByRole('option', { name: 'Apple' });
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Another AT&T');
@@ -146,7 +149,7 @@ describe('New service', () => {
       ),
     );
     await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     await dialog.findByRole('option', { name: 'Apple' });
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Odd Service');
@@ -165,7 +168,7 @@ describe('New service', () => {
       http.get('*/admin/service-categories', () => problem(403, 'FORBIDDEN', 'No access', 'Closed.')),
     );
     await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     expect(await dialog.findByText(/Could not load the categories\./)).toBeInTheDocument();
     mockServer.resetHandlers();
@@ -178,7 +181,7 @@ describe('New service', () => {
   it('asks for the fields it needs before it calls the server', async () => {
     const user = userEvent.setup();
     await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     await user.click(dialog.getByRole('button', { name: 'Create service' }));
     expect(await dialog.findByText('Enter a name.')).toBeInTheDocument();
@@ -250,7 +253,7 @@ describe('Quantity', () => {
   /** Opens New service and fills what it needs besides the quantity. */
   async function openNew(user: User, name: string, code: string) {
     await openServices();
-    await user.click(await screen.findByRole('button', { name: 'New service' }));
+    await openNewServiceForm(user);
     const dialog = within(await screen.findByRole('dialog', { name: 'New service' }));
     await dialog.findByRole('option', { name: 'Apple' });
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), name);
@@ -438,7 +441,7 @@ describe('Group prices', () => {
 describe('Fields', () => {
   it('adds a choice field after the saved one and saves the list in order', async () => {
     const user = userEvent.setup();
-    await openServices('/services?q=Z3X');
+    await openServices('/catalog?q=Z3X');
     await pickFromRowMenu(user, 'Z3X Credits x10', 'Fields…');
     const dialog = within(await screen.findByRole('dialog', { name: 'Fields' }));
     expect(await dialog.findByRole('textbox', { name: 'Key of field 1' })).toHaveValue('account');
@@ -470,7 +473,7 @@ describe('Fields', () => {
         ]),
       ),
     );
-    await openServices('/services?q=Z3X');
+    await openServices('/catalog?q=Z3X');
     await pickFromRowMenu(user, 'Z3X Credits x10', 'Fields…');
     const dialog = within(await screen.findByRole('dialog', { name: 'Fields' }));
     await dialog.findByRole('textbox', { name: 'Key of field 1' });
@@ -514,7 +517,7 @@ describe('Fields', () => {
 
   it('refuses a key that an earlier field already uses', async () => {
     const user = userEvent.setup();
-    await openServices('/services?q=Z3X');
+    await openServices('/catalog?q=Z3X');
     await pickFromRowMenu(user, 'Z3X Credits x10', 'Fields…');
     const dialog = within(await screen.findByRole('dialog', { name: 'Fields' }));
     await dialog.findByRole('textbox', { name: 'Key of field 1' });
@@ -528,7 +531,7 @@ describe('Fields', () => {
 
   it('removes a field', async () => {
     const user = userEvent.setup();
-    await openServices('/services?q=Z3X');
+    await openServices('/catalog?q=Z3X');
     await pickFromRowMenu(user, 'Z3X Credits x10', 'Fields…');
     const dialog = within(await screen.findByRole('dialog', { name: 'Fields' }));
     await dialog.findByRole('textbox', { name: 'Key of field 1' });
@@ -585,7 +588,7 @@ describe('Delete', () => {
       slaMinutes: 5,
       basePrice: '1.0000',
     });
-    await openServices('/services?q=Temporary');
+    await openServices('/catalog?q=Temporary');
     await user.click(await screen.findByRole('checkbox', { name: /^Select row / }));
     expect(screen.getByRole('region', { name: 'Selected services' })).toBeInTheDocument();
     await pickFromRowMenu(user, 'Temporary Check', 'Delete…');
@@ -596,7 +599,7 @@ describe('Delete', () => {
 
   it('shows the server’s refusal for a service that has orders and keeps it', async () => {
     const user = userEvent.setup();
-    await openServices('/services?q=Z3X');
+    await openServices('/catalog?q=Z3X');
     await pickFromRowMenu(user, 'Z3X Credits x10', 'Delete…');
     const dialog = dialogOf('Delete Z3X Credits x10?');
     await user.click(dialog.getByRole('button', { name: 'Delete service' }));
@@ -617,7 +620,7 @@ describe('Delete', () => {
       slaMinutes: 5,
       basePrice: '1.0000',
     });
-    await openServices('/services?q=Temporary');
+    await openServices('/catalog?q=Temporary');
     await pickFromRowMenu(user, 'Temporary Check', 'Delete…');
     await user.click(dialogOf('Delete Temporary Check?').getByRole('button', { name: 'Delete service' }));
     expect(await screen.findByText('Temporary Check deleted')).toBeInTheDocument();

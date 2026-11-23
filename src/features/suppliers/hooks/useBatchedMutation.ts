@@ -1,5 +1,6 @@
 // A mutation that sends a long list in batches (the import's preview and import take 500 ids per call). It keeps the run that
-// stopped, so pressing the button again goes on with the batches that are left instead of sending the ones that went through.
+// stopped, so pressing the button again goes on with the batches that are left instead of sending the ones that went through,
+// and it keeps the answer of every batch the server gave, also when a later batch fails.
 import { useRef, useState } from 'react';
 import { useApiMutation, type UseApiMutationOptions } from '@/lib/query';
 import { BatchStopped, createBatchRun, sameItems, type BatchRun } from '../lib/batches';
@@ -40,18 +41,27 @@ export function useBatchedMutation<T, R, TData>({
 }: UseBatchedMutationOptions<T, R, TData>) {
   const current = useRef<BatchRun<T, R> | null>(null);
   const [progress, setProgress] = useState<BatchProgress<T> | null>(null);
+  const [answers, setAnswers] = useState<readonly R[]>([]);
   const mutation = useApiMutation<TData, readonly T[]>({
     ...options,
     mutationFn: async (items) => {
       const kept = current.current;
       const run = kept && sameItems(kept.items, items) ? kept : createBatchRun<T, R>(items);
+      // A list that differs starts a new run, so the answers of the old one are not this run's.
+      if (run !== kept) setAnswers([]);
       current.current = run;
       const report = (upTo: number | null) =>
         setProgress({ upTo, handled: run.handled, total: run.total, items });
       try {
-        const answers = await run.run(send, report);
+        // The answer of each batch is kept as it arrives: a later batch that fails must not lose what the earlier ones did.
+        const keep = async (batch: T[]) => {
+          const answer = await send(batch);
+          setAnswers([...run.results, answer]);
+          return answer;
+        };
+        const all = await run.run(keep, report);
         current.current = null;
-        return merge(answers);
+        return merge(all);
       } catch (failure) {
         if (run.handled > 0) onPartial?.();
         throw failure;
@@ -65,6 +75,11 @@ export function useBatchedMutation<T, R, TData>({
   return {
     isPending: mutation.isPending,
     progress,
+    /**
+     * The answer of every batch the server has given for the current list, in order, kept after a batch failed and after the
+     * last one answered. A list that differs from the one before starts again with none.
+     */
+    answers,
     /** Sends (or goes on sending) the list; a failure is a `BatchStopped`. */
     async run(items: readonly T[]): Promise<TData> {
       try {
@@ -82,6 +97,7 @@ export function useBatchedMutation<T, R, TData>({
     reset() {
       current.current = null;
       setProgress(null);
+      setAnswers([]);
     },
   };
 }

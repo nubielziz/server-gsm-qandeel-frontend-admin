@@ -20,7 +20,7 @@ import {
   previewRow,
 } from '../test/publishPreview';
 import { recordRequests } from '../test/requests';
-import { openStorefront } from '../test/storefrontPage';
+import { openCatalogView } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 40_000 });
@@ -347,7 +347,7 @@ describe('Save and next', () => {
   it('saves the changed keys and shows the next row of the same filter, read from the server in the order of the rows', async () => {
     const user = userEvent.setup();
     const requests = recordRequests();
-    await openStorefront(`${publishRoute(5)}&state=review&sort=cost&dir=desc`);
+    await openCatalogView(`${publishRoute(5)}&state=review&sort=cost&dir=desc`);
     await screen.findByRole('table', { name: PREVIEW });
     const dialog = await openRowDialog(user, codeOf(21));
     await user.type(dialog.getByLabelText('Carrier'), 'X');
@@ -388,7 +388,7 @@ describe('Save and next', () => {
   it('still finds the next row when the saved row has left the filter', async () => {
     const user = userEvent.setup();
     const requests = recordRequests();
-    await openStorefront(`${publishRoute(5)}&state=blocked`);
+    await openCatalogView(`${publishRoute(5)}&state=blocked`);
     await screen.findByRole('table', { name: PREVIEW });
     // Row 38 cannot be published for want of a title; with a title it is no longer "Cannot publish".
     const dialog = await openRowDialog(user, codeOf(38));
@@ -422,7 +422,7 @@ describe('Save and next', () => {
   it('says "That was the last one." and closes the dialog at the last row', async () => {
     const user = userEvent.setup();
     const requests = recordRequests();
-    await openStorefront(`${publishRoute(5)}&page=2`);
+    await openCatalogView(`${publishRoute(5)}&page=2`);
     const row = (await screen.findAllByText('Huawei update.app Firmware'))[0].closest('tr')!;
     await user.click(within(row).getByRole('button', { name: /^Edit / }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Edit row' }));

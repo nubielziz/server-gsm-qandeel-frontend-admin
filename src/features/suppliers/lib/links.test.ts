@@ -2,13 +2,16 @@
 import { describe, expect, it } from 'vitest';
 import type { ChainStep } from '../types';
 import {
+  chainSignature,
   draftFromChain,
   incompleteStep,
+  missingServiceText,
   moveStep,
   removeStep,
   roleLabel,
   sameChain,
   toLinksBody,
+  touchedSupplierIds,
   type DraftStep,
 } from './links';
 
@@ -67,6 +70,47 @@ describe('the body', () => {
     expect(sameChain(steps, chain)).toBe(true);
     expect(sameChain(moveStep(steps, 1, 0), chain)).toBe(false);
     expect(sameChain(removeStep(steps, 1), chain)).toBe(false);
+  });
+});
+
+describe('chainSignature', () => {
+  it('is the same line for the same supplier services in the same order, whatever order they were sent in', () => {
+    expect(chainSignature(chain)).toBe('3:10|1:20');
+    expect(chainSignature([...chain].reverse())).toBe(chainSignature(chain));
+    expect(chainSignature([])).toBe('');
+  });
+
+  it('changes when the order, a supplier service or the length changes', () => {
+    const swapped = chain.map((step) => ({ ...step, priority: 3 - step.priority }));
+    expect(chainSignature(swapped)).toBe('1:20|3:10');
+    expect(chainSignature(swapped)).not.toBe(chainSignature(chain));
+    expect(chainSignature(chain.slice(0, 1))).not.toBe(chainSignature(chain));
+  });
+});
+
+describe('touchedSupplierIds', () => {
+  it('lists each supplier of the saved chain and of the draft once', () => {
+    const steps: DraftStep[] = [
+      ...draftFromChain(chain.slice(0, 1)),
+      { key: 'new', supplierId: 2, supplierName: 'Gulf', supplierServiceId: null, supplierServiceName: '' },
+    ];
+    expect(touchedSupplierIds(chain, steps).sort()).toEqual([1, 2, 3]);
+    expect(touchedSupplierIds([], [])).toEqual([]);
+  });
+});
+
+describe('missingServiceText', () => {
+  it('names the supplier whose service is still to be picked', () => {
+    const step: DraftStep = {
+      key: 'new',
+      supplierId: 2,
+      supplierName: 'Gulf Server Hub',
+      supplierServiceId: null,
+      supplierServiceName: '',
+    };
+    expect(missingServiceText(step)).toBe(
+      'Choose the service at Gulf Server Hub for the supplier you added.',
+    );
   });
 });
 

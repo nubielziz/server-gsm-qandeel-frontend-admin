@@ -115,7 +115,7 @@
     },
     {
       "id": "services",
-      "page": "/services",
+      "page": "/catalog",
       "demo": ["43-p-services.js"],
       "folders": ["src/features/services"],
       "rows": [

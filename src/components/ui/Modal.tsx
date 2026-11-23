@@ -20,6 +20,8 @@ export interface ModalProps {
   error?: ReactNode;
   /** False while a request runs: Escape, backdrop and the close button are ignored. */
   dismissible?: boolean;
+  /** False for a flow of several steps: a click on the backdrop is ignored, Escape and the close button still close. Default true. */
+  backdropCloses?: boolean;
   /** Submit handler of the form that wraps the dialog (header, body, footer). */
   onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
   children?: ReactNode;
@@ -38,11 +40,12 @@ export function Modal({
   footer,
   error,
   dismissible = true,
+  backdropCloses = true,
   onSubmit,
   children,
 }: ModalProps) {
   const titleId = useId();
-  const { ref, dialogProps } = useDialog({ open, onClose, dismissible });
+  const { ref, dialogProps } = useDialog({ open, onClose, dismissible, backdropCloses });
 
   return createPortal(
     <dialog
@@ -58,7 +61,8 @@ export function Modal({
               <h2 id={titleId} className="text-lg font-semibold">
                 {title}
               </h2>
-              {sub && <p className="mt-0.5 text-sm text-ink2">{sub}</p>}
+              {/* A div, not a p: a sub may hold block content, such as the Steps line of a flow. */}
+              {sub && <div className="mt-0.5 text-sm text-ink2">{sub}</div>}
             </div>
             <Button
               variant="ghost"

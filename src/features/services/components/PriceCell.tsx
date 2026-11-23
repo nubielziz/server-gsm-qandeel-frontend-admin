@@ -7,7 +7,7 @@ import type { Service } from '../types';
 
 export interface PriceCellProps {
   service: Service;
-  /** Props for a role that lacks `catalog:update`: the price becomes plain text with the reason as its title. */
+  /** Props for a role that lacks `catalog:update` or `pricing:update`: the price becomes plain text with the reason as its title. */
   lock: { disabled: boolean; title?: string };
   onEdit: (service: Service) => void;
 }

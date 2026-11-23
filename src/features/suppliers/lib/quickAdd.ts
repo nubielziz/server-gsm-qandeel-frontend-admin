@@ -29,6 +29,11 @@ export function groupsText(count: number): string {
   return `${num(count)} ${count === 1 ? 'group' : 'groups'}`;
 }
 
+/** "all groups of Nordic GSM" or "3 groups of Nordic GSM": where a run takes its services from, in the sentence that tells what it adds. */
+export function sourceText(scope: 'all' | 'groups', groups: number, supplierName: string): string {
+  return scope === 'all' ? `all groups of ${supplierName}` : `${groupsText(groups)} of ${supplierName}`;
+}
+
 /** The key of a group in the set of picks: its type and its name, joined by a character no name holds. */
 export function groupKey(group: QuickAddGroupRef): string {
   return `${group.type}\u0000${group.remoteGroup}`;

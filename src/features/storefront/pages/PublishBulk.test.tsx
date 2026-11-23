@@ -12,7 +12,7 @@ import { listPublishItems } from '../api';
 import { publishRoute } from '../test/publishPage';
 import { codeOf, itemWrites, openPreview, PREVIEW, previewRow } from '../test/publishPreview';
 import { recordRequests } from '../test/requests';
-import { openStorefront } from '../test/storefrontPage';
+import { openCatalogView } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 40_000 });
@@ -214,7 +214,7 @@ describe('all the rows that match', () => {
 
   it('does not offer it when the page already holds every row that matches', async () => {
     const user = userEvent.setup();
-    await openStorefront(`${publishRoute(5)}&state=review`);
+    await openCatalogView(`${publishRoute(5)}&state=review`);
     await screen.findByRole('table', { name: PREVIEW });
     await screen.findByText('11 rows');
     await user.click(screen.getByRole('checkbox', { name: 'Select all rows on this page' }));
@@ -249,7 +249,7 @@ describe('all the rows that match', () => {
         HttpResponse.json(page.data, { headers: { 'x-total-count': '120' } }),
       ),
     );
-    await openStorefront(`${publishRoute(5)}&state=review&flag=duplicate_name&q=%20unlock%20`);
+    await openCatalogView(`${publishRoute(5)}&state=review&flag=duplicate_name&q=%20unlock%20`);
     await screen.findByRole('table', { name: PREVIEW });
     await user.click(await screen.findByRole('checkbox', { name: 'Select all rows on this page' }));
     await user.click(bar().getByRole('button', { name: 'Select all 120 rows that match' }));

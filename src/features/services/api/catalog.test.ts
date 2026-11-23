@@ -91,6 +91,44 @@ describe('listServices', () => {
     expect(below.data[0].id).toBe(CHIMERA);
     expect((await listServices({ start: 0, end: 1 })).total).toBe(27);
   });
+
+  it('sends the Catalog filters and the shop price sort as plain keys, and counts with them', async () => {
+    const requests = recordRequests();
+    const attention = await listServices({
+      start: 0,
+      end: 1,
+      sort: ['retailPrice'],
+      order: ['desc'],
+      filters: { needsAttention: true, hasSupplier: true, supplierId: 2, isListed: false, notOnShop: true },
+    });
+    expect(Object.fromEntries(requests.last().url.searchParams)).toEqual({
+      _start: '0',
+      _end: '1',
+      _sort: 'retailPrice',
+      _order: 'desc',
+      needsAttention: 'true',
+      hasSupplier: 'true',
+      supplierId: '2',
+      isListed: 'false',
+      notOnShop: 'true',
+    });
+    expect(attention.total).toBe(1);
+    expect((await listServices({ start: 0, end: 1, filters: { needsAttention: true } })).total).toBe(4);
+    expect((await listServices({ start: 0, end: 1, filters: { notOnShop: true } })).total).toBe(9);
+  });
+
+  it('gives each row its attention reasons and shop figures', async () => {
+    const rows = (await listServices({ end: 100 })).data;
+    expect(rows.find((row) => row.id === CHIMERA)).toMatchObject({
+      attention: ['below_floor'],
+      retailPrice: null,
+    });
+    expect(rows.find((row) => row.id === ATT)).toMatchObject({
+      attention: [],
+      retailPrice: '25.9900',
+      isListed: true,
+    });
+  });
 });
 
 describe('getService', () => {
@@ -105,6 +143,18 @@ describe('getService', () => {
     expect((await getService(Z3X)).fields).toMatchObject([
       { key: 'account', fieldType: 'text', required: true },
     ]);
+  });
+
+  it('carries the shop page, the shop price and the failed publish (none here) of the service', async () => {
+    expect(await getService(ATT)).toMatchObject({
+      attention: [],
+      retailPrice: '25.9900',
+      retailPriceSource: 'manual',
+      listingId: 5,
+      isListed: true,
+      shopBlocked: null,
+      publishFailure: null,
+    });
   });
 
   it('fails with a 404 problem for a service that does not exist', async () => {

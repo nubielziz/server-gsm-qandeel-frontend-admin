@@ -1,11 +1,14 @@
 // Tests for the import dialog's counts and words.
 import { describe, expect, it } from 'vitest';
 import type { ImportPreview, ImportPreviewItem } from '../types';
+import { BatchStopped } from './batches';
 import {
   countItems,
+  failureText,
   hiddenRowsText,
   IMPORT_BADGE,
   importableIds,
+  importToast,
   mergePreviews,
   mergeResults,
   previewSummary,
@@ -53,6 +56,36 @@ describe('a long list sent 500 at a time', () => {
     expect(mergeResults([])).toEqual({ created: 0, updated: 0, unchanged: 0 });
   });
 
+  it('puts the ids of the created services together in the order of the batches, and only when an answer carried them', () => {
+    expect(
+      mergeResults([
+        { created: 2, updated: 1, unchanged: 0, createdServiceIds: [11, 12] },
+        { created: 1, updated: 0, unchanged: 4, createdServiceIds: [13] },
+        { created: 0, updated: 2, unchanged: 0, createdServiceIds: [] },
+      ]),
+    ).toEqual({ created: 3, updated: 3, unchanged: 4, createdServiceIds: [11, 12, 13] });
+    // An older server sends no ids: the sum has no key, rather than an empty list that would say "none were created".
+    expect(mergeResults([{ created: 2, updated: 0, unchanged: 0 }])).not.toHaveProperty('createdServiceIds');
+    // One answer without the key among others with it adds nothing to the list.
+    expect(
+      mergeResults([
+        { created: 1, updated: 0, unchanged: 0 },
+        { created: 1, updated: 0, unchanged: 0, createdServiceIds: [7] },
+      ]).createdServiceIds,
+    ).toEqual([7]);
+  });
+
+  it('words the toast after an import', () => {
+    expect(importToast({ created: 1, updated: 1, unchanged: 0 })).toEqual({
+      message: '2 services imported',
+      description: '1 new, 1 updated',
+    });
+    expect(importToast({ created: 1_200, updated: 0, unchanged: 3 })).toEqual({
+      message: '1,200 services imported',
+      description: '1,200 new, 3 unchanged',
+    });
+  });
+
   it('counts the whole list in the summary, with a thousands separator', () => {
     expect(previewSummary({ new: 1_104, matching: 2, changed: 0 })).toBe('1,104 new, 2 already match');
   });
@@ -89,6 +122,15 @@ describe('a long list sent 500 at a time', () => {
     );
   });
 
+  it('words the button of the Add flow with "Add"', () => {
+    expect(runWords('Add', 'Start', null)).toBe('Start');
+    expect(runWords('Add', 'Start', { upTo: 500, handled: 0, total: 1_132 })).toBe('Adding 500 of 1,132…');
+    expect(runWords('Add', 'Start', { upTo: 500, handled: 0, total: 500 })).toBe('Start');
+    expect(runWords('Add', 'Start', { upTo: null, handled: 500, total: 1_132 })).toBe(
+      'Continue adding (632 left)',
+    );
+  });
+
   it('says how far a call got before it stopped, then the server’s words', () => {
     expect(stoppedText('imported', { handled: 500, total: 1_132 }, 'The supplier is down.')).toBe(
       '500 of 1,132 services were imported before it stopped. The supplier is down.',
@@ -99,5 +141,17 @@ describe('a long list sent 500 at a time', () => {
     expect(stoppedText('imported', { handled: 0, total: 1_132 }, 'The supplier is down.')).toBe(
       'The supplier is down.',
     );
+    expect(stoppedText('added', { handled: 500, total: 1_132 }, 'The supplier is down.')).toBe(
+      '500 of 1,132 services were added before it stopped. The supplier is down.',
+    );
+  });
+
+  it('tells a failed call: how far a batched one got, or just the server’s words', () => {
+    const reason = { detail: 'The supplier is down.' };
+    expect(failureText(new BatchStopped(500, 1_132, reason), 'imported')).toBe(
+      '500 of 1,132 services were imported before it stopped. The supplier is down.',
+    );
+    expect(failureText(new BatchStopped(0, 3, reason), 'added')).toBe('The supplier is down.');
+    expect(failureText(reason, 'previewed')).toBe('The supplier is down.');
   });
 });

@@ -1,9 +1,12 @@
-// The services as a Refine list: one page of the rows that match the filters, sorted by the server. Ports the data side of
-// pageServices / svcRows (43-p-services.js). The catalog does not change by itself, so there is no timed refresh.
-import { useList } from '@refinedev/core';
+// One page of the Catalog table: the rows that match the chip and the filters, sorted and counted by the server. Ports the data side of
+// pageServices / svcRows (43-p-services.js). The key starts with the shared rows key, so a change made elsewhere (a listing switched,
+// a publish run applied, a supplier link saved) refreshes the page. The catalog does not change by itself: no timed refresh.
 import type { SortState } from '@/components/ui';
-import { toRefineFilters } from '../lib/filters';
-import type { Service, ServiceListFilters } from '../types';
+import { useApiQuery } from '@/lib/query';
+import { listServices } from '../api';
+import { toListQuery } from '../lib/filters';
+import type { ServiceListFilters } from '../types';
+import { SERVICE_ROWS_KEY } from './keys';
 
 /** What `useServicesList` asks the server for. */
 export type ServicesListArgs = {
@@ -16,14 +19,19 @@ export type ServicesListArgs = {
 
 /** `services` is the page, `total` what the server counted for the whole filter; `query` carries loading, error and refetch. */
 export function useServicesList({ filters, page, pageSize, sort, enabled = true }: ServicesListArgs) {
-  const { result, query } = useList<Service>({
-    resource: 'services',
-    pagination: { currentPage: page, pageSize },
-    sorters: [{ field: sort.field, order: sort.order }],
-    filters: toRefineFilters(filters),
-    queryOptions: { enabled },
-    // The table shows its own error state with Retry, so Refine's default error toast would only repeat it.
-    errorNotification: false,
+  const query = useApiQuery({
+    queryKey: [...SERVICE_ROWS_KEY, { filters, page, pageSize, sort }],
+    queryFn: ({ signal }) =>
+      listServices(
+        toListQuery(filters, {
+          start: (page - 1) * pageSize,
+          end: page * pageSize,
+          sort: [sort.field],
+          order: [sort.order],
+        }),
+        { signal },
+      ),
+    enabled,
   });
-  return { services: result.data, total: result.total, query };
+  return { services: query.data?.data ?? [], total: query.data?.total, query };
 }

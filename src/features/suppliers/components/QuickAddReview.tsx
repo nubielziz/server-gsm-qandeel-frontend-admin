@@ -1,7 +1,7 @@
 // QuickAddReview: step 2 of "Quick add…": says in plain words what the run will do and how many services it adds, before anything
 // changes. Above 500 services it asks for a tick box. Built in the demo's dialog style (the demo has no such screen).
 import { CheckboxField, TypeTag } from '@/components/ui';
-import { CONFIRM_ABOVE, groupKey, groupName, groupsText, servicesText } from '../lib/quickAdd';
+import { CONFIRM_ABOVE, groupKey, groupName, servicesText, sourceText } from '../lib/quickAdd';
 import type { QuickAddServiceStatus, ServiceGroup } from '../types';
 
 /** Groups named in the list; the rest is counted ("+3 more"). */
@@ -32,8 +32,7 @@ export function QuickAddReview({
   confirmed,
   onConfirmed,
 }: QuickAddReviewProps) {
-  const source =
-    scope === 'all' ? `all groups of ${supplierName}` : `${groupsText(groups.length)} of ${supplierName}`;
+  const source = sourceText(scope, groups.length, supplierName);
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium" aria-live="polite">

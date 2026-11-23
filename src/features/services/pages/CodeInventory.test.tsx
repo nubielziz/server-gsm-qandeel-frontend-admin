@@ -1,5 +1,6 @@
-// Tests for the Code inventory tab, run through the whole app against the dev mock API: the masked stock with its filters in the address,
-// Import codes… (paste or upload, the server's counts of imported, duplicate and rejected codes) and Void selected unsold codes.
+// Tests for the Code inventory tab of the Catalog settings, run through the whole app against the dev mock API: the masked stock with
+// its filters in the address, Import codes… (paste or upload, the server's counts of imported, duplicate and rejected codes) and Void
+// selected unsold codes.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -8,12 +9,12 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { listInventoryCodes } from '../api';
-import { dialogOf, openServices } from '../test/servicesPage';
+import { dialogOf, openServices, settingsRoute } from '../test/servicesPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 
-const INVENTORY = '/services?tab=inventory';
+const INVENTORY = settingsRoute('inventory');
 const UNLOCKTOOL = 16;
 
 const table = async () => within(await screen.findByRole('table', { name: 'Code inventory' }));
@@ -27,7 +28,7 @@ describe('the stock', () => {
     expect(screen.queryByText(/Z3X-1000-A1B2/)).not.toBeInTheDocument();
     expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
-    expect(app.location()).toBe('/services?tab=inventory&page=2');
+    expect(app.location()).toBe(`${INVENTORY}&page=2`);
     expect((await table()).getAllByRole('row')).toHaveLength(6);
   });
 
@@ -53,13 +54,13 @@ describe('the stock', () => {
       screen.getByRole('combobox', { name: 'Filter by service' }),
       'UnlockTool 1-Day License',
     );
-    await waitFor(() => expect(app.location()).toBe('/services?tab=inventory&service=16'));
+    await waitFor(() => expect(app.location()).toBe(`${INVENTORY}&service=16`));
     expect(await screen.findByText('12 codes')).toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by status' }), 'Sold');
-    await waitFor(() => expect(app.location()).toBe('/services?tab=inventory&service=16&status=sold'));
+    await waitFor(() => expect(app.location()).toBe(`${INVENTORY}&service=16&status=sold`));
     expect(await screen.findByText('4 codes')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(app.location()).toBe('/services?tab=inventory');
+    expect(app.location()).toBe(INVENTORY);
     expect(await screen.findByText('30 codes')).toBeInTheDocument();
   });
 

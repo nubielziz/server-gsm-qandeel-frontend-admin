@@ -18,12 +18,12 @@ describe('recordTarget', () => {
     });
   });
 
-  it('sends a service to the services list searched by its name', () => {
+  it('sends a service to the Catalog table searched by its name', () => {
     expect(recordTarget('service', 6, 'T-Mobile USA Unlock')).toEqual({
-      page: 'services',
-      to: '/services?q=T-Mobile+USA+Unlock',
+      page: 'catalog',
+      to: '/catalog?q=T-Mobile+USA+Unlock',
     });
-    expect(recordTarget('service', 6, '  ')).toEqual({ page: 'services', to: '/services' });
+    expect(recordTarget('service', 6, '  ')).toEqual({ page: 'catalog', to: '/catalog' });
   });
 
   it('sends the other pages to the tab that holds the record', () => {

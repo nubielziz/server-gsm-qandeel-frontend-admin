@@ -11,6 +11,29 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-23): one Catalog page (decision 019), built on `feat/catalog`, merged
+
+Owner request: adding and pricing a service took three pages (Services and pricing, Suppliers, Storefront). Now one page does it.
+
+- **The page** `/catalog`: a table of services (type, supplier and cost, merchant price, shop price, one "On the shop" switch, enabled),
+  the chips All, Needs attention, Not on the shop and Switched off, category and supplier filters, bulk actions; a settings view
+  (categories, merchant price rules, shop price rules, price resolver, code inventory) and a publish view. The old addresses of
+  `/services` and `/storefront` redirect with their parameters; what is left of the Storefront page is "Shop content" under System.
+- **The service panel** (`?open=<id>&section=<id>`): Details, Order form, Suppliers, Prices, Shop page, Activity, each saved on its own,
+  beside the table from the 2xl width and in its place below. It asks before unsaved typing is lost.
+- **Add services** (`?add=<supplier id>|new&from=groups|services`): where from, prices and category, finish; whole groups or single
+  services of a supplier, or a service of one's own. The console computes no price: it shows the server's figures.
+- **The shop switch** puts a service on the shop through a publish run of that one service, applied only when the server says its row is
+  ready; otherwise the run is discarded and the server's reason is shown with the next step.
+- **Backend needed**: the catalog reads of the backend's decision 060 (new optional fields on the service row, five list filters, the
+  sort by shop price, `GET /admin/services/:id/supplier-links`, `createdServiceIds` on the import answer). Release order: that backend
+  step first, then this console, then the backend step that makes the new fields required.
+- **Checks**: typecheck, lint and the production build pass. The first stages ran the whole test suite (6,049 tests); the tests of the
+  last stage (the panel, the Add services flow and the review fixes) were written and are run by the checks on GitHub, not locally. A
+  review by area with a second check of every finding, then a fix round; a click-through in a browser on the demo data.
+- **Not in this change**: choosing a category or changing a price inside step 2 of Add services (the server has no input for it); bulk
+  routes (bulk actions are single calls in turn); the older Quick add and Import dialogs stay on the Suppliers page.
+
 ## Status (2026-11-18): bulk publish and retail pricing (feature 31), built on `feat/console-31`, not merged
 
 The console half of backend feature 31 (plan `../backend/docs/briefs/31-bulk-publish.md`, decision 040, rulings B228 to B231;

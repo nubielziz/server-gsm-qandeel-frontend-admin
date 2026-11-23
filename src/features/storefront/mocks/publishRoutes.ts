@@ -85,7 +85,7 @@ export const publishRoutes: HttpHandler[] = [
       let runs = stores.publish.runs.list();
       if (quickAddRunId !== null) {
         for (const m of runs) {
-          if (m.run.auto && String(m.run.quickAddRunId) === quickAddRunId) advance(m);
+          if (m.run.auto && String(m.run.quickAddRunId) === quickAddRunId) advance(m, stores);
         }
         runs = runs.filter(
           ({ run }) =>
@@ -167,9 +167,9 @@ export const publishRoutes: HttpHandler[] = [
 
   http.get('*/admin/publish-runs/:id', ({ request, params }) =>
     signedIn(request, async () => {
-      const { m, missing } = await runOf(params);
+      const { stores, m, missing } = await runOf(params);
       if (!m) return missing as Response;
-      advance(m);
+      advance(m, stores);
       return HttpResponse.json(viewOf(m));
     }),
   ),

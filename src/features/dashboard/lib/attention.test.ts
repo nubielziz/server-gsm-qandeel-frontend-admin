@@ -104,7 +104,7 @@ describe('describeAttention', () => {
     expect(view(sample('services_below_floor'))).toEqual({
       title: '1 service is priced below cost plus minimum profit',
       meta: 'Chimera Tool 1 Month (supplier cost changed). Orders are charged the floor price until you update it',
-      action: { label: 'Fix pricing', page: 'services', to: '/services?belowFloor=true' },
+      action: { label: 'Fix pricing', page: 'catalog', to: '/catalog?belowFloor=true' },
     });
     const many = {
       ...sample('services_below_floor'),

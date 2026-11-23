@@ -1,11 +1,12 @@
 // The pricing rules (a Refine list) and the actions on them: create, change, turn off and on, delete. Ports `cat-on` and
-// `cat-off` of 43-p-services.js with the demo's toasts. A rule change makes the price resolutions stale. The dialogs show a refusal.
+// `cat-off` of 43-p-services.js with the demo's toasts. A rule change makes the price resolutions stale, and the services with them: a
+// rule's minimum profit sets the floor, which the Catalog rows and the below-floor counts show. The dialogs show a refusal.
 import { useList } from '@refinedev/core';
 import { toast } from '@/components/ui';
 import { useApiMutation } from '@/lib/query';
 import { createPricingRule, deletePricingRule, updatePricingRule } from '../api';
 import type { CreatePricingRuleBody, PricingRule, UpdatePricingRuleBody } from '../types';
-import { PICKER_CAP, RESOLVE_KEY } from './keys';
+import { PICKER_CAP, SERVICE_STALE_KEYS } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
@@ -25,8 +26,8 @@ export function usePricingRules(enabled = true) {
 export function useCreateRule() {
   return useApiMutation({
     mutationFn: (body: CreatePricingRuleBody) => createPricingRule(body),
-    invalidates: [{ resource: 'pricing-rules' }],
-    invalidateKeys: [RESOLVE_KEY],
+    invalidates: [{ resource: 'pricing-rules' }, { resource: 'services' }],
+    invalidateKeys: SERVICE_STALE_KEYS,
     successNotification: () => ({ message: 'Rule added', description: 'New orders use it.' }),
     errorNotification: NO_ERROR_TOAST,
   });
@@ -37,8 +38,11 @@ export function useUpdateRule() {
   return useApiMutation({
     mutationFn: ({ rule, body }: { rule: PricingRule; body: UpdatePricingRuleBody }) =>
       updatePricingRule(rule.id, body),
-    invalidates: (_result, { rule }) => [{ resource: 'pricing-rules', id: rule.id }],
-    invalidateKeys: [RESOLVE_KEY],
+    invalidates: (_result, { rule }) => [
+      { resource: 'pricing-rules', id: rule.id },
+      { resource: 'services' },
+    ],
+    invalidateKeys: SERVICE_STALE_KEYS,
     successNotification: () => ({ message: 'Rule saved', description: 'New orders use it.' }),
     errorNotification: NO_ERROR_TOAST,
   });
@@ -49,8 +53,11 @@ export function useToggleRule() {
   return useApiMutation({
     mutationFn: ({ rule, isActive }: { rule: PricingRule; isActive: boolean }) =>
       updatePricingRule(rule.id, { isActive }),
-    invalidates: (_result, { rule }) => [{ resource: 'pricing-rules', id: rule.id }],
-    invalidateKeys: [RESOLVE_KEY],
+    invalidates: (_result, { rule }) => [
+      { resource: 'pricing-rules', id: rule.id },
+      { resource: 'services' },
+    ],
+    invalidateKeys: SERVICE_STALE_KEYS,
     onSuccess: (_result, { isActive }) => {
       toast({
         kind: 'success',
@@ -65,8 +72,8 @@ export function useToggleRule() {
 export function useDeleteRule() {
   return useApiMutation({
     mutationFn: (rule: PricingRule) => deletePricingRule(rule.id),
-    invalidates: (_result, rule) => [{ resource: 'pricing-rules', id: rule.id }],
-    invalidateKeys: [RESOLVE_KEY],
+    invalidates: (_result, rule) => [{ resource: 'pricing-rules', id: rule.id }, { resource: 'services' }],
+    invalidateKeys: SERVICE_STALE_KEYS,
     successNotification: () => ({ message: 'Rule removed', description: 'New orders use the base price.' }),
     errorNotification: NO_ERROR_TOAST,
   });

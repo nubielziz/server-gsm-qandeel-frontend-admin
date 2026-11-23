@@ -1,7 +1,10 @@
-// The draft of a service's supplier chain while the "Edit links" dialog is open: the steps in order, moving and removing
-// them, and the body that replaces the chain. Pure helpers; the server checks the result (`PUT /admin/services/:id/supplier-links`).
+// The draft of a service's supplier chain while the "Edit links" dialog or the Suppliers section of the panel is open: the steps in
+// order, moving and removing them, and the body that replaces the chain. Pure helpers; the server checks the result (`PUT /admin/services/:id/supplier-links`).
 import type { Id } from '@/lib/api';
 import type { ChainStep, ReplaceLinksBody } from '../types';
+
+/** What a control that changes the chain is told: `disabled`, with the missing permission in `title`, when the staff member may not. */
+export type EditLock = { disabled: boolean; title?: string };
 
 /**
  * One step of the draft. `supplierServiceId` is null for a supplier just added, until the staff member picks which of its
@@ -66,7 +69,25 @@ export function toLinksBody(steps: readonly DraftStep[]): ReplaceLinksBody {
   };
 }
 
-/** Whether the draft is the chain the dialog started with (same supplier services in the same order). */
+/** The chain as one line of text (its supplier services in priority order): two chains with the same line are the same chain. */
+export function chainSignature(chain: readonly ChainStep[]): string {
+  return [...chain]
+    .sort((a, b) => a.priority - b.priority)
+    .map((step) => `${step.supplierId}:${step.supplierServiceId}`)
+    .join('|');
+}
+
+/** Every supplier in the chain as it was saved or in the draft: each one's detail lists the service, so each is made stale by a save. */
+export function touchedSupplierIds(chain: readonly ChainStep[], steps: readonly DraftStep[]): Id[] {
+  return [...new Set([...chain, ...steps].map((step) => step.supplierId))];
+}
+
+/** What a save says when a supplier was added and its service is not picked yet; the form stays open. */
+export function missingServiceText(step: DraftStep): string {
+  return `Choose the service at ${step.supplierName} for the supplier you added.`;
+}
+
+/** Whether the draft is the chain the editor started with (same supplier services in the same order). */
 export function sameChain(steps: readonly DraftStep[], chain: readonly ChainStep[]): boolean {
   const ordered = [...chain].sort((a, b) => a.priority - b.priority);
   return (

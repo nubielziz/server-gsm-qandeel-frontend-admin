@@ -7,6 +7,12 @@ export interface UseDialogOptions {
   onClose: () => void;
   /** When false, Escape and a click on the backdrop do nothing (a request is running). Default true. */
   dismissible?: boolean;
+  /**
+   * When false, a click on the backdrop does nothing while Escape and the close button still ask to close. For a flow of
+   * several steps: its body changes height between steps, so the second click of a double click can land on the backdrop
+   * and would throw the picks away. Default true.
+   */
+  backdropCloses?: boolean;
   /** Move focus to the first form control after opening, like the demo. Default true. */
   focusField?: boolean;
 }
@@ -16,7 +22,13 @@ export interface UseDialogOptions {
  * parent through `onClose` instead of closing it, so the parent stays the single source of truth.
  * Closing through close() (not by removing the element) is what returns focus to the trigger.
  */
-export function useDialog({ open, onClose, dismissible = true, focusField = true }: UseDialogOptions) {
+export function useDialog({
+  open,
+  onClose,
+  dismissible = true,
+  backdropCloses = true,
+  focusField = true,
+}: UseDialogOptions) {
   const ref = useRef<HTMLDialogElement>(null);
   const pressStartedOnBackdrop = useRef<boolean | null>(null);
   // Set when our own cleanup closes the dialog, so the `close` event that follows is not mistaken for the user's.
@@ -69,7 +81,7 @@ export function useDialog({ open, onClose, dismissible = true, focusField = true
       // A text selection that starts inside and ends on the backdrop also produces a click on the dialog.
       const startedOnBackdrop = pressStartedOnBackdrop.current ?? true;
       pressStartedOnBackdrop.current = null;
-      if (dismissible && startedOnBackdrop && e.target === e.currentTarget) onClose();
+      if (dismissible && backdropCloses && startedOnBackdrop && e.target === e.currentTarget) onClose();
     },
   };
 

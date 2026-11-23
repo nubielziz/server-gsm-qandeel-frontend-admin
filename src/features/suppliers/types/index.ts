@@ -189,8 +189,17 @@ export type ImportPreviewItem = {
 /** Answer of `POST /admin/suppliers/:id/import/preview` (assumed contract). */
 export type ImportPreview = { items: ImportPreviewItem[] };
 
-/** Answer of `POST /admin/suppliers/:id/import` (assumed contract). */
-export type ImportResult = { created: number; updated: number; unchanged: number };
+/**
+ * Answer of `POST /admin/suppliers/:id/import` (assumed contract). `createdServiceIds` are the services THIS call created (not the
+ * ones it updated or left unchanged), in creation order, at most 500; the server sends them from a later backend change on, so a
+ * reader treats the key as possibly missing.
+ */
+export type ImportResult = {
+  created: number;
+  updated: number;
+  unchanged: number;
+  createdServiceIds?: Id[];
+};
 
 // ---- Links of a service ----
 

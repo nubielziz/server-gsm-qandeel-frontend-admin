@@ -1,24 +1,56 @@
-// Helpers shared by the Storefront page tests: open the page signed in (as the Owner, or as a staff member with fewer permissions)
-// and find the tab strip, tables, rows and dialogs by their accessible names. Import them from tests only.
+// Helpers shared by the Shop content page tests: open the page signed in (as the Owner, or as a staff member with fewer permissions)
+// and find the tab strip, tables, rows and dialogs by their accessible names. `openCatalogView` opens the listings, publish and retail
+// pricing components at the Catalog's addresses through a stand-in, since those parts are no longer tabs of the page. Import them from
+// tests only.
 import { screen, within } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
-import { mockMe, renderApp, signInAs } from '@/test/renderApp';
+import { createElement } from 'react';
+import { Route } from 'react-router';
+import { mockMe, renderApp, renderShell, signInAs } from '@/test/renderApp';
+import { CatalogStandIn } from './CatalogStandIn';
 
-/** Signs in as Rami (the Owner) and opens a route of the Storefront page; `permissions` changes what `me` says before the page loads. */
-export async function openStorefront(route = '/storefront', options: { permissions?: string[] } = {}) {
+/** Signs in as Rami (the Owner), or as a staff member with fewer permissions (what `me` says before the page loads). */
+async function signIn(options: { permissions?: string[] }) {
   await signInAs();
   if (options.permissions) mockMe({ id: 1, name: 'Rami K.', permissions: options.permissions });
+}
+
+/** Signs in as Rami (the Owner) and opens a route of the Shop content page; `permissions` changes what `me` says before the page loads. */
+export async function openStorefront(route = '/storefront', options: { permissions?: string[] } = {}) {
+  await signIn(options);
   const app = renderApp(route);
-  await screen.findByRole('heading', { level: 1, name: 'Storefront' }, { timeout: 10_000 });
+  await screen.findByRole('heading', { level: 1, name: 'Shop content' }, { timeout: 10_000 });
+  return app;
+}
+
+/**
+ * Signs in and mounts the listings, publish or retail pricing component the Catalog address names inside the shell, with the real
+ * providers: `/catalog?view=publish&run=8`, `/catalog?view=settings&tab=shop-prices`, or `/catalog` for the listings. The caller waits
+ * for what it needs to see.
+ */
+export async function openCatalogView(route: string, options: { permissions?: string[] } = {}) {
+  await signIn(options);
+  const app = renderShell(
+    route,
+    createElement(Route, { path: '/catalog', element: createElement(CatalogStandIn) }),
+  );
+  // As the page tests wait for the page's heading, this waits (longer than a query would) for the shell and the view to be there.
+  await screen.findByTestId('catalog-view', {}, { timeout: 10_000 });
   return app;
 }
 
 /** The tab strip of the page. */
-export const pageTabs = () => within(screen.getByRole('tablist', { name: 'Storefront sections' }));
+export const pageTabs = () => within(screen.getByRole('tablist', { name: 'Shop content sections' }));
 
-/** The text of every tab, with its count when it has one, such as "Services on sale11". */
+/** The text of every tab, such as "Landing pages". */
 export const tabTexts = () =>
   pageTabs()
+    .getAllByRole('tab')
+    .map((tab) => tab.textContent);
+
+/** The text of the stand-in's settings tab, with its chip when it has one, such as "Retail pricing3". */
+export const settingsTabTexts = () =>
+  within(screen.getByRole('tablist', { name: 'Catalog settings sections' }))
     .getAllByRole('tab')
     .map((tab) => tab.textContent);
 

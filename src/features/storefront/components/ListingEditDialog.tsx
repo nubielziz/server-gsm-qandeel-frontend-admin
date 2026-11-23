@@ -1,17 +1,15 @@
 // ListingEditDialog: "Edit listing" (`GET` then `PATCH /admin/service-listings/:id`, and the picture routes). New in feature 22: the
 // demo only switched a listing on and priced it. The listing is read when the dialog opens (the table's row has no Markdown
-// bodies); Save sends only the fields that changed. The picture saves on its own, inside the dialog.
-import { useState } from 'react';
+// bodies); Save sends only the fields that changed. The picture saves on its own, inside the dialog. The fields are the shop page
+// section's body (components/shop/ListingFormBody), the same the Catalog panel shows.
 import { useForm } from 'react-hook-form';
 import { Button, dialogSubmit, errorText, FormDialog, Modal, toast } from '@/components/ui';
 import { useListing } from '../hooks/useListing';
 import { useUpdateListingContent } from '../hooks/useListingMutations';
-import { changedBody, LISTING_FORM_FIELDS, toFormValues, type ListingFormValues } from '../lib/listingForm';
+import { LISTING_FORM_FIELDS, toFormValues, type ListingFormValues } from '../lib/listingForm';
 import type { ServiceListing, ServiceListingDetail } from '../types';
-import { ListingContentFields } from './ListingContentFields';
-import { ListingFactsFields } from './ListingFactsFields';
-import { ListingImageField } from './ListingImageField';
-import { ListingSeoFields } from './ListingSeoFields';
+import { saveListingForm } from './shop/listingSave';
+import { ListingFormBody } from './shop/ListingFormBody';
 
 export interface ListingEditDialogProps {
   /** The row the staff member picked; the dialog reads the full listing itself. */
@@ -49,23 +47,13 @@ export function ListingEditDialog({ listing, onClose }: ListingEditDialogProps) 
 /** The form and its requests. `listing` is the copy read when the dialog opened: Save compares the form with it. */
 function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; onClose: () => void }) {
   const update = useUpdateListingContent();
-  const [imageUrl, setImageUrl] = useState(listing.imageUrl);
   const form = useForm<ListingFormValues>({ defaultValues: toFormValues(listing) });
-  const {
-    register,
-    control,
-    formState: { errors },
-  } = form;
 
   const submit = dialogSubmit(
     form,
     async (values) => {
-      const body = changedBody(values, listing);
-      if (Object.keys(body).length === 0) {
-        toast({ kind: 'info', title: 'Nothing changed' });
-        return;
-      }
-      await update.mutateAsync({ listing, body });
+      const saved = await saveListingForm(values, listing, update.mutateAsync);
+      if (!saved) toast({ kind: 'info', title: 'Nothing changed' });
     },
     { fields: LISTING_FORM_FIELDS },
   );
@@ -80,17 +68,7 @@ function ListingEditForm({ listing, onClose }: { listing: ServiceListingDetail; 
       onClose={onClose}
       onSubmit={submit}
     >
-      <div className="space-y-4">
-        <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} />
-        <ListingContentFields register={register} errors={errors} />
-        <ListingFactsFields
-          register={register}
-          errors={errors}
-          control={control}
-          savedCountry={listing.country}
-        />
-        <ListingSeoFields register={register} errors={errors} />
-      </div>
+      <ListingFormBody form={form} listing={listing} />
     </FormDialog>
   );
 }

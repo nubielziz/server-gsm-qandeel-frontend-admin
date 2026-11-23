@@ -1,4 +1,4 @@
-// Tests for the start of the Publish tab: what to publish (everything, a category found by search, a supplier), the note about
+// Tests for the start of the publish view: what to publish (everything, a category found by search, a supplier), the note about
 // prices with and without an active rule, the button that asks the server for a preview, the server's refusals in the error slot,
 // the permissions each choice needs, and the earlier runs.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -42,7 +42,7 @@ describe('the choices', () => {
     const requests = recordRequests();
     const app = await openPublishStart();
     await user.click(screen.getByRole('button', { name: PREPARE }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
     expect(lastOf(requests, 'POST', RUNS).body).toEqual({ scope: { kind: 'all' } });
     expect(await screen.findByRole('heading', { level: 2, name: 'Publish run 8' })).toBeInTheDocument();
     expect(await screen.findByText('Preparing the preview of 60 services…')).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('the refusals', () => {
     expect(alert).toHaveTextContent(
       'Nothing to publish: every service of this choice is already on the shop.',
     );
-    expect(app.location()).toBe('/storefront?tab=publish');
+    expect(app.location()).toBe('/catalog?view=publish');
   });
 
   it('shows the 422 of a scope with too many services', async () => {
@@ -162,10 +162,10 @@ describe('the refusals', () => {
 });
 
 describe('the note about prices', () => {
-  it('says prices come from the retail pricing rules, with a link to the Retail pricing tab', async () => {
+  it('says prices come from the retail pricing rules, with a link to the shop price rules', async () => {
     await openPublishStart();
     const link = await screen.findByRole('link', { name: 'retail pricing rules' });
-    expect(link).toHaveAttribute('href', '/storefront?tab=pricing');
+    expect(link).toHaveAttribute('href', '/catalog?view=settings&tab=shop-prices');
     expect(screen.getByText(/Prices come from the/)).toBeInTheDocument();
     expect(screen.queryByText(/No retail pricing rule is active/)).not.toBeInTheDocument();
   });
@@ -179,7 +179,7 @@ describe('the note about prices', () => {
     );
     expect(within(note).getByRole('link', { name: 'Make a rule' })).toHaveAttribute(
       'href',
-      '/storefront?tab=pricing',
+      '/catalog?view=settings&tab=shop-prices',
     );
   });
 

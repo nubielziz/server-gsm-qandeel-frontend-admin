@@ -16,7 +16,7 @@ export function ListingsEmpty({ noListings, onClear, publish }: ListingsEmptyPro
   if (noListings) {
     return (
       <EmptyState icon="tag" title="No services yet" cta={publish}>
-        Add services under Services &amp; pricing or Suppliers, then publish them here.
+        Add services in the Catalog or under Suppliers, then publish them to the shop.
       </EmptyState>
     );
   }

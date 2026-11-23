@@ -1,14 +1,14 @@
-// The command palette's service search: type a name or a code and get up to five services, each opening the Services tab
+// The command palette's service search: type a name or a code and get up to five services, each opening the Catalog table
 // filtered by that name. Ports the services part of paletteItems(q) in 90-app.js; the server does the matching (`q` on
 // `GET /admin/services`) instead of the browser scanning every service.
 import type { PaletteSource } from '@/app/palette';
 import { listServices } from '../api';
-import { servicesListPath } from './paths';
+import { catalogPath } from './paths';
 
 /** Most services the palette lists (the demo's limit). */
 export const PALETTE_SERVICE_LIMIT = 5;
 
-/** Searches the services on the server for the palette; opens the Services tab filtered by the chosen name. */
+/** Searches the services on the server for the palette; opens the Catalog table filtered by the chosen name. */
 export const servicesPaletteSource: PaletteSource = {
   id: 'services',
   group: 'Services',
@@ -23,7 +23,7 @@ export const servicesPaletteSource: PaletteSource = {
       label: service.name,
       hint: service.code,
       icon: 'tag' as const,
-      run: () => go(servicesListPath({ q: service.name })),
+      run: () => go(catalogPath({ q: service.name })),
     }));
   },
 };

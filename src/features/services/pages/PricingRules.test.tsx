@@ -1,5 +1,6 @@
-// Tests for the Rules and groups tab, run through the whole app against the dev mock API: the merchant groups (read-only, with a link to
-// the merchants page), the pricing rules table with New rule, Edit, Turn off and Delete, the server's refusals, and the notes.
+// Tests for the Merchant price rules tab of the Catalog settings (the old Rules and groups tab), run through the whole app against the
+// dev mock API: the merchant groups (read-only, with a link to the merchants page), the pricing rules table with New rule, Edit, Turn
+// off and Delete, the server's refusals, and the notes.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -10,14 +11,14 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { getPricingRule, listPricingRules } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
-import { dialogOf, openServices } from '../test/servicesPage';
+import { dialogOf, openServices, settingsRoute } from '../test/servicesPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 // The merchants feature serves the group list; these tests bring their own copy of it.
 beforeEach(() => mockServer.use(...groupHandlers));
 
-const RULES = '/services?tab=rules';
+const RULES = settingsRoute('rules');
 const START = new Date(2026, 2, 5);
 const END = new Date(2026, 2, 20);
 

@@ -1,7 +1,18 @@
 // SupplierServices: the "Services" panel of the detail: the services of the console that use this supplier, as primary or as
 // fallback, with the supplier's cost and the SLA. Ports `svcTbl` of supDetail in 44-p-suppliers.js, and adds the buttons
-// the API allows: "Quick add…" and "Import services…" to bring services in, and "Edit links…" for one service's chain.
-import { Badge, Button, Count, EmptyState, ErrorState, Icon, SkeletonTable } from '@/components/ui';
+// the API allows: "Quick add…" and "Import services…" to bring services in, "Edit links…" for one service's chain, and the link to
+// the Catalog's Add services flow with this supplier chosen (the two older dialogs stay beside it).
+import {
+  Badge,
+  Button,
+  ButtonLink,
+  Count,
+  EmptyState,
+  ErrorState,
+  Icon,
+  SkeletonTable,
+} from '@/components/ui';
+import { catalogPath } from '@/features/services';
 import { money } from '@/lib/format';
 import type { SupplierGrants } from '../hooks/useSupplierGrants';
 import { minutesText } from '../lib/metrics';
@@ -18,7 +29,7 @@ export interface SupplierServicesProps {
   grants: SupplierGrants;
   onImport: () => void;
   onQuickAdd: () => void;
-  /** Starts a publish preview of this supplier's services on the Storefront page's Publish tab. */
+  /** Starts a publish preview of this supplier's services in the Catalog page's publish view. */
   onPublish: () => void;
   /** True while the request that starts the preview is on its way. */
   publishing: boolean;
@@ -45,9 +56,20 @@ export function SupplierServices({
   const rows = [...(links ?? [])].sort(
     (a, b) => a.priority - b.priority || a.serviceName.localeCompare(b.serviceName),
   );
-  // Quick add creates services too, so it needs the same permission as the import.
+  // Quick add creates services too, so it needs the same permission as the import, and so does the link to the Add services flow.
   const addButtons = (
     <>
+      {importLock.disabled ? (
+        <Button size="sm" disabled title={importLock.title}>
+          <Icon name="plus" className="ic-sm" />
+          Add services from this supplier
+        </Button>
+      ) : (
+        <ButtonLink size="sm" to={catalogPath({ add: supplier.id })}>
+          <Icon name="plus" className="ic-sm" />
+          Add services from this supplier
+        </ButtonLink>
+      )}
       <Button size="sm" disabled={importLock.disabled} title={importLock.title} onClick={onQuickAdd}>
         <Icon name="bolt" className="ic-sm" />
         Quick add…

@@ -9,7 +9,7 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { storefrontStore } from '../mocks/store';
 import { recordRequests } from '../test/requests';
-import { dialogOf, openStorefront } from '../test/storefrontPage';
+import { dialogOf, openCatalogView } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -24,7 +24,7 @@ const isListings = (url: URL) => url.pathname.endsWith('/admin/service-listings'
 
 /** Opens the dialog; the Service box has the focus and its list is still closed. */
 async function openAdd(user: User) {
-  await openStorefront();
+  await openCatalogView('/catalog');
   await user.click(await screen.findByRole('button', { name: 'Add listing…' }));
   const dialog = dialogOf('Add listing');
   const service = await dialog.findByRole('combobox', { name: 'Service' });

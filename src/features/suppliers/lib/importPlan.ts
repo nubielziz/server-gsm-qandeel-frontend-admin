@@ -1,11 +1,11 @@
 // The import dialog's words and counts: the badge of each preview state, how the preview adds up, which items an import sends,
 // how the answers of several batches become one, and what the button and the error say while a long list goes 500 at a time. The
 // server classifies the items (`POST …/import/preview`); this only names and counts what it said.
-import type { BadgeTone, IconName } from '@/components/ui';
+import { errorText, type BadgeTone, type IconName } from '@/components/ui';
 import type { Id } from '@/lib/api';
 import { num } from '@/lib/format';
 import type { ImportItemState, ImportPreview, ImportPreviewItem, ImportResult } from '../types';
-import { BATCH_SIZE } from './batches';
+import { BATCH_SIZE, BatchStopped } from './batches';
 import { servicesText } from './quickAdd';
 
 /** The most rows of the preview the table draws; the summary above it counts every item. */
@@ -50,16 +50,35 @@ export function mergePreviews(answers: readonly ImportPreview[]): ImportPreviewI
   return answers.flatMap((answer) => answer.items);
 }
 
-/** The answers of the import calls (one per batch) added up, as if one call had done it all. */
+/**
+ * The answers of the import calls (one per batch) added up, as if one call had done it all. The ids of the services the calls created
+ * are put together in the order of the batches; the key is there only when an answer carried it.
+ */
 export function mergeResults(answers: readonly ImportResult[]): ImportResult {
-  return answers.reduce<ImportResult>(
-    (sum, answer) => ({
-      created: sum.created + answer.created,
-      updated: sum.updated + answer.updated,
-      unchanged: sum.unchanged + answer.unchanged,
+  const sum = answers.reduce<ImportResult>(
+    (total, answer) => ({
+      created: total.created + answer.created,
+      updated: total.updated + answer.updated,
+      unchanged: total.unchanged + answer.unchanged,
     }),
     { created: 0, updated: 0, unchanged: 0 },
   );
+  if (!answers.some((answer) => answer.createdServiceIds !== undefined)) return sum;
+  return { ...sum, createdServiceIds: answers.flatMap((answer) => answer.createdServiceIds ?? []) };
+}
+
+/** The toast after an import: how many services it brought in, and how that splits into new, updated and unchanged. */
+export function importToast(result: ImportResult): { message: string; description: string } {
+  return {
+    message: `${num(result.created + result.updated)} services imported`,
+    description: [
+      result.created > 0 && `${num(result.created)} new`,
+      result.updated > 0 && `${num(result.updated)} updated`,
+      result.unchanged > 0 && `${num(result.unchanged)} unchanged`,
+    ]
+      .filter(Boolean)
+      .join(', '),
+  };
 }
 
 /** "and 932 more": the line under a preview table that shows only its first rows. Empty when every row is shown. */
@@ -70,18 +89,39 @@ export function hiddenRowsText(shown: number, total: number): string {
 /** Where a batched call is: `upTo` is the end of the batch in flight (null when none goes), `handled` what the server answered. */
 export type RunState = { upTo: number | null; handled: number; total: number };
 
+/** What a batched call is doing, as the primary button names it: the Add flow says "Add", the import dialog "Import". */
+export type RunVerb = 'Preview' | 'Import' | 'Add';
+
+const RUN_VERB: Record<RunVerb, readonly [string, string]> = {
+  Preview: ['Previewing', 'previewing'],
+  Import: ['Importing', 'importing'],
+  Add: ['Adding', 'adding'],
+};
+
 /**
  * The words on the primary button of a step: its own words (`plain`), "Previewing 500 of 1,132…" while a list of more than one
  * batch goes, and "Continue previewing (632 left)" after a batch failed with some already done. A list of one batch keeps `plain`
  * (the button shows its spinner).
  */
-export function runWords(verb: 'Preview' | 'Import', plain: string, run: RunState | null): string {
+export function runWords(verb: RunVerb, plain: string, run: RunState | null): string {
   if (run === null) return plain;
-  const [ing, lower] = verb === 'Preview' ? ['Previewing', 'previewing'] : ['Importing', 'importing'];
+  const [ing, lower] = RUN_VERB[verb];
   if (run.upTo !== null)
     return run.total > BATCH_SIZE ? `${ing} ${num(run.upTo)} of ${num(run.total)}…` : plain;
   const left = run.total - run.handled;
   return run.handled > 0 && left > 0 ? `Continue ${lower} (${num(left)} left)` : plain;
+}
+
+/** The past tense a stopped call is told with: the preview "previewed", the import "imported", the Add flow "added". */
+export type StoppedVerb = 'previewed' | 'imported' | 'added';
+
+/**
+ * What the dialog's error slot says for a failed call: how far a long list got before it (when it did), then the server's words.
+ * Any other failure is just the server's words.
+ */
+export function failureText(failure: unknown, verb: StoppedVerb): string {
+  if (!(failure instanceof BatchStopped)) return errorText(failure);
+  return stoppedText(verb, failure, errorText(failure.reason));
 }
 
 /**
@@ -89,7 +129,7 @@ export function runWords(verb: 'Preview' | 'Import', plain: string, run: RunStat
  * batch failed nothing went through, so only the server's words are shown.
  */
 export function stoppedText(
-  verb: 'previewed' | 'imported',
+  verb: StoppedVerb,
   stopped: { handled: number; total: number },
   reason: string,
 ): string {

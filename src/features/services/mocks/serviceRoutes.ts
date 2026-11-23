@@ -1,9 +1,11 @@
-// Mock of the service routes (`/admin/services` and `/admin/services/:id`): list with the toolbar filters, one service with its parts,
-// create, change and delete. The mock plays the server: it works out the floor and refuses a price under it, keeps codes unique, and
-// refuses to delete a service that has orders.
+// Mock of the service routes (`/admin/services` and `/admin/services/:id`): list with the toolbar and Catalog filters, one service with
+// its parts, create, change and delete. The mock plays the server: it works out the floor and refuses a price under it, keeps codes
+// unique, refuses to delete a service that has orders, joins the supplier chain and the shop facts of the other mocks into every row
+// (catalog.ts), and answers 403 for a shop filter the session may not use.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { money } from '@/lib/format';
 import { orderStore } from '@/mocks/orders';
+import { catalogJoin, factsOf, passesCatalogFilters, readCatalogFilters } from './catalog';
 import { toDetail, toService } from './dto';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { floorOf, round } from './pricing';
@@ -72,11 +74,14 @@ export const serviceRoutes: HttpHandler[] = [
   http.get('*/admin/services', ({ request }) =>
     signedIn(request, async () => {
       const stores = await servicesStore();
-      return listAnswer(
-        stores.services.list().map((row) => toService(stores, row)),
-        request,
-        SEARCH_FIELDS,
-      );
+      const join = await catalogJoin();
+      const query = readCatalogFilters(new URL(request.url).searchParams, join);
+      if (query instanceof Response) return query;
+      const rows = stores.services
+        .list()
+        .filter((row) => passesCatalogFilters(query.filters, row, factsOf(stores, row, join)))
+        .map((row) => toService(stores, row, join));
+      return listAnswer(rows, request, SEARCH_FIELDS, query.rest);
     }),
   ),
 
@@ -84,7 +89,9 @@ export const serviceRoutes: HttpHandler[] = [
     signedIn(request, async () => {
       const stores = await servicesStore();
       const row = stores.services.find(String(params.id));
-      return row ? HttpResponse.json(toDetail(stores, row)) : notFound('service', params.id);
+      return row
+        ? HttpResponse.json(toDetail(stores, row, await catalogJoin()))
+        : notFound('service', params.id);
     }),
   ),
 
@@ -111,8 +118,6 @@ export const serviceRoutes: HttpHandler[] = [
         minQty: 1,
         maxQty: 1,
         qtyOptions: [],
-        supplierId: null,
-        fallbackId: null,
         status: 'active',
         auto: true,
         fields: [],
@@ -130,7 +135,8 @@ export const serviceRoutes: HttpHandler[] = [
         return conflict('CODE_TAKEN', 'Code already used', message, [{ field: 'code', message }]);
       }
       const { id: _id, ...fields } = draft;
-      return HttpResponse.json(toService(stores, stores.services.insert(fields)), { status: 201 });
+      const created = stores.services.insert(fields);
+      return HttpResponse.json(toService(stores, created, await catalogJoin()), { status: 201 });
     }),
   ),
 
@@ -167,7 +173,8 @@ export const serviceRoutes: HttpHandler[] = [
         return conflict('CODE_TAKEN', 'Code already used', message, [{ field: 'code', message }]);
       }
       const { id: _id, ...changes } = draft;
-      return HttpResponse.json(toService(stores, stores.services.patch(row.id, changes) ?? row));
+      const changed = stores.services.patch(row.id, changes) ?? row;
+      return HttpResponse.json(toService(stores, changed, await catalogJoin()));
     }),
   ),
 

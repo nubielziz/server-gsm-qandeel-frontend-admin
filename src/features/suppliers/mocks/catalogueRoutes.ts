@@ -1,6 +1,6 @@
 // Mock routes of a supplier's service list and of the work done with it: `GET /admin/suppliers/:id/services` (at most 1000 rows per
 // call), the import preview and the import (at most 500 ids per call, as the real server: a longer request is refused), and
-// `PUT /admin/services/:id/supplier-links`. The classification and the suggested price are plain fakes (decision 014).
+// `GET` and `PUT /admin/services/:id/supplier-links`. The classification and the suggested price are plain fakes (decision 014).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { applyListQuery } from '@/mocks/crud';
 import { invalid, notFound } from '@/mocks/handlers/accessShared';
@@ -89,6 +89,15 @@ function pickedItems(data: SuppliersState, supplierId: number, body: Record<stri
   });
 }
 
+/**
+ * The id of a service in a links address, or `null` for text that is no service id. A service the services mock made (New service) is
+ * not in this feature's table, but it is a service all the same: it has no links yet, so its chain is empty.
+ */
+function serviceIdOf(param: string | readonly string[] | undefined): number | null {
+  const id = Number(param);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 /** The routes for a supplier's service list, the import and the links of a service. */
 export const catalogueHandlers: HttpHandler[] = [
   http.get(
@@ -137,6 +146,8 @@ export const catalogueHandlers: HttpHandler[] = [
       if (items.length === 0)
         return invalid([{ field: 'supplierServiceIds', message: 'Pick at least one service.' }]);
       const result = { created: 0, updated: 0, unchanged: 0 };
+      // The services this call made (not the ones it updated), in the order they were made, as the server answers.
+      const createdServiceIds: number[] = [];
       for (const item of items) {
         const state = stateOf(item);
         if (state === 'matching') result.unchanged += 1;
@@ -146,19 +157,28 @@ export const catalogueHandlers: HttpHandler[] = [
           item.priceChangedAt = null;
           result.updated += 1;
         } else {
-          createFromItem(data, item);
+          createdServiceIds.push(createFromItem(data, item).id);
           result.created += 1;
         }
       }
-      return HttpResponse.json(result);
+      return HttpResponse.json({ ...result, createdServiceIds });
+    }),
+  ),
+
+  http.get(
+    '*/admin/services/:id/supplier-links',
+    secured(({ params, data }) => {
+      const serviceId = serviceIdOf(params.id);
+      if (serviceId === null) return notFound('service', params.id);
+      return HttpResponse.json(chainOf(data, serviceId));
     }),
   ),
 
   http.put(
     '*/admin/services/:id/supplier-links',
     secured(async ({ params, data, body }) => {
-      const service = data.services.find(String(params.id));
-      if (!service) return notFound('service', params.id);
+      const serviceId = serviceIdOf(params.id);
+      if (serviceId === null) return notFound('service', params.id);
       const input = await body();
       const wanted = (Array.isArray(input.links) ? input.links : []) as {
         supplierServiceId?: number;
@@ -174,10 +194,10 @@ export const catalogueHandlers: HttpHandler[] = [
           priority: Number(link.priority ?? index + 1),
         }))
         .sort((a, b) => a.priority - b.priority);
-      const before = data.links.filter((link) => link.serviceId === service.id);
-      data.links = data.links.filter((link) => link.serviceId !== service.id);
+      const before = data.links.filter((link) => link.serviceId === serviceId);
+      data.links = data.links.filter((link) => link.serviceId !== serviceId);
       order.forEach((link, index) =>
-        data.links.push({ serviceId: service.id, supplierServiceId: link.id, priority: index + 1 }),
+        data.links.push({ serviceId, supplierServiceId: link.id, priority: index + 1 }),
       );
       // A supplier service that no service uses any more counts as not imported.
       for (const old of before) {
@@ -188,9 +208,9 @@ export const catalogueHandlers: HttpHandler[] = [
       for (const link of order)
         Object.assign(data.catalogue.find(link.id) as MockItem, {
           imported: true,
-          linkedServiceId: service.id,
+          linkedServiceId: serviceId,
         });
-      return HttpResponse.json(chainOf(data, service.id));
+      return HttpResponse.json(chainOf(data, serviceId));
     }),
   ),
 ];

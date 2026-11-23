@@ -1,6 +1,6 @@
-// Creating, editing and deleting service categories. A category change also refreshes the service lists, which show category
-// names, and the service menus. The dialogs show a failed call themselves (for example a category that services still use).
-import { useApiMutation } from '@/lib/query';
+// Creating, editing and deleting service categories. A category change also refreshes the service lists and the Catalog table, which
+// show category names (and a switched-off category keeps its services off the shop), and the service menus. The dialogs show a failed call themselves (for example a category that services still use).
+import { CATALOG_ROWS_KEY, useApiMutation } from '@/lib/query';
 import { createCategory, deleteCategory, updateCategory } from '../api';
 import type { CreateCategoryBody, ServiceCategory, UpdateCategoryBody } from '../types';
 import { SERVICE_PICKER_KEY } from './keys';
@@ -26,7 +26,7 @@ export function useUpdateCategory() {
       { resource: 'service-categories', id: category.id },
       { resource: 'services' },
     ],
-    invalidateKeys: [SERVICE_PICKER_KEY],
+    invalidateKeys: [SERVICE_PICKER_KEY, CATALOG_ROWS_KEY],
     successNotification: (category) => ({ message: `${category.name} updated` }),
     errorNotification: NO_ERROR_TOAST,
   });

@@ -213,4 +213,28 @@ describe('applyListQuery', () => {
     const mixed = [{ n: 2 }, {}, { n: 1 }] as { n?: number }[];
     expect(applyListQuery(mixed, new URLSearchParams('_sort=n')).page).toEqual([{ n: 1 }, { n: 2 }, {}]);
   });
+
+  it('puts missing values last when descending too, as the server does (nulls last)', () => {
+    const mixed = [{ n: 2 }, { n: null }, {}, { n: 1 }, { n: 3 }] as { n?: number | null }[];
+    expect(applyListQuery(mixed, new URLSearchParams('_sort=n&_order=desc')).page).toEqual([
+      { n: 3 },
+      { n: 2 },
+      { n: 1 },
+      { n: null },
+      {},
+    ]);
+    // A later key only breaks ties among rows that both have a value for the first key.
+    const pairs = [
+      { n: null, m: 9 },
+      { n: 1, m: 1 },
+      { n: 1, m: 2 },
+      { n: null, m: 3 },
+    ];
+    expect(applyListQuery(pairs, new URLSearchParams('_sort=n,m&_order=desc,desc')).page).toEqual([
+      { n: 1, m: 2 },
+      { n: 1, m: 1 },
+      { n: null, m: 9 },
+      { n: null, m: 3 },
+    ]);
+  });
 });

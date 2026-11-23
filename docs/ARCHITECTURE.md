@@ -89,7 +89,13 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/orders?tab=…&type=…&channel=b2b\|b2c&pastSla=true&supplierId=…&clientId=…&q=…` | the Orders list with those filters (`ordersListPath` in `@/features/orders`) |
 | `/orders?order=<id>` (on any page that mounts `OrderDrawerHost`) | that order's drawer (`orderPath`) |
 | `/suppliers?supplier=<id>` | Suppliers with that supplier selected |
-| `/services?belowFloor=true` | Services priced below cost plus minimum profit |
+| `/catalog?belowFloor=true` | Catalog table: services priced below cost plus minimum profit (`catalogPath` in `@/features/services` builds every Catalog address) |
+| `/catalog?shop=on`, `/catalog?chip=attention\|notonshop\|off` | Catalog table: services on the shop; a chip |
+| `/catalog?open=<id>&section=…` | Catalog with one service in the side panel |
+| `/catalog?add=new`, `/catalog?add=<supplier id>[&from=groups\|services]` | Catalog with the Add services flow open: on its first step, with that supplier marked, or on that supplier's path (the Suppliers page links here) |
+| `/catalog?view=settings&tab=categories\|rules\|shop-prices\|resolver\|inventory` | Catalog settings, on one tab (the resolver and the code stock keep `service`, `merchant`, `status`, `page` in the same address) |
+| `/catalog?view=publish[&run=<id>]` | Catalog publish view: start, earlier runs, or one run |
+| `/storefront?tab=landing\|content\|help\|tac\|search` | Shop content on that tab |
 | `/finance?tab=payments` | Finance on the pending deposits |
 | `/merchants?tab=pending`, `/merchants/<id>` | merchants waiting for approval; one merchant |
 | `/customers/<id>` (`?tab=orders\|account\|support\|consents\|risk`) | one customer |
@@ -99,6 +105,8 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/support?filter=late`, `/support?customerId=<id>` | late tickets; one customer's tickets |
 | `/settings?tab=tax` | tax and exchange rates |
 | `/access?tab=…` | an Admins and access tab |
+
+Old addresses keep working for good: `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Catalog addresses above by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decision 019). Links inside the app use the new addresses.
 
 ## 6. Naming
 

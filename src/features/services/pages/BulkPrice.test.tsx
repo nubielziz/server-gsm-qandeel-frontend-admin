@@ -199,7 +199,7 @@ describe('Bulk price change', () => {
   });
 
   it('is disabled without pricing:update', async () => {
-    await openServices('/services', { permissions: ['catalog:read'] });
+    await openServices('/catalog', { permissions: ['catalog:read'] });
     const button = await screen.findByRole('button', { name: 'Bulk price change…' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'You need the pricing:update permission');

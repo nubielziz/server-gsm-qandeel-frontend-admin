@@ -1,10 +1,12 @@
-// The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate.
+// The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate, with the
+// old addresses of Services & pricing and Storefront redirected before that gate (legacyRedirects.ts).
 import { Authenticated } from '@refinedev/core';
 import { lazy, type ComponentType } from 'react';
 import { Outlet, Route, Routes } from 'react-router';
 import { AUTH_PATHS, LoginPage, SetPasswordPage, SetupTwoFactorPage, TwoFactorPage } from '@/features/auth';
 import { AppLoading } from './gates/AppLoading';
 import { HomeRedirect } from './gates/HomeRedirect';
+import { LegacyRedirect } from './gates/LegacyRedirect';
 import { PageRoute } from './gates/PageRoute';
 import { PublicArea } from './gates/PublicArea';
 import { RedirectWhenSignedIn } from './gates/RedirectWhenSignedIn';
@@ -52,7 +54,12 @@ export function AppRoutes() {
           <Route
             key={page.name}
             path={page.path}
-            element={<PageRoute page={page} action="list" Page={PAGES[page.name]} />}
+            element={
+              // An old address that still names a live page (`/storefront?tab=publish`) is sent on before the gate asks.
+              <LegacyRedirect>
+                <PageRoute page={page} action="list" Page={PAGES[page.name]} />
+              </LegacyRedirect>
+            }
           />
         ))}
         {PAGE_RESOURCES.filter((page) => page.detailPath).map((page) => (
@@ -62,6 +69,15 @@ export function AppRoutes() {
             element={<PageRoute page={page} action="show" Page={DETAIL_PAGES[page.name]} />}
           />
         ))}
+        {/* The old Services & pricing page has no resource any more; its address is sent to Catalog for good. */}
+        <Route
+          path="/services"
+          element={
+            <LegacyRedirect>
+              <NotFoundPage />
+            </LegacyRedirect>
+          }
+        />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
 

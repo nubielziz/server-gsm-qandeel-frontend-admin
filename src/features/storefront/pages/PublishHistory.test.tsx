@@ -1,4 +1,4 @@
-// Tests for "Earlier runs" on the Publish tab's start: every run newest first with what it took, its status, its counts and who
+// Tests for "Earlier runs" on the publish view's start: every run newest first with what it took, its status, its counts and who
 // started it; a draft says Continue; a link opens the run; the table is paged by the server; and its empty, failed and hidden states.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -89,10 +89,10 @@ describe('the list', () => {
     expect(draft.getByRole('link', { name: 'Continue run 5' })).toHaveTextContent('Continue');
     expect(draft.getByRole('link', { name: 'Continue run 5' })).toHaveAttribute(
       'href',
-      '/storefront?tab=publish&run=5',
+      '/catalog?view=publish&run=5',
     );
     await user.click((await rowOfRun(1)).getByRole('link', { name: 'Open run 1' }));
-    expect(app.location()).toBe('/storefront?tab=publish&run=1');
+    expect(app.location()).toBe('/catalog?view=publish&run=1');
     expect(await screen.findByRole('heading', { level: 2, name: 'Publish run 1' })).toBeInTheDocument();
   });
 
@@ -134,7 +134,7 @@ describe('paging, and the states of the table', () => {
     expect(await screen.findByText('1–25 of 60')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
     expect(await screen.findByText('26–50 of 60')).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront?tab=publish&page=2');
+    expect(app.location()).toBe('/catalog?view=publish&page=2');
     const second = lastOf(requests, 'GET', /\/admin\/publish-runs$/).url.searchParams;
     expect([second.get('_start'), second.get('_end')]).toEqual(['25', '50']);
     expect(await screen.findByRole('link', { name: 'Open run 35' })).toBeInTheDocument();

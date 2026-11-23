@@ -7,10 +7,8 @@ import {
   CheckboxField,
   EmptyState,
   ErrorState,
-  RadioGroup,
   SearchInput,
   SkeletonTable,
-  type RadioOption,
   type RowSelection,
 } from '@/components/ui';
 import {
@@ -24,20 +22,8 @@ import {
 import { PUBLISH_HINT } from '../lib/quickAddPublish';
 import type { QuickAddServiceStatus, ServiceGroups } from '../types';
 import { QuickAddGroupTable } from './QuickAddGroupTable';
+import { QuickAddStatusChoice } from './QuickAddStatusChoice';
 import { SelectAllBox } from './SelectAllBox';
-
-const STATUS_OPTIONS: readonly RadioOption[] = [
-  {
-    value: 'active',
-    label: 'On sale',
-    description: 'Merchants can order them at once, at the suggested price.',
-  },
-  {
-    value: 'disabled',
-    label: 'Switched off',
-    description: 'Check them on the Services page and switch them on yourself.',
-  },
-];
 
 /** The tick box "Also put them on the shop": what it shows, why it is locked (the reason becomes its title), and the change. */
 export type QuickAddPublishChoice = {
@@ -51,12 +37,18 @@ export interface QuickAddGroupsProps {
   selection: RowSelection<string>;
   /** What the picks add up to, worked out by the dialog (it needs the same figures for its buttons). */
   picked: { groups: number; services: number; tooMany: boolean };
-  serviceStatus: QuickAddServiceStatus;
-  onServiceStatus: (status: QuickAddServiceStatus) => void;
-  publish: QuickAddPublishChoice;
+  /** "Add them as": shown only with `onServiceStatus` (the Add services flow asks for it in its last step instead). */
+  serviceStatus?: QuickAddServiceStatus;
+  onServiceStatus?: (status: QuickAddServiceStatus) => void;
+  /** "Also put them on the shop": shown only when given (the Add services flow has its own switch in its last step). */
+  publish?: QuickAddPublishChoice;
 }
 
-/** Step 1: search and tick groups. "Select all groups" ticks every group with something to add, whatever the search shows. */
+/**
+ * Step 1: search and tick groups. "Select all groups" ticks every group with something to add, whatever the search shows. Under the
+ * table it also holds the choice of adding them on sale or switched off and the tick box for the shop, unless the caller leaves
+ * those props out.
+ */
 export function QuickAddGroups({
   groups,
   selection,
@@ -133,23 +125,20 @@ export function QuickAddGroups({
           Pick at most {MAX_QUICK_ADD_GROUPS} groups, or select all.
         </p>
       )}
-      <RadioGroup
-        legend="Add them as"
-        name="quick-add-status"
-        options={STATUS_OPTIONS}
-        value={serviceStatus}
-        listClassName="grid gap-2 sm:grid-cols-2"
-        onChange={(event) => onServiceStatus(event.target.value === 'disabled' ? 'disabled' : 'active')}
-      />
-      <CheckboxField
-        label="Also put them on the shop"
-        hint={PUBLISH_HINT}
-        align="start"
-        checked={publish.checked}
-        disabled={publish.lock !== undefined}
-        title={publish.lock}
-        onChange={(event) => publish.onChange(event.target.checked)}
-      />
+      {serviceStatus !== undefined && onServiceStatus && (
+        <QuickAddStatusChoice name="quick-add-status" value={serviceStatus} onChange={onServiceStatus} />
+      )}
+      {publish && (
+        <CheckboxField
+          label="Also put them on the shop"
+          hint={PUBLISH_HINT}
+          align="start"
+          checked={publish.checked}
+          disabled={publish.lock !== undefined}
+          title={publish.lock}
+          onChange={(event) => publish.onChange(event.target.checked)}
+        />
+      )}
       {lastRunNote}
     </div>
   );

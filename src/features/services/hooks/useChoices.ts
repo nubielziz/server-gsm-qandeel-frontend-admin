@@ -1,7 +1,8 @@
-// The menus the pricing and inventory screens choose from: the services (by name), the categories, the merchant groups and the
-// merchants. The group and merchant lists are read once and kept for a few minutes: they change rarely, and a menu should not
-// wait for a request each time a dialog opens.
+// The menus the pricing, inventory and Catalog screens choose from: the services (by name), the categories, the merchant groups, the
+// merchants and the suppliers. The group, merchant and supplier lists are read once and kept for a few minutes: they change rarely,
+// and a menu should not wait for a request each time a dialog opens.
 import { useList } from '@refinedev/core';
+import { listSuppliers } from '@/features/suppliers';
 import { useApiQuery } from '@/lib/query';
 import { listServices } from '../api';
 import { listGroupOptions, listMerchantOptions } from '../api/lookups';
@@ -38,6 +39,21 @@ export function useGroupOptions(enabled = true) {
     queryKey: [...SERVICE_LOOKUP_KEY, 'groups'],
     queryFn: ({ signal }) => listGroupOptions({ signal }),
     select: (result) => result.data,
+    enabled,
+    staleTime: LOOKUP_STALE_MS,
+  });
+}
+
+/**
+ * The suppliers by name, for the Catalog table's supplier filter (ids and names only). The suppliers feature owns
+ * `GET /admin/suppliers`; pass `enabled: false` when the staff member lacks `suppliers:read`.
+ */
+export function useSupplierChoices(enabled = true) {
+  return useApiQuery({
+    queryKey: [...SERVICE_LOOKUP_KEY, 'suppliers'],
+    queryFn: ({ signal }) =>
+      listSuppliers({ start: 0, end: PICKER_CAP, sort: ['name'], order: ['asc'] }, { signal }),
+    select: (result) => result.data.map(({ id, name }) => ({ id, name })),
     enabled,
     staleTime: LOOKUP_STALE_MS,
   });

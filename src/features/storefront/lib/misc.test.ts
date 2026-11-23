@@ -3,7 +3,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { namesOf } from './names';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
-import { storefrontListPath, storefrontPricingPath } from './paths';
+import {
+  storefrontListPath,
+  storefrontOnShopPath,
+  storefrontPricingPath,
+  storefrontPublishPath,
+} from './paths';
 import { isTacPrefix, isYear } from './tac';
 import { storefrontUrl } from './url';
 
@@ -53,20 +58,33 @@ describe('storefrontUrl', () => {
 });
 
 describe('storefrontListPath', () => {
-  it('leaves defaults out and writes the tab, kind and search', () => {
+  it('is the bare page with no state, and writes the tab, kind and search otherwise', () => {
     expect(storefrontListPath()).toBe('/storefront');
-    expect(storefrontListPath({ tab: 'listings' })).toBe('/storefront');
+    expect(storefrontListPath({ tab: 'landing' })).toBe('/storefront?tab=landing');
     expect(storefrontListPath({ tab: 'landing', kind: 'carrier' })).toBe(
       '/storefront?tab=landing&kind=carrier',
     );
     expect(storefrontListPath({ tab: 'tac', q: '3538' })).toBe('/storefront?tab=tac&q=3538');
   });
+
+  it('names the Landing pages tab explicitly when a page type or a search comes without a tab', () => {
+    expect(storefrontListPath({ kind: 'carrier' })).toBe('/storefront?tab=landing&kind=carrier');
+    expect(storefrontListPath({ q: 'vodafone' })).toBe('/storefront?tab=landing&q=vodafone');
+  });
 });
 
-describe('storefrontPricingPath', () => {
-  it('is the address of the Retail pricing tab, and of its All view', () => {
-    expect(storefrontPricingPath()).toBe('/storefront?tab=pricing');
-    expect(storefrontPricingPath({ show: 'all' })).toBe('/storefront?tab=pricing&show=all');
-    expect(storefrontListPath({ tab: 'pricing' })).toBe('/storefront?tab=pricing');
+describe('the Catalog addresses', () => {
+  it('names the publish view, and a run in it', () => {
+    expect(storefrontPublishPath()).toBe('/catalog?view=publish');
+    expect(storefrontPublishPath(12)).toBe('/catalog?view=publish&run=12');
+  });
+
+  it('names the shop price rules of the Catalog settings, and their All view', () => {
+    expect(storefrontPricingPath()).toBe('/catalog?view=settings&tab=shop-prices');
+    expect(storefrontPricingPath({ show: 'all' })).toBe('/catalog?view=settings&tab=shop-prices&show=all');
+  });
+
+  it('names the Catalog table narrowed to the services on the shop', () => {
+    expect(storefrontOnShopPath()).toBe('/catalog?shop=on');
   });
 });

@@ -47,9 +47,17 @@ export function conflict(code: string, title: string, detail: string, errors?: P
   return problem(409, code, title, detail, errors);
 }
 
-/** A list answer: filters, `q`, sort and range read the way `src/lib/api` writes them, with `x-total-count`. */
-export function listAnswer<T>(rows: T[], request: Request, searchFields: string[]): Response {
-  const { page, total } = applyListQuery(rows, new URL(request.url).searchParams, searchFields);
+/**
+ * A list answer: filters, `q`, sort and range read the way `src/lib/api` writes them, with `x-total-count`. `params` replaces the
+ * request's query for a route that took some filters out of it first.
+ */
+export function listAnswer<T>(
+  rows: T[],
+  request: Request,
+  searchFields: string[],
+  params: URLSearchParams = new URL(request.url).searchParams,
+): Response {
+  const { page, total } = applyListQuery(rows, params, searchFields);
   return HttpResponse.json(page as object[], {
     headers: { 'x-total-count': String(total), 'access-control-expose-headers': 'x-total-count' },
   });

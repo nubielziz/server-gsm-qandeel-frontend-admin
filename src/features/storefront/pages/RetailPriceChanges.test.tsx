@@ -1,6 +1,6 @@
-// Tests for the price changes block of the Retail pricing tab: the proposals that wait (shown first), the badge and the figures of
+// Tests for the price changes block of the shop price rules (the Retail pricing component): the proposals that wait (shown first), the badge and the figures of
 // each kind of change, the Waiting and All views kept in the address, approving and keeping proposals together, the ids the server
-// skips, the chip on the tab and the permission of the buttons. The rules block has its own file.
+// skips, the chip on the settings tab and the permission of the buttons. The rules block has its own file.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -10,19 +10,19 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { storefrontStore } from '../mocks/store';
 import { recordRequests } from '../test/requests';
-import { openStorefront, rowOf, tabTexts, tableNamed } from '../test/storefrontPage';
+import { openCatalogView, rowOf, settingsTabTexts, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 afterEach(() => vi.restoreAllMocks());
 
 const CHANGES = 'Price changes';
-const PRICING = '/storefront?tab=pricing';
+const PRICING = '/catalog?view=settings&tab=shop-prices';
 type User = ReturnType<typeof userEvent.setup>;
 
 /** Opens the tab and waits for the price changes. */
 async function openChanges(route = PRICING, options: { permissions?: string[] } = {}) {
-  const app = await openStorefront(route, options);
+  const app = await openCatalogView(route, options);
   await tableNamed(CHANGES);
   return app;
 }
@@ -71,7 +71,7 @@ describe('the list', () => {
     const app = await openChanges();
     await user.click(screen.getByRole('button', { name: 'All' }));
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(8));
-    expect(app.location()).toBe('/storefront?tab=pricing&show=all');
+    expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices&show=all');
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
     const table = await tableNamed(CHANGES);
     expect(table.getAllByText('Waiting for approval')).toHaveLength(3);
@@ -81,7 +81,7 @@ describe('the list', () => {
     expect(table.getByText('The price was changed outside the rule.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Waiting' }));
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(4));
-    expect(app.location()).toBe('/storefront?tab=pricing');
+    expect(app.location()).toBe('/catalog?view=settings&tab=shop-prices');
   });
 
   it('asks the server for the waiting proposals, newest first, 25 to a page', async () => {
@@ -96,7 +96,7 @@ describe('the list', () => {
 
   it('opens on the All view from an address with show=all and then asks for every change', async () => {
     const requests = recordRequests();
-    await openChanges('/storefront?tab=pricing&show=all');
+    await openChanges('/catalog?view=settings&tab=shop-prices&show=all');
     const asked = requests
       .sent()
       .filter((sent) => sent.url.pathname.endsWith('/admin/retail-price-changes'))
@@ -111,7 +111,7 @@ describe('the list', () => {
         HttpResponse.json([], { headers: { 'x-total-count': '0' } }),
       ),
     );
-    await openStorefront(PRICING);
+    await openCatalogView(PRICING);
     expect(await screen.findByText('Nothing is waiting for you')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Show every change' }));
     expect(await screen.findByText('No price changes yet')).toBeInTheDocument();
@@ -121,21 +121,26 @@ describe('the list', () => {
     mockServer.use(
       http.get('*/admin/retail-price-changes', () => problem(500, 'INTERNAL', 'Server error', 'No answer.')),
     );
-    await openStorefront(PRICING);
+    await openCatalogView(PRICING);
     expect(await screen.findByText('Could not load the price changes')).toBeInTheDocument();
   });
 });
 
 describe('the chip on the tab', () => {
+  it('shows the count to a role with pricing:read alone', async () => {
+    await openChanges(PRICING, { permissions: ['pricing:read'] });
+    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing3'));
+  });
+
   it('counts the proposals that wait from the server’s total and drops once none waits', async () => {
     const user = userEvent.setup();
     await openChanges();
-    await waitFor(() => expect(tabTexts()[2]).toBe('Retail pricing3'));
+    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing3'));
     for (const service of ['T-Mobile USA Unlock', 'Vodafone UK iPhone Unlock', 'Orange France Unlock']) {
       await tick(user, service);
     }
     await user.click(screen.getByRole('button', { name: 'Keep the current price' }));
-    await waitFor(() => expect(tabTexts()[2]).toBe('Retail pricing'));
+    await waitFor(() => expect(settingsTabTexts()[0]).toBe('Retail pricing'));
     expect(await screen.findByText('Nothing is waiting for you')).toBeInTheDocument();
   });
 });
@@ -160,7 +165,7 @@ describe('approving and keeping proposals', () => {
     // The proposal left the waiting list and the bar is gone.
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(3));
     expect(screen.queryByRole('region', { name: 'Selected price changes' })).not.toBeInTheDocument();
-    expect(tabTexts()[2]).toBe('Retail pricing2');
+    expect(settingsTabTexts()[0]).toBe('Retail pricing2');
   });
 
   it('lists the ids the server skipped, in its words, and leaves them waiting', async () => {
@@ -269,7 +274,7 @@ describe('approving and keeping proposals', () => {
 
   it('skips a change that was already resolved when it is ticked in the All view', async () => {
     const user = userEvent.setup();
-    await openChanges('/storefront?tab=pricing&show=all');
+    await openChanges('/catalog?view=settings&tab=shop-prices&show=all');
     await waitFor(async () => expect((await tableNamed(CHANGES)).getAllByRole('row')).toHaveLength(8));
     const requests = recordRequests();
     await user.click((await rowOf(CHANGES, 'Samsung KG Lock Fix')).getByRole('checkbox'));

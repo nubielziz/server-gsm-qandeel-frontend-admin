@@ -124,7 +124,13 @@ export function applyListQuery<D>(
   if (sort.length > 0) {
     result = [...result].sort((a, b) => {
       for (const [i, field] of sort.entries()) {
-        const diff = compareValues(valueAt(a, field), valueAt(b, field));
+        const av = valueAt(a, field);
+        const bv = valueAt(b, field);
+        // Rows with no value go last in both directions, like the server's `nulls last` (backend decision 060): settled
+        // before the direction is applied, so a descending sort does not turn them into the first rows.
+        const aMissing = av === null || av === undefined;
+        if (aMissing !== (bv === null || bv === undefined)) return aMissing ? 1 : -1;
+        const diff = compareValues(av, bv);
         if (diff !== 0) return order[i]?.toLowerCase() === 'desc' ? -diff : diff;
       }
       return 0;

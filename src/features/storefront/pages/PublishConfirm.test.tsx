@@ -151,11 +151,11 @@ describe('the dialog behind Publish', () => {
     expect(await screen.findByText('51–60 of 60')).toBeInTheDocument();
     const dialog = await openConfirm(user);
     await user.click(dialog.getByRole('button', { name: 'Publish 30 services' }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish&run=5'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=5'));
     // The result of the run shows its first rows in the order of the run, not page 2 of the preview's sort.
     expect(await screen.findByText('29 services are on the shop', {}, POLL)).toBeInTheDocument();
     expect(await screen.findByText('1–50 of 60')).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront?tab=publish&run=5');
+    expect(app.location()).toBe('/catalog?view=publish&run=5');
   });
 
   it('keeps the address as it is when the server refuses the run', async () => {

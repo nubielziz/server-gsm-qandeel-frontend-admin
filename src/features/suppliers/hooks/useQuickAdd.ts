@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { toast } from '@/components/ui';
 import type { Id } from '@/lib/api';
-import { useApiMutation, useApiQuery } from '@/lib/query';
+import { CATALOG_ROWS_KEY, useApiMutation, useApiQuery } from '@/lib/query';
 import { getQuickAddRun, listServiceGroups, startQuickAdd } from '../api';
 import { isLive, RUN_POLL_MS, servicesText } from '../lib/quickAdd';
 import type { QuickAddBody, QuickAddRun } from '../types';
@@ -43,7 +43,7 @@ export function useStartQuickAdd(supplierId: Id) {
 /**
  * Follows a run: reads it again every 1.5 seconds while it is `queued` or `running`, and not once it has finished. `tracked` is
  * the run as it is known now (the start's answer, or the newest run of the groups listing) and is shown until the first read
- * arrives. When a run that was live finishes here, the supplier's lists, the Services page, the groups and the dashboard figures
+ * arrives. When a run that was live finishes here, the supplier's lists, the Catalog table, the groups and the dashboard figures
  * are made stale, and a finished run toasts how many services it added.
  */
 export function useQuickAddRun(supplier: { id: Id; name: string }, tracked: QuickAddRun | null) {
@@ -74,8 +74,9 @@ export function useQuickAddRun(supplier: { id: Id; name: string }, tracked: Quic
         invalidate({ resource: target.resource, id: target.id, invalidates: ['list', 'many', 'detail'] }),
       ),
       invalidate({ resource: 'services', invalidates: ['list', 'many', 'detail'] }),
-      ...[SUPPLIER_CATALOGUE_KEY, SUPPLIER_GROUPS_KEY, ...SUPPLIER_STALE_KEYS].map((queryKey) =>
-        queryClient.invalidateQueries({ queryKey }),
+      // The Catalog table's rows and counts read the new services and their supplier chain.
+      ...[SUPPLIER_CATALOGUE_KEY, SUPPLIER_GROUPS_KEY, ...SUPPLIER_STALE_KEYS, CATALOG_ROWS_KEY].map(
+        (queryKey) => queryClient.invalidateQueries({ queryKey }),
       ),
     ]);
     if (run.status === 'succeeded') {

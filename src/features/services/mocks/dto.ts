@@ -1,16 +1,20 @@
 // Maps what the mock server keeps (the demo's numbers) to the API's shapes: a service with its worked-out floor, margin and
-// "below floor", the service detail, a category, a rule and a masked inventory code.
+// "below floor" and the Catalog join (supplier chain, shop page and price, what needs attention), the service detail, a category, a
+// rule and a masked inventory code.
 import { toMoney } from '@/mocks/seed';
 import type { InventoryCode, PricingRule, Service, ServiceCategory, ServiceDetail } from '../types';
+import { factsOf, type CatalogJoin } from './catalog';
 import { floorOf, groupOf, isBelowFloor, marginOf } from './pricing';
 import type { Stores } from './seed';
 import type { MockCategory, MockCode, MockRule, MockService } from './types';
 
-/** `GET /admin/services` row. */
-export function toService(stores: Stores, row: MockService): Service {
+/**
+ * `GET /admin/services` row (also the answer of create and change). The supplier names, the shop page and price and the attention
+ * reasons are joined from the other mocks at this moment; a key the session may not read is left out, never `null` or `false`.
+ */
+export function toService(stores: Stores, row: MockService, join: CatalogJoin): Service {
   const category = stores.categories.find(row.categoryId);
-  const supplier = row.supplierId === null ? undefined : stores.suppliers.get(row.supplierId);
-  const fallback = row.fallbackId === null ? undefined : stores.suppliers.get(row.fallbackId);
+  const { shop, chain, attention, shopBlocked } = factsOf(stores, row, join);
   return {
     id: row.id,
     name: row.name,
@@ -31,18 +35,30 @@ export function toService(stores: Stores, row: MockService): Service {
     minQty: row.minQty,
     maxQty: row.maxQty,
     qtyOptions: row.qtyOptions,
-    supplier: row.supplierId !== null && supplier ? { id: row.supplierId, name: supplier } : null,
-    fallbackSupplier: row.fallbackId !== null && fallback ? { id: row.fallbackId, name: fallback } : null,
+    supplier: chain.primary,
+    fallbackSupplier: chain.fallback,
+    attention,
+    retailPrice: shop.retailPrice,
+    retailPriceSource: shop.retailPriceSource,
+    // The waiting flag is false for a service with no shop price, as the server's own read says; the attention reason is not.
+    ...(join.pricing
+      ? {
+          retailPriceRule: shop.retailPriceRule,
+          retailPriceWaiting: shop.retailPrice !== null && shop.proposalWaiting,
+        }
+      : {}),
+    ...(join.storefront ? { listingId: shop.listingId, isListed: shop.isListed, shopBlocked } : {}),
   };
 }
 
-/** `GET /admin/services/:id`: the row plus its fields, options and group prices. */
-export function toDetail(stores: Stores, row: MockService): ServiceDetail {
+/** `GET /admin/services/:id`: the row plus its fields, options and group prices, and the failed publish with `storefront:read`. */
+export function toDetail(stores: Stores, row: MockService, join: CatalogJoin): ServiceDetail {
   return {
-    ...toService(stores, row),
+    ...toService(stores, row, join),
     fields: row.fields,
     options: row.options,
     groupPrices: row.groupPrices,
+    ...(join.storefront ? { publishFailure: join.shop(row.id).publishFailure } : {}),
   };
 }
 

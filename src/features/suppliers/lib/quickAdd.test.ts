@@ -18,6 +18,7 @@ import {
   quickAddBody,
   resultLines,
   servicesText,
+  sourceText,
   tooManyGroups,
 } from './quickAdd';
 
@@ -60,6 +61,14 @@ const run = (changes: Partial<QuickAddRun> = {}): QuickAddRun => ({
   startedAt: '2026-11-11T10:00:01.000Z',
   finishedAt: '2026-11-11T10:00:30.000Z',
   ...changes,
+});
+
+describe('where a run takes its services from', () => {
+  it('names every group or counts the picked ones, with the supplier', () => {
+    expect(sourceText('all', 12, 'Nordic GSM')).toBe('all groups of Nordic GSM');
+    expect(sourceText('groups', 1, 'Nordic GSM')).toBe('1 group of Nordic GSM');
+    expect(sourceText('groups', 3, 'Nordic GSM')).toBe('3 groups of Nordic GSM');
+  });
 });
 
 describe('the keys of a group', () => {

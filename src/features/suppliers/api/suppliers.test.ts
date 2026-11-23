@@ -205,11 +205,12 @@ describe('supplier services and the import', () => {
     expect(items[0]).toMatchObject({ minQty: 1, maxQty: 50, qtyOptions: [], quantityDiffers: false });
     expect(items[2]).toMatchObject({ minQty: 1, maxQty: 1, qtyOptions: [], quantityDiffers: false });
 
-    expect(await importServices(NORDIC, { supplierServiceIds: ids })).toEqual({
-      created: 1,
-      updated: 1,
-      unchanged: 1,
-    });
+    const answer = await importServices(NORDIC, { supplierServiceIds: ids });
+    expect(answer).toMatchObject({ created: 1, updated: 1, unchanged: 1 });
+    // The ids are the services this call created (not the updated one), and the new item is now linked to exactly that service.
+    const imported = (await listSupplierServices(NORDIC)).data.find((item) => item.id === fresh?.id);
+    expect(answer.createdServiceIds).toEqual([imported?.linkedServiceId]);
+    expect(answer.createdServiceIds).toHaveLength(1);
     expect((await listSupplierServices(NORDIC, { filters: { imported: false } })).total).toBe(2);
     expect((await getSupplier(NORDIC)).links).toHaveLength(15);
     await expect(previewImport(NORDIC, { supplierServiceIds: [] })).rejects.toMatchObject({ status: 422 });
@@ -242,11 +243,11 @@ describe('the limits of a long supplier list', () => {
     await expect(previewImport(NORDIC, { supplierServiceIds: ids })).rejects.toMatchObject({ status: 422 });
     await expect(importServices(NORDIC, { supplierServiceIds: ids })).rejects.toMatchObject({ status: 422 });
     expect((await previewImport(NORDIC, { supplierServiceIds: ids.slice(0, 500) })).items).toHaveLength(500);
-    expect(await importServices(NORDIC, { supplierServiceIds: ids.slice(0, 500) })).toEqual({
-      created: 500,
-      updated: 0,
-      unchanged: 0,
-    });
+    const answer = await importServices(NORDIC, { supplierServiceIds: ids.slice(0, 500) });
+    expect(answer).toMatchObject({ created: 500, updated: 0, unchanged: 0 });
+    // One id per created service, in creation order, and never more than 500.
+    expect(answer.createdServiceIds).toHaveLength(500);
+    expect(new Set(answer.createdServiceIds).size).toBe(500);
   });
 });
 

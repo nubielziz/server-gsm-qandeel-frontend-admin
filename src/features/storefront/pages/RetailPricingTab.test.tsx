@@ -1,4 +1,4 @@
-// Tests for the Retail pricing tab's rules: the table and its words, the empty state with the owner's example, the two-step
+// Tests for the retail pricing rules (mounted at the Catalog's settings address through the test stand-in): the table and its words, the empty state with the owner's example, the two-step
 // dialog (the form, the server's preview, Save the rule) for a new rule and an edit, the server's refusals under their fields,
 // and the review before a rule is turned off, turned on or deleted. The price changes block has its own file.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -9,19 +9,19 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { recordRequests } from '../test/requests';
-import { dialogOf, openStorefront, rowOf, tableNamed } from '../test/storefrontPage';
+import { dialogOf, openCatalogView, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 afterEach(() => vi.restoreAllMocks());
 
 const RULES = 'Retail pricing rules';
-const PRICING = '/storefront?tab=pricing';
+const PRICING = '/catalog?view=settings&tab=shop-prices';
 type User = ReturnType<typeof userEvent.setup>;
 
 /** Opens the tab and waits for the rules. */
 async function openPricing(options: { permissions?: string[] } = {}) {
-  const app = await openStorefront(PRICING, options);
+  const app = await openCatalogView(PRICING, options);
   await tableNamed(RULES);
   return app;
 }
@@ -80,7 +80,7 @@ describe('the rules table', () => {
   it('says there is no rule yet and starts the first rule on the owner’s example', async () => {
     const user = userEvent.setup();
     noRules();
-    await openStorefront(PRICING);
+    await openCatalogView(PRICING);
     expect(await screen.findByText('No retail pricing rule yet')).toBeInTheDocument();
     expect(screen.getByText("A rule prices the shop from each service's cost.")).toBeInTheDocument();
     await user.click(screen.getAllByRole('button', { name: 'New rule' })[1]);

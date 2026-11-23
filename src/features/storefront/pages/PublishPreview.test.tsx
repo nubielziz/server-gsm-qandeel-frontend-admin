@@ -70,15 +70,15 @@ describe('the figures', () => {
     expect(screen.getByLabelText('Preview figures')).toHaveClass('!mb-0', '!rounded-none', '!border-0');
   });
 
-  it('warns when rows wait for a pricing rule, with the count and the way to the Retail pricing tab', async () => {
+  it('warns when rows wait for a pricing rule, with the count and the way to the shop price rules', async () => {
     await openPreview();
     const note = screen.getByText(/have no price because no pricing rule covers them/);
     expect(note).toHaveTextContent(
-      '3 services have no price because no pricing rule covers them. Make a rule on the Retail pricing tab, then press Check again.',
+      '3 services have no price because no pricing rule covers them. Make a shop price rule, then press Check again.',
     );
-    expect(within(note).getByRole('link', { name: 'Make a rule on the Retail pricing tab' })).toHaveAttribute(
+    expect(within(note).getByRole('link', { name: 'Make a shop price rule' })).toHaveAttribute(
       'href',
-      '/storefront?tab=pricing',
+      '/catalog?view=settings&tab=shop-prices',
     );
   });
 
@@ -454,7 +454,7 @@ describe('Check again', () => {
     const requests = recordRequests();
     const app = await openPreview();
     await user.click(screen.getByRole('button', { name: 'Check again' }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish&run=8'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish&run=8'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs$/).body).toEqual({
       scope: { kind: 'run', runId: 5 },
     });
@@ -492,7 +492,7 @@ describe('Check again', () => {
     const app = await openPreview();
     await user.click(screen.getByRole('button', { name: 'Check again' }));
     expect(await screen.findByText('That run is still working.')).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront?tab=publish&run=5');
+    expect(app.location()).toBe('/catalog?view=publish&run=5');
   });
 });
 
@@ -506,7 +506,7 @@ describe('Discard this preview', () => {
     expect(dialog.getByText('Your edits are thrown away. Nothing has been published.')).toBeInTheDocument();
     expect(itemReads(requests).length).toBeGreaterThan(0);
     await user.click(dialog.getByRole('button', { name: 'Discard preview' }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs\/5\/cancel$/).body).toEqual({});
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
@@ -540,7 +540,7 @@ describe('Discard this preview', () => {
     expect(
       await within(screen.getByRole('dialog')).findByText('This run is already finished.'),
     ).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront?tab=publish&run=5');
+    expect(app.location()).toBe('/catalog?view=publish&run=5');
     await waitFor(() => expect(runReads(requests)).toBeGreaterThan(before));
   });
 
@@ -550,6 +550,6 @@ describe('Discard this preview', () => {
     roleStore().patch(1, { permissions: PUBLISH_PERMISSIONS.filter((one) => one !== 'storefront:publish') });
     await user.click(screen.getByRole('button', { name: 'Discard this preview' }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Discard preview' }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
   });
 });

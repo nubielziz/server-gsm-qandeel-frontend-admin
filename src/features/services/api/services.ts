@@ -16,11 +16,11 @@ import {
 import type { CreateServiceBody, Service, ServiceDetail, UpdateServiceBody } from '../types';
 
 /**
- * The services, one page of them, with the total in `x-total-count`. Filters: `q` (name, code or category), `type`,
- * `status`, `belowFloor` and `categoryId`; sort with `_sort`/`_order` on `name`, `type`, `cost` or `basePrice`. The
- * counts above the table are this call with `_start=0&_end=1`, read from the total.
- * Assumed contract: rows carry the figures the server works out (`floorPrice`, `marginPct`, `belowFloor`, `costChangedFrom`),
- * `code`, `slaMinutes`, `executionMode`, and the category and suppliers as `{ id, name }` joins.
+ * The services, one page of them, with the total in `x-total-count`. Filters: `q`, `type`, `status`, `belowFloor`, `categoryId`,
+ * `needsAttention`, `hasSupplier`, `supplierId` (primary supplier), `isListed`, `notOnShop` (these two need storefront:read, else 403);
+ * sort on `name`, `type`, `cost`, `basePrice` or `retailPrice`. The counts above the table are this call with `_start=0&_end=1`.
+ * Assumed contract: rows carry the server's figures (`floorPrice`, `marginPct`, `belowFloor`), `code`, `slaMinutes`, `executionMode`,
+ * `{ id, name }` joins, and the optional Catalog keys (`attention`, `retailPrice`, `listingId`, `isListed`, `shopBlocked`, see Service).
  * @route GET /admin/services
  */
 export function listServices(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Service>> {
@@ -30,7 +30,7 @@ export function listServices(query: ListQuery = {}, init?: ApiInit): Promise<Lis
 /**
  * One service with the parts its editing dialogs start from: custom fields, option lists and group prices. No other
  * route reads them, which is why this one is assumed to embed them.
- * Assumed contract: the list row plus `fields`, `options` and `groupPrices`.
+ * Assumed contract: the list row plus `fields`, `options`, `groupPrices` and `publishFailure` (storefront:read, else left out).
  * @route GET /admin/services/:id
  */
 export function getService(id: Id, init?: ApiInit): Promise<ServiceDetail> {

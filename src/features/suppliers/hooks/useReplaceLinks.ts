@@ -1,9 +1,11 @@
-// Saves the supplier chain of a service from the "Edit links" dialog. The dialog shows a failed call, so no error toast.
+// Saves the supplier chain of a service from the "Edit links" dialog or the Suppliers section of the Catalog panel. Both show a
+// failed call themselves, so no error toast.
 import type { Id } from '@/lib/api';
-import { useApiMutation } from '@/lib/query';
+import { CATALOG_ROWS_KEY, useApiMutation } from '@/lib/query';
 import { replaceSupplierLinks } from '../api';
 import type { ReplaceLinksBody } from '../types';
 import { staleSupplier, SUPPLIER_CATALOGUE_KEY, SUPPLIER_STALE_KEYS } from './keys';
+import { SERVICE_CHAIN_KEY } from './useServiceSupplierLinks';
 
 /** What the editor hands over: the service, the new chain, its name for the toast and the suppliers the change touches. */
 export type ReplaceLinksVariables = {
@@ -14,7 +16,10 @@ export type ReplaceLinksVariables = {
   supplierIds: readonly Id[];
 };
 
-/** Replaces a service's chain. The suppliers that gained or lost the service, and the services page, are made stale. */
+/**
+ * Replaces a service's chain. The suppliers that gained or lost the service, the service's own chain read and the Catalog table
+ * are made stale; the `services` resource is too, so a detail that shows the primary supplier is read again.
+ */
 export function useReplaceLinks() {
   return useApiMutation({
     mutationFn: ({ serviceId, body }: ReplaceLinksVariables) => replaceSupplierLinks(serviceId, body),
@@ -22,7 +27,8 @@ export function useReplaceLinks() {
       ...supplierIds.flatMap((id) => staleSupplier(id)),
       { resource: 'services', id: serviceId },
     ],
-    invalidateKeys: [SUPPLIER_CATALOGUE_KEY, ...SUPPLIER_STALE_KEYS],
+    // The Catalog table's rows show the primary supplier and the no-supplier reason.
+    invalidateKeys: [SUPPLIER_CATALOGUE_KEY, SERVICE_CHAIN_KEY, ...SUPPLIER_STALE_KEYS, CATALOG_ROWS_KEY],
     successNotification: (_chain, { body, serviceName }) => ({
       message: 'Supplier links updated',
       description:

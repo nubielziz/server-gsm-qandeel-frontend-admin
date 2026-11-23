@@ -29,6 +29,7 @@ export * from './Stars';
 
 // Navigation and controls
 export * from './Tabs';
+export * from './Steps';
 export * from './SectionTabs';
 export * from './SegmentedControl';
 export * from './Switch';
@@ -46,7 +47,10 @@ export type { FieldErrorLike } from './fieldA11y';
 export * from './Modal';
 export * from './FormDialog';
 export * from './ConfirmDialog';
+export * from './BulkSummaryDialog';
 export * from './Drawer';
+export * from './SidePanel';
+export * from './FormSection';
 export * from './Menu';
 export * from './FloatingPanel';
 export * from './CommandPalette';

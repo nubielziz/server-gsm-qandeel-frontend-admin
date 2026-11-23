@@ -2,12 +2,11 @@
 // (Import). Built in the demo's dialog style (the demo only says "Import its catalog"). It sends the new and the changed services, not the
 // ones that already match, because those have nothing to do. A long list goes to the server 500 at a time.
 import { useState, type FormEvent } from 'react';
-import { errorText, Modal, useRowSelection } from '@/components/ui';
+import { Modal, useRowSelection } from '@/components/ui';
 import { useImportFilter } from '../hooks/useImportFilter';
 import { useImportServices, usePreviewImport } from '../hooks/useImportServices';
 import { useSelectAllNotImported } from '../hooks/useSelectAllNotImported';
-import { BatchStopped } from '../lib/batches';
-import { importableIds, stoppedText } from '../lib/importPlan';
+import { failureText, importableIds } from '../lib/importPlan';
 import type { ImportPreviewItem, Supplier } from '../types';
 import { ImportFooter } from './ImportFooter';
 import { ImportPicker } from './ImportPicker';
@@ -16,12 +15,6 @@ import { ImportPreview } from './ImportPreview';
 export interface ImportDialogProps {
   supplier: Pick<Supplier, 'id' | 'name'>;
   onClose: () => void;
-}
-
-/** What the error slot says for a failed call: how far a long list got before it (when it did), then the server's words. */
-function failureText(failure: unknown, verb: 'previewed' | 'imported'): string {
-  if (!(failure instanceof BatchStopped)) return errorText(failure);
-  return stoppedText(verb, failure, errorText(failure.reason));
 }
 
 /** Two steps in one dialog: pick (the list) and preview (what would happen). The picks survive Back. */

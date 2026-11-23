@@ -1,7 +1,8 @@
-// Builds the mock stores from the demo's own seed (`S.services`, `S.suppliers`, `S.merchants`, `GROUPS`, `S.groupPrices`,
+// Builds the mock stores from the demo's own seed (`S.services`, `S.merchants`, `GROUPS`, `S.groupPrices`,
 // `S.clientPrices`, `S.categoryRules`), mapped to the API's shapes. The demo has no categories, option lists, custom fields or code stock as
 // records, so those are made up: categories from the services' category names, a few fields and options, and codes for two
-// digital-code services (Z3X credits and the UnlockTool licence).
+// digital-code services (Z3X credits and the UnlockTool licence). A service's suppliers are not kept here: the rows join them from the
+// suppliers mock's links (catalog.ts).
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
 import { Collection } from '@/mocks/db';
 import type { ServiceType } from '../types';
@@ -19,8 +20,6 @@ export type DemoService = {
   price: number;
   minProfit: number;
   sla: number;
-  sup: string;
-  fb: string | null;
   status: 'active' | 'disabled';
   auto: boolean;
 };
@@ -42,7 +41,6 @@ export type Stores = {
   rules: Collection<MockRule>;
   codes: Collection<MockCode>;
   groups: MockGroup[];
-  suppliers: ReadonlyMap<number, string>;
   merchants: ReadonlyMap<number, MockMerchant>;
   /** Merchant overrides by `${merchantId}|${serviceId}`; the merchants feature owns their editing. */
   clientPrices: ReadonlyMap<string, number>;
@@ -75,9 +73,6 @@ function codesFor(
 /** The stores for one run of the mock server. */
 export function buildStores(state: DemoState): Stores {
   const demoServices = demoRows<DemoService>(state, 'services');
-  const suppliers = new Map(
-    demoRows<DemoNamed>(state, 'suppliers').map((s) => [demoNumericId(s.id), s.name]),
-  );
   const merchants = new Map(
     demoRows<DemoMerchant>(state, 'merchants').map((m) => [
       demoNumericId(m.id),
@@ -116,8 +111,6 @@ export function buildStores(state: DemoState): Stores {
     minQty: 1,
     maxQty: 1,
     qtyOptions: [],
-    supplierId: demoNumericId(s.sup),
-    fallbackId: s.fb ? demoNumericId(s.fb) : null,
     status: s.status,
     auto: s.auto,
     fields: [],
@@ -194,7 +187,6 @@ export function buildStores(state: DemoState): Stores {
     rules: new Collection(rules),
     codes: new Collection(codes),
     groups: [...GROUPS],
-    suppliers,
     merchants,
     clientPrices,
   };

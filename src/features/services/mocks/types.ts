@@ -28,8 +28,6 @@ export type MockService = {
   minQty: number;
   maxQty: number;
   qtyOptions: number[];
-  supplierId: number | null;
-  fallbackId: number | null;
   status: 'active' | 'disabled';
   auto: boolean;
   fields: ServiceField[];

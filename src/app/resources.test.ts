@@ -15,15 +15,15 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
     // No demo page (feature 23, backend addition): campaigns and their detail.
     ['notifications', 'Notifications', 'Operations', 'bell', 'broadcasts:read'],
-    ['services', 'Services & pricing', 'Catalog', 'tag', ['catalog:read', 'pricing:read', 'inventory:read']],
-    ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
+    // The one Catalog page: any view's read permission opens it (the services manifest).
     [
-      'storefront',
-      'Storefront',
+      'catalog',
       'Catalog',
-      'store',
-      ['storefront:read', 'legal:read', 'catalog:read', 'pricing:read'],
+      'Catalog',
+      'tag',
+      ['catalog:read', 'pricing:read', 'inventory:read', 'storefront:read'],
     ],
+    ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
     [
       'finance',
       'Finance',
@@ -48,14 +48,28 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       'sliders',
       ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read', 'webhooks:read'],
     ],
+    // The shop's own pages, in the System group after Settings; any tab's read permission opens it (the storefront manifest).
+    ['storefront', 'Shop content', 'System', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
     ['audit', 'Audit log', 'System', 'history', 'audit:read'],
     // No demo page; any one of the three read permissions opens it (docs/system-health-design.md).
     ['system-health', 'System health', 'System', 'pulse', ['system:read', 'alerts:read', 'incidents:read']],
   ];
 
 describe('page resources', () => {
-  it('are the demo’s 16 pages, in its order, with Notifications after Abandoned checkouts and System health last', () => {
+  it('are the console’s pages in order: Notifications after Abandoned checkouts, Shop content after Settings, System health last', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
+  });
+
+  it('hold Catalog and Suppliers in the Catalog group, and Shop content in System right after Settings', () => {
+    const names = (group: string) =>
+      resources.filter((resource) => resource.meta?.group === group).map((resource) => resource.name);
+    expect(names('Catalog')).toEqual(['catalog', 'suppliers']);
+    expect(names('System')).toEqual(['access', 'settings', 'storefront', 'audit', 'system-health']);
+  });
+
+  it('keep no page for the old Services & pricing name, so a name-keyed access check cannot pass by accident', () => {
+    // A `can` check for a resource that does not exist answers yes, so a left-over name would let anyone through.
+    expect(resources.some((resource) => resource.name === 'services')).toBe(false);
   });
 
   it.each(EXPECTED)('%s: label, group, icon and permission', (name, label, group, icon, permission) => {

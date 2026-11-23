@@ -1,5 +1,6 @@
-// Tests for the Categories tab, run through the whole app against the dev mock API: the list with the groups that see each category,
-// New category and Edit (only what changed is sent), and Delete with the server's refusal for a category that services still use.
+// Tests for the Categories tab of the Catalog settings, run through the whole app against the dev mock API: the list with the groups
+// that see each category, New category and Edit (only what changed is sent), and Delete with the server's refusal for a category that
+// services still use.
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -10,7 +11,7 @@ import { setupMockApi } from '@/test/renderApp';
 import { getCategory, listCategories } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
 import { recordRequests } from '../test/requests';
-import { dialogOf, openServices } from '../test/servicesPage';
+import { dialogOf, openServices, settingsRoute } from '../test/servicesPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -18,7 +19,7 @@ vi.setConfig({ testTimeout: 20_000 });
 beforeEach(() => mockServer.use(...groupHandlers));
 afterEach(() => vi.restoreAllMocks());
 
-const CATEGORIES = '/services?tab=categories';
+const CATEGORIES = settingsRoute('categories');
 /** The row of the categories table that holds some text. */
 async function categoryRow(text: string) {
   const table = within(await screen.findByRole('table', { name: 'Service categories' }));

@@ -1,5 +1,5 @@
-// QuantityFields: the "Quantity" block of the New/Edit service dialog (feature 25). Staff choose how the service sells (one per
-// order, a range, or fixed packs); the server checks the rule again and derives the smallest and largest from the packs.
+// QuantityFields: the "Quantity" block of the service form (feature 25), in the New/Edit dialog and the panel's Details section.
+// Staff choose how the service sells (one per order, a range, or fixed packs); the server checks the rule again.
 import { useFormContext, useWatch } from 'react-hook-form';
 import { RadioGroup, TextField, type RadioOption } from '@/components/ui';
 import { maxProblem, minProblem, packsProblem, type QuantityValues } from '../lib/quantity';
@@ -18,8 +18,11 @@ const MODES: readonly RadioOption[] = [
   },
 ];
 
-/** The quantity inputs. It reads the dialog's form from the nearest `FormProvider`. */
-export function QuantityFields() {
+/**
+ * The quantity inputs. It reads the form from the nearest `FormProvider`. `stacked` puts the smallest and largest on their own
+ * lines, for the narrow side panel.
+ */
+export function QuantityFields({ stacked = false }: { stacked?: boolean }) {
   const {
     register,
     control,
@@ -30,7 +33,7 @@ export function QuantityFields() {
     <div className="space-y-3">
       <RadioGroup legend="Quantity" options={MODES} {...register('quantityMode')} />
       {mode === 'range' && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className={stacked ? 'grid gap-3' : 'grid gap-3 sm:grid-cols-2'}>
           <TextField
             label="Smallest"
             inputMode="numeric"

@@ -2,7 +2,7 @@
 // call themselves (in the error slot, or under the field the server named), so their hooks toast no error. Test and Sync
 // have no dialog: they keep the default error toast, which carries the server's title and detail.
 import { toast } from '@/components/ui';
-import { useApiMutation } from '@/lib/query';
+import { CATALOG_ROWS_KEY, useApiMutation } from '@/lib/query';
 import { createSupplier, deleteSupplier, syncSupplier, testSupplier, updateSupplier } from '../api';
 import { testSummary } from '../lib/connection';
 import { syncSummary } from '../lib/sync';
@@ -10,6 +10,9 @@ import type { CreateSupplierBody, Supplier, UpdateSupplierBody } from '../types'
 import { staleLogged, staleSupplier, SUPPLIER_STALE_KEYS, SUPPLIER_CATALOGUE_KEY } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
+
+// The Catalog table's rows show each service's supplier by name and its cost: a rename or a sync changes them.
+const CATALOG_ROW_KEYS = [...SUPPLIER_STALE_KEYS, CATALOG_ROWS_KEY];
 
 /** The words of an edit's toast, one per field the form can change. */
 const FIELD_LABELS: Record<keyof UpdateSupplierBody, string> = {
@@ -45,8 +48,8 @@ export function useUpdateSupplier() {
       updateSupplier(supplier.id, body),
     // An edit may carry a new API key: same rule as above.
     gcTime: 0,
-    invalidates: (_updated, { supplier }) => staleSupplier(supplier.id),
-    invalidateKeys: SUPPLIER_STALE_KEYS,
+    invalidates: (_updated, { supplier }) => [...staleSupplier(supplier.id), { resource: 'services' }],
+    invalidateKeys: CATALOG_ROW_KEYS,
     successNotification: (_updated, { body }) => ({
       message: 'Connection updated',
       description: `${(Object.keys(body) as (keyof UpdateSupplierBody)[]).map((key) => FIELD_LABELS[key]).join(', ')} changed.`,
@@ -102,9 +105,9 @@ export function useTestSupplier() {
 export function useSyncSupplier() {
   return useApiMutation({
     mutationFn: (supplier: Pick<Supplier, 'id' | 'name'>) => syncSupplier(supplier.id),
-    invalidates: (_result, supplier) => staleLogged(supplier.id),
-    // A sync rewrites the supplier's service list too.
-    invalidateKeys: [...SUPPLIER_STALE_KEYS, SUPPLIER_CATALOGUE_KEY],
+    invalidates: (_result, supplier) => [...staleLogged(supplier.id), { resource: 'services' }],
+    // A sync rewrites the supplier's service list too, and the costs the Catalog rows show.
+    invalidateKeys: [...CATALOG_ROW_KEYS, SUPPLIER_CATALOGUE_KEY],
     successNotification: (result) => ({
       message: `${result.services} services checked`,
       description: syncSummary(result),

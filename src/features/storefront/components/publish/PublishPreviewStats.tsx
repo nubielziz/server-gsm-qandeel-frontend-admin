@@ -1,5 +1,5 @@
 // PublishPreviewStats: the figures of a draft (how many services, how many are ready, need a look, cannot be published and will be
-// published) and, when some rows wait for a pricing rule, the warning that says so with the way to the Retail pricing tab. The
+// published) and, when some rows wait for a pricing rule, the warning that says so with the way to the shop price rules. The
 // figures are the run's own counts; nothing is added up here.
 import { Link } from 'react-router';
 import { StatGrid } from '@/components/ui';
@@ -37,7 +37,7 @@ export function PublishPreviewStats({ run }: { run: PublishRun }) {
           {servicesText(noRule)} {noRule === 1 ? 'has' : 'have'} no price because no pricing rule covers{' '}
           {noRule === 1 ? 'it' : 'them'}.{' '}
           <Link className="link" to={storefrontPricingPath()}>
-            Make a rule on the Retail pricing tab
+            Make a shop price rule
           </Link>
           , then press Check again.
         </p>

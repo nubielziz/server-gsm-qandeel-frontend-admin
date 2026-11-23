@@ -3,7 +3,8 @@
 // prices it moves arrive within about two minutes, so the tab says so in its toast. A failure is left to the dialog, which shows
 // the server's words under the field or in its error slot.
 import { toast, type SortState } from '@/components/ui';
-import { useApiMutation, useApiQuery } from '@/lib/query';
+import type { Id } from '@/lib/api';
+import { CATALOG_ROWS_KEY, LISTING_DETAILS_KEY, useApiMutation, useApiQuery } from '@/lib/query';
 import {
   createRetailPriceRule,
   deleteRetailPriceRule,
@@ -25,9 +26,14 @@ import type {
 } from '../types';
 import { RETAIL_RESOURCES, retailPreviewKey, STOREFRONT_STALE_KEYS } from './keys';
 import { useCounts } from './useCounts';
+import { staleServiceRecords } from './useListingMutations';
 import { useStorefrontList } from './useStorefrontList';
 
 const NO_ERROR_TOAST = () => false as const;
+
+// A rule or a decided proposal moves the shop prices (and the waiting reason) of the Catalog table's rows too, and the price of a listing
+// that is open in an editor (the Catalog panel's).
+const STALE_KEYS = [...STOREFRONT_STALE_KEYS, CATALOG_ROWS_KEY, LISTING_DETAILS_KEY];
 
 /** What a write to a rule makes stale: both lists, the listings (their prices move soon) and the counts. */
 const RULE_STALE = [
@@ -67,6 +73,21 @@ export function useWaitingCount(enabled: boolean): number | undefined {
   return useCounts('pricing', listRetailPriceChanges, [WAITING_SPEC], enabled)[WAITING_SPEC.id];
 }
 
+/**
+ * The price change that waits for one service (a proposal of the follow pass that needs a person), or undefined when none waits.
+ * The Catalog panel's shop price block shows it with Apply and Keep. Needs `pricing:read`. The key starts with the shared Catalog
+ * rows key, so every write that moves a shop price or decides a proposal makes this read stale too.
+ */
+export function useServiceProposal(serviceId: Id, enabled: boolean) {
+  return useApiQuery({
+    queryKey: [...CATALOG_ROWS_KEY, 'retail-proposal', serviceId],
+    queryFn: ({ signal }) =>
+      listRetailPriceChanges({ start: 0, end: 5, filters: { serviceId, waiting: true } }, { signal }),
+    select: (result) => result.data.find((change) => change.waiting),
+    enabled,
+  });
+}
+
 /** Asks the server what a rule change would do (nothing is saved): the rule dialog's second step. */
 export function usePreviewRetailRule() {
   return useApiMutation({
@@ -91,7 +112,7 @@ export function useCreateRetailRule() {
   return useApiMutation({
     mutationFn: (body: CreateRetailPriceRuleBody) => createRetailPriceRule(body),
     invalidates: RULE_STALE,
-    invalidateKeys: STOREFRONT_STALE_KEYS,
+    invalidateKeys: STALE_KEYS,
     onSuccess: (rule) => {
       toast({
         kind: 'success',
@@ -110,7 +131,7 @@ export function useUpdateRetailRule() {
     mutationFn: ({ rule, body }: { rule: RetailPriceRule; body: UpdateRetailPriceRuleBody }) =>
       updateRetailPriceRule(rule.id, body),
     invalidates: RULE_STALE,
-    invalidateKeys: STOREFRONT_STALE_KEYS,
+    invalidateKeys: STALE_KEYS,
     onSuccess: (updated, { body }) => {
       const switched = Object.keys(body).length === 1 && body.isActive !== undefined;
       toast({
@@ -129,7 +150,7 @@ export function useDeleteRetailRule() {
   return useApiMutation({
     mutationFn: (rule: RetailPriceRule) => deleteRetailPriceRule(rule.id),
     invalidates: RULE_STALE,
-    invalidateKeys: STOREFRONT_STALE_KEYS,
+    invalidateKeys: STALE_KEYS,
     onSuccess: (_result, rule) => {
       toast({ kind: 'success', title: 'Rule deleted', body: rule.label, ttl: 3000 });
     },
@@ -137,16 +158,24 @@ export function useDeleteRetailRule() {
   });
 }
 
+/**
+ * What a decision sends, and the services it is about. `serviceIds` is never sent: it names the service records to make stale (a
+ * Catalog panel open on one of them shows its shop price and its waiting mark). A caller that does not know them leaves it out.
+ */
+export type ResolveChangesInput = ResolveRetailPriceChangesBody & { serviceIds?: readonly Id[] };
+
 /** Applies the new price of some proposals, or keeps the current price. The tab lists the ids the server skipped. */
 export function useResolveRetailChanges() {
   return useApiMutation({
-    mutationFn: (body: ResolveRetailPriceChangesBody) => resolveRetailPriceChanges(body),
-    invalidates: [
+    mutationFn: ({ serviceIds: _serviceIds, ...body }: ResolveChangesInput) =>
+      resolveRetailPriceChanges(body),
+    invalidates: (_result, { serviceIds = [] }) => [
       { resource: RETAIL_RESOURCES.changes },
       { resource: RETAIL_RESOURCES.rules },
       { resource: 'service-listings' },
+      ...staleServiceRecords(...serviceIds),
     ],
-    invalidateKeys: STOREFRONT_STALE_KEYS,
+    invalidateKeys: STALE_KEYS,
     onSuccess: (result) => {
       const parts = [
         result.applied > 0 ? `${result.applied} applied` : null,

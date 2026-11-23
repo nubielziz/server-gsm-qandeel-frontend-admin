@@ -1,51 +1,31 @@
-// StorefrontPage: "Storefront" (`/storefront`, the demo's `pageStorefront` in 50-p-storefront.js): a header and seven tabs kept in the
-// address (`?tab=`), the demo's four plus the TAC catalogue the map adds in place of Live preview (M4), the Retail pricing tab (backend
-// feature 31) and the Search tab of the shop's search engine (backend feature 29). A tab the role may not read is hidden. The page only composes; each tab owns its data, and the server decides every price, status and refusal.
+// StorefrontPage: "Shop content" (`/storefront`, the demo's `pageStorefront` in 50-p-storefront.js): a header and five tabs kept in the
+// address (`?tab=`), the demo's Landing pages, Content and legal and Help centre, the TAC catalogue the map adds in place of Live
+// preview (M4) and the Search tab of the shop's search engine (backend feature 29). A tab the role may not read is hidden. The
+// services on the shop, publishing and retail pricing live on the Catalog page. The page only composes; each tab owns its data,
+// and the server decides every status and refusal.
 import { EmptyState, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
-import { listListings } from '../api';
 import { ContentTab } from '../components/ContentTab';
 import { HelpTab } from '../components/HelpTab';
 import { LandingTab } from '../components/LandingTab';
-import { ListingsTab } from '../components/ListingsTab';
-import { RetailPricingTab } from '../components/pricing/RetailPricingTab';
-import { PublishTab } from '../components/publish/PublishTab';
 import { SearchTab } from '../components/SearchTab';
 import { StorefrontHeader } from '../components/StorefrontHeader';
 import { TacTab } from '../components/TacTab';
-import { useCounts } from '../hooks/useCounts';
-import { useWaitingCount } from '../hooks/useRetailPricing';
 import { useStorefrontGrants } from '../hooks/useStorefrontGrants';
-import { useTabView } from '../hooks/useTabView';
-import { LISTED_SPEC } from '../lib/counts';
+import { usePinTab, useTabView } from '../hooks/useTabView';
 import { STOREFRONT_TABS, type StorefrontTab } from '../lib/tabs';
 
 /** The page: header, tabs and the tab the address names. */
 export function StorefrontPage() {
   const grants = useStorefrontGrants();
   const { tab, setTab } = useTabView();
-  const counts = useCounts(
-    'listings',
-    listListings,
-    [LISTED_SPEC],
-    grants.ready && grants.can('storefront:read'),
-  );
-
-  // The proposals that wait for a person show on the Retail pricing tab as a chip.
-  const waiting = useWaitingCount(grants.ready && grants.can('pricing:read'));
 
   const visible = STOREFRONT_TABS.filter((spec) => grants.canAny(spec.anyOf));
   // An unknown or forbidden `?tab=` falls back to the first tab the staff member may open.
   const current = visible.find((spec) => spec.id === tab) ?? visible[0];
-  const items: TabItem<StorefrontTab>[] = visible.map((spec) => ({
-    value: spec.id,
-    label: spec.label,
-    count:
-      spec.id === 'listings'
-        ? counts[LISTED_SPEC.id]
-        : spec.id === 'pricing' && waiting
-          ? waiting
-          : undefined,
-  }));
+  // The address always names the tab on screen (the default one too, from the first render), so a search or a page number never sits
+  // in an address without one: such an address reads as an old listings link.
+  usePinTab(current?.id ?? (grants.ready ? undefined : tab));
+  const items: TabItem<StorefrontTab>[] = visible.map((spec) => ({ value: spec.id, label: spec.label }));
 
   return (
     <>
@@ -57,19 +37,16 @@ export function StorefrontPage() {
       ) : !current ? (
         <Panel flush>
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot see the storefront, its legal documents, the TAC catalogue or the retail pricing.
-            Ask an owner if you need access.
+            Your role cannot see the shop content, its legal documents or the TAC catalogue. Ask an owner if
+            you need access.
           </EmptyState>
         </Panel>
       ) : (
         <>
           <div className="mb-4">
-            <Tabs items={items} value={current.id} onChange={setTab} label="Storefront sections" />
+            <Tabs items={items} value={current.id} onChange={setTab} label="Shop content sections" />
           </div>
           <div role="tabpanel" aria-label={current.label}>
-            {current.id === 'listings' && <ListingsTab grants={grants} />}
-            {current.id === 'publish' && <PublishTab grants={grants} />}
-            {current.id === 'pricing' && <RetailPricingTab grants={grants} />}
             {current.id === 'landing' && <LandingTab grants={grants} />}
             {current.id === 'content' && <ContentTab grants={grants} />}
             {current.id === 'help' && <HelpTab grants={grants} />}

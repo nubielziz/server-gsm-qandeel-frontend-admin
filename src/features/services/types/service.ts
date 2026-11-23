@@ -1,8 +1,9 @@
-// Types of the services catalog (the Services tab of `/services`): a service as the API sends it, its detail with the custom
+// Types of the services catalog (the rows of the Catalog table, `/catalog`): a service as the API sends it, its detail with the custom
 // fields, option lists and group prices, and the bodies of the catalog endpoints. The map gives the tables but no bodies
 // (MISMATCHES M10), so every shape below is an assumed contract, narrowed from the generated rows in `schema.gen.ts`.
 import type { NamedRef, ServiceType } from '@/features/orders';
-import type { Decimal, Id, Money } from '@/lib/api';
+import type { RetailPriceSource } from '@/features/storefront';
+import type { Decimal, Id, IsoDateTime, Money } from '@/lib/api';
 import type {
   ServiceFieldRow,
   ServiceGroupPriceRow,
@@ -20,12 +21,49 @@ export type ServiceStatus = 'active' | 'disabled';
 export type ExecutionMode = 'auto' | 'manual';
 
 /**
+ * Why a live service needs a person, in the order the server lists them. `no_supplier`: an automatic service with no active
+ * supplier link. `below_floor`: the base price is under the floor. `price_proposal`: a shop price change waits to be applied or
+ * kept. `publish_failed`: the latest publish attempt for the service was refused and it has no shop page at all. The server
+ * sends `price_proposal` only with `pricing:read` and `publish_failed` only with `storefront:read`.
+ */
+export const ATTENTION_REASONS = ['no_supplier', 'below_floor', 'price_proposal', 'publish_failed'] as const;
+export type AttentionReason = (typeof ATTENTION_REASONS)[number];
+
+/**
+ * Why a service cannot be put on the shop, in the order the publish rules check them: the service is switched off, its
+ * category is switched off, the category is not open to shop buyers, or the type cannot be sold there (a file service).
+ */
+export const SHOP_BLOCK_REASONS = [
+  'service_disabled',
+  'category_inactive',
+  'b2b_only',
+  'not_orderable',
+] as const;
+export type ShopBlockReason = (typeof SHOP_BLOCK_REASONS)[number];
+
+/** The pricing rule that wrote a shop price, with the server's words for it ("Every service +25%"). */
+export type RetailPriceRuleRef = { id: Id; label: string };
+
+/**
+ * The latest refused publish attempt of a service that has no shop page: the run, why the row was refused (one of the publish
+ * result reasons, sent as text), the server's detail when it has one, and when. It clears by itself once the service gets a shop
+ * page, is switched off, or a later attempt ends another way.
+ */
+export type PublishFailure = { runId: Id; reason: string; detail: string | null; at: IsoDateTime };
+
+/**
  * One service, as `GET /admin/services` sends it (assumed contract). The price figures are worked out by the server:
  * `floorPrice` is the cost plus the minimum profit, `marginPct` the margin of the base price over the cost and
  * `belowFloor` says the base price is under the floor. The console never computes them. `code`, `slaMinutes` and
  * `executionMode` are the demo's columns; the supplier names are joins. `minQty`, `maxQty` and `qtyOptions` are the quantity
  * rule: with pack sizes the buyer picks one of them (and `minQty`/`maxQty` are the smallest and largest pack), without them any
  * whole quantity from `minQty` to `maxQty`.
+ *
+ * The Catalog keys at the end are optional: the server leaves a key out (it is never `null` or `false` instead) when the session
+ * may not read it, so a missing key means "not allowed", not "none". `attention` lists the reasons this session may see.
+ * `retailPrice` and `retailPriceSource` go to everyone (`null`: no shop price yet). `retailPriceRule` and `retailPriceWaiting`
+ * need `pricing:read`; `listingId`, `isListed` and `shopBlocked` need `storefront:read`. `shopBlocked` is `null` when nothing
+ * stops the service from going on the shop.
  */
 export type Service = Pick<
   ServiceRow,
@@ -46,6 +84,14 @@ export type Service = Pick<
   slaMinutes: number;
   supplier: NamedRef | null;
   fallbackSupplier: NamedRef | null;
+  attention?: AttentionReason[];
+  retailPrice?: Money | null;
+  retailPriceSource?: RetailPriceSource | null;
+  retailPriceRule?: RetailPriceRuleRef | null;
+  retailPriceWaiting?: boolean;
+  listingId?: Id | null;
+  isListed?: boolean;
+  shopBlocked?: ShopBlockReason | null;
 };
 
 /** The kinds of custom field a buyer fills in. The list is an assumption; the map only has the column. */
@@ -70,12 +116,14 @@ export type ServiceGroupPrice = Pick<ServiceGroupPriceRow, 'groupId' | 'price'>;
 
 /**
  * `GET /admin/services/:id` (assumed contract): the list row plus the parts the editing dialogs start from. There is
- * no read route for the parts alone, so the server is assumed to embed them.
+ * no read route for the parts alone, so the server is assumed to embed them. `publishFailure` needs `storefront:read` (left out
+ * without it) and is `null` when the service has no refused publish attempt to show.
  */
 export type ServiceDetail = Service & {
   fields: ServiceField[];
   options: ServiceOption[];
   groupPrices: ServiceGroupPrice[];
+  publishFailure?: PublishFailure | null;
 };
 
 // ---- Bodies ----
@@ -117,7 +165,11 @@ export type ReplaceGroupPricesBody = { prices: ServiceGroupPrice[]; retailPriceS
 
 /**
  * What `GET /admin/services` filters by (simple-rest field filters plus `q`). `belowFloor` asks for the services
- * priced under their floor; the server decides which ones those are.
+ * priced under their floor; the server decides which ones those are. The Catalog filters (boolean ones take only `eq`):
+ * `needsAttention` is any of the reasons this session may see; `hasSupplier` is an active supplier link; `supplierId` is the
+ * primary supplier (the first active link by priority); `isListed` is a shop page that is switched on; `notOnShop` is an active
+ * service that is not listed and that nothing blocks. `isListed` and `notOnShop` need `storefront:read`: without it the server
+ * answers 403 instead of ignoring them.
  */
 export type ServiceListFilters = {
   q?: string;
@@ -125,4 +177,13 @@ export type ServiceListFilters = {
   status?: ServiceStatus;
   belowFloor?: boolean;
   categoryId?: Id;
+  needsAttention?: boolean;
+  hasSupplier?: boolean;
+  supplierId?: Id;
+  isListed?: boolean;
+  notOnShop?: boolean;
 };
+
+/** The columns `GET /admin/services` sorts by (`_sort`): `retailPrice` is the shop price, with services that have none last. */
+export const SERVICE_SORT_FIELDS = ['name', 'type', 'cost', 'basePrice', 'retailPrice'] as const;
+export type ServiceSortField = (typeof SERVICE_SORT_FIELDS)[number];

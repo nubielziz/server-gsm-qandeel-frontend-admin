@@ -1,6 +1,6 @@
 {
   "feature": "services",
-  "page": "/services",
+  "page": "/catalog",
   "demo": [
     "43-p-services.js"
   ],

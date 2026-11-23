@@ -1,5 +1,6 @@
-// Tests for the Services on sale tab: the figures and columns, the On the site switch, the price dialog with the server's floor
-// refusal, and the search kept in the address. The Add listing dialog has its own file (AddListing.test.tsx).
+// Tests for the listings table: the figures and columns, the On the site switch, the price dialog with the server's floor
+// refusal, and the search kept in the address. It is mounted at the Catalog's address through the test stand-in. The Add listing dialog
+// has its own file (AddListing.test.tsx).
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -10,7 +11,7 @@ import { setupMockApi } from '@/test/renderApp';
 import { deleteRetailPriceRule } from '../api';
 import { recordRequests } from '../test/requests';
 import { storefrontStore } from '../mocks/store';
-import { dialogOf, openStorefront, rowOf, tabTexts, tableNamed } from '../test/storefrontPage';
+import { dialogOf, openCatalogView, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -20,19 +21,19 @@ afterEach(() => vi.restoreAllMocks());
 const TABLE = 'Storefront listings';
 
 describe('the table and the figures', () => {
-  it('opens on Services on sale with the count of listings on the site, and the demo’s heading and copy', async () => {
-    await openStorefront();
-    expect(screen.getByText(/^The public site where consumers buy one unlock at a time/)).toBeInTheDocument();
-    expect(await screen.findByRole('tab', { name: /^Services on sale/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
+  it('opens with the heading of the table and the count of listings on the site', async () => {
+    await openCatalogView('/catalog');
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'What the public can buy' }),
+    ).toBeInTheDocument();
+    const strip = within(await screen.findByRole('region', { name: 'Storefront catalogue' }));
+    await waitFor(() =>
+      expect(strip.getByText('Services on the site').parentElement).toHaveTextContent('11'),
     );
-    await waitFor(() => expect(tabTexts()[0]).toBe('Services on sale11'));
-    expect(screen.getByRole('heading', { level: 2, name: 'What the public can buy' })).toBeInTheDocument();
   });
 
   it('counts the listings on the site, off it and locked from the server’s totals', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const strip = within(await screen.findByRole('region', { name: 'Storefront catalogue' }));
     await waitFor(() =>
       expect(strip.getByText('Services on the site').parentElement).toHaveTextContent('11'),
@@ -42,7 +43,7 @@ describe('the table and the figures', () => {
   });
 
   it('shows each listing with its code and slug, B2B base, storefront price, floor, margin and no language', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const row = await rowOf(TABLE, 'AT&T USA Premier Unlock');
     expect(row.getByText('IMEI-ATT-USA · /atandt-usa-premier-unlock')).toBeInTheDocument();
     expect(row.getByText('$17.28')).toBeInTheDocument();
@@ -54,7 +55,7 @@ describe('the table and the figures', () => {
   });
 
   it('shows a locked service with its reason and neither a switch nor a price button', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const row = await rowOf(TABLE, 'MDM Removal, iPhone Premium');
     expect(row.getByText(/^High risk: removal services attract stolen devices/)).toBeInTheDocument();
     expect(row.queryByRole('switch')).not.toBeInTheDocument();
@@ -65,20 +66,23 @@ describe('the table and the figures', () => {
 describe('the On the site switch', () => {
   it('takes a service off the storefront and says so', async () => {
     const user = userEvent.setup();
-    await openStorefront();
+    await openCatalogView('/catalog');
     const row = await rowOf(TABLE, 'EE UK Unlock');
     await user.click(row.getByRole('switch', { name: 'Show EE UK Unlock on the storefront' }));
     expect(await screen.findByText('Removed from the storefront')).toBeInTheDocument();
     await waitFor(async () =>
       expect((await rowOf(TABLE, 'EE UK Unlock')).getByRole('switch')).not.toBeChecked(),
     );
-    await waitFor(() => expect(tabTexts()[0]).toBe('Services on sale10'));
+    const strip = within(await screen.findByRole('region', { name: 'Storefront catalogue' }));
+    await waitFor(() =>
+      expect(strip.getByText('Services on the site').parentElement).toHaveTextContent('10'),
+    );
   });
 });
 
 describe('the price dialog', () => {
   async function openPrice(user: ReturnType<typeof userEvent.setup>, name: string) {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const row = await rowOf(TABLE, name);
     await user.click(row.getByRole('button', { name: `Edit the storefront price of ${name}` }));
     return dialogOf('Storefront price');
@@ -132,7 +136,7 @@ describe('the price dialog', () => {
 
 describe('who wrote the price', () => {
   it('marks a price a rule wrote with a Rule tag that says which rule, and a price that waits with Waiting', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const imei = await rowOf(TABLE, 'iCloud Clean / Lost Check');
     expect(imei.getByText('Rule')).toBeInTheDocument();
     expect(imei.getByTitle('IMEI +30%')).toBeInTheDocument();
@@ -144,7 +148,7 @@ describe('who wrote the price', () => {
   });
 
   it('shows no mark for a typed price', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const typed = await rowOf(TABLE, 'AT&T USA Premier Unlock');
     expect(typed.queryByText('Rule')).not.toBeInTheDocument();
     expect(typed.queryByText('Waiting')).not.toBeInTheDocument();
@@ -154,7 +158,7 @@ describe('who wrote the price', () => {
 describe('the price dialog and the pricing rule', () => {
   type User = ReturnType<typeof userEvent.setup>;
   async function openPrice(user: User, name: string) {
-    await openStorefront();
+    await openCatalogView('/catalog');
     const row = await rowOf(TABLE, name);
     await user.click(row.getByRole('button', { name: `Edit the storefront price of ${name}` }));
     return dialogOf('Storefront price');
@@ -175,7 +179,9 @@ describe('the price dialog and the pricing rule', () => {
       dialog.getByText(/Priced now by: Carrier unlock \+20% \+\$0\.50, up to 5 cents\./),
     ).toBeInTheDocument();
     expect(
-      dialog.getByText(/A price change waits for your approval on the Retail pricing tab\./),
+      dialog.getByText(
+        /A price change waits for your approval on the Shop price rules tab of the Catalog settings\./,
+      ),
     ).toBeInTheDocument();
     expect(dialog.queryByRole('textbox', { name: /^Price shown to customers/ })).not.toBeInTheDocument();
   });
@@ -253,19 +259,19 @@ describe('the price dialog and the pricing rule', () => {
 describe('search and sort in the address', () => {
   it('sends the search after a pause, keeps it in the address and clears it', async () => {
     const user = userEvent.setup();
-    const app = await openStorefront();
+    const app = await openCatalogView('/catalog');
     await user.type(await screen.findByRole('searchbox', { name: 'Search service, code, slug' }), 'vodafone');
     expect(await screen.findByText('1 listing')).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront?q=vodafone');
+    expect(app.location()).toBe('/catalog?q=vodafone');
     expect(await rowOf(TABLE, 'Vodafone UK iPhone Unlock')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(await screen.findByText('14 listings')).toBeInTheDocument();
-    expect(app.location()).toBe('/storefront');
+    expect(app.location()).toBe('/catalog');
   });
 
   it('says no listing matches and offers to clear the search', async () => {
     const user = userEvent.setup();
-    await openStorefront('/storefront?q=nothing-like-this');
+    await openCatalogView('/catalog?q=nothing-like-this');
     expect(await screen.findByText('No listings match')).toBeInTheDocument();
     // The toolbar and the empty state both offer it.
     await user.click(screen.getAllByRole('button', { name: 'Clear filters' })[0]);
@@ -274,10 +280,10 @@ describe('search and sort in the address', () => {
 
   it('sorts by the service title from the header and writes it in the address', async () => {
     const user = userEvent.setup();
-    const app = await openStorefront();
+    const app = await openCatalogView('/catalog');
     await tableNamed(TABLE);
     await user.click(screen.getByRole('button', { name: /^Service/ }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?sort=publicTitle&dir=desc'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?sort=publicTitle&dir=desc'));
   });
 });
 
@@ -287,7 +293,7 @@ describe('states of the table', () => {
       http.get('*/admin/service-listings', () => problem(403, 'FORBIDDEN', 'No access', 'Closed for now.')),
     );
     const user = userEvent.setup();
-    await openStorefront();
+    await openCatalogView('/catalog');
     expect(await screen.findByText('Could not load the listings')).toBeInTheDocument();
     expect(screen.getByText('Closed for now.')).toBeInTheDocument();
     // The listings come back; Retry asks again.
@@ -297,26 +303,26 @@ describe('states of the table', () => {
   });
 
   it('goes back to the last page when the address names one past the end', async () => {
-    const app = await openStorefront('/storefront?page=9');
+    const app = await openCatalogView('/catalog?page=9');
     expect(await rowOf(TABLE, 'EE UK Unlock')).toBeTruthy();
-    expect(app.location()).toBe('/storefront');
+    expect(app.location()).toBe('/catalog');
   });
 });
 
 describe('publishing in bulk', () => {
   it('has a Publish services link beside Add listing, and the sub no longer says only IMEI services are sold', async () => {
     const user = userEvent.setup();
-    const app = await openStorefront();
+    const app = await openCatalogView('/catalog');
     await rowOf(TABLE, 'EE UK Unlock');
     const publish = screen.getByRole('link', { name: 'Publish services…' });
-    expect(publish).toHaveAttribute('href', '/storefront?tab=publish');
+    expect(publish).toHaveAttribute('href', '/catalog?view=publish');
     // With listings on the shop, Add listing stays the main button and Publish is the default one.
     expect(screen.getByRole('button', { name: 'Add listing…' })).toHaveClass('btn-primary');
     expect(publish).not.toHaveClass('btn-primary');
     expect(screen.queryByText(/Only IMEI services are sold to the public/)).not.toBeInTheDocument();
     expect(screen.getByText(/^A retail price can never go below the floor/)).toBeInTheDocument();
     await user.click(publish);
-    expect(app.location()).toBe('/storefront?tab=publish');
+    expect(app.location()).toBe('/catalog?view=publish');
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
     ).toBeInTheDocument();
@@ -325,16 +331,16 @@ describe('publishing in bulk', () => {
   it('makes Publish services the main button, and the call to action of the empty state, when the shop has no listing', async () => {
     const stores = await storefrontStore();
     for (const listing of stores.listings.list()) stores.listings.remove(listing.id);
-    await openStorefront();
+    await openCatalogView('/catalog');
     expect(await screen.findByText('No services yet')).toBeInTheDocument();
     expect(
-      screen.getByText('Add services under Services & pricing or Suppliers, then publish them here.'),
+      screen.getByText('Add services in the Catalog or under Suppliers, then publish them to the shop.'),
     ).toBeInTheDocument();
     const links = screen.getAllByRole('link', { name: 'Publish services…' });
-    // One in the panel's header, one in the empty state: both lead to the Publish tab and both are the main action.
+    // One in the panel's header, one in the empty state: both lead to the publish view and both are the main action.
     expect(links).toHaveLength(2);
     for (const link of links) {
-      expect(link).toHaveAttribute('href', '/storefront?tab=publish');
+      expect(link).toHaveAttribute('href', '/catalog?view=publish');
       expect(link).toHaveClass('btn-primary');
     }
     expect(screen.getByRole('button', { name: 'Add listing…' })).not.toHaveClass('btn-primary');
@@ -342,18 +348,41 @@ describe('publishing in bulk', () => {
 
   it('keeps the plain empty state of a search with no match, without a Publish button in it', async () => {
     const user = userEvent.setup();
-    await openStorefront();
+    await openCatalogView('/catalog');
     await user.type(await screen.findByRole('searchbox', { name: 'Search service, code, slug' }), 'zzzz');
     expect(await screen.findByText('No listings match')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'Publish services…' })).toHaveLength(1);
   });
 
   it('shows a disabled button with the permission named for a role that cannot create listings', async () => {
-    await openStorefront('/storefront', { permissions: ['storefront:read'] });
+    await openCatalogView('/catalog', { permissions: ['storefront:read'] });
     await rowOf(TABLE, 'EE UK Unlock');
     expect(screen.queryByRole('link', { name: 'Publish services…' })).not.toBeInTheDocument();
     const publish = screen.getByRole('button', { name: 'Publish services…' });
     expect(publish).toBeDisabled();
     expect(publish).toHaveAttribute('title', 'You need the storefront:create permission');
+  });
+});
+
+describe('a reader of the storefront', () => {
+  const READER = ['storefront:read'];
+
+  it('cannot change a listing: the switch, the price and Add listing say which permission they need', async () => {
+    await openCatalogView('/catalog', { permissions: READER });
+    const row = await rowOf(TABLE, 'EE UK Unlock');
+    const toggle = row.getByRole('switch', { name: 'Show EE UK Unlock on the storefront' });
+    expect(toggle).toBeDisabled();
+    expect(toggle).toHaveAttribute('title', 'You need the storefront:update permission');
+    expect(row.getByRole('button', { name: 'Edit the storefront price of EE UK Unlock' })).toBeDisabled();
+    const add = screen.getByRole('button', { name: 'Add listing…' });
+    expect(add).toBeDisabled();
+    expect(add).toHaveAttribute('title', 'You need the storefront:create and catalog:read permission');
+  });
+
+  it('can change a listing with storefront:update', async () => {
+    await openCatalogView('/catalog', { permissions: [...READER, 'storefront:update'] });
+    const row = await rowOf(TABLE, 'EE UK Unlock');
+    expect(row.getByRole('switch', { name: 'Show EE UK Unlock on the storefront' })).toBeEnabled();
+    expect(row.getByRole('button', { name: 'Edit the storefront price of EE UK Unlock' })).toBeEnabled();
   });
 });

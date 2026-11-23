@@ -9,6 +9,7 @@ import { logHandlers, resetLiveLog } from './logRoutes';
 import { quickAddHandlers } from './quickAddRoutes';
 import { resetSuppliersState } from './store';
 
+export { chainFactsReader, type ChainFacts, type SupplierRef } from './chainFacts';
 export { addCall, suppliersState } from './store';
 
 /** The feature's mock routes and the reset that puts its tables back to the seed. */

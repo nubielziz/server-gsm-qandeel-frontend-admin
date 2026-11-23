@@ -11,7 +11,7 @@ export function useRecordAccess(): (page: RecordPage) => boolean {
     merchants: useCanOpenPage('merchants') === true,
     customers: useCanOpenPage('customers') === true,
     suppliers: useCanOpenPage('suppliers') === true,
-    services: useCanOpenPage('services') === true,
+    catalog: useCanOpenPage('catalog') === true,
     risk: useCanOpenPage('risk') === true,
     refunds: useCanOpenPage('refunds') === true,
     access: useCanOpenPage('access') === true,

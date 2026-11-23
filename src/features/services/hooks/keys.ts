@@ -1,10 +1,13 @@
 // Query keys of the services reads that are not Refine resources (decision 005: they start with `['api', <feature>]`), and what
 // a catalog change makes stale. React Query matches the keys as prefixes.
 import type { QueryKey } from '@tanstack/react-query';
-import { DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
+import { CATALOG_ROWS_KEY, DASHBOARD_KEY, LISTING_DETAILS_KEY, type InvalidateTarget } from '@/lib/query';
 
-/** The service counts above the table: all services and the ones below their floor. */
-export const SERVICE_COUNTS_KEY = ['api', 'services', 'counts'] as const;
+/** The counts of the Catalog table (its chips and the header's below-floor sentence); under the shared rows key. */
+export const SERVICE_COUNTS_KEY = [...CATALOG_ROWS_KEY, 'counts'] as const;
+
+/** The pages of the Catalog table; under the shared rows key, so a listing, publish or supplier change refreshes them too. */
+export const SERVICE_ROWS_KEY = [...CATALOG_ROWS_KEY, 'list'] as const;
 
 /** The service menus (resolver, inventory filter, import and bulk dialogs). */
 export const SERVICE_PICKER_KEY = ['api', 'services', 'picker'] as const;
@@ -16,14 +19,16 @@ export const SERVICE_LOOKUP_KEY = ['api', 'services', 'lookups'] as const;
 export const RESOLVE_KEY = ['api', 'services', 'resolve'] as const;
 
 /**
- * The reads a price or catalog change makes stale besides Refine's own: the counts, the service menus, the resolutions,
- * and the dashboard (its "below floor" alert).
+ * The reads a price or catalog change makes stale besides Refine's own: the table's rows and counts (the shared rows key), the
+ * service menus, the resolutions, the dashboard (its "below floor" alert) and the listing reads. A listing prints the service's base
+ * price and the shop floor, and it is kept for good, so an open shop price block would show the old ones after a price save.
  */
 export const SERVICE_STALE_KEYS: QueryKey[] = [
-  SERVICE_COUNTS_KEY,
+  CATALOG_ROWS_KEY,
   SERVICE_PICKER_KEY,
   RESOLVE_KEY,
   DASHBOARD_KEY,
+  LISTING_DETAILS_KEY,
 ];
 
 /** The Refine targets of changed services: every list, and each service's own record. */

@@ -1,13 +1,12 @@
-// The eight tabs of the Storefront page and the permissions each one needs. Ports the `tabs` of pageStorefront in
-// 50-p-storefront.js (Services on sale, Landing pages, Content and legal, Help centre), swaps the demo's Live preview for
-// the TAC catalogue the map adds (MISMATCHES M4 has the preview), adds the Publish and Retail pricing tabs of backend feature 31
-// and ends with the Search tab of the shop's search engine.
+// The five tabs of the Shop content page and the permissions each one needs. Ports the `tabs` of pageStorefront in
+// 50-p-storefront.js (Landing pages, Content and legal, Help centre), swaps the demo's Live preview for the TAC catalogue the map
+// adds (MISMATCHES M4 has the preview) and ends with the Search tab of the shop's search engine. The listings, publish and retail
+// pricing parts of the old Storefront page moved to the Catalog page; their components stay in this feature.
 
-export type StorefrontTab =
-  'listings' | 'publish' | 'pricing' | 'landing' | 'content' | 'help' | 'tac' | 'search';
+export type StorefrontTab = 'landing' | 'content' | 'help' | 'tac' | 'search';
 
-/** The tab the page opens on. It is left out of the address, as the demo's default tab is. */
-export const DEFAULT_TAB: StorefrontTab = 'listings';
+/** The tab the page opens on. Its links and the page itself write it into the address (`?tab=landing`), never leave it out. */
+export const DEFAULT_TAB: StorefrontTab = 'landing';
 
 /**
  * One tab. `anyOf` lists the permissions that open it: one is enough, and the tab then shows only the parts the role may
@@ -17,11 +16,6 @@ export type TabSpec = { id: StorefrontTab; label: string; anyOf: readonly string
 
 /** The tabs in the order the page shows them. */
 export const STOREFRONT_TABS: readonly TabSpec[] = [
-  { id: 'listings', label: 'Services on sale', anyOf: ['storefront:read'] },
-  // Backend feature 31 (no demo tab): puts services on the shop in bulk, from a preview the server keeps (`?tab=publish&run=<id>`).
-  { id: 'publish', label: 'Publish', anyOf: ['storefront:create'] },
-  // Backend feature 31 (no demo tab): the rules that price the shop from each service's cost, and the price changes they make.
-  { id: 'pricing', label: 'Retail pricing', anyOf: ['pricing:read'] },
   { id: 'landing', label: 'Landing pages', anyOf: ['storefront:read'] },
   { id: 'content', label: 'Content and legal', anyOf: ['storefront:read', 'legal:read'] },
   { id: 'help', label: 'Help centre', anyOf: ['storefront:read'] },
@@ -31,7 +25,7 @@ export const STOREFRONT_TABS: readonly TabSpec[] = [
 ];
 
 /** Any one of these opens the page; each tab then shows only what the role may read (MISMATCHES M19 has the same shape). */
-export const PAGE_PERMISSIONS = ['storefront:read', 'legal:read', 'catalog:read', 'pricing:read'] as const;
+export const PAGE_PERMISSIONS = ['storefront:read', 'legal:read', 'catalog:read'] as const;
 
 /** Whether an address parameter names a tab. */
 export function isStorefrontTab(value: string | null): value is StorefrontTab {

@@ -2,6 +2,7 @@
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resources } from '../resources';
 import { GO_SHORTCUTS, GO_WINDOW_MS, useGlobalShortcuts, type ShortcutHandlers } from './useGlobalShortcuts';
 
 function Harness({ handlers, withSearch = true }: { handlers: ShortcutHandlers; withSearch?: boolean }) {
@@ -64,6 +65,14 @@ describe('useGlobalShortcuts', () => {
     const { handlers, user } = setup();
     await user.keyboard(`g${key}`);
     expect(handlers.goTo).toHaveBeenCalledExactlyOnceWith(page);
+  });
+
+  it('opens pages that exist: "p" is Catalog and "t" is Shop content, and no key names a page without a resource', () => {
+    // A key that names a missing page does nothing in the shell, and a missing page answers "allowed" to an access check.
+    expect(GO_SHORTCUTS.p).toBe('catalog');
+    expect(GO_SHORTCUTS.t).toBe('storefront');
+    const pages = resources.map((resource) => resource.name);
+    for (const page of Object.values(GO_SHORTCUTS)) expect(pages).toContain(page);
   });
 
   it('matches the demo’s map: 13 pages, with audit on "a" and no key for settings, checkouts or admins', () => {

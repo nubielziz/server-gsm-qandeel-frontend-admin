@@ -1,5 +1,6 @@
-// Tests for the Enabled and Auto switches of the Services tab and the row menu: each switch saves through the API with the demo's
-// toast, a refusal shows as the server's words, and the menu opens the dialogs and links the demo had.
+// Tests for the Enabled switch of the Catalog table and the row menu: the switch saves through the API with the demo's toast, a refusal
+// shows as the server's words, and the menu opens the dialogs and links the demo had, plus the shop page and shop price dialogs of a
+// service that has a shop page. (The Auto switch left the table for the service's panel.)
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -60,32 +61,8 @@ describe('the Enabled switch', () => {
   });
 });
 
-describe('the Auto switch', () => {
-  it('turns automation off and tells orders now wait for an operator', async () => {
-    const user = userEvent.setup();
-    await openServices();
-    const row = await serviceRow('T-Mobile USA Unlock');
-    await user.click(row.getByRole('switch', { name: 'Automation for T-Mobile USA Unlock' }));
-    expect(await screen.findByText('Automation off for T-Mobile USA Unlock')).toBeInTheDocument();
-    expect(screen.getByText('New orders wait for an operator to dispatch them.')).toBeInTheDocument();
-    expect((await getService(6)).executionMode).toBe('manual');
-  });
-
-  it('turns automation on for a manual service', async () => {
-    const user = userEvent.setup();
-    await openServices();
-    const row = await serviceRow('MDM Removal, iPhone Premium');
-    const toggle = row.getByRole('switch', { name: 'Automation for MDM Removal, iPhone Premium' });
-    expect(toggle).toHaveAttribute('aria-checked', 'false');
-    await user.click(toggle);
-    expect(await screen.findByText('Automation on for MDM Removal, iPhone Premium')).toBeInTheDocument();
-    expect(screen.getByText('Orders go to the supplier automatically.')).toBeInTheDocument();
-    expect((await getService(11)).executionMode).toBe('auto');
-  });
-});
-
 describe('the row menu', () => {
-  it('lists the actions of a service', async () => {
+  it('lists the actions of a service that has a shop page', async () => {
     const user = userEvent.setup();
     await openServices();
     await user.click(await screen.findByRole('button', { name: 'Actions for EE UK Unlock' }));
@@ -96,17 +73,59 @@ describe('the row menu', () => {
       'Group prices…',
       'Fields…',
       'Options…',
+      'Edit shop page…',
+      'Shop price…',
       'Trace a merchant price',
       'See orders',
       'Delete…',
     ]);
   });
 
+  it('leaves the shop items out for a service without a shop page', async () => {
+    const user = userEvent.setup();
+    await openServices('/catalog?q=Z3X');
+    await user.click(await screen.findByRole('button', { name: 'Actions for Z3X Credits x10' }));
+    const menu = within(await screen.findByRole('menu', { name: 'Actions for Z3X Credits x10' }));
+    const items = menu.getAllByRole('menuitem').map((item) => item.textContent);
+    expect(items).not.toContain('Edit shop page…');
+    expect(items).not.toContain('Shop price…');
+  });
+
+  it('opens the shop page editor and the shop price dialog on the service’s listing', async () => {
+    const user = userEvent.setup();
+    await openServices();
+    await pickFromRowMenu(user, 'EE UK Unlock', 'Edit shop page…');
+    const editor = await screen.findByRole('dialog', { name: 'Edit listing' });
+    expect(await within(editor).findByDisplayValue('EE UK Unlock')).toBeInTheDocument();
+    await user.click(within(editor).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Edit listing' })).not.toBeInTheDocument(),
+    );
+
+    await pickFromRowMenu(user, 'EE UK Unlock', 'Shop price…');
+    expect(await screen.findByRole('dialog', { name: 'Storefront price' })).toBeInTheDocument();
+  });
+
+  it('locks the shop items with the permission they need', async () => {
+    const user = userEvent.setup();
+    await openServices('/catalog', {
+      permissions: ['catalog:read', 'storefront:read', 'storefront:update'],
+    });
+    await user.click(await screen.findByRole('button', { name: 'Actions for EE UK Unlock' }));
+    const menu = within(await screen.findByRole('menu', { name: 'Actions for EE UK Unlock' }));
+    expect(menu.getByRole('menuitem', { name: 'Edit shop page…' })).toBeEnabled();
+    // A locked shop item names the missing permission (read after its label).
+    const price = menu.getByRole('menuitem', { name: /^Shop price…/ });
+    expect(price).toBeDisabled();
+    expect(price).toHaveAttribute('title', 'You need the pricing:update permission');
+  });
+
   it('opens the price resolver on that service', async () => {
     const user = userEvent.setup();
     const app = await openServices();
     await pickFromRowMenu(user, 'EE UK Unlock', 'Trace a merchant price');
-    expect(app.location()).toBe('/services?tab=resolver&service=9');
+    expect(app.location()).toContain('tab=resolver');
+    expect(app.location()).toContain('service=9');
     expect(await screen.findByRole('combobox', { name: 'Service' })).toHaveValue('9');
   });
 

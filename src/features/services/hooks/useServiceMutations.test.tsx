@@ -1,13 +1,16 @@
 // Tests for what a service change makes stale: creating, moving or deleting a service refreshes the category lists, so the count of
 // services in each category (`serviceCount`) stays true without a reload. A hook reads the categories while another changes a service.
+import { useQueryClient } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { LISTING_DETAILS_KEY } from '@/lib/query';
 import { setupMockApi, signInAs } from '@/test/renderApp';
 import { createService, listServices } from '../api';
 import { AppWrapper } from '../test/AppWrapper';
 import { useCategories } from './useChoices';
-import { useCreateService, useDeleteService, useUpdateService } from './useServiceMutations';
-import { staleServices, staleServicesAndCategories } from './keys';
+import { useReplaceGroupPrices } from './useServicePartMutations';
+import { useCreateService, useDeleteService, useUpdatePrice, useUpdateService } from './useServiceMutations';
+import { SERVICE_STALE_KEYS, staleServices, staleServicesAndCategories } from './keys';
 
 setupMockApi();
 
@@ -76,5 +79,36 @@ describe('the Refine targets', () => {
       { resource: 'services', id: 6 },
     ]);
     expect(staleServicesAndCategories(5)).toEqual([...staleServices(5), { resource: 'service-categories' }]);
+  });
+});
+
+describe('the listing read', () => {
+  it('is among the reads a services change makes stale', () => {
+    expect(SERVICE_STALE_KEYS).toContainEqual([...LISTING_DETAILS_KEY]);
+  });
+
+  it('is made stale by a merchant price save and by a group prices save, so an open shop price block reads it again', async () => {
+    await signInAs();
+    const [service] = (await listServices({ q: 'EE UK' })).data;
+    const { result } = renderHook(
+      () => ({ client: useQueryClient(), price: useUpdatePrice(), groups: useReplaceGroupPrices() }),
+      { wrapper: AppWrapper },
+    );
+    // A copy of the listing, as the panel's shop price block keeps it (it is kept for good until a write makes it old).
+    const key = [...LISTING_DETAILS_KEY, service.id];
+    const keep = () => result.current.client.setQueryData(key, { id: service.id });
+    const old = () => result.current.client.getQueryState(key)?.isInvalidated;
+
+    keep();
+    expect(old()).toBe(false);
+    await act(() => result.current.price.mutateAsync({ service, body: { basePrice: '99.0000' } }));
+    await waitFor(() => expect(old()).toBe(true));
+
+    keep();
+    expect(old()).toBe(false);
+    await act(() =>
+      result.current.groups.mutateAsync({ service, body: { prices: [], retailPriceSeen: null } }),
+    );
+    await waitFor(() => expect(old()).toBe(true));
   });
 });

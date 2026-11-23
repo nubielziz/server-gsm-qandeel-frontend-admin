@@ -14,7 +14,7 @@ import { setupMockApi, signInAs } from '@/test/renderApp';
 import { applyPublishRun, createPublishRun } from '../api';
 import { recordRequests } from '../test/requests';
 import { lastOf, openPublishStart, openRun, PUBLISH_PERMISSIONS, publishRoute } from '../test/publishPage';
-import { openStorefront, tableNamed } from '../test/storefrontPage';
+import { openCatalogView, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 40_000 });
@@ -58,7 +58,7 @@ describe('a preview being prepared', () => {
     const app = await openPublishStart();
     await user.click(screen.getByRole('button', { name: 'Prepare the preview' }));
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=publish'));
+    await waitFor(() => expect(app.location()).toBe('/catalog?view=publish'));
     expect(lastOf(requests, 'POST', /\/admin\/publish-runs\/8\/cancel$/).body).toEqual({});
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Publish services to the shop' }),
@@ -101,7 +101,7 @@ describe('the draft', () => {
     const user = userEvent.setup();
     const app = await openRun(DRAFT);
     await user.click(screen.getByRole('link', { name: 'All runs' }));
-    expect(app.location()).toBe('/storefront?tab=publish');
+    expect(app.location()).toBe('/catalog?view=publish');
     expect(await screen.findByRole('heading', { level: 2, name: 'Earlier runs' })).toBeInTheDocument();
   });
 
@@ -110,7 +110,7 @@ describe('the draft', () => {
     mockServer.use(
       http.get('*/admin/publish-runs/:id', () => problem(500, 'INTERNAL', 'Server error', 'The run failed.')),
     );
-    await openStorefront(publishRoute(DRAFT));
+    await openCatalogView(publishRoute(DRAFT));
     expect(await screen.findByText('Could not load this run')).toBeInTheDocument();
     mockServer.resetHandlers();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
@@ -145,7 +145,7 @@ describe('publishing in the background', () => {
     expect(dashboardReads()).toBe(0);
     await screen.findByText('29 services are on the shop', {}, POLL);
     expect(await screen.findByText('29 services published')).toBeInTheDocument();
-    // The number on the first tab and the other counts are asked again: the shop has new listings.
+    // The number on the table's tab (a stand-in of the Catalog's) and the other counts are asked again: the shop has new listings.
     const listings = () => requests.sent().filter((sent) => sent.url.pathname === '/admin/service-listings');
     await waitFor(() => expect(listings().length).toBeGreaterThanOrEqual(2));
     // So are the dashboard's figures (the shop's listings feed them).

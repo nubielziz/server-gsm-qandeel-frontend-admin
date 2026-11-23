@@ -1,4 +1,4 @@
-// Tests for the listing editor on the Services on sale tab: it opens from a row with the listing's full content, sends only the
+// Tests for the listing editor of the listings table: it opens from a row with the listing's full content, sends only the
 // fields that changed, shows the server's refusals under the fields, and controls the picture (client check, upload, replace,
 // remove, the server's refusal). They run through the whole app against the dev mock API.
 import { screen, waitFor } from '@testing-library/react';
@@ -10,7 +10,7 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { getListing, updateListing } from '../api';
 import { recordRequests } from '../test/requests';
-import { dialogOf, openStorefront, rowOf } from '../test/storefrontPage';
+import { dialogOf, openCatalogView, rowOf } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -23,9 +23,9 @@ const ATT_ID = 5; // its row in the mock seed
 async function openEditor(
   user: ReturnType<typeof userEvent.setup>,
   name = ATT,
-  options?: Parameters<typeof openStorefront>[1],
+  options?: Parameters<typeof openCatalogView>[1],
 ) {
-  await openStorefront('/storefront', options);
+  await openCatalogView('/catalog', options);
   const row = await rowOf(TABLE, name);
   await user.click(row.getByRole('button', { name: `Edit listing ${name}` }));
   const dialog = dialogOf('Edit listing');
@@ -80,12 +80,12 @@ describe('opening the editor', () => {
   });
 
   it('has no Edit button on a locked row', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     expect((await rowOf(TABLE, 'MDM Removal, iPhone Premium')).queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('disables the Edit button without storefront:update', async () => {
-    await openStorefront('/storefront', { permissions: ['storefront:read'] });
+    await openCatalogView('/catalog', { permissions: ['storefront:read'] });
     const row = await rowOf(TABLE, ATT);
     expect(row.getByRole('button', { name: `Edit listing ${ATT}` })).toBeDisabled();
   });
@@ -97,7 +97,7 @@ describe('opening the editor', () => {
         problem(500, 'INTERNAL_ERROR', 'Server error', 'The listing is not available.'),
       ),
     );
-    await openStorefront();
+    await openCatalogView('/catalog');
     await user.click((await rowOf(TABLE, ATT)).getByRole('button', { name: `Edit listing ${ATT}` }));
     const dialog = dialogOf('Edit listing');
     expect(await dialog.findByText('The listing is not available.')).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe('saving', () => {
 
   it('opens a brand typed by hand under Other and keeps a country saved before selectable', async () => {
     const user = userEvent.setup();
-    await openStorefront('/storefront');
+    await openCatalogView('/catalog');
     await updateListing(ATT_ID, { brand: 'Acme Phones', country: 'GB' });
     const row = await rowOf(TABLE, ATT);
     await user.click(row.getByRole('button', { name: `Edit listing ${ATT}` }));
@@ -343,7 +343,7 @@ describe('the picture', () => {
 
 describe('the table', () => {
   it('shows when a listing first went on the site under its switch', async () => {
-    await openStorefront();
+    await openCatalogView('/catalog');
     expect((await rowOf(TABLE, ATT)).getByText(/^Listed \d{2} \w{3}, \d{2}:\d{2}$/)).toBeInTheDocument();
   });
 });

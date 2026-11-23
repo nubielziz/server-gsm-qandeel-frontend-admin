@@ -7,7 +7,7 @@ import { Link } from 'react-router';
 import { Button, ButtonLink } from '@/components/ui';
 import { useApplyPublishRun, useCreatePublishRun } from '../../hooks/usePublishMutations';
 import type { StorefrontGrants } from '../../hooks/useStorefrontGrants';
-import { storefrontListPath, storefrontPublishPath } from '../../lib/paths';
+import { storefrontOnShopPath, storefrontPublishPath } from '../../lib/paths';
 import {
   CONTINUE_HINT,
   countsLine,
@@ -139,8 +139,8 @@ export function PublishOutcome({ run, grants, onOpen, onReread }: PublishOutcome
           </Button>
         )}
         {run.counts.published > 0 && (
-          <ButtonLink variant="ghost" size="sm" to={storefrontListPath()}>
-            See them in Services on sale
+          <ButtonLink variant="ghost" size="sm" to={storefrontOnShopPath()}>
+            See the services on the shop
           </ButtonLink>
         )}
       </div>

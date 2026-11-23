@@ -2,8 +2,9 @@
 // `draft` on the second read, `queued` reads `running` (half done) then `succeeded`, a run switch reads `running` then `done`. The mock
 // invents no price: a published row gets the price its row already shows.
 import type { PublishItem, PublishRun } from '../types';
+import { createListingFor, switchListingOf } from './publishListings';
 import { publishedRow, unpublishedRow } from './publishSeed';
-import type { MockPublishRun } from './types';
+import type { MockPublishRun, Stores } from './types';
 
 /** The counts of a run that has no rows evaluated yet (a run is created with these, and the read fills them in). */
 export function emptyCounts(): PublishRun['counts'] {
@@ -54,27 +55,33 @@ function leaveOut(m: MockPublishRun): void {
   );
 }
 
-/** Publishes (or refuses, for the rows the seed marks) up to `limit` of the included rows that have no result yet. */
-function publishSome(m: MockPublishRun, limit: number): void {
+/**
+ * Publishes (or refuses, for the rows the seed marks) up to `limit` of the included rows that have no result yet. A published row of a
+ * service the mock knows gets its shop page and price, as the server writes them with the result.
+ */
+function publishSome(m: MockPublishRun, limit: number, stores: Stores): void {
   let left = limit;
   m.items = m.items.map((item) => {
     if (left <= 0 || item.result !== null || !item.included) return item;
     left -= 1;
     const refusal = m.refusals.get(item.id);
-    return refusal
-      ? unpublishedRow(item, 'refused', refusal.reason, refusal.detail)
-      : publishedRow(item, m.run.listed);
+    if (refusal) return unpublishedRow(item, 'refused', refusal.reason, refusal.detail);
+    const published = publishedRow(item, m.run.listed);
+    const listingId = createListingFor(stores, item, m.run.listed);
+    return listingId === null ? published : { ...published, listingId };
   });
 }
 
-/** The rows the run switch moves. Switching on leaves the last one off when there are several (a service disabled meanwhile). */
-function completeSwitch(m: MockPublishRun): void {
+/** The rows the run switch moves (and their shop pages). Switching on leaves the last one off when there are several (a service disabled meanwhile). */
+function completeSwitch(m: MockPublishRun, stores: Stores): void {
   const target = m.run.switch.listed === true;
   const rows = m.items.filter((item) => item.result === 'published');
   const left = target && rows.length >= 3 ? rows[rows.length - 1] : undefined;
-  m.items = m.items.map((item) =>
-    item.result === 'published' && item !== left ? { ...item, listingListed: target } : item,
-  );
+  m.items = m.items.map((item) => {
+    if (item.result !== 'published' || item === left) return item;
+    switchListingOf(stores, item, target);
+    return { ...item, listingListed: target };
+  });
   m.run.switch = {
     ...m.run.switch,
     status: 'done',
@@ -84,7 +91,7 @@ function completeSwitch(m: MockPublishRun): void {
 }
 
 /** One read of the run: moves a run that is working one step on. Reads of the list do not call this. */
-export function advance(m: MockPublishRun): void {
+export function advance(m: MockPublishRun, stores: Stores): void {
   const { run } = m;
   const now = new Date().toISOString();
   if (run.status === 'preparing') {
@@ -100,16 +107,16 @@ export function advance(m: MockPublishRun): void {
     run.status = 'running';
     run.startedAt ??= now;
     leaveOut(m);
-    publishSome(m, Math.floor(m.items.filter((item) => item.included).length / 2));
+    publishSome(m, Math.floor(m.items.filter((item) => item.included).length / 2), stores);
   } else if (run.status === 'running') {
-    publishSome(m, m.items.length);
+    publishSome(m, m.items.length, stores);
     run.status = 'succeeded';
     run.finishedAt = now;
   }
   if (run.switch.status === 'queued') {
     run.switch = { ...run.switch, status: 'running', switched: Math.floor(countsOf(m).published / 2) };
   } else if (run.switch.status === 'running') {
-    completeSwitch(m);
+    completeSwitch(m, stores);
   }
 }
 
