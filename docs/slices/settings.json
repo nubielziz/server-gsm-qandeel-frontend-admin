@@ -8,7 +8,7 @@
   "folders": [
     "src/features/settings"
   ],
-  "notes": "Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs.",
+  "notes": "Gateways, tax, FX, policies (storefront settings), notifications; the notification log is a new tab.",
   "rules": {
     "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
     "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
@@ -493,63 +493,6 @@
         "method": "CRUD",
         "ops": "LS",
         "path": "/admin/notifications"
-      }
-    },
-    {
-      "key": "GET /admin/webhook-deliveries",
-      "method": "GET",
-      "path": "/admin/webhook-deliveries",
-      "group": "ops",
-      "op": "list",
-      "description": "Log of merchant webhooks.",
-      "access": "permission",
-      "permission": "webhooks:read",
-      "stage": 7,
-      "tables": [
-        "webhook_deliveries"
-      ],
-      "origin": {
-        "method": "CRUD",
-        "ops": "LS",
-        "path": "/admin/webhook-deliveries"
-      }
-    },
-    {
-      "key": "GET /admin/webhook-deliveries/:id",
-      "method": "GET",
-      "path": "/admin/webhook-deliveries/:id",
-      "group": "ops",
-      "op": "show",
-      "description": "Log of merchant webhooks.",
-      "access": "permission",
-      "permission": "webhooks:read",
-      "stage": 7,
-      "tables": [
-        "webhook_deliveries"
-      ],
-      "origin": {
-        "method": "CRUD",
-        "ops": "LS",
-        "path": "/admin/webhook-deliveries"
-      }
-    },
-    {
-      "key": "POST /admin/webhook-deliveries/:id/retry",
-      "method": "POST",
-      "path": "/admin/webhook-deliveries/:id/retry",
-      "group": "ops",
-      "op": "action",
-      "description": "Resend the delivery.",
-      "access": "permission",
-      "permission": "webhooks:update",
-      "stage": 7,
-      "tables": [
-        "webhook_deliveries"
-      ],
-      "origin": {
-        "method": "POST",
-        "ops": null,
-        "path": "/admin/webhook-deliveries/:id/retry"
       }
     }
   ]

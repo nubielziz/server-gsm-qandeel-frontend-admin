@@ -5,9 +5,8 @@ import { SLOW } from '../../test/pageQueries';
 /** The address of the tab. */
 export const API_TAB = '/system-health?tab=api';
 
-/** The six surfaces of the mock, in the order the server sends them. */
+/** The five surfaces of the mock, in the order the server sends them. */
 export const SURFACE_NAMES = [
-  'Merchant API v1',
   'Dhru Fusion API',
   'Client app',
   'Storefront',
@@ -24,6 +23,6 @@ export const rowsOf = (region: HTMLElement) => within(region).getAllByRole('row'
 /** The surfaces card once its rows are there. */
 export async function surfacesCard() {
   const surfaces = await card('Surfaces');
-  await within(surfaces).findByRole('button', { name: 'Merchant API v1' }, SLOW);
+  await within(surfaces).findByRole('button', { name: 'Dhru Fusion API' }, SLOW);
   return surfaces;
 }

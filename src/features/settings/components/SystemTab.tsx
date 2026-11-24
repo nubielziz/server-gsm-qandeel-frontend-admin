@@ -1,6 +1,6 @@
-// SystemTab: the "System" tab, one the demo lacks: the settings keys this console knows (a typed form each), the Customer wallet
-// panel (feature 21), the ones another page edits (shown with a link), and every other key as read-only JSON. `GET /admin/settings` is one flat object (assumed contract); each save is a
-// `PATCH /admin/settings` with that key alone.
+// SystemTab: the "System" tab, one the demo lacks: the settings another page edits (shown with a link), the Customer wallet panel
+// (feature 21, a typed form per key) and every other key as read-only JSON. `GET /admin/settings` is one flat object (assumed
+// contract); each save is a `PATCH /admin/settings` with that key alone.
 import { useState } from 'react';
 import { Badge, ButtonLink, Panel, QueryState, SkeletonTable } from '@/components/ui';
 import { useSettings } from '../hooks/useSettings';
@@ -8,11 +8,10 @@ import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { useSaveSystemSettings } from '../hooks/useStorefrontSettings';
 import { jsonText } from '../lib/logs';
 import { policyMessage } from '../lib/policies';
-import { fieldText, KNOWN_SETTINGS, LINKED_SETTINGS, unknownSettings } from '../lib/system';
-import { SettingField } from './SettingField';
+import { LINKED_SETTINGS, unknownSettings } from '../lib/system';
 import { WalletSettingsPanel } from './WalletSettingsPanel';
 
-/** The three groups of settings. */
+/** The groups of settings. */
 export function SystemTab() {
   const grants = useSettingsGrants();
   const settings = useSettings({ enabled: grants.ready && grants.can('settings:read') });
@@ -36,7 +35,7 @@ export function SystemTab() {
     <div className="grid gap-4">
       <Panel
         title="System settings"
-        sub="Settings this console knows how to edit. Each one is saved on its own and written to the audit log."
+        sub="Settings that another page edits are shown here with a link to it."
         flush
       >
         <QueryState
@@ -48,18 +47,6 @@ export function SystemTab() {
           skeleton={<SkeletonTable cols={2} rows={3} />}
         >
           <ul className="m-0 list-none divide-y divide-line p-0">
-            {KNOWN_SETTINGS.map((spec) => (
-              <SettingField
-                // Starts again from the saved value after a save.
-                key={`${spec.key}:${fieldText(settings.data, spec)}`}
-                spec={spec}
-                saved={fieldText(settings.data, spec)}
-                lock={lock}
-                saving={save.isPending && save.variables !== undefined && spec.key in save.variables}
-                error={errors[spec.key] ?? ''}
-                onSave={(value) => saveOne(spec.key, value)}
-              />
-            ))}
             {LINKED_SETTINGS.map((setting) => (
               <li key={setting.key} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3.5 py-3">
                 <div className="min-w-0 flex-1 basis-72">

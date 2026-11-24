@@ -1,5 +1,5 @@
 // NotificationLogTab: the "Notification log" tab, one the demo lacks: every message the system sent or tried to send, newest first,
-// with the recipient as the server prints it (masked). Status and channel filters, a pager, and a drawer for a row. All of it lives in the address.
+// with the recipient as the server prints it (masked). A status filter, a pager, and a drawer for a row. All of it lives in the address.
 // A message of a notification campaign links to the campaign, and `?campaignId=7` shows only that campaign's messages (a chip clears it).
 import { Link } from 'react-router';
 import {
@@ -19,7 +19,7 @@ import { LOG_PAGE_SIZE } from '../hooks/keys';
 import { useNotificationList } from '../hooks/useLogs';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { NOTIFICATION_STATUS, NOTIFICATION_STATUS_OPTIONS } from '../lib/logs';
-import { CHANNEL_FILTER_OPTIONS, CHANNEL_LABEL, eventLabel } from '../lib/templates';
+import { channelLabel, eventLabel } from '../lib/templates';
 import type { NotificationLogEntry } from '../types';
 import { NotificationDrawer } from './NotificationDrawer';
 import { StatusBadge } from './StatusBadge';
@@ -35,7 +35,7 @@ const columns: DataTableColumn<NotificationLogEntry>[] = [
       </>
     ),
   },
-  { key: 'channel', label: 'Channel', hide: 'sm', render: (row) => CHANNEL_LABEL[row.channel] },
+  { key: 'channel', label: 'Channel', hide: 'sm', render: (row) => channelLabel(row.channel) },
   {
     key: 'recipient',
     label: 'Sent to',
@@ -67,7 +67,7 @@ const columns: DataTableColumn<NotificationLogEntry>[] = [
 /** The filters, the table and the open drawer. */
 export function NotificationLogTab() {
   const grants = useSettingsGrants();
-  const view = useListView(['status', 'channel', 'campaignId'], 'notification');
+  const view = useListView(['status', 'campaignId'], 'notification');
   // A campaign filter from a bad address (`campaignId=abc`) is ignored: the server takes an id only.
   const campaignId = /^\d+$/.test(view.filters.campaignId) ? view.filters.campaignId : '';
   const list = useNotificationList({
@@ -82,7 +82,7 @@ export function NotificationLogTab() {
     settled: list.query.isSuccess && !list.query.isPlaceholderData,
     setPage: view.setPage,
   });
-  const filtered = Boolean(view.filters.status || view.filters.channel || campaignId);
+  const filtered = Boolean(view.filters.status || campaignId);
 
   return (
     <>
@@ -114,12 +114,6 @@ export function NotificationLogTab() {
             options={NOTIFICATION_STATUS_OPTIONS}
             onChange={(event) => view.setFilters({ status: event.target.value })}
           />
-          <SelectField
-            aria-label="Filter by channel"
-            value={view.filters.channel}
-            options={CHANNEL_FILTER_OPTIONS}
-            onChange={(event) => view.setFilters({ channel: event.target.value })}
-          />
         </TableToolbar>
         <div className="border-t border-line">
           <DataTable
@@ -136,9 +130,7 @@ export function NotificationLogTab() {
             onPageChange={view.setPage}
             empty={
               <EmptyState icon="bell" title={filtered ? 'No messages match' : 'No messages yet'}>
-                {filtered
-                  ? 'Try another status or channel.'
-                  : 'Messages the system sends will be listed here.'}
+                {filtered ? 'Try another status.' : 'Messages the system sends will be listed here.'}
               </EmptyState>
             }
           />

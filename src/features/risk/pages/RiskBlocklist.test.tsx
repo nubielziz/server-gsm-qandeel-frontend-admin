@@ -8,12 +8,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { dialogOf, openRisk, rowOf, tableNamed, tabTexts } from '../test/riskPage';
+import { dialogOf, openRisk, riskTabs, rowOf, tableNamed } from '../test/riskPage';
 
 setupMockApi();
 // The page is a lazy chunk: the first test of a run waits for its modules to load, which is slow while the whole suite
 // runs in parallel. Every flow here also goes through the mock API with real dialogs, so give them room.
 vi.setConfig({ testTimeout: 20_000 });
+
+// The Blocklist tab is found by its name, not by its place in the strip: its text is the name and the count, such as "Blocklist5".
+const blocklistTab = () => riskTabs().getByRole('tab', { name: /^Blocklist/ });
 
 const bodyRows = async () => (await tableNamed('Blocklist')).getAllByRole('row').slice(1);
 
@@ -48,7 +51,7 @@ describe('the table', () => {
     expect(await screen.findByText('1 entry')).toBeInTheDocument();
     expect(await rowOf('Blocklist', 'Visa fingerprint fp_9f2…c1a')).toBeTruthy();
     // The tab still counts every entry.
-    expect(tabTexts()[2]).toBe('Blocklist5');
+    expect(blocklistTab()).toHaveTextContent(/^Blocklist5$/);
   });
 
   it('says what to do when nothing is blocked, and when nothing of one type is', async () => {
@@ -111,7 +114,7 @@ describe('adding', () => {
     const [first] = await bodyRows();
     await waitFor(() => expect(within(first).getByText('bad.actor@spam.example')).toBeInTheDocument());
     expect(within(first).getByText('Card testing')).toBeInTheDocument();
-    expect(tabTexts()[2]).toBe('Blocklist6');
+    expect(blocklistTab()).toHaveTextContent(/^Blocklist6$/);
   });
 
   it('adds an IMEI typed with spaces and shows it grouped', async () => {
@@ -135,7 +138,7 @@ describe('adding', () => {
     await user.click(dialog.getByRole('button', { name: 'Block' }));
     expect(await dialog.findByText('That is already on the blocklist.')).toBeInTheDocument();
     expect(dialog.getByLabelText('Value')).toHaveAttribute('aria-invalid', 'true');
-    expect(tabTexts()[2]).toBe('Blocklist5');
+    expect(blocklistTab()).toHaveTextContent(/^Blocklist5$/);
   });
 
   it('puts the server’s message under the field it names', async () => {
@@ -185,7 +188,7 @@ describe('removing', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Remove tempbox.example' })).not.toBeInTheDocument(),
     );
-    await waitFor(() => expect(tabTexts()[2]).toBe('Blocklist4'));
+    await waitFor(() => expect(blocklistTab()).toHaveTextContent(/^Blocklist4$/));
   });
 
   it('keeps the entry and shows the server’s refusal in the dialog', async () => {

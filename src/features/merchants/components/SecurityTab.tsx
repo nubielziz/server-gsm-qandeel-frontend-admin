@@ -1,26 +1,22 @@
 // SecurityTab: the "Security" tab of a merchant's page (feature 20): the sign-in facts, the staff tools (password, sign out, reset
-// 2FA, resend verification) and the merchant's open sessions. It keeps which dialog is open; a temporary password the server made
-// is shown once in the access feature's dialog after the password dialog closes and is not kept in the query cache (`gcTime: 0`).
+// 2FA, resend verification). It keeps which dialog is open; a temporary password the server made is shown once in the access
+// feature's dialog after the password dialog closes and is not kept in the query cache (`gcTime: 0`).
 import { useState } from 'react';
 import { RevealPasswordDialog } from '@/features/access';
 import { useNow } from '@/lib/format';
-import { useMerchantSessions } from '../hooks/useMerchantSessions';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
 import type { Client } from '../types';
 import { MerchantConfirmDialog } from './MerchantConfirmDialog';
 import { MerchantPasswordDialog } from './MerchantPasswordDialog';
-import { MerchantSessionsTable } from './MerchantSessionsTable';
 import { SecurityActions } from './SecurityActions';
 import { SecurityState } from './SecurityState';
 
 type Dialog =
   { kind: 'password' | 'signout' | 'reset2fa' } | { kind: 'reveal'; name: string; password: string };
 
-/** Composes the Security tab. The sessions list is left out without `sessions:read`; the count above it still shows. */
+/** Composes the Security tab: the sign-in facts on the left, the staff tools on the right. */
 export function SecurityTab({ client, grants }: { client: Client; grants: MerchantGrants }) {
   const now = useNow();
-  const canReadSessions = grants.can('sessions:read');
-  const sessions = useMerchantSessions(client.id, canReadSessions);
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const close = () => setDialog(null);
 
@@ -46,21 +42,6 @@ export function SecurityTab({ client, grants }: { client: Client; grants: Mercha
           </p>
         </div>
       </div>
-      {canReadSessions && (
-        <section className="mt-5" aria-label="Sessions">
-          <h3 className="mb-2 text-sm font-semibold">Open sessions</h3>
-          <div className="rounded-lg border border-line">
-            <MerchantSessionsTable
-              rows={sessions.data?.data ?? []}
-              state={sessions.isLoading ? 'loading' : sessions.isError ? 'error' : 'ready'}
-              error={sessions.error}
-              onRetry={() => void sessions.refetch()}
-              now={now}
-              grants={grants}
-            />
-          </div>
-        </section>
-      )}
       {dialog?.kind === 'password' && (
         <MerchantPasswordDialog
           client={client}

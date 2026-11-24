@@ -14,7 +14,6 @@ const gross = (order: { totalPrice: string; taxAmount: string }): number =>
 export function storefrontSummary(world: World): StorefrontSummary {
   const since = world.now - 30 * DAY;
   const orders = world.orders.filter((order) => order.channel === 'b2c' && createdAt(order) >= since);
-  const checks = world.imeiChecks.filter((check) => check.ts >= since).length;
   const abandoned = world.checkouts.filter((checkout) => checkout.created >= since).length;
   const paid = orders.filter((order) => order.status !== 'rejected');
   const sales = sumBy(paid, gross);
@@ -26,12 +25,10 @@ export function storefrontSummary(world: World): StorefrontSummary {
   const firstReply = median(
     world.tickets.flatMap((ticket) => (ticket.firstReplyAt ? [ticket.firstReplyAt - ticket.created] : [])),
   );
-  const ratings = world.tickets.flatMap((ticket) => (ticket.csat ? [ticket.csat] : []));
   return {
     funnel: {
-      // Visitors are guessed from IMEI checks, as the demo does.
-      visitorsEstimated: Math.round(checks * 5.6),
-      imeiChecks: checks,
+      // Visitors are guessed from the checkouts started (about five and a half visitors for each), as the demo guessed them.
+      visitorsEstimated: Math.round((orders.length + abandoned) * 5.6),
       checkoutsStarted: orders.length + abandoned,
       paid: orders.length,
       delivered: orders.filter((order) => order.status === 'completed').length,
@@ -40,9 +37,6 @@ export function storefrontSummary(world: World): StorefrontSummary {
     refundRate: sales ? (refunded / sales) * 100 : null,
     disputeRate: orders.length ? (disputes / orders.length) * 100 : null,
     firstReplySeconds: firstReply === null ? null : firstReply / 1000,
-    satisfaction: ratings.length
-      ? { average: sumBy(ratings, (r) => r) / ratings.length, ratings: ratings.length }
-      : null,
     heldForReview: world.orders.filter(isHeld).length,
   };
 }

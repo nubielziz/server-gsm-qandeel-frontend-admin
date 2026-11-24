@@ -10,11 +10,9 @@ import {
   createBlocklistEntry,
   deleteBlocklistEntry,
   getBlocklistEntry,
-  getImeiCheck,
   getRiskQueue,
   getRiskRules,
   listBlocklist,
-  listImeiChecks,
   refundHeldOrder,
   saveRiskRules,
 } from '.';
@@ -50,12 +48,9 @@ describe('getRiskQueue', () => {
       capturedAmount: '12.9900',
       paymentMethod: 'card',
     });
-    expect(queue.held[0].signals).toContain('VPN or proxy IP');
-    expect(queue.held[0].customer).toMatchObject({
-      name: 'Tyler Brooks',
-      country: 'US',
-      riskLevel: 'medium',
-    });
+    expect(queue.held[0].signals).toEqual(['New customer, first order above $40']);
+    expect(queue.held[0].customer).toMatchObject({ name: 'Tyler Brooks', country: 'US' });
+    expect(queue.held[0].customer).not.toHaveProperty('riskLevel');
     expect(queue.stats).toMatchObject({ decided30d: 2, approved30d: 1, refunded30d: 1 });
     expect(queue.recent?.map((order) => order.orderId)).toEqual(DECIDED);
     expect(queue.recent?.[0]).toMatchObject({ outcome: 'refunded', reviewedBy: { name: 'Rami K.' } });
@@ -101,47 +96,12 @@ describe('refundHeldOrder', () => {
     const added = (await listBlocklist()).data.find(
       (entry) => entry.kind === 'email' && entry.source === 'manual' && entry.id > 6,
     );
-    expect(added?.reason).toBe('Refunded after risk review: IMEI was checked blacklisted before');
+    expect(added?.reason).toBe('Refunded after risk review: New customer, first order above $40');
   });
 
   it('refuses an order that was already decided', async () => {
     await refundHeldOrder(20490, {});
     expect(await failure(refundHeldOrder(20490, {}))).toMatchObject({ status: 409, code: 'NOT_HELD' });
-  });
-});
-
-describe('IMEI checks', () => {
-  it('pages and sorts on the server, newest first, with the total from the header', async () => {
-    const page = await listImeiChecks({ start: 0, end: 3, sort: ['createdAt'], order: ['desc'] });
-    expect(page.total).toBe(907);
-    expect(page.data).toHaveLength(3);
-    const times = page.data.map((check) => Date.parse(check.createdAt));
-    expect(times).toEqual([...times].sort((a, b) => b - a));
-  });
-
-  it('filters by check type, result and source, and counts with a one-row call', async () => {
-    expect((await listImeiChecks({ start: 0, end: 1, filters: { status: 'blacklisted' } })).total).toBe(29);
-    expect((await listImeiChecks({ start: 0, end: 1, filters: { source: 'pre_order' } })).total).toBe(286);
-    const icloud = await listImeiChecks({ filters: { checkType: 'icloud' } });
-    expect(icloud.total).toBe(148);
-    expect(icloud.data.every((check) => check.checkType === 'icloud')).toBe(true);
-  });
-
-  it('searches the IMEI, brand and model', async () => {
-    const pixel = await listImeiChecks({ q: 'pixel' });
-    expect(pixel.total).toBeGreaterThan(0);
-    expect(pixel.data.every((check) => /pixel/i.test(`${check.brand} ${check.model}`))).toBe(true);
-    const one = (await listImeiChecks({ start: 0, end: 1 })).data[0];
-    expect((await listImeiChecks({ q: one.imei })).data.map((check) => check.id)).toContain(one.id);
-  });
-
-  it('reads one check, and shows an IMEI the server has hashed as it sends it', async () => {
-    const hashed = (await listImeiChecks({ q: 'sha256' })).data;
-    expect(hashed).toHaveLength(6);
-    expect(hashed[0].imei).toMatch(/^sha256:/);
-    const check = await getImeiCheck(hashed[0].id);
-    expect(check).toMatchObject({ id: hashed[0].id, imei: hashed[0].imei });
-    expect(await failure(getImeiCheck(1))).toMatchObject({ status: 404 });
   });
 });
 
@@ -186,7 +146,8 @@ describe('blocklist', () => {
 describe('risk rules', () => {
   it('reads the rules with the hold line below the block line', async () => {
     const { rules } = await getRiskRules();
-    expect(rules).toHaveLength(8);
+    expect(rules).toHaveLength(7);
+    expect(rules.map((rule) => rule.id)).not.toContain('blockBlacklistedImei');
     expect(rules.find((rule) => rule.id === 'reviewThreshold')).toEqual({
       id: 'reviewThreshold',
       on: true,

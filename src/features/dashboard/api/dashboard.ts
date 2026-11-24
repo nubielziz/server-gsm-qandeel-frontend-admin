@@ -4,15 +4,35 @@ import { apiGet, apiUrl } from '@/lib/api';
 import type { Dashboard, DashboardParams, TopClient, TopClientsParams } from '../types';
 
 /**
+ * The kinds of "Needs attention" rows whose feature the console retired: `merchants_pending` (merchants waiting for approval;
+ * staff-made accounts are active at once) and `commissions_accrued` (the Commissions page). A server that is not updated yet may
+ * still send them: the console drops them, so no row with a neutral title and no way to act on it shows.
+ */
+export const RETIRED_ATTENTION_KINDS: ReadonlySet<string> = new Set([
+  'merchants_pending',
+  'commissions_accrued',
+]);
+
+/**
  * Everything the dashboard page shows in one call: the key figures with the previous period, the attention list, the
  * queues, supplier health, the charts, the storefront funnel, the top customers and the numbers for the sidebar. `scope`
  * separates merchants from the storefront (the map); `days` is the period of the figures. One call keeps all panels
- * from the same moment, and the sidebar counts share it.
- * Assumed contract: the response is a `Dashboard` and `days` is 1, 7 or 14 (the map names `scope` only).
+ * from the same moment, and the sidebar counts share it. The old `navCounts.merchants` count is ignored when an older server still
+ * sends it.
+ * Assumed contract: the response is a `Dashboard` and `days` is 1, 7 or 14 (the map names `scope` only). Rows of a retired
+ * kind (`RETIRED_ATTENTION_KINDS`) are taken out of `attention`; everything else stays as the server sent it.
  * @route GET /admin/dashboard
  */
-export function getDashboard(params: DashboardParams, signal?: AbortSignal): Promise<Dashboard> {
-  return apiGet<Dashboard>('/admin/dashboard', { scope: params.scope, days: params.days }, { signal });
+export async function getDashboard(params: DashboardParams, signal?: AbortSignal): Promise<Dashboard> {
+  const dashboard = await apiGet<Dashboard>(
+    '/admin/dashboard',
+    { scope: params.scope, days: params.days },
+    { signal },
+  );
+  return {
+    ...dashboard,
+    attention: dashboard.attention.filter((item) => !RETIRED_ATTENTION_KINDS.has(item.kind)),
+  };
 }
 
 /**

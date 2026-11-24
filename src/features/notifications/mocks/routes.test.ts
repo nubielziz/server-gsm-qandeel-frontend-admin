@@ -70,7 +70,7 @@ describe('create and edit', () => {
       createCampaign({
         ...INPUT,
         name: ' ',
-        channels: ['telegram'],
+        channels: [],
         audience: {},
         content: { title: '<b>Hi</b>', body: 'Hello {{email}}' },
         link: { staff: 'https://evil.example' },
@@ -100,9 +100,7 @@ describe('create and edit', () => {
   });
 
   it('refuses an edit that makes the merged campaign invalid', async () => {
-    const error = await refusal(
-      updateCampaign(3, { channels: ['telegram', 'in_app'], audience: { staff: {} } }),
-    );
+    const error = await refusal(updateCampaign(3, { channels: ['email', 'email'], audience: { staff: {} } }));
     expect(error.fieldErrors.channels).toBeDefined();
   });
 
@@ -114,7 +112,7 @@ describe('create and edit', () => {
 });
 
 describe('the live count and the preview', () => {
-  it('counts an audience and refuses an empty one or Telegram without merchants', async () => {
+  it('counts an audience and refuses an empty one or no channel', async () => {
     const preview = await previewAudience({
       audience: { staff: {} },
       channels: ['in_app', 'email'],
@@ -126,11 +124,8 @@ describe('the live count and the preview', () => {
         .audience,
     ).toBeDefined();
     expect(
-      (
-        await refusal(
-          previewAudience({ audience: { staff: {} }, channels: ['telegram'], purpose: 'service' }),
-        )
-      ).fieldErrors.channels,
+      (await refusal(previewAudience({ audience: { staff: {} }, channels: [], purpose: 'service' })))
+        .fieldErrors.channels,
     ).toBeDefined();
   });
 
@@ -187,7 +182,7 @@ describe('send', () => {
     });
     const nobody = await createCampaign({
       ...INPUT,
-      channels: ['telegram'],
+      channels: ['email'],
       audience: { merchants: { groupIds: [99] } },
     });
     expect(

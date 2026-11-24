@@ -7,7 +7,7 @@
   "folders": [
     "src/features/merchants"
   ],
-  "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups and KYC live here.",
+  "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups live here.",
   "rules": {
     "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
     "errors": "application/problem+json {type,title,status,code,detail,errors[]}",

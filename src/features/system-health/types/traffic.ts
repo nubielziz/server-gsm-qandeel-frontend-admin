@@ -20,7 +20,7 @@ export interface SurfaceSeries {
 }
 
 /**
- * Traffic of one API surface (`v1`, `dhru`, `client`, `store`, `admin`, `hooks`…). The measures are "now" (the last
+ * Traffic of one API surface (`dhru`, `client`, `store`, `admin`, `hooks`…). The measures are "now" (the last
  * few minutes); `series` covers the range.
  */
 export interface SurfaceMetrics {

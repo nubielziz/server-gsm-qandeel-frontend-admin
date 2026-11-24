@@ -21,11 +21,9 @@ describe('describeAttention', () => {
     const kinds = new Set(ATTENTION_SAMPLES.map((item) => item.kind));
     expect([...kinds].sort()).toEqual(
       [
-        'commissions_accrued',
         'deposits_pending',
         'disputes_due',
         'fx_stale',
-        'merchants_pending',
         'orders_held',
         'orders_past_sla',
         'orders_review',
@@ -140,30 +138,6 @@ describe('describeAttention', () => {
     expect(view(two)).toMatchObject({
       title: '2 merchants have a negative wallet',
       meta: 'A -$1.00, B -$2.50',
-    });
-  });
-
-  it('merchants waiting for approval: their names, on the pending tab', () => {
-    expect(view(sample('merchants_pending'))).toEqual({
-      title: '2 merchant accounts waiting for approval',
-      meta: 'Aqaba Gadgets, Doha Unlock',
-      action: { label: 'Review', page: 'merchants', to: '/merchants?tab=pending' },
-    });
-    expect(view({ ...sample('merchants_pending'), count: 1, names: ['Solo'] } as AttentionItem).title).toBe(
-      '1 merchant account waiting for approval',
-    );
-  });
-
-  it('commission accruals: the total and the agents, singular and plural', () => {
-    expect(view(sample('commissions_accrued'))).toEqual({
-      title: '4 commission accruals ready to approve',
-      meta: '$12.34 across 2 agents',
-      action: { label: 'Review', page: 'commissions', to: '/commissions' },
-    });
-    const one = { ...sample('commissions_accrued'), count: 1, agents: 1 } as AttentionItem;
-    expect(view(one)).toMatchObject({
-      title: '1 commission accrual ready to approve',
-      meta: '$12.34 across 1 agent',
     });
   });
 

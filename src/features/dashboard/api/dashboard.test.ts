@@ -5,8 +5,9 @@ import { ApiError, apiPost } from '@/lib/api';
 import { resetSession } from '@/mocks/session';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { answerDashboard, answerTopClients, refuse } from '../test/answers';
-import { dashboardFixture } from '../test/fixtures';
-import { getDashboard, getTopClients, queuesBoardUrl } from '.';
+import { ATTENTION_SAMPLES, dashboardFixture } from '../test/fixtures';
+import type { AttentionItem } from '../types';
+import { getDashboard, getTopClients, queuesBoardUrl, RETIRED_ATTENTION_KINDS } from '.';
 
 setupMockApi();
 // Every test starts signed in as Rami, the Owner.
@@ -33,6 +34,40 @@ describe('getDashboard', () => {
       'supplier_down',
       'orders_review',
     ]);
+  });
+
+  it('drops the attention items of a kind the console retired, which an older server still sends', async () => {
+    const retired = {
+      id: 'pend',
+      severity: 'low',
+      kind: 'merchants_pending',
+      count: 2,
+      names: ['Aqaba Gadgets', 'Doha Unlock'],
+    } as unknown as AttentionItem;
+    const fixture = dashboardFixture();
+    answerDashboard({ ...fixture, attention: [retired, ...fixture.attention] });
+    const dashboard = await getDashboard({ scope: 'all', days: 7 });
+    expect(dashboard.attention.map((item) => item.kind)).toEqual([
+      'orders_past_sla',
+      'supplier_down',
+      'orders_review',
+    ]);
+  });
+
+  it('drops the rows of a retired kind that a server not yet updated still sends, and keeps the others in order', async () => {
+    const retired = {
+      id: 'comm',
+      severity: 'low',
+      kind: 'commissions_accrued',
+      count: 4,
+      total: '12.3400',
+      agents: 2,
+    } as unknown as AttentionItem;
+    const [first, second] = ATTENTION_SAMPLES;
+    answerDashboard(dashboardFixture({ attention: [first, retired, second] }));
+    const dashboard = await getDashboard({ scope: 'all', days: 7 });
+    expect(dashboard.attention.map((item) => item.kind)).toEqual([first.kind, second.kind]);
+    expect([...RETIRED_ATTENTION_KINDS]).toEqual(['merchants_pending', 'commissions_accrued']);
   });
 
   it('cancels the request when the caller aborts', async () => {

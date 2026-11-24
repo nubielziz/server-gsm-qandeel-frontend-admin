@@ -6,7 +6,7 @@ import { EmptyState, Panel, QueryState, SkeletonTable } from '@/components/ui';
 import type { RiskGrants } from '../hooks/useRiskGrants';
 import { useRiskRules, useSaveRiskRule } from '../hooks/useRiskRules';
 import { RISK_PERMISSION } from '../lib/permissions';
-import { ruleErrors, type RuleChange } from '../lib/rules';
+import { ruleErrors, visibleRules, type RuleChange } from '../lib/rules';
 import { RuleRow } from './RuleRow';
 import { ScoringPanel } from './ScoringPanel';
 
@@ -17,7 +17,9 @@ export function RulesTab({ grants }: { grants: RiskGrants }) {
   const query = useRiskRules();
   const save = useSaveRiskRule();
   const [problems, setProblems] = useState<Problems>(NO_PROBLEMS);
+  // The whole set is what a save sends back; the list shows it without the rules an older server may still send.
   const rules = query.data?.rules ?? [];
+  const shown = visibleRules(rules);
   const permission = grants.needs(RISK_PERMISSION.rules);
   // One save at a time: a save replaces the whole set, so a second one must start from the first one's answer.
   const lock = { disabled: permission.disabled || save.isPending, title: permission.title };
@@ -34,7 +36,7 @@ export function RulesTab({ grants }: { grants: RiskGrants }) {
       error={query.error}
       errorTitle="Could not load the rules"
       onRetry={() => void query.refetch()}
-      isEmpty={rules.length === 0}
+      isEmpty={shown.length === 0}
       empty={
         <Panel flush>
           <EmptyState icon="shield" title="No rules yet">
@@ -60,7 +62,7 @@ export function RulesTab({ grants }: { grants: RiskGrants }) {
             </p>
           )}
           <ul className="m-0 list-none divide-y divide-line p-0">
-            {rules.map((rule) => (
+            {shown.map((rule) => (
               <RuleRow
                 key={rule.id}
                 rule={rule}

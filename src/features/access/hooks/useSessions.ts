@@ -1,26 +1,19 @@
-// The open sessions of staff and merchants, one page at a time, and ending one.
+// The open sessions of staff, one page at a time, and ending one.
 import { useApiMutation, useApiQuery } from '@/lib/query';
 import { listSessions, revokeSession } from '../api';
-import type { Session, SessionSubjectType } from '../types';
+import type { Session } from '../types';
 import { SESSIONS_KEY } from './keys';
 
 /** Sessions per page of the sessions tab. */
 export const SESSIONS_PAGE_SIZE = 25;
 
-/** One page of sessions (1-based), optionally only staff or only merchants. */
-export function useSessions(params: { subjectType?: SessionSubjectType; page: number }, enabled = true) {
-  const { subjectType, page } = params;
+/** One page of sessions (1-based). */
+export function useSessions(params: { page: number }, enabled = true) {
+  const { page } = params;
   return useApiQuery({
-    queryKey: [...SESSIONS_KEY, subjectType ?? 'all', page],
+    queryKey: [...SESSIONS_KEY, page],
     queryFn: ({ signal }) =>
-      listSessions(
-        {
-          start: (page - 1) * SESSIONS_PAGE_SIZE,
-          end: page * SESSIONS_PAGE_SIZE,
-          filters: subjectType ? { subjectType } : undefined,
-        },
-        { signal },
-      ),
+      listSessions({ start: (page - 1) * SESSIONS_PAGE_SIZE, end: page * SESSIONS_PAGE_SIZE }, { signal }),
     enabled,
   });
 }

@@ -22,7 +22,7 @@ import type {
 
 /**
  * Storefront customers, one page of them, with the total in `x-total-count`. Filters: `q` (name and email), `country`,
- * `status`, `riskLevel` (an array repeats the key) and `hasAccount`; sort with `_sort`/`_order`. The tab counts and the
+ * `status` (an array repeats the key) and `hasAccount`; sort with `_sort`/`_order`. The tab counts and the
  * "have an account" figure are this call with `_start=0&_end=1`.
  * Assumed contract: rows carry `ordersCount` and `lastOrderAt` next to the `customers` columns.
  * @route GET /admin/customers

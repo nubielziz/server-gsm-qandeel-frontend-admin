@@ -1,16 +1,15 @@
-// CreateKeyDialog: "New API key for <merchant>" (feature 20): name, scopes, allowed addresses (one per line), an optional expiry day and the
+// CreateKeyDialog: "New API key for <merchant>" (feature 20): name, allowed addresses (one per line), an optional expiry day and the
 // per-minute limit (60 unless changed). The key comes back once and is passed to the one-time dialog after this one closes. A 409
-// `NOT_ACTIVE` and 422s show in the dialog; `scopes.N` and `allowedIps.N` errors show under their inputs.
+// `NOT_ACTIVE` and 422s show in the dialog; `allowedIps.N` errors show under their input.
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { CheckboxField, FormDialog, TextareaField, TextField, dialogSubmit } from '@/components/ui';
+import { FormDialog, TextareaField, TextField, dialogSubmit } from '@/components/ui';
 import { useCreateClientApiKey } from '../hooks/useClientApiKeys';
 import { cleanText } from '../lib/input';
 import {
   dayIsPast,
   expiryOf,
   foldKeyErrors,
-  KEY_SCOPES,
   MAX_ALLOWED_IPS,
   parseIpLines,
   parseRateLimit,
@@ -20,12 +19,11 @@ import type { Client, CreateApiKeyBody } from '../types';
 
 type Values = {
   name: string;
-  scopes: string[];
   allowedIps: string;
   expiresOn: string;
   rateLimitPerMin: string;
 };
-const FIELDS = ['name', 'scopes', 'allowedIps', 'expiresOn', 'rateLimitPerMin'] as const;
+const FIELDS = ['name', 'allowedIps', 'expiresOn', 'rateLimitPerMin'] as const;
 
 export interface CreateKeyDialogProps {
   client: Pick<Client, 'id' | 'name'>;
@@ -41,7 +39,6 @@ export function CreateKeyDialog({ client, onClose, onReveal }: CreateKeyDialogPr
   const form = useForm<Values>({
     defaultValues: {
       name: '',
-      scopes: [],
       allowedIps: '',
       expiresOn: '',
       rateLimitPerMin: String(RATE_LIMIT.default),
@@ -58,7 +55,6 @@ export function CreateKeyDialog({ client, onClose, onReveal }: CreateKeyDialogPr
       const ips = parseIpLines(values.allowedIps);
       const body: CreateApiKeyBody = {
         name: cleanText(values.name),
-        scopes: values.scopes,
         ...(ips.length > 0 ? { allowedIps: ips } : {}),
         ...(values.expiresOn ? { expiresAt: expiryOf(values.expiresOn) } : {}),
         rateLimitPerMin: parseRateLimit(values.rateLimitPerMin) ?? RATE_LIMIT.default,
@@ -99,31 +95,6 @@ export function CreateKeyDialog({ client, onClose, onReveal }: CreateKeyDialogPr
             },
           })}
         />
-        <fieldset aria-invalid={errors.scopes ? true : undefined}>
-          <legend className="mb-1 text-sm font-medium">Scopes</legend>
-          <div className="space-y-1.5">
-            {KEY_SCOPES.map((scope) => (
-              <CheckboxField
-                key={scope.value}
-                label={
-                  <>
-                    <span className="mono">{scope.value}</span>{' '}
-                    <span className="text-ink3">{scope.hint}</span>
-                  </>
-                }
-                value={scope.value}
-                {...register('scopes', {
-                  validate: (value) => (value && value.length > 0) || 'Choose at least one scope.',
-                })}
-              />
-            ))}
-          </div>
-          {errors.scopes && (
-            <p className="mt-1 text-xs text-crit-fg" role="alert">
-              {typeof errors.scopes.message === 'string' ? errors.scopes.message : 'Check the scopes.'}
-            </p>
-          )}
-        </fieldset>
         <TextareaField
           label="Allowed IP addresses"
           rows={3}

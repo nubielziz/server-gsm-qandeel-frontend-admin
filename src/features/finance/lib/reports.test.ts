@@ -88,6 +88,8 @@ describe('report choices in the address', () => {
   it('offer each role the reports it may read', () => {
     expect(visibleReports(['reports:read']).map((report) => report.id)).toEqual(['profit', 'exposure']);
     expect(visibleReports(['reports:finance']).map((report) => report.id)).toEqual(['vat']);
+    expect(visibleReports(['reports:growth']).map((report) => report.id)).toEqual(['funnel']);
+    expect(visibleReports(['*']).map((report) => report.id)).toEqual(['profit', 'exposure', 'vat', 'funnel']);
     expect(resolveReport('vat', visibleReports(['reports:read']))).toBe('profit');
     expect(resolveReport('vat', visibleReports(['*']))).toBe('vat');
     expect(resolveReport(null, [])).toBeUndefined();

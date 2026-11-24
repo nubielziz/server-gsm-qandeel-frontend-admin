@@ -1,4 +1,5 @@
-// Mock sign-in sessions: one per device the demo says an admin is signed in on, plus a few merchants on the API portal.
+// Mock sign-in sessions: one per device the demo says an admin is signed in on, plus a few merchants (only their count shows, on the
+// merchant page).
 import { Collection } from './db';
 import { demoNumericId, demoRows, loadDemoState, toIso } from './seed';
 

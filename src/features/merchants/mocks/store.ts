@@ -10,7 +10,6 @@ import type {
   ClientSecurity,
   ClientStats,
   ClientSuspension,
-  KycSubmission,
   StatementRow,
 } from '../types';
 import { buildStore } from './seed';
@@ -20,14 +19,12 @@ import { buildStore } from './seed';
  * sends but the type leaves optional (`address` to `suspension`) are required here. `security.activeSessions` is only the seed
  * value: the routes count the open merchant sessions of the sessions mock instead (see `clientRoutes.ts`).
  */
-export type MockClient = Omit<Client, 'group' | 'referredBy' | 'wallet' | 'stats'> & {
+export type MockClient = Omit<Client, 'group' | 'wallet' | 'stats'> & {
   address: string;
   taxId: string;
   internalNotes: string;
-  telegramLinked: boolean;
   security: ClientSecurity;
   suspension: ClientSuspension | null;
-  referredById: number | null;
   /** The wallet balance, what is held for open orders and the credit limit, all in dollars. */
   balance: number;
   reserved: number;
@@ -37,9 +34,6 @@ export type MockClient = Omit<Client, 'group' | 'referredBy' | 'wallet' | 'stats
 
 /** A fixed price as stored: the join with the service and the group price are worked out when it is read. */
 export type MockPrice = Pick<ClientPrice, 'id' | 'serviceId' | 'clientId' | 'price' | 'note' | 'createdAt'>;
-
-/** A request as stored: the merchant is joined when it is read. */
-export type MockKyc = Omit<KycSubmission, 'client'>;
 
 /** The service catalog the mock prices against (cost and minimum profit set the floor). */
 export type MockService = {
@@ -55,7 +49,6 @@ export type MerchantStore = {
   clients: Collection<MockClient>;
   groups: Collection<ClientGroup>;
   prices: Collection<MockPrice>;
-  kyc: Collection<MockKyc>;
   keys: Collection<ApiKey>;
   /** The wallet statement of each merchant, oldest first, with the running balance. */
   statements: Map<number, StatementRow[]>;

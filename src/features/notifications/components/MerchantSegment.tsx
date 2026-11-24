@@ -1,4 +1,4 @@
-// MerchantSegment: the merchant group of the audience: active merchants (pending ones on request), narrowed by group and country. Groups come from
+// MerchantSegment: the merchant group of the audience: active merchants (accounts that are not active yet on request), narrowed by group and country. Groups come from
 // `GET /admin/client-groups`; countries are typed as ISO codes and checked here before the server checks them again.
 import { CheckboxField, TextField } from '@/components/ui';
 import { useGroupOptions } from '../hooks/useAudienceOptions';
@@ -36,7 +36,7 @@ export function MerchantSegment({ audience, onChange, grants, errors }: SegmentP
             onChange={(event) => toggleStatus('active', event.target.checked)}
           />
           <CheckboxField
-            label="Pending approval"
+            label="Not active yet"
             checked={merchants.statuses.includes('pending')}
             onChange={(event) => toggleStatus('pending', event.target.checked)}
           />

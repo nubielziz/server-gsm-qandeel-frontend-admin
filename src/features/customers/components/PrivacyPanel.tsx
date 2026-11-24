@@ -1,8 +1,7 @@
-// PrivacyPanel: the "Data and privacy" column of the Consents tab: marketing opt-in, how long IMEIs are kept, this customer's data
-// requests, and the two privacy actions, each behind a review step (export their data, anonymise). Ports the right column of the
+// PrivacyPanel: the "Data and privacy" column of the Consents tab: marketing opt-in, this customer's data requests, and the two
+// privacy actions, each behind a review step (export their data, anonymise). Ports the right column of the
 // Consents tab in pageCustomer (48-p-customers.js). Rows whose data needs a permission the staff member lacks are left out.
 import { Button, Icon, KeyValue } from '@/components/ui';
-import { useSettings } from '@/features/settings';
 import type { CustomerGrants } from '../hooks/useCustomerGrants';
 import type { CustomerDetail } from '../types';
 import type { CustomerDialogKind } from './customerDialogState';
@@ -17,10 +16,6 @@ export interface PrivacyPanelProps {
 
 export function PrivacyPanel({ customer, grants, now, onAction }: PrivacyPanelProps) {
   const privacy = grants.needs('customers:privacy');
-  const canReadSettings = grants.can('settings:read');
-  // The retention period is a setting; without settings:read the row is left out rather than shown wrong.
-  const settings = useSettings({ enabled: canReadSettings });
-  const retention = settings.data?.imeiRetentionDays;
 
   return (
     <div>
@@ -28,11 +23,6 @@ export function PrivacyPanel({ customer, grants, now, onAction }: PrivacyPanelPr
       <KeyValue
         rows={[
           ['Marketing emails', customer.marketingOptIn ? 'Opted in' : 'Not opted in'],
-          canReadSettings &&
-            typeof retention === 'number' && [
-              'IMEI storage',
-              `Kept for ${retention} days after the order, then removed`,
-            ],
           grants.can('customers:privacy') && [
             'Requests',
             <CustomerRequests customerId={customer.id} now={now} />,

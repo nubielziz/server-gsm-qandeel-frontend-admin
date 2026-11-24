@@ -76,9 +76,7 @@ export function AccountActions({ customer, grants, onAction }: AccountActionsPro
         </div>
         <div>
           <dt className="inline font-medium text-ink">Block</dt>{' '}
-          <dd className="inline">
-            is for fraud. It adds their email to the blocklist and marks them high risk.
-          </dd>
+          <dd className="inline">is for fraud. It adds their email to the blocklist.</dd>
         </div>
       </dl>
       <p className="mt-3 text-xs text-ink3">

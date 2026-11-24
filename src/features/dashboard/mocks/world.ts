@@ -30,7 +30,6 @@ export type SeedMerchant = {
 };
 export type SeedCustomer = { id: string; name: string; country: string };
 export type SeedPayment = { id: string; status: string; net: number; created: number };
-export type SeedAccrual = { id: string; agent: string; amount: number; status: string };
 export type SeedRefund = { id: string; status: string; amount: number; created: number; note: string };
 export type SeedDispute = {
   id: string;
@@ -47,7 +46,6 @@ export type SeedTicket = {
   status: string;
   created: number;
   firstReplyAt: number | null;
-  csat: number | null;
   msgs: { by: string; ts: number }[];
 };
 export type SeedCurrency = { code: string; updated: number };
@@ -62,12 +60,10 @@ export type World = {
   merchants: SeedMerchant[];
   customers: SeedCustomer[];
   payments: SeedPayment[];
-  accruals: SeedAccrual[];
   refunds: SeedRefund[];
   disputes: SeedDispute[];
   tickets: SeedTicket[];
   currencies: SeedCurrency[];
-  imeiChecks: { ts: number }[];
   checkouts: { created: number }[];
   /** Twelve months of order counts, oldest first (the demo's synthetic yearly history). */
   monthly: SeedMonth[];
@@ -109,12 +105,10 @@ export async function loadWorld(): Promise<World> {
     merchants: demoRows<SeedMerchant>(state, 'merchants'),
     customers: demoRows<SeedCustomer>(state, 'customers'),
     payments: demoRows<SeedPayment>(state, 'payments'),
-    accruals: demoRows<SeedAccrual>(state, 'accruals'),
     refunds: demoRows<SeedRefund>(state, 'refunds'),
     disputes: demoRows<SeedDispute>(state, 'disputes'),
     tickets: demoRows<SeedTicket>(state, 'tickets'),
     currencies: (state.settings as { currencies?: SeedCurrency[] } | undefined)?.currencies ?? [],
-    imeiChecks: demoRows<{ ts: number }>(state, 'imeiChecks'),
     checkouts: demoRows<{ created: number }>(state, 'checkouts'),
     monthly: demoRows<SeedMonth>(state, 'monthly'),
     wallets,

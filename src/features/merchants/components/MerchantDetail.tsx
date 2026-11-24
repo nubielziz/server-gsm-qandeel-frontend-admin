@@ -1,6 +1,6 @@
 // MerchantDetail: the body of a merchant's page (`/merchants/:id`, `pageMerchant` in 42-p-merchants.js): header and actions,
-// a pending/suspended note, five figures and the Orders, Wallet ledger, Billing, Pricing, API access, Profile, Security,
-// Verification and Audit tabs (`?tab=`). It only composes; tabs the staff member may not read are left out, and the order
+// a not-active-yet/suspended note, five figures and the Orders, Wallet ledger, Billing, Pricing, API access, Profile, Security
+// and Audit tabs (`?tab=`). It only composes; tabs the staff member may not read are left out, and the order
 // drawer opens in the address.
 import { useCallback, useState } from 'react';
 import { useSearchParams } from 'react-router';
@@ -26,7 +26,6 @@ import { MerchantNotFound } from './MerchantNotFound';
 import { MerchantNote } from './MerchantNote';
 import { MerchantOrdersTab } from './MerchantOrdersTab';
 import { MerchantStats } from './MerchantStats';
-import { MerchantVerificationTab } from './MerchantVerificationTab';
 import { PricingTab } from './PricingTab';
 import { ProfileTab } from './ProfileTab';
 import { SecurityTab } from './SecurityTab';
@@ -107,15 +106,14 @@ export function MerchantDetail({ id }: { id: number | null }) {
         onAdjust={() => setDialog({ kind: 'adjust' })}
         onCreditLimit={() => setDialog({ kind: 'credit' })}
         onSuspend={() => setDialog({ kind: 'suspend' })}
-        onDecline={() => setDialog({ kind: 'decline' })}
       />
       <MerchantNote client={client} now={now} />
       <MerchantStats client={client} wallet={wallet.data} walletNote={walletNote} />
       <Panel flush>
         {!current ? (
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot read orders, the wallet, billing, prices, API keys, profiles, verification or the
-            audit log. Ask an owner if you need access.
+            Your role cannot read orders, the wallet, billing, prices, API keys, profiles or the audit log.
+            Ask an owner if you need access.
           </EmptyState>
         ) : (
           <>
@@ -130,7 +128,6 @@ export function MerchantDetail({ id }: { id: number | null }) {
                 <ProfileTab client={client} grants={grants} onEdit={() => setDialog({ kind: 'edit' })} />
               )}
               {current === 'security' && <SecurityTab client={client} grants={grants} />}
-              {current === 'verification' && <MerchantVerificationTab client={client} grants={grants} />}
               {current === 'audit' && <MerchantAuditTab client={client} />}
             </div>
           </>

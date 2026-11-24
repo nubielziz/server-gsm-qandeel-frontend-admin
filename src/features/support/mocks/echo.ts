@@ -1,15 +1,14 @@
 // A dev-only stand-in for the customer: a reply that contains `/echo` is answered as the requester a few seconds later, so the live parts of the thread can be seen
-// without a second person: the requester sees the reply (the "Seen" line), starts typing (the typing line and the pencil on the row), then writes back (the new
-// message, the unread dot, the alert sound and the desktop notification). Timers are kept so a test or a reset can stop them. Dev and tests only.
+// without a second person: the requester sees the reply (the "Seen" line), then writes back (the new message, the unread dot, the alert sound and the
+// desktop notification). Timers are kept so a test or a reset can stop them. Dev and tests only.
 import type { TicketMessage } from '../types';
-import { pushMessageAndTicket, pushRead, pushRequesterTyping } from './liveEvents';
+import { pushMessageAndTicket, pushRead } from './liveEvents';
 import type { MockTicket, SupportState } from './types';
 
 /** The word that starts it, in the text of a reply. */
 export const ECHO_WORD = '/echo';
 /** When each step happens, after the reply is sent. */
 export const ECHO_SEEN_MS = 1_000;
-export const ECHO_TYPING_MS = 2_000;
 export const ECHO_ANSWER_MS = 4_000;
 
 const timers = new Set<ReturnType<typeof setTimeout>>();
@@ -33,7 +32,7 @@ export function wantsEcho(reply: TicketMessage): boolean {
   return !reply.isInternal && reply.body.includes(ECHO_WORD);
 }
 
-/** Plays the requester's side after `reply`: seen at once, typing, then an answer. */
+/** Plays the requester's side after `reply`: seen at once, then an answer. */
 export function playEcho(state: SupportState, ticket: MockTicket, reply: TicketMessage): void {
   later(ECHO_SEEN_MS, () => {
     const at = new Date().toISOString();
@@ -43,7 +42,6 @@ export function playEcho(state: SupportState, ticket: MockTicket, reply: TicketM
     }
     pushRead(ticket, 'requester', reply.id, at);
   });
-  later(ECHO_TYPING_MS, () => pushRequesterTyping(ticket));
   later(ECHO_ANSWER_MS, () => {
     const message: TicketMessage = {
       id: state.nextMessageId++,

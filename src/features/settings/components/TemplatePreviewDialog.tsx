@@ -43,7 +43,7 @@ export function TemplatePreviewDialog({
                   <br />
                 </>
               )}
-              {template.channel === 'email' ? 'Subject: ' : 'Message: '}
+              {'Subject: '}
               <span className="text-ink">{data.subject || eventLabel(template.event)}</span>
             </div>
             <PreviewFrame preview={data} />

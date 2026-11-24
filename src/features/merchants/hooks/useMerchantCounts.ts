@@ -1,9 +1,9 @@
-// The numbers on the tabs: one count per status tab, the groups, and the verification requests waiting for a decision. Each is the
+// The numbers on the tabs: one count per status tab, and the groups. Each is the
 // list call with `_start=0&_end=1`, read from `x-total-count` (the same way the orders tabs count), so the server does the counting.
 // Ports the `cnt(...)` figures of pageMerchants in 42-p-merchants.js.
 import { useQueries } from '@tanstack/react-query';
 import type { ApiInit, ListQuery, ListResult } from '@/lib/api';
-import { listClientGroups, listClients, listKycSubmissions } from '../api';
+import { listClientGroups, listClients } from '../api';
 import { MERCHANT_TABS, tabStatus, type MerchantTab } from '../lib/status';
 import { MERCHANT_COUNTS_KEY, REFRESH_MS } from './keys';
 
@@ -15,9 +15,6 @@ const ONE_ROW: ListQuery = { start: 0, end: 1 };
 // What each tab counts. The demo counted over all merchants whatever the toolbar said, so these calls carry no toolbar filter.
 function loaderOf(tab: MerchantTab): (init: ApiInit) => Promise<ListResult<unknown>> {
   if (tab === 'groups') return (init) => listClientGroups(ONE_ROW, init);
-  if (tab === 'verification') {
-    return (init) => listKycSubmissions({ ...ONE_ROW, filters: { status: 'pending' } }, init);
-  }
   const status = tabStatus(tab);
   return (init) => listClients({ ...ONE_ROW, filters: status ? { status } : undefined }, init);
 }

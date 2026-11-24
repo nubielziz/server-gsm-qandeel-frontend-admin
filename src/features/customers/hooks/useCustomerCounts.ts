@@ -17,7 +17,7 @@ export type CustomerCounts = {
 type CountSpec = { id: string; load: (signal: AbortSignal) => Promise<number>; enabled: boolean };
 
 // The demo counted over all customers whatever the toolbar said, so these calls carry no toolbar filter.
-const COUNTED_TABS = ['all', 'active', 'flagged', 'suspended', 'blocked'] as const;
+const COUNTED_TABS = ['all', 'active', 'suspended', 'blocked'] as const;
 
 const customerCount = (filters: CustomerListFilters) => async (signal: AbortSignal) =>
   (await listCustomers(toListQuery(filters, { start: 0, end: 1 }), { signal })).total;

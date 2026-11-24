@@ -6,7 +6,7 @@ import type { ListFilters } from './refineFilters';
 import { withParams } from './url';
 
 export const INVOICE_STATUSES: readonly InvoiceStatus[] = ['open', 'paid', 'void'];
-export const INVOICE_KINDS: readonly InvoiceKind[] = ['topup', 'manual', 'receipt', 'statement'];
+export const INVOICE_KINDS: readonly InvoiceKind[] = ['topup', 'manual', 'receipt'];
 
 /** Search text, one status and one kind. Empty means "no filter". */
 export type InvoiceListState = { q: string; status: InvoiceStatus | ''; kind: InvoiceKind | '' };

@@ -35,7 +35,6 @@ export function order(overrides: Partial<Order> = {}): Order {
     result: { code: null, comment: null, fileId: null },
     verificationStatus: null,
     inputFileId: null,
-    clientNote: null,
     adminNote: null,
     pricingSnapshot: {},
     createdAt: '2026-01-01T11:00:00.000Z',

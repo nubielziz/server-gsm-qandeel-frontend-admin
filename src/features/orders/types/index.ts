@@ -54,7 +54,7 @@ export type Order = Pick<
   /** Why the order is in a review queue, in words the team can read. */
   reviewReason: string | null;
   channel: OrderChannel;
-  /** How it arrived (`dhru`, `v1`, `portal`, `store`). */
+  /** How it arrived (`dhru`, `portal`, `store`; `v1` on an order from before the REST API was retired). */
   source: string;
   service: OrderService;
   /** The merchant, for `b2b` orders. */
@@ -67,7 +67,6 @@ export type Order = Pick<
   result: OrderResult;
   verificationStatus: string | null;
   inputFileId: Id | null;
-  clientNote: string | null;
   adminNote: string | null;
   sentAt: IsoDateTime | null;
   completedAt: IsoDateTime | null;

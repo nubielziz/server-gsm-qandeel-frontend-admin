@@ -1,6 +1,6 @@
 // Tests for the Customer emails tab, run through the whole app against the dev mock API: the templates and their menus, the Send switch
 // with the check before a receipt goes off, the server's preview as text and as sandboxed HTML, new, edit and delete, permissions.
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -34,22 +34,45 @@ describe('the list', () => {
       'false',
     );
     expect(screen.getByRole('heading', { name: 'Customer emails' })).toBeInTheDocument();
-    expect(screen.getByText('6 templates')).toBeInTheDocument();
+    expect(screen.getByText('5 templates')).toBeInTheDocument();
   });
 
-  it('switches to the merchant messages and filters by channel', async () => {
+  it('switches to the merchant messages and back to all of them, with no channel menu', async () => {
     const user = userEvent.setup();
     const app = await openSettings(EMAILS);
     await screen.findByText('Order received');
+    expect(screen.queryByRole('combobox', { name: 'Channel' })).not.toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Who receives it' }), 'merchant');
     expect(await screen.findByRole('heading', { name: 'Merchant messages' })).toBeInTheDocument();
     expect(app.location()).toBe('/settings?tab=notifications&audience=merchant');
-    expect(await screen.findByText('Deposit approved')).toBeInTheDocument();
-    expect((await rowOf(TABLE, 'Order completed')).getByText('Merchant · Telegram')).toBeInTheDocument();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Channel' }), 'telegram');
-    await waitFor(() => expect(screen.queryByText('Deposit approved')).not.toBeInTheDocument());
+    expect(await screen.findByText('Wallet low balance')).toBeInTheDocument();
+    expect((await rowOf(TABLE, 'Order completed')).getByText('Merchant · Email')).toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Who receives it' }), 'all');
     expect(await screen.findByRole('heading', { name: 'All messages' })).toBeInTheDocument();
+  });
+
+  it('leaves out a template of a retired channel that an older backend still lists', async () => {
+    const email = {
+      id: 1,
+      event: 'order.received',
+      channel: 'email',
+      audience: 'customer',
+      subject: 'Your order is confirmed',
+      body: 'Thanks.',
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    mockServer.use(
+      http.get('*/admin/notification-templates', () =>
+        HttpResponse.json([email, { ...email, id: 2, event: 'order.completed', channel: 'telegram' }], {
+          headers: { 'x-total-count': '2' },
+        }),
+      ),
+    );
+    await openSettings(EMAILS);
+    expect(await screen.findByText('Order received')).toBeInTheDocument();
+    expect(screen.queryByText('Order completed')).not.toBeInTheDocument();
+    expect(screen.getByText('1 template')).toBeInTheDocument();
   });
 
   it('shows an empty state with a way to add one', async () => {
@@ -241,7 +264,7 @@ describe('Edit', () => {
 });
 
 describe('New template', () => {
-  it('adds an email template, and a Telegram one has no subject', async () => {
+  it('adds an email template, with no channel to choose', async () => {
     const user = userEvent.setup();
     await openSettings(EMAILS);
     await user.click(await screen.findByRole('button', { name: 'New template' }));
@@ -250,9 +273,7 @@ describe('New template', () => {
     expect(dialog.queryByRole('textbox', { name: 'Language' })).not.toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Subject' }), 'Your refund');
     await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'We refunded your money.');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Channel' }), 'telegram');
-    expect(dialog.queryByRole('textbox', { name: 'Subject' })).not.toBeInTheDocument();
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Channel' }), 'email');
+    expect(dialog.queryByRole('combobox', { name: 'Channel' })).not.toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Create template' }));
     expect(await screen.findByText('Refund issued added')).toBeInTheDocument();
     expect((await rowOf(TABLE, 'Refund issued')).getByText('Customer · Email')).toBeInTheDocument();
@@ -290,15 +311,11 @@ describe('Delete', () => {
     const user = userEvent.setup();
     await openSettings(EMAILS);
     await user.click(
-      (await rowOf(TABLE, 'Checkout abandoned')).getByRole('button', { name: 'Delete Checkout abandoned' }),
+      (await rowOf(TABLE, 'Payment failed')).getByRole('button', { name: 'Delete Payment failed' }),
     );
-    await user.click(
-      dialogOf('Delete “Checkout abandoned”?').getByRole('button', { name: 'Delete template' }),
-    );
-    expect(await screen.findByText('Checkout abandoned deleted')).toBeInTheDocument();
-    expect((await listTemplates()).data.some((template) => template.event === 'checkout.abandoned')).toBe(
-      false,
-    );
+    await user.click(dialogOf('Delete “Payment failed”?').getByRole('button', { name: 'Delete template' }));
+    expect(await screen.findByText('Payment failed deleted')).toBeInTheDocument();
+    expect((await listTemplates()).data.some((template) => template.event === 'payment.failed')).toBe(false);
   });
 });
 

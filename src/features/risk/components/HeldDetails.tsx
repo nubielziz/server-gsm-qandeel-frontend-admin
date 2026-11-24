@@ -1,16 +1,14 @@
 // HeldDetails: the middle of a held order's card: "Why it was held" (the signals the server found) and "Who is buying" (the
 // customer, their masked email, country and history). Ports the second block of `heldCard` in 54-p-risk.js.
 import { Link } from 'react-router';
-import { Badge, Icon, KeyValue } from '@/components/ui';
+import { Icon, KeyValue } from '@/components/ui';
 import { maskedCustomerLabel, maskEmail } from '@/lib/format';
 import { countryName } from '../lib/countries';
-import { riskLevel } from '../lib/labels';
 import { historyText } from '../lib/queue';
 import type { HeldOrder } from '../types';
 
 export function HeldDetails({ order }: { order: HeldOrder }) {
   const { customer } = order;
-  const level = riskLevel(customer.riskLevel);
   return (
     <div className="grid gap-4 p-3.5 md:grid-cols-2">
       <div>
@@ -34,12 +32,9 @@ export function HeldDetails({ order }: { order: HeldOrder }) {
           rows={[
             [
               'Customer',
-              <>
-                <Link className="link" to={`/customers/${customer.id}`}>
-                  {maskedCustomerLabel(customer)}
-                </Link>{' '}
-                <Badge tone={level.tone}>{level.label} risk</Badge>
-              </>,
+              <Link className="link" to={`/customers/${customer.id}`}>
+                {maskedCustomerLabel(customer)}
+              </Link>,
             ],
             ['Email', maskEmail(customer.email)],
             ['Country', countryName(customer.country)],

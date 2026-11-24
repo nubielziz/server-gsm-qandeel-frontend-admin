@@ -1,17 +1,12 @@
-// EmailsTab: the "Customer emails" tab: the templates for each event and channel with a Send switch, Preview, Edit and Delete. Ports
-// tabNotifs and `st-nt` of 55-p-settings.js. The menus above the table (who receives it, which channel) live in the address.
+// EmailsTab: the "Customer emails" tab: the templates for each event with a Send switch, Preview, Edit and Delete. Ports
+// tabNotifs and `st-nt` of 55-p-settings.js. The menu above the table (who receives it) lives in the address.
 import { useState } from 'react';
 import { Button, DataTable, EmptyState, Icon, Panel, SelectField, TableToolbar } from '@/components/ui';
 import { num } from '@/lib/format';
 import { useListView } from '../hooks/useListView';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { useTemplateList, useToggleTemplate } from '../hooks/useTemplates';
-import {
-  AUDIENCE_FILTER_OPTIONS,
-  CHANNEL_FILTER_OPTIONS,
-  DEFAULT_AUDIENCE,
-  isProofEmail,
-} from '../lib/templates';
+import { AUDIENCE_FILTER_OPTIONS, DEFAULT_AUDIENCE, isProofEmail } from '../lib/templates';
 import { TemplateDialogs, type TemplateDialogState } from './TemplateDialogs';
 import { templateColumns } from './templateColumns';
 
@@ -21,11 +16,11 @@ const CUSTOMER_SUB =
 /** The toolbar, the table and the dialogs. */
 export function EmailsTab() {
   const grants = useSettingsGrants();
-  const view = useListView(['audience', 'channel']);
+  const view = useListView(['audience']);
   // An absent `audience` means the customer emails; `all` asks for every audience.
   const picked = view.filters.audience || DEFAULT_AUDIENCE;
   const { templates, query } = useTemplateList(
-    { audience: picked === 'all' ? '' : picked, channel: view.filters.channel },
+    { audience: picked === 'all' ? '' : picked },
     grants.ready && grants.can('notifications:read'),
   );
   const toggle = useToggleTemplate();
@@ -51,7 +46,7 @@ export function EmailsTab() {
     <>
       <Panel
         title={AUDIENCE_FILTER_OPTIONS.find((option) => option.value === picked)?.label ?? 'Customer emails'}
-        sub={picked === DEFAULT_AUDIENCE ? CUSTOMER_SUB : 'The text of each message, per event and channel.'}
+        sub={picked === DEFAULT_AUDIENCE ? CUSTOMER_SUB : 'The text of each message, per event.'}
         flush
         right={newButton}
       >
@@ -69,12 +64,6 @@ export function EmailsTab() {
             onChange={(event) =>
               view.setFilters({ audience: event.target.value === DEFAULT_AUDIENCE ? '' : event.target.value })
             }
-          />
-          <SelectField
-            aria-label="Channel"
-            value={view.filters.channel}
-            options={CHANNEL_FILTER_OPTIONS}
-            onChange={(event) => view.setFilters({ channel: event.target.value })}
           />
         </TableToolbar>
         <div className="border-t border-line">

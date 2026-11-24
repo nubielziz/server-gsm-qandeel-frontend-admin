@@ -23,8 +23,6 @@ type AttentionItem = { id: string; severity: AttentionSeverity } & (
   | { kind: 'services_below_floor'; count: number; serviceNames: string[] }
   | { kind: 'deposits_pending'; count: number; total: Money; oldestAt: string }
   | { kind: 'wallets_negative'; count: number; clients: { id: number; name: string; balance: Money }[] }
-  | { kind: 'merchants_pending'; count: number; names: string[] }
-  | { kind: 'commissions_accrued'; count: number; total: Money; agents: number }
   | { kind: 'orders_held'; count: number; captured: Money; oldestAt: string }
   | { kind: 'disputes_due'; count: number; firstDisputeId: number; dueAt: string; amount: Money; fee: Money }
   | { kind: 'tickets_late'; count: number; oldestTicketId: number; waitingSince: string; subject: string }
@@ -36,9 +34,9 @@ type SupplierHealth = { id: number; name: string; enabled: boolean; health: 'up'
 type TypeCounts = { imei: number; server: number; remote: number; file: number };
 type OrdersByType = { daily: ({ date: string } & TypeCounts)[] /* last 30 days, oldest first */; monthly: ({ month: string } & TypeCounts)[] | null /* 12 months; null = no yearly history */ };
 type ChannelRevenue = { daily: { date: string; b2b: Money; b2c: Money }[] /* 30 days, before VAT */; totals: { last7Days: { b2b: Money; b2c: Money }; last30Days: { b2b: Money; b2c: Money } } };
-type StorefrontSummary = { funnel: { visitorsEstimated: number; imeiChecks: number; checkoutsStarted: number; paid: number; delivered: number }; averageOrder: Money | null; refundRate: number | null; disputeRate: number | null; firstReplySeconds: number | null; satisfaction: { average: number; ratings: number } | null; heldForReview: number };
+type StorefrontSummary = { funnel: { visitorsEstimated: number; checkoutsStarted: number; paid: number; delivered: number }; averageOrder: Money | null; refundRate: number | null; disputeRate: number | null; firstReplySeconds: number | null; heldForReview: number };
 type TopCustomer = { id: number; name: string; country: string; orders: number; spend: Money };
-type DashboardNavCounts = { orders: { open: number; pastSla: number }; finance: { pendingDeposits: number }; merchants: { pendingApproval: number }; support: { open: number; late: number }; refunds: { open: number; disputesDueSoon: number }; risk: { held: number } };
+type DashboardNavCounts = { orders: { open: number; pastSla: number }; finance: { pendingDeposits: number }; support: { open: number; late: number }; refunds: { open: number; disputesDueSoon: number }; risk: { held: number } };
 type Dashboard = { generatedAt: string; stats: { current: PeriodStats; previous: PeriodStats | null }; attention: AttentionItem[] /* server-ranked, most urgent first, all of them */; queues: QueueByType[]; suppliers: SupplierHealth[]; ordersByType: OrdersByType; revenueByChannel: ChannelRevenue | null /* scope=all only */; storefront: StorefrontSummary | null /* null for b2b */; topCustomers: TopCustomer[] | null /* null for b2b, top 5 by spend in the period */; navCounts: DashboardNavCounts /* whole console, any scope */ };
 type TopClient = { id: number; name: string; country: string; orders: number; spend: Money; profit: Money; walletBalance: Money };
 ```
@@ -53,7 +51,7 @@ The server decides which attention items exist, their severity and order (busine
 
 ## Links (use real `<a>`/router links, not clickable `<tr>` only; keep rows keyboard reachable)
 - Orders: use `ordersListPath(patch)` and the `OrderFilters` type from `@/features/orders` (already exported). Queue row: `{ type, channel }` where channel = scope b2b→'b2b', b2c→'b2c', all→''. orders_past_sla: `{ pastSla: true, channel }`. orders_review: `{ tab: 'review' }`.
-- Other pages are not built yet; use exactly these addresses (listed in `docs/ARCHITECTURE.md` §5.2, later features honour them): `/suppliers?supplier=<id>`, `/services?belowFloor=true`, `/finance?tab=payments`, `/merchants?tab=pending`, `/merchants/<id>`, `/customers/<id>`, `/commissions`, `/risk`, `/refunds?tab=disputes`, `/refunds?tab=refunds&status=requested|failed`, `/support?filter=late`, `/settings?tab=tax`.
+- Other pages are not built yet; use exactly these addresses (listed in `docs/ARCHITECTURE.md` §5.2, later features honour them): `/suppliers?supplier=<id>`, `/services?belowFloor=true`, `/finance?tab=payments`, `/merchants/<id>`, `/customers/<id>`, `/risk`, `/refunds?tab=disputes`, `/refunds?tab=refunds&status=requested|failed`, `/support?filter=late`, `/settings?tab=tax`.
 - CTA per kind: demo copy. supplier_balance_low: the demo's "Record top-up" has no route in the map (balance comes from the supplier sync), so it becomes "Open supplier" → `/suppliers?supplier=<id>` (log mismatch). Withdrawals item: dropped (no admin route, MISMATCHES M3).
 - Show a link/CTA only when the staff member may open the target page: `useCanOpenPage(name)` from `@/lib/auth/useCanOpenPage` (already there) returns `boolean | undefined`. Without access the row stays, without a button.
 

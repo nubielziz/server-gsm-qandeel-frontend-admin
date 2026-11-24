@@ -1,6 +1,7 @@
 // Tests for creating a key and changing its limits on the API access tab (feature 20), run through the whole app against the dev mock
-// API: the New key… button and when it is off, the form and its checks, the key shown once, the server's refusals in the dialog and
-// under their inputs, the "Made by support" chip and the Limit column, and the Limits… dialog.
+// API: the New key… button and when it is off, the form and its checks (no scope list: a key is a Dhru credential), the key shown
+// once, the server's refusals in the dialog and under their inputs, the "Made by support" chip and the Limit column, the Limits…
+// dialog, and a backend that still sends the retired scopes of a key.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -34,12 +35,17 @@ describe('New key…', () => {
     expect(await screen.findByRole('button', { name: 'New key…' })).toBeEnabled();
   });
 
-  it('is off for a pending merchant and a suspended one, with the reason as its title', async () => {
+  it('is on for a merchant staff invited, who is active at once', async () => {
     await openApi(undefined, 18, /Algiers Service Plus/);
+    expect(await screen.findByRole('button', { name: 'New key…' })).toBeEnabled();
+  });
+
+  it('is off for an account that is still pending, with the reason as its title', async () => {
+    await openApi(undefined, 20, /Accra Devices/);
     expect(await screen.findByRole('button', { name: 'New key…' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'New key…' })).toHaveAttribute(
       'title',
-      'Approve the account first: only an active merchant can have keys.',
+      'Activate the account first: only an active merchant can have keys.',
     );
   });
 
@@ -60,16 +66,16 @@ describe('New key…', () => {
 });
 
 describe('creating a key', () => {
-  it('checks the form first: a name and at least one scope', async () => {
+  it('checks the form first: a name, and offers no scope to pick', async () => {
     const user = userEvent.setup();
     await openApi();
     const dialog = await openCreate(user);
     expect(within(dialog).getByLabelText('Calls per minute')).toHaveValue('60');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     expect(await within(dialog).findByText('Name the key.')).toBeInTheDocument();
-    expect(within(dialog).getByText('Choose at least one scope.')).toBeInTheDocument();
+    expect(within(dialog).queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Scopes')).not.toBeInTheDocument();
     await user.type(within(dialog).getByLabelText('Name'), 'Server');
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:read/ }));
     await user.clear(within(dialog).getByLabelText('Calls per minute'));
     await user.type(within(dialog).getByLabelText('Calls per minute'), '9000');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
@@ -91,7 +97,6 @@ describe('creating a key', () => {
                 clientId: 1,
                 name: 'Production server',
                 prefix: 'gsm_Qx4f',
-                scopes: ['orders:read', 'orders:write'],
                 allowedIps: ['203.0.113.55', '198.51.100.0/24'],
                 rateLimitPerMin: 120,
                 lastUsedAt: null,
@@ -112,17 +117,16 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), '  Production server ');
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:read/ }));
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:write/ }));
     await user.type(within(dialog).getByLabelText('Allowed IP addresses'), '203.0.113.55\n198.51.100.0/24');
     await user.clear(within(dialog).getByLabelText('Calls per minute'));
     await user.type(within(dialog).getByLabelText('Calls per minute'), '120');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
 
     const reveal = await screen.findByRole('dialog', { name: 'API key Production server' });
+    // The one scope of a Dhru key goes out with the form, for a backend that still asks for a scope list.
     expect(body).toEqual({
       name: 'Production server',
-      scopes: ['orders:read', 'orders:write'],
+      scopes: ['dhru'],
       allowedIps: ['203.0.113.55', '198.51.100.0/24'],
       rateLimitPerMin: 120,
     });
@@ -146,7 +150,6 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), 'Support key');
-    await user.click(within(dialog).getByRole('checkbox', { name: /account:read/ }));
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     const reveal = await screen.findByRole('dialog', { name: 'API key Support key' });
     expect(within(reveal).getByText(/^gsm_[A-Za-z0-9]{44}$/)).toBeInTheDocument();
@@ -170,18 +173,16 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), 'Server');
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:read/ }));
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     expect(await within(dialog).findByText('This merchant is not active.')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'New API key for Zain Mobile Hub' })).toBeInTheDocument();
   });
 
-  it('puts scopes.N and allowedIps.N errors under their inputs, and other fields under theirs', async () => {
+  it('puts allowedIps.N errors under their input, and other fields under theirs', async () => {
     const user = userEvent.setup();
     mockServer.use(
       http.post('*/admin/clients/:id/api-keys', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'scopes.0', message: 'Unknown scope.' },
           { field: 'allowedIps.1', message: 'Enter an IP address or range.' },
           { field: 'name', message: 'This merchant already has 10 live keys.' },
         ]),
@@ -190,11 +191,9 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), 'Server');
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:read/ }));
     await user.type(within(dialog).getByLabelText('Allowed IP addresses'), '203.0.113.55\nnot-an-ip');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
-    expect(await within(dialog).findByText('Unknown scope.')).toBeInTheDocument();
-    expect(within(dialog).getByText('Line 2: Enter an IP address or range.')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Line 2: Enter an IP address or range.')).toBeInTheDocument();
     expect(within(dialog).getByText('This merchant already has 10 live keys.')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Allowed IP addresses')).toHaveAttribute('aria-invalid', 'true');
     expect(within(dialog).getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
@@ -205,7 +204,6 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), 'Server');
-    await user.click(within(dialog).getByRole('checkbox', { name: /orders:read/ }));
     await user.type(within(dialog).getByLabelText('Allowed IP addresses'), 'nope');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     expect(await within(dialog).findByText('Line 1: Enter an IP address or range.')).toBeInTheDocument();
@@ -316,5 +314,37 @@ describe('Limits…', () => {
     const button = await screen.findByRole('button', { name: 'Change limits of Production' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'You need the api_keys:update permission');
+  });
+});
+
+describe('a backend that still sends the retired scopes of a key', () => {
+  it('lists the key without showing its scopes, with its limit, addresses and status as before', async () => {
+    mockServer.use(
+      http.get('*/admin/clients/:id/api-keys', () =>
+        HttpResponse.json([
+          {
+            id: 77,
+            clientId: 1,
+            name: 'Older integration',
+            prefix: 'gsm_Ab12',
+            scopes: ['orders:read', 'orders:write', 'account:read', 'services:read'],
+            allowedIps: ['203.0.113.77'],
+            rateLimitPerMin: 90,
+            lastUsedAt: null,
+            lastUsedIp: '',
+            expiresAt: null,
+            revokedAt: null,
+            createdAt: new Date().toISOString(),
+            createdByStaff: false,
+          },
+        ]),
+      ),
+    );
+    await openApi();
+    const row = await rowOf('API keys', 'Older integration');
+    expect(row.getByText('90/min')).toBeInTheDocument();
+    expect(row.getByText('203.0.113.77', { selector: '.chip' })).toBeInTheDocument();
+    expect(row.getByText('Active')).toBeInTheDocument();
+    expect(screen.queryByText(/orders:read|orders:write|account:read|services:read/)).not.toBeInTheDocument();
   });
 });

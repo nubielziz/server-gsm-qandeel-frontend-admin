@@ -29,18 +29,20 @@ const ROLE_MATRIX: Record<RoleKey, number[]> = {
 // Orders, Customers, Support, Risk, Money, Catalog, Settings, Admins, System.
 const AREA_PERMISSIONS: string[][] = [
   ['orders', 'inventory', 'files'],
-  ['customers', 'clients', 'wallet', 'groups', 'kyc', 'api_keys', 'growth'],
+  ['customers', 'clients', 'wallet', 'groups', 'api_keys'],
   ['support'],
   ['risk'],
-  ['ledger', 'payments', 'invoices', 'commissions', 'refunds', 'disputes', 'reports'],
+  ['ledger', 'payments', 'invoices', 'refunds', 'disputes', 'reports'],
   ['catalog', 'pricing', 'suppliers', 'storefront', 'legal'],
-  ['settings', 'tax', 'currencies', 'webhooks', 'notifications'],
+  ['settings', 'tax', 'currencies', 'notifications'],
   ['staff', 'access', 'roles', 'sessions', 'audit', 'queues'],
   ['system', 'alerts', 'incidents'],
 ];
 
 // Every permission of the map, by prefix, written out from docs/route-manifest.json (a CRUD row `x:*` stands for
-// `x:read`, `x:create`, `x:update`, `x:delete` where the route exists).
+// `x:read`, `x:create`, `x:update`, `x:delete` where the route exists), except the two permissions of the retired merchant
+// verification (decision 020, MISMATCHES M278), the commissions family of the retired Commissions page, the two of the retired
+// merchant webhooks and the two growth permissions of the retired Abandoned checkouts page.
 const CATALOG: Record<string, string> = {
   staff: 'read create update suspend',
   access: 'read create update delete',
@@ -61,12 +63,9 @@ const CATALOG: Record<string, string> = {
   suppliers: 'read create update delete',
   payments: 'read approve gateways',
   invoices: 'read create',
-  kyc: 'read decide',
-  commissions: 'read create update delete approve',
   reports: 'read finance growth',
   dashboard: 'read',
   queues: 'read',
-  webhooks: 'read update',
   notifications: 'read create update delete',
   customers: 'read create update block password privacy suspend',
   tax: 'read create update',
@@ -77,7 +76,6 @@ const CATALOG: Record<string, string> = {
   disputes: 'read manage',
   support: 'read create update delete reply',
   risk: 'read create delete decide',
-  growth: 'read send',
   broadcasts: 'read send',
   system: 'read manage',
   alerts: 'read create update delete',

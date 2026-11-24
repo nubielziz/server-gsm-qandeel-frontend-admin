@@ -1,65 +1,32 @@
-// Tests for the rows of the Webhooks card: which direction comes first and how each is named.
+// Tests for the row of the Webhooks card: how it is named, and that a part the backend no longer sends is not read.
 import { describe, expect, it } from 'vitest';
-import type { MetricState, WebhookDirectionHealth, WebhooksHealth } from '../../types';
-import { webhookRows } from './webhooks';
+import type { WebhookHealth, WebhooksHealth } from '../../types';
+import { webhookRow } from './webhooks';
 
-function direction(
-  rate: MetricState,
-  age: MetricState,
-  over: Partial<WebhookDirectionHealth> = {},
-): WebhookDirectionHealth {
+function health(over: Partial<WebhookHealth> = {}): WebhookHealth {
   return {
-    successRate: { value: 99, unit: 'percent', state: rate },
+    successRate: { value: 99, unit: 'percent', state: 'ok' },
     delivered: 100,
     failed: 1,
     retrying: 0,
-    oldestUndeliveredAt: '2026-10-31T12:00:00.000Z',
-    oldestAge: { value: 30, unit: 's', state: age },
+    oldestUndeliveredAt: null,
+    oldestAge: { value: 0, unit: 's', state: 'ok' },
     ...over,
   };
 }
 
-const order = (health: WebhooksHealth) => webhookRows(health).map((row) => row.id);
-
-describe('webhookRows', () => {
-  it('keeps outgoing before incoming when both are in the same state', () => {
-    expect(order({ outgoing: direction('ok', 'ok'), incoming: direction('ok', 'ok') })).toEqual([
-      'outgoing',
-      'incoming',
-    ]);
+describe('webhookRow', () => {
+  it('is the payment gateways row, with the numbers the server sent for incoming webhooks', () => {
+    const incoming = health({ delivered: 884 });
+    const row = webhookRow({ incoming });
+    expect(`${row.name} ${row.sub}`).toBe('Payment gateways callbacks we receive');
+    expect(row.id).toBe('incoming');
+    expect(row.health).toBe(incoming);
   });
 
-  it('puts the direction in the worse server state first', () => {
-    expect(order({ outgoing: direction('ok', 'ok'), incoming: direction('crit', 'ok') })).toEqual([
-      'incoming',
-      'outgoing',
-    ]);
-    expect(order({ outgoing: direction('warn', 'ok'), incoming: direction('ok', 'ok') })).toEqual([
-      'outgoing',
-      'incoming',
-    ]);
-  });
-
-  it('weighs a direction by the worse of its two judged numbers', () => {
-    // Outgoing is fine by rate but its oldest message is critical; incoming is only a warning.
-    expect(order({ outgoing: direction('ok', 'crit'), incoming: direction('warn', 'ok') })).toEqual([
-      'outgoing',
-      'incoming',
-    ]);
-  });
-
-  it('ranks a number nobody could read as a reason to look, ahead of a healthy direction', () => {
-    expect(order({ outgoing: direction('ok', 'ok'), incoming: direction('unknown', 'ok') })).toEqual([
-      'incoming',
-      'outgoing',
-    ]);
-  });
-
-  it('names who the messages go to or come from', () => {
-    const rows = webhookRows({ outgoing: direction('ok', 'ok'), incoming: direction('ok', 'ok') });
-    expect(rows.map((row) => `${row.name} ${row.sub}`)).toEqual([
-      'Outgoing to merchants',
-      'Incoming from payment gateways',
-    ]);
+  it('ignores an outgoing part that an older backend still sends', () => {
+    const incoming = health();
+    const older = { outgoing: health({ failed: 500 }), incoming } as unknown as WebhooksHealth;
+    expect(webhookRow(older).health).toBe(incoming);
   });
 });

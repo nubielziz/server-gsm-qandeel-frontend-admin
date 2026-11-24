@@ -18,7 +18,7 @@ import { RevokeKeyDialog } from './RevokeKeyDialog';
 function createBlocked(status: Client['status']): string | undefined {
   if (status === 'active') return undefined;
   return status === 'pending'
-    ? 'Approve the account first: only an active merchant can have keys.'
+    ? 'Activate the account first: only an active merchant can have keys.'
     : 'Reactivate the account first: only an active merchant can have keys.';
 }
 
@@ -81,7 +81,7 @@ export function ApiAccessTab({ client, grants }: { client: Client; grants: Merch
         empty={
           <EmptyState icon="key" title="No API keys yet">
             {client.status === 'pending'
-              ? 'The merchant can create a key in their portal once you approve the account.'
+              ? 'The merchant can create a key in their portal once the account is active.'
               : 'The merchant creates their keys in their portal. They show here as soon as there is one.'}
           </EmptyState>
         }

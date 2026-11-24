@@ -1,12 +1,12 @@
-// The merchants page's tab, filters, page, sort and open verification request as URL search parameters, and how they become API
+// The merchants page's tab, filters, page and sort as URL search parameters, and how they become API
 // filters. Ports the `ui.merchants` state of 11-state.js and merRows of 42-p-merchants.js: the demo filtered an in-memory array,
 // the console asks the server (MISMATCHES M22 for orders says the same). Nothing here decides which merchants match.
 import type { CrudFilters } from '@refinedev/core';
 import type { SortState } from '@/components/ui';
-import type { ClientListFilters, KycSubmissionStatus } from '../types';
+import type { ClientListFilters } from '../types';
 import { isMerchantTab, tabStatus, type MerchantTab } from './status';
 
-/** Rows per page of the merchant table and of the verification list (the demo's PAGE). */
+/** Rows per page of the merchant table (the demo's PAGE). */
 export const PAGE_SIZE = 25;
 
 /** The toolbar's filters. The group id is kept as the text of a select. */
@@ -55,7 +55,10 @@ export function clearMerchantFilters(base: URLSearchParams): URLSearchParams {
   return next;
 }
 
-/** The address with another tab: the page, the open request and the other tab's own state are dropped. */
+/**
+ * The address with another tab: the page and the sort of the old tab are dropped, and so are the parameters of the retired
+ * Verification tab (`kyc`, `kycStatus`; decision 020), so an old link does not keep them in every address copied after it.
+ */
 export function writeTab(base: URLSearchParams, tab: MerchantTab): URLSearchParams {
   const next = new URLSearchParams(base);
   if (tab === 'all') next.delete('tab');
@@ -100,29 +103,6 @@ export function writeView(base: URLSearchParams, view: { page?: number; sort?: S
       next.set('dir', view.sort.order);
     }
   }
-  return next;
-}
-
-// ---- Verification list ----
-
-/** What the verification list filters by: one status, or every request. */
-export type KycFilter = KycSubmissionStatus | 'all';
-
-export const KYC_FILTERS: readonly KycFilter[] = ['pending', 'approved', 'rejected', 'all'];
-
-/** Pending requests are the work to do, so the tab opens on them. */
-export const DEFAULT_KYC_FILTER: KycFilter = 'pending';
-
-export function parseKycFilter(params: URLSearchParams): KycFilter {
-  const named = params.get('kycStatus');
-  return KYC_FILTERS.find((candidate) => candidate === named) ?? DEFAULT_KYC_FILTER;
-}
-
-export function writeKycFilter(base: URLSearchParams, filter: KycFilter): URLSearchParams {
-  const next = new URLSearchParams(base);
-  if (filter === DEFAULT_KYC_FILTER) next.delete('kycStatus');
-  else next.set('kycStatus', filter);
-  next.delete('page');
   return next;
 }
 

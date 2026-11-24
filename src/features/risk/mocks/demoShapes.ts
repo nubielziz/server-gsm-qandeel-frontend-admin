@@ -1,20 +1,11 @@
-// The shapes of the demo's own data that the risk mocks read (`S.customers`, `S.orders[].risk`, `S.imeiChecks`, `S.risk`), as
+// The shapes of the demo's own data that the risk mocks read (`S.customers`, `S.orders[].risk`, `S.risk`), as
 // the demo stores them. Mock data only: they exist so the mapping in seed.ts can be read against the demo in one place.
-import type {
-  BlockKind,
-  BlockSource,
-  CheckKind,
-  CheckResult,
-  CheckSource,
-  PaymentMethod,
-  RiskOutcome,
-} from '../types';
+import type { BlockKind, BlockSource, PaymentMethod, RiskOutcome } from '../types';
 
 export type DemoNamed = { id: string; name: string };
 export type DemoCustomer = DemoNamed & {
   email: string;
   country: string;
-  risk: 'low' | 'med' | 'high';
 };
 export type DemoRiskOrder = {
   id: string;
@@ -36,19 +27,6 @@ export type DemoRiskOrder = {
     reviewedAt: number | null;
     outcome: RiskOutcome | null;
   };
-};
-export type DemoCheck = {
-  id: string;
-  ts: number;
-  imei: string;
-  brand: string;
-  model: string;
-  kind: CheckKind;
-  status: CheckResult;
-  source: CheckSource;
-  country: string;
-  cost: number;
-  converted: string | null;
 };
 export type DemoBlock = {
   id: string;

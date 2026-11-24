@@ -12,7 +12,7 @@ export const manifest: FeatureManifest = {
     list: () => import('./pages').then((pages) => pages.MerchantsPage),
     detail: () => import('./pages').then((pages) => pages.MerchantPage),
     // Any tab's read permission opens the page; each tab then shows only what the role may read (MISMATCHES M52).
-    permission: ['clients:read', 'groups:read', 'kyc:read'],
+    permission: ['clients:read', 'groups:read'],
   },
   registry: merchantsResources,
   palette: [merchantsPaletteSource],

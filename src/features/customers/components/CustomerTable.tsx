@@ -1,4 +1,4 @@
-// CustomerTable: the customers table with the demo's columns (customer, country, account, orders, spent, last order, risk,
+// CustomerTable: the customers table with the demo's columns (customer, country, account, orders, spent, last order,
 // status). Ports `cols` of pageCustomers in 48-p-customers.js. It only draws what it is given: the page owns the data, the
 // sort and the page, and the server sorts.
 import type { ReactNode } from 'react';
@@ -15,7 +15,6 @@ import { customerPath } from '../lib/detailTabs';
 import { isZeroMoney } from '../lib/text';
 import type { Customer } from '../types';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
-import { RiskBadge } from './RiskBadge';
 
 export interface CustomerTableProps {
   rows: readonly Customer[];
@@ -106,13 +105,6 @@ export function CustomerTable({
       sortField: 'lastOrderAt',
       render: (customer) =>
         customer.lastOrderAt ? ago(customer.lastOrderAt, now) : <span className="text-ink3">Never</span>,
-    },
-    {
-      key: 'risk',
-      label: 'Risk',
-      hide: 'md',
-      sortField: 'riskLevel',
-      render: (customer) => <RiskBadge level={customer.riskLevel} />,
     },
     {
       key: 'status',

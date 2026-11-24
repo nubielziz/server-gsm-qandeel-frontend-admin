@@ -57,7 +57,7 @@ describe('the list columns', () => {
 });
 
 describe('when the detail keeps asking', () => {
-  it('while the campaign is in flight, or an email or Telegram message still waits', () => {
+  it('while the campaign is in flight, or an email message still waits', () => {
     expect(needsRefresh(undefined)).toBe(false);
     expect(needsRefresh(campaignDetail({ status: 'sending' }))).toBe(true);
     expect(needsRefresh(campaignDetail({ status: 'sent' }))).toBe(false);

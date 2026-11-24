@@ -1,6 +1,6 @@
 // Tests for the Security tab of a merchant's page (feature 20), run through the whole app against the dev mock API: the sign-in facts,
 // the password dialog (link, invitation, temporary password shown once), sign out everywhere, reset 2FA, resend verification,
-// the merchant's own sessions, and what a role without clients:security or sessions:read sees.
+// the count of open sessions (and no list of them), and what a role without clients:security sees.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -9,7 +9,7 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { installMerchantMocks } from '../test/installMerchantMocks';
-import { openMerchant, rowOf } from '../test/openMerchants';
+import { openMerchant } from '../test/openMerchants';
 
 setupMockApi();
 installMerchantMocks();
@@ -30,15 +30,13 @@ async function openSecurity(permissions?: string[], id = 1, name: string | RegEx
 const fact = (panel: ReturnType<typeof within>, label: string) => panel.getByText(label).nextElementSibling;
 
 describe('sign-in facts', () => {
-  it('shows the password, 2FA, email, last sign-in and the open sessions of a merchant who trades', async () => {
+  it('shows the password, 2FA, email, last sign-in and the open session count of a merchant who trades', async () => {
     const panel = await openSecurity();
     expect(fact(panel, 'Password')).toHaveTextContent('Set');
     expect(fact(panel, 'Two-factor (2FA)')).toHaveTextContent('On');
     expect(fact(panel, 'Email')).toHaveTextContent('Verified');
     expect(fact(panel, 'Last sign-in')).toHaveTextContent(/ago from 203\.0\.113\.55/);
     expect(fact(panel, 'Active sessions')).toHaveTextContent('1');
-    const row = await rowOf('Open sessions', '203.0.113.55');
-    expect(row.getByRole('button', { name: 'End session from 203.0.113.55' })).toBeEnabled();
   });
 
   it('says an invited merchant has no password yet and when the link went out', async () => {
@@ -141,7 +139,7 @@ describe('password', () => {
 });
 
 describe('sign out, 2FA and verification', () => {
-  it('signs the merchant out everywhere after a review step, then the button is off and the sessions are gone', async () => {
+  it('signs the merchant out everywhere after a review step, then the button is off and the count is gone', async () => {
     const user = userEvent.setup();
     await openSecurity();
     await user.click(await screen.findByRole('button', { name: 'Sign out everywhere' }));
@@ -154,7 +152,6 @@ describe('sign out, 2FA and verification', () => {
       'title',
       'No active sessions',
     );
-    expect(await screen.findByText('No open sessions')).toBeInTheDocument();
   });
 
   it('resets 2FA after a review step, and the button goes off when 2FA is off', async () => {
@@ -216,16 +213,7 @@ describe('sign out, 2FA and verification', () => {
 });
 
 describe('sessions', () => {
-  it('ends one session of the merchant from the list', async () => {
-    const user = userEvent.setup();
-    const panel = await openSecurity();
-    await user.click(await panel.findByRole('button', { name: 'End session from 203.0.113.55' }));
-    expect(await screen.findByText('Session ended')).toBeInTheDocument();
-    expect(await screen.findByText('No open sessions')).toBeInTheDocument();
-    await waitFor(() => expect(fact(panel, 'Active sessions')).toHaveTextContent('No active sessions'));
-  });
-
-  it('asks the server for this merchant’s sessions only', async () => {
+  it('shows the count of open sessions but no list of them, and asks the server for none', async () => {
     const seen: string[] = [];
     mockServer.use(
       http.get('*/admin/sessions', ({ request }) => {
@@ -233,16 +221,18 @@ describe('sessions', () => {
         return new Response('[]', { headers: { 'Content-Type': 'application/json', 'x-total-count': '0' } });
       }),
     );
-    await openSecurity();
-    await screen.findByText('No open sessions');
-    expect(seen[0]).toContain('subjectType=client');
-    expect(seen[0]).toContain('subjectId=1');
+    const panel = await openSecurity();
+    expect(fact(panel, 'Active sessions')).toHaveTextContent('1');
+    expect(screen.queryByText('Open sessions')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Open sessions' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^End session/ })).not.toBeInTheDocument();
+    expect(seen).toEqual([]);
   });
 });
 
 describe('permissions', () => {
   it('disables every action for a role without clients:security and names the permission', async () => {
-    await openSecurity(['clients:read', 'sessions:read']);
+    await openSecurity(['clients:read']);
     for (const name of ['Password…', 'Sign out everywhere', 'Reset 2FA…']) {
       const button = await screen.findByRole('button', { name });
       expect(button, name).toBeDisabled();
@@ -252,19 +242,5 @@ describe('permissions', () => {
       'title',
       'You need the clients:security permission',
     );
-  });
-
-  it('hides the sessions list without sessions:read but still shows the count', async () => {
-    const panel = await openSecurity(['clients:read', 'clients:security']);
-    expect(fact(panel, 'Active sessions')).toHaveTextContent('1');
-    expect(screen.queryByRole('table', { name: 'Open sessions' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Open sessions')).not.toBeInTheDocument();
-  });
-
-  it('disables ending a session without sessions:revoke', async () => {
-    await openSecurity(['clients:read', 'sessions:read']);
-    const end = await screen.findByRole('button', { name: 'End session from 203.0.113.55' });
-    expect(end).toBeDisabled();
-    expect(end).toHaveAttribute('title', 'You need the sessions:revoke permission');
   });
 });

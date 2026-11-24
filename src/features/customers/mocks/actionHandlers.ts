@@ -158,16 +158,13 @@ export const actionHandlers: HttpHandler[] = [
     });
   }),
 
-  // Blocking marks the customer high risk and keeps the reason as a note; lifting it drops a high risk to medium (the demo's rule).
+  // Blocking keeps the reason as a note; lifting the block makes the customer active again.
   customerAction('block', (row, { state }, body) => {
     if (body.blocked === false) {
       if (row.status !== 'blocked') {
         return problem(409, 'NOT_BLOCKED', 'Not blocked', 'This customer is not blocked.');
       }
-      state.customers.patch(row.id, {
-        status: 'active',
-        riskLevel: row.riskLevel === 'high' ? 'medium' : row.riskLevel,
-      });
+      state.customers.patch(row.id, { status: 'active' });
       return;
     }
     const reason = textOf(body.reason);
@@ -175,7 +172,7 @@ export const actionHandlers: HttpHandler[] = [
     if (row.status === 'blocked') {
       return problem(409, 'ALREADY_BLOCKED', 'Already blocked', 'This customer is already blocked.');
     }
-    state.customers.patch(row.id, { status: 'blocked', riskLevel: 'high', internalNotes: reason });
+    state.customers.patch(row.id, { status: 'blocked', internalNotes: reason });
   }),
 
   // Name, email and IMEIs go; payment records stay. The orders mock follows, so the orders list shows the same.

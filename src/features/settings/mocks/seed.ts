@@ -1,15 +1,8 @@
-// Builds the settings mock stores from the demo seed (`S.settings`, `S.merchants`) with the API's row shapes. The policies stay in the
+// Builds the settings mock stores from the demo seed (`S.settings`) with the API's row shapes. The policies stay in the
 // shared settings mock (`src/mocks/settings.ts`), which also serves `GET` and `PATCH /admin/settings`.
 import { Collection } from '@/mocks/db';
-import { demoRows, type DemoState } from '@/mocks/seed';
-import type {
-  Currency,
-  NotificationLogEntry,
-  NotificationTemplate,
-  PaymentGateway,
-  TaxRate,
-  WebhookDeliveryDetail,
-} from '../types';
+import type { DemoState } from '@/mocks/seed';
+import type { Currency, NotificationLogEntry, NotificationTemplate, PaymentGateway, TaxRate } from '../types';
 import { notificationRows, templateRows } from './seedMessages';
 import {
   currencyRows,
@@ -19,7 +12,6 @@ import {
   type DemoGateway,
   type DemoTax,
 } from './seedPayments';
-import { deliveryRows } from './seedWebhooks';
 
 /** Everything the settings routes keep. */
 export type Stores = {
@@ -28,7 +20,6 @@ export type Stores = {
   currencies: Collection<Currency>;
   templates: Collection<NotificationTemplate>;
   notifications: Collection<NotificationLogEntry>;
-  deliveries: Collection<WebhookDeliveryDetail>;
 };
 
 type DemoSettings = {
@@ -48,6 +39,5 @@ export function buildStores(state: DemoState): Stores {
     currencies: new Collection(currencyRows(settings.currencies ?? [])),
     templates: new Collection(templates),
     notifications: new Collection(notificationRows(templates)),
-    deliveries: new Collection(deliveryRows(demoRows(state, 'merchants'))),
   };
 }

@@ -1,5 +1,5 @@
-// GroupDialog: create or edit a merchant group (a tab the demo lacks, MISMATCHES M46): name, discount, upgrade threshold, deposit
-// limit, and two switches. Only what changed is sent when editing.
+// GroupDialog: create or edit a merchant group (a tab the demo lacks, MISMATCHES M46): name, discount, deposit limit, and two
+// switches. Only what changed is sent when editing.
 import { useForm } from 'react-hook-form';
 import { CheckboxField, FormDialog, TextField, dialogSubmit, toast } from '@/components/ui';
 import { useCreateGroup, useUpdateGroup } from '../hooks/useClientGroups';
@@ -10,15 +10,14 @@ import type { ClientGroup, CreateClientGroupBody, UpdateClientGroupBody } from '
 type Values = {
   name: string;
   discount: string;
-  threshold: string;
   deposit: string;
   overdraftAllowed: boolean;
   isDefault: boolean;
 };
-const FIELDS = ['name', 'discount', 'threshold', 'deposit', 'overdraftAllowed', 'isDefault'] as const;
+const FIELDS = ['name', 'discount', 'deposit', 'overdraftAllowed', 'isDefault'] as const;
 
-// The API calls the fields discountPercent, earnThreshold and depositLimit; the form uses the words of the column headers.
-const ALIASES = { discountPercent: 'discount', earnThreshold: 'threshold', depositLimit: 'deposit' };
+// The API calls the fields discountPercent and depositLimit; the form uses the words of the column headers.
+const ALIASES = { discountPercent: 'discount', depositLimit: 'deposit' };
 
 export interface GroupDialogProps {
   /** The group to edit; leave out to create one. */
@@ -37,7 +36,6 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
     defaultValues: {
       name: group?.name ?? '',
       discount: group ? String(Number(group.discountPercent)) : '0',
-      threshold: group ? amountInput(group.earnThreshold) : '0.00',
       deposit: group ? amountInput(group.depositLimit) : '0.00',
       overdraftAllowed: group?.overdraftAllowed ?? false,
       isDefault: group?.isDefault ?? false,
@@ -55,7 +53,6 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
       const next: CreateClientGroupBody = {
         name: cleanText(values.name),
         discountPercent: parsePercent(values.discount) ?? '0',
-        earnThreshold: parseAmount(values.threshold, { allowZero: true }) ?? '0.0000',
         depositLimit: parseAmount(values.deposit, { allowZero: true }) ?? '0.0000',
         overdraftAllowed: values.overdraftAllowed,
         isDefault: values.isDefault,
@@ -67,7 +64,6 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
       const body: UpdateClientGroupBody = {};
       if (next.name !== group.name) body.name = next.name;
       if (!same(next.discountPercent, group.discountPercent)) body.discountPercent = next.discountPercent;
-      if (!same(next.earnThreshold, group.earnThreshold)) body.earnThreshold = next.earnThreshold;
       if (!same(next.depositLimit, group.depositLimit)) body.depositLimit = next.depositLimit;
       if (next.overdraftAllowed !== group.overdraftAllowed) body.overdraftAllowed = next.overdraftAllowed;
       if (next.isDefault !== group.isDefault) body.isDefault = next.isDefault;
@@ -84,7 +80,7 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
     <FormDialog
       open
       title={group ? `Edit ${group.name}` : 'New group'}
-      sub="A group sets the discount, the upgrade threshold and the deposit limit its merchants get."
+      sub="A group sets the discount and the deposit limit its merchants get."
       confirm={group ? 'Save changes' : 'Create group'}
       onClose={onClose}
       onSubmit={submit}
@@ -97,7 +93,7 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
           error={errors.name}
           {...register('name', { validate: (value) => cleanText(value) !== '' || 'Enter a group name.' })}
         />
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <TextField
             label="Discount (%)"
             inputMode="decimal"
@@ -106,17 +102,6 @@ export function GroupDialog({ group, onClose }: GroupDialogProps) {
             error={errors.discount}
             {...register('discount', {
               validate: (value) => parsePercent(value) !== null || 'Enter a percent from 0 to 100.',
-            })}
-          />
-          <TextField
-            label="Upgrade threshold (USD)"
-            inputMode="decimal"
-            autoComplete="off"
-            hint="Spend that moves a merchant up."
-            error={errors.threshold}
-            {...register('threshold', {
-              validate: (value) =>
-                parseAmount(value, { allowZero: true }) !== null || 'Enter an amount like 5000.00.',
             })}
           />
           <TextField

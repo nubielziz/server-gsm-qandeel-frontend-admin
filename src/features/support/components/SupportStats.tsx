@@ -1,6 +1,6 @@
 // SupportStats: the figures above the inbox: open tickets (and how many nobody has answered), tickets past the reply target, and
-// resolved ones. Ports the `statGrid` of pageSupport (49-p-support.js). The demo's median first reply and satisfaction need
-// numbers the API does not give (MISMATCHES M145), so they are left out. The server counts; this only prints.
+// resolved ones. Ports the `statGrid` of pageSupport (49-p-support.js). The demo's median first reply needs
+// numbers the API does not give (MISMATCHES M145), so it is left out. The server counts; this only prints.
 import { StatGrid } from '@/components/ui';
 import { num } from '@/lib/format';
 import type { TicketCounts } from '../hooks/useTicketCounts';

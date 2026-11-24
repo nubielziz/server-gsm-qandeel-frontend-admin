@@ -83,7 +83,7 @@ describe('the price and the steps', () => {
     expect(screen.getByText('Group rows ignore this merchant’s personal override.')).toBeInTheDocument();
   });
 
-  it('names each merchant’s group in the menu, leaves out merchants waiting for approval and marks the merchant’s own group', async () => {
+  it('names each merchant’s group in the menu, leaves out merchants that are not active yet and marks the merchant’s own group', async () => {
     mockServer.use(
       http.get('*/admin/clients', () =>
         HttpResponse.json(

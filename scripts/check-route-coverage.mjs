@@ -13,7 +13,41 @@ const onlyFeature = args.includes('--feature') ? args[args.indexOf('--feature') 
 const strict = args.includes('--strict');
 
 // Endpoints we deliberately do not implement, with a one-line reason. Empty means 100% is the target.
-const EXCLUSIONS = {};
+const RETIRED_VERIFICATION =
+  'Retired (decision 020): merchant verification by documents was retired, so the console no longer calls this route.';
+const RETIRED_COMMISSIONS =
+  'Retired (decision 021): commissions and referrals were removed, so the console no longer calls this route.';
+const RETIRED_WEBHOOKS =
+  'Retired (decision 021): webhooks to merchants were retired, so the console no longer calls this route.';
+const RETIRED_CHECKOUTS =
+  'Retired (decision 021): the Abandoned checkouts page and its recovery email were removed, so the console no longer calls this route.';
+const RETIRED_IMEI_CHECK =
+  'Retired (decision 021): the free IMEI check was retired, so the console no longer calls this route.';
+const EXCLUSIONS = {
+  'GET /admin/webhook-deliveries': RETIRED_WEBHOOKS,
+  'GET /admin/webhook-deliveries/:id': RETIRED_WEBHOOKS,
+  'POST /admin/webhook-deliveries/:id/retry': RETIRED_WEBHOOKS,
+  'GET /admin/checkouts/abandoned': RETIRED_CHECKOUTS,
+  'POST /admin/checkouts/recover': RETIRED_CHECKOUTS,
+  'GET /admin/imei-checks': RETIRED_IMEI_CHECK,
+  'GET /admin/imei-checks/:id': RETIRED_IMEI_CHECK,
+  'GET /admin/kyc-submissions': RETIRED_VERIFICATION,
+  'GET /admin/kyc-submissions/:id': RETIRED_VERIFICATION,
+  'POST /admin/kyc-submissions/:id/decide': RETIRED_VERIFICATION,
+  'GET /admin/commission-plans': RETIRED_COMMISSIONS,
+  'GET /admin/commission-plans/:id': RETIRED_COMMISSIONS,
+  'POST /admin/commission-plans': RETIRED_COMMISSIONS,
+  'PATCH /admin/commission-plans/:id': RETIRED_COMMISSIONS,
+  'DELETE /admin/commission-plans/:id': RETIRED_COMMISSIONS,
+  'GET /admin/commission-assignments': RETIRED_COMMISSIONS,
+  'GET /admin/commission-assignments/:id': RETIRED_COMMISSIONS,
+  'POST /admin/commission-assignments': RETIRED_COMMISSIONS,
+  'PATCH /admin/commission-assignments/:id': RETIRED_COMMISSIONS,
+  'DELETE /admin/commission-assignments/:id': RETIRED_COMMISSIONS,
+  'GET /admin/commission-accruals': RETIRED_COMMISSIONS,
+  'GET /admin/commission-accruals/:id': RETIRED_COMMISSIONS,
+  'POST /admin/commission-accruals/approve': RETIRED_COMMISSIONS,
+};
 
 /** Finds every .ts/.tsx file under a folder (no dependency on glob libraries). */
 function walk(dir) {

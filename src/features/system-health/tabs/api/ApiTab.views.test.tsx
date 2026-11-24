@@ -134,19 +134,19 @@ describe('on a phone', () => {
     window.matchMedia = original;
   });
 
-  it('folds six healthy surfaces into one quiet line, so the charts are not pushed down, and shows them as cards on request', async () => {
+  it('folds five healthy surfaces into one quiet line, so the charts are not pushed down, and shows them as cards on request', async () => {
     const user = userEvent.setup();
     await openHealthPage({ route: API_TAB });
     const surfaces = await card('Surfaces');
-    expect(await within(surfaces).findByText(/6 surfaces OK/, undefined, SLOW)).toBeInTheDocument();
+    expect(await within(surfaces).findByText(/5 surfaces OK/, undefined, SLOW)).toBeInTheDocument();
     // Only the line: neither a table nor a card is drawn.
     expect(within(surfaces).queryByRole('list', { name: 'API surfaces' })).not.toBeInTheDocument();
     expect(within(surfaces).queryByRole('table')).not.toBeInTheDocument();
-    expect(within(surfaces).queryByRole('button', { name: 'Merchant API v1' })).not.toBeInTheDocument();
+    expect(within(surfaces).queryByRole('button', { name: 'Dhru Fusion API' })).not.toBeInTheDocument();
 
     await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     const list = within(surfaces).getByRole('list', { name: 'API surfaces' });
-    expect(within(list).getAllByRole('listitem')).toHaveLength(6);
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
     const first = within(list).getAllByRole('listitem')[0]!;
     for (const label of ['Status', 'Requests', 'p95', '5xx rate', 'p95 trend']) {
       expect(within(first).getByText(label)).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('on a phone', () => {
 
     await user.click(within(surfaces).getByRole('button', { name: 'Hide the healthy surfaces' }));
     expect(within(surfaces).queryByRole('list', { name: 'API surfaces' })).not.toBeInTheDocument();
-    expect(surfaces).toHaveTextContent('6 surfaces OK');
+    expect(surfaces).toHaveTextContent('5 surfaces OK');
   });
 
   it('shows the surfaces with a problem as cards first and folds the OK ones into the same line', async () => {
@@ -164,23 +164,22 @@ describe('on a phone', () => {
     const surfaces = await card('Surfaces');
     const list = await within(surfaces).findByRole('list', { name: 'API surfaces' }, SLOW);
     const cards = within(list).getAllByRole('listitem');
-    expect(cards).toHaveLength(2);
-    expect(cards[0]).toHaveTextContent('Merchant API v1');
-    expect(cards[1]).toHaveTextContent('Dhru Fusion API');
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toHaveTextContent('Dhru Fusion API');
     expect(surfaces).toHaveTextContent('4 surfaces OK');
 
     await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
-    expect(within(list).getAllByRole('listitem')).toHaveLength(6);
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
   });
 
-  it('keeps the picked surface as a card and folds the five others', async () => {
+  it('keeps the picked surface as a card and folds the four others', async () => {
     await openHealthPage({ route: `${API_TAB}&surface=store` });
     const surfaces = await card('Surfaces');
     const list = await within(surfaces).findByRole('list', { name: 'API surfaces' }, SLOW);
     const cards = within(list).getAllByRole('listitem');
     expect(cards).toHaveLength(1);
     expect(cards[0]).toHaveTextContent('Storefront');
-    expect(surfaces).toHaveTextContent('5 surfaces OK');
+    expect(surfaces).toHaveTextContent('4 surfaces OK');
   });
 
   it('shows the slowest endpoints and the top errors as cards', async () => {
@@ -228,7 +227,7 @@ describe('data that is missing', () => {
       range: '24h',
       bucketSeconds: 900,
       total: blank('total', 'All surfaces'),
-      surfaces: [blank('v1', 'Merchant API v1')],
+      surfaces: [blank('dhru', 'Dhru Fusion API')],
       slowest: [],
     };
     mockServer.use(http.get('*/admin/system/metrics', () => HttpResponse.json(answer)));
@@ -271,7 +270,10 @@ describe('data that is missing', () => {
       range: '24h',
       bucketSeconds: 900,
       total: blank('total', 'All surfaces'),
-      surfaces: [calm('v1', 'Merchant API v1'), { ...calm('hooks', 'Incoming webhooks'), p95: nullOk('ms') }],
+      surfaces: [
+        calm('dhru', 'Dhru Fusion API'),
+        { ...calm('hooks', 'Incoming webhooks'), p95: nullOk('ms') },
+      ],
       slowest: [],
     };
     mockServer.use(http.get('*/admin/system/metrics', () => HttpResponse.json(answer)));
@@ -288,7 +290,7 @@ describe('data that is missing', () => {
     await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
     expect(rowsOf(surfaces)).toHaveLength(2);
     expect(rowsOf(surfaces)[0]).toHaveTextContent('Incoming webhooks');
-    expect(rowsOf(surfaces)[1]).toHaveTextContent('Merchant API v1');
+    expect(rowsOf(surfaces)[1]).toHaveTextContent('Dhru Fusion API');
   });
 
   it('draws a surface the server sent without any figures as a row of No data, and keeps the rest', async () => {
@@ -296,7 +298,7 @@ describe('data that is missing', () => {
       range: '24h',
       bucketSeconds: 900,
       total: blank('total', 'All surfaces'),
-      surfaces: [{ surface: 'raw' }, blank('v1', 'Merchant API v1')],
+      surfaces: [{ surface: 'raw' }, blank('dhru', 'Dhru Fusion API')],
       slowest: [],
     };
     mockServer.use(http.get('*/admin/system/metrics', () => HttpResponse.json(answer)));

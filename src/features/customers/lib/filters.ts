@@ -10,7 +10,7 @@ import { PENDING_STATUSES } from './requests';
 /** Rows per page of the customers table and of the data requests table. */
 export const PAGE_SIZE = 25;
 
-export type CustomerTab = 'all' | 'active' | 'flagged' | 'suspended' | 'blocked' | 'requests';
+export type CustomerTab = 'all' | 'active' | 'suspended' | 'blocked' | 'requests';
 
 export type CustomerTabSpec = {
   id: CustomerTab;
@@ -19,11 +19,13 @@ export type CustomerTabSpec = {
   permission?: string;
 };
 
-/** The demo's tabs, in its order, and the Data requests tab the map adds. */
+/**
+ * The demo's tabs in its order (without Flagged, which listed customers by risk level and was retired), and the Data requests tab
+ * the map adds. An address that names another tab (`?tab=flagged`) opens All.
+ */
 export const CUSTOMER_TABS: readonly CustomerTabSpec[] = [
   { id: 'all', label: 'All' },
   { id: 'active', label: 'Active' },
-  { id: 'flagged', label: 'Flagged' },
   { id: 'suspended', label: 'Suspended' },
   { id: 'blocked', label: 'Blocked' },
   { id: 'requests', label: 'Data requests', permission: 'customers:privacy' },
@@ -80,7 +82,6 @@ export const CUSTOMER_SORT_FIELDS = [
   'ordersCount',
   'totalSpent',
   'lastOrderAt',
-  'riskLevel',
   'status',
 ] as const;
 
@@ -170,7 +171,7 @@ export function clearCustomerFilters(base: URLSearchParams): URLSearchParams {
   return next;
 }
 
-/** The address of the Customers page with some filters set (`{ tab: 'flagged' }`), for links from other pages. */
+/** The address of the Customers page with some filters set (`{ tab: 'blocked' }`), for links from other pages. */
 export function customersListPath(patch: Partial<CustomerFilters> = {}): string {
   const query = writeCustomerFilters(new URLSearchParams(), patch).toString();
   return query ? `/customers?${query}` : '/customers';
@@ -178,13 +179,11 @@ export function customersListPath(patch: Partial<CustomerFilters> = {}): string 
 
 // ---- To the API ----
 
-/** The API filters behind a tab (the demo's tab tests): Flagged is every risk level above low. */
+/** The API filters behind a tab (the demo's tab tests). */
 export function tabFilters(tab: CustomerTab): CustomerListFilters {
   switch (tab) {
     case 'active':
       return { status: 'active' };
-    case 'flagged':
-      return { riskLevel: ['medium', 'high'] };
     case 'suspended':
       return { status: 'suspended' };
     case 'blocked':

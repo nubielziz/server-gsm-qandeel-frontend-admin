@@ -7,7 +7,6 @@ const KIND_LABEL: Readonly<Record<string, string>> = {
   topup: 'Top-up',
   manual: 'Manual',
   receipt: 'Tax receipt',
-  statement: 'Statement',
 };
 
 export function invoiceKind(kind: string): string {

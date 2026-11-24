@@ -1,6 +1,6 @@
 // MerchantPage: one merchant (`/merchants/:id`, the demo's `pageMerchant` in 42-p-merchants.js). It reads the id from the address and
-// shows the merchant's detail. The detail is keyed by the id, so moving from one merchant to another (the "Referred by" link)
-// starts clean instead of showing the previous merchant's figures while the new ones load.
+// shows the merchant's detail. The detail is keyed by the id, so moving from one merchant to another (a palette result, a link in a
+// ticket) starts clean instead of showing the previous merchant's figures while the new ones load.
 import { useParams } from 'react-router';
 import { MerchantDetail } from '../components/MerchantDetail';
 

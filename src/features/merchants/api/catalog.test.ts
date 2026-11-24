@@ -1,6 +1,6 @@
-// Tests for the group, client price, verification and service lookup functions, run against the dev mock API (`mockServer`): each
+// Tests for the group, client price and service lookup functions, run against the dev mock API (`mockServer`): each
 // reaches its route with the query or body of its assumed contract, and the mock's refusals (duplicate name, group in use, price below
-// the floor, request already decided) come back as the ApiError the dialogs show.
+// the floor) come back as the ApiError the dialogs show.
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { mockServer } from '@/mocks/node';
@@ -10,16 +10,12 @@ import { listServiceOptions } from './lookups';
 import {
   createClientGroup,
   createClientPrice,
-  decideKycSubmission,
   deleteClientGroup,
   deleteClientPrice,
   getClient,
   getClientGroup,
-  getKycSubmission,
-  kycFileUrl,
   listClientGroups,
   listClientPrices,
-  listKycSubmissions,
   updateClientGroup,
   updateClientPrice,
 } from '.';
@@ -48,7 +44,6 @@ describe('groups', () => {
     ]);
     expect(data[1]).toMatchObject({
       discountPercent: '4.0000',
-      earnThreshold: '5000.0000',
       depositLimit: '20000.0000',
       overdraftAllowed: true,
     });
@@ -59,7 +54,6 @@ describe('groups', () => {
     const created = await createClientGroup({
       name: 'Reseller',
       discountPercent: '6',
-      earnThreshold: '10000.0000',
       depositLimit: '50000.0000',
       overdraftAllowed: true,
       isDefault: true,
@@ -79,7 +73,6 @@ describe('groups', () => {
       createClientGroup({
         name: 'vip',
         discountPercent: '0',
-        earnThreshold: '0.0000',
         depositLimit: '0.0000',
         overdraftAllowed: false,
         isDefault: false,
@@ -197,69 +190,6 @@ describe('client prices', () => {
     await deleteClientPrice(row.id);
     expect((await listClientPrices({ filters: { clientId: ZAIN } })).total).toBe(0);
     await expect(deleteClientPrice(row.id)).rejects.toMatchObject({ status: 404 });
-  });
-});
-
-describe('verification requests', () => {
-  it('counts the requests by status with a one-row call', async () => {
-    const total = async (status?: 'pending' | 'approved' | 'rejected') =>
-      (await listKycSubmissions({ start: 0, end: 1, filters: status ? { status } : undefined })).total;
-    expect([await total(), await total('pending'), await total('approved'), await total('rejected')]).toEqual(
-      [6, 2, 3, 1],
-    );
-  });
-
-  it('lists a status newest first with the merchant joined', async () => {
-    const { data } = await listKycSubmissions({
-      filters: { status: 'pending' },
-      sort: ['createdAt'],
-      order: ['desc'],
-    });
-    expect(data.map((s) => s.client.name).sort()).toEqual(['Accra Devices', 'Algiers Service Plus']);
-    expect(data[0]).toMatchObject({
-      status: 'pending',
-      client: { email: expect.stringContaining('@'), country: expect.any(String), status: 'pending' },
-      fileIds: expect.any(Array),
-      reviewedBy: null,
-    });
-  });
-
-  it('reads one request with its documents named', async () => {
-    const request = await getKycSubmission(1);
-    expect(request.files).toEqual([
-      { id: 9002, filename: 'passport.jpg', mime: 'image/jpeg', size: 482_000 },
-      { id: 9003, filename: 'trade-licence.pdf', mime: 'application/pdf', size: 1_240_000 },
-    ]);
-    await expect(getKycSubmission(999)).rejects.toMatchObject({ status: 404 });
-  });
-
-  it('approves a request, records who did it and sets the merchant’s verification', async () => {
-    const [pending] = (await listKycSubmissions({ filters: { status: 'pending' } })).data;
-    const decided = await decideKycSubmission(pending.id, { decision: 'approve' });
-    expect(decided).toMatchObject({ status: 'approved', reviewedBy: { name: 'Rami K.' } });
-    expect(decided.reviewedAt).toEqual(expect.any(String));
-    expect((await getClient(pending.clientId)).kycStatus).toBe('approved');
-    await expect(
-      decideKycSubmission(pending.id, { decision: 'reject', note: 'Too late' }),
-    ).rejects.toMatchObject({
-      status: 409,
-      code: 'ALREADY_DECIDED',
-    });
-  });
-
-  it('wants a reason to reject, saves it with the decision and sends the body of its contract', async () => {
-    const [pending] = (await listKycSubmissions({ filters: { status: 'pending' } })).data;
-    await expect(decideKycSubmission(pending.id, { decision: 'reject' })).rejects.toMatchObject({
-      status: 422,
-      fieldErrors: { note: ['Add a reason for the rejection.'] },
-    });
-    const rejected = await decideKycSubmission(pending.id, { decision: 'reject', note: 'Unreadable photo' });
-    expect(rejected).toMatchObject({ status: 'rejected', note: 'Unreadable photo' });
-    expect((await getClient(pending.clientId)).kycStatus).toBe('rejected');
-  });
-
-  it('builds the link of a document from the API address, with the id in the path', () => {
-    expect(kycFileUrl(9002)).toBe('http://api.test/admin/files/9002');
   });
 });
 

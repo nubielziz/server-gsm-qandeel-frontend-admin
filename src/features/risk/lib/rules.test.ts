@@ -10,9 +10,11 @@ import {
   ruleText,
   ruleValueHint,
   scoringBands,
+  visibleRules,
 } from './rules';
 
 const RULES: RiskRule[] = [
+  // A rule an older server still sends and the console no longer lists.
   { id: 'blockBlacklistedImei', on: true, value: null },
   { id: 'reviewThreshold', on: true, value: 50 },
   { id: 'blockThreshold', on: true, value: 80 },
@@ -41,6 +43,23 @@ describe('words', () => {
       unit: 'tries',
     });
     expect(ruleText({ id: 'mystery', on: true, value: null }).label).toBe('mystery');
+  });
+});
+
+describe('retired rules', () => {
+  it('leaves out a rule the server no longer has but an older server still sends, and keeps the others in order', () => {
+    expect(visibleRules(RULES).map((rule) => rule.id)).toEqual([
+      'reviewThreshold',
+      'blockThreshold',
+      'require3ds',
+      'brandNewRule',
+    ]);
+    expect(visibleRules([])).toEqual([]);
+  });
+
+  it('still sends the retired rule back unchanged when another rule is saved', () => {
+    const body = rulesBody(RULES, { id: 'reviewThreshold', value: 60 });
+    expect(body.rules[0]).toEqual({ id: 'blockBlacklistedImei', on: true, value: null });
   });
 });
 

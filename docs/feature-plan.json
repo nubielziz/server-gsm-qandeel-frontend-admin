@@ -111,7 +111,7 @@
         "POST /admin/kyc-submissions/:id/decide",
         "GET /admin/reports/client-statement/:clientId"
       ],
-      "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups and KYC live here."
+      "notes": "Merchant list + detail tabs (orders, wallet, pricing, API). Groups live here."
     },
     {
       "id": "services",
@@ -167,9 +167,10 @@
         "POST /admin/payments/:id/reject",
         "GET /admin/reports/profit",
         "GET /admin/reports/wallet-exposure",
-        "GET /admin/reports/vat"
+        "GET /admin/reports/vat",
+        "GET /admin/reports/funnel"
       ],
-      "notes": "Ledger, accounts, payments review, invoices and reports. Demo withdrawals tab has no admin API (see MISMATCHES)."
+      "notes": "Ledger, accounts, payments review, invoices and reports (profit, wallet exposure, VAT, sales funnel). Demo withdrawals tab has no admin API (see MISMATCHES)."
     },
     {
       "id": "refunds",
@@ -197,20 +198,11 @@
         "GET /admin/risk/queue",
         "POST /admin/risk/orders/:id/approve",
         "POST /admin/risk/orders/:id/refund",
-        "CRUD /admin/imei-checks",
         "CRUD /admin/blocklist",
         "GET /admin/risk/rules",
         "PUT /admin/risk/rules"
       ],
-      "notes": "Held queue, IMEI checks, blocklist, rules."
-    },
-    {
-      "id": "checkouts",
-      "page": "/checkouts",
-      "demo": ["51-p-checkouts.js"],
-      "folders": ["src/features/checkouts"],
-      "rows": ["GET /admin/checkouts/abandoned", "POST /admin/checkouts/recover", "GET /admin/reports/funnel"],
-      "notes": "Recovery only for customers with marketing consent (map rule, MISMATCHES M1). Funnel: new panel."
+      "notes": "Held queue, blocklist, rules."
     },
     {
       "id": "support",
@@ -243,19 +235,6 @@
       "notes": "Listings, landing pages, help, legal, TAC catalogue. The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES."
     },
     {
-      "id": "commissions",
-      "page": "/commissions",
-      "demo": ["46-p-commissions.js"],
-      "folders": ["src/features/commissions"],
-      "rows": [
-        "CRUD /admin/commission-plans",
-        "CRUD /admin/commission-assignments",
-        "CRUD /admin/commission-accruals",
-        "POST /admin/commission-accruals/approve"
-      ],
-      "notes": "Accruals, agents (assignments), plans."
-    },
-    {
       "id": "settings",
       "page": "/settings",
       "demo": ["55-p-settings.js", "12-state-b2c.js (fx/gateway/policy/notif mutations)"],
@@ -270,11 +249,9 @@
         "PATCH /admin/storefront/settings",
         "CRUD /admin/notification-templates",
         "POST /admin/notification-templates/:id/preview",
-        "CRUD /admin/notifications",
-        "CRUD /admin/webhook-deliveries",
-        "POST /admin/webhook-deliveries/:id/retry"
+        "CRUD /admin/notifications"
       ],
-      "notes": "Gateways, tax, FX, policies (storefront settings), notifications; webhook deliveries and notification log are new tabs."
+      "notes": "Gateways, tax, FX, policies (storefront settings), notifications; the notification log is a new tab."
     },
     {
       "id": "audit",

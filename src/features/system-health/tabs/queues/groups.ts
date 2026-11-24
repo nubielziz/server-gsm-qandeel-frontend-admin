@@ -1,8 +1,7 @@
 // Grouping for the Queues & jobs tab (route group `health`): what needs a look comes first, healthy rows fold away.
 // It only orders and splits by what the server sent (`state`, `paused`); it never decides a status.
 import { sortProblemsFirst, type HealthStatus } from '../../lib';
-import type { QueueStats, ScheduledJob, WebhookDirectionHealth } from '../../types';
-import type { WebhookRow } from './webhooks';
+import type { QueueStats, ScheduledJob } from '../../types';
 
 /** A list split in two: the rows to look at (worst first) and the rest, in the server's order. */
 export interface Groups<T> {
@@ -43,20 +42,4 @@ export function groupJobs(jobs: readonly ScheduledJob[]): Groups<ScheduledJob> {
     (job) => job.state,
     (job) => job.state !== 'ok',
   );
-}
-
-/** A webhook direction needs a look when either number the server judges (success rate, oldest message) is not ok. */
-export function webhookNeedsAttention(
-  health: Pick<WebhookDirectionHealth, 'successRate' | 'oldestAge'>,
-): boolean {
-  return health.successRate.state !== 'ok' || health.oldestAge.state !== 'ok';
-}
-
-/**
- * Splits the rows of `webhookRows`, which are already worst first: the directions to look at, and the quiet rest. A
- * state the console does not know, or a missing reading ("unknown"), is a reason to look, never "healthy".
- */
-export function groupWebhooks(rows: readonly WebhookRow[]): Groups<WebhookRow> {
-  const needsLook = (row: WebhookRow) => webhookNeedsAttention(row.health);
-  return { attention: rows.filter(needsLook), calm: rows.filter((row) => !needsLook(row)) };
 }

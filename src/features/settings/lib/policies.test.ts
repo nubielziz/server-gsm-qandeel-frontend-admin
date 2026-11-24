@@ -4,10 +4,17 @@ import { ApiError } from '@/lib/api';
 import { isSwitchPolicy, policiesOf, policyMessage, POLICY_ROWS, wholeNumber } from './policies';
 
 describe('the rows', () => {
-  it('has the demo’s eight policies, five switches and three numbers', () => {
-    expect(POLICY_ROWS).toHaveLength(8);
-    expect(POLICY_ROWS.filter((row) => isSwitchPolicy(row.key))).toHaveLength(5);
-    expect(POLICY_ROWS.filter((row) => row.unit)).toHaveLength(3);
+  it('has five policies of the demo’s eight, four switches and one number', () => {
+    expect(POLICY_ROWS).toHaveLength(5);
+    expect(POLICY_ROWS.filter((row) => isSwitchPolicy(row.key))).toHaveLength(4);
+    expect(POLICY_ROWS.filter((row) => row.unit)).toHaveLength(1);
+  });
+
+  it('has no row for the reminder at checkout, the IMEI check before payment or how long its log was kept', () => {
+    const keys = POLICY_ROWS.map((row) => row.key as string);
+    expect(keys).not.toContain('abandonedMinutes');
+    expect(keys).not.toContain('imeiPrecheck');
+    expect(keys).not.toContain('imeiRetentionDays');
   });
 });
 
@@ -16,12 +23,18 @@ describe('policiesOf', () => {
     const values = policiesOf({
       guestCheckout: true,
       require3ds: 'yes',
-      imeiRetentionDays: 180,
-      abandonedMinutes: true,
+      refundHoursBeforeDispatch: 24,
+      abandonedMinutes: 60,
       adminAllowlistOnly: true,
     });
-    expect(values).toEqual({ guestCheckout: true, imeiRetentionDays: 180 });
+    expect(values).toEqual({ guestCheckout: true, refundHoursBeforeDispatch: 24 });
     expect(policiesOf(undefined)).toEqual({});
+  });
+
+  it('ignores the two policies an older server still sends', () => {
+    expect(policiesOf({ guestCheckout: true, imeiPrecheck: true, imeiRetentionDays: 180 })).toEqual({
+      guestCheckout: true,
+    });
   });
 });
 
@@ -49,8 +62,8 @@ describe('policyMessage', () => {
   });
 
   it('falls back to the problem’s detail and then to a plain error', () => {
-    expect(policyMessage(error, 'abandonedMinutes')).toBe('Some fields need attention.');
-    expect(policyMessage(new Error('Offline'), 'abandonedMinutes')).toBe('Offline');
-    expect(policyMessage('x', 'abandonedMinutes')).toBe('The setting was not saved.');
+    expect(policyMessage(error, 'guestCheckout')).toBe('Some fields need attention.');
+    expect(policyMessage(new Error('Offline'), 'guestCheckout')).toBe('Offline');
+    expect(policyMessage('x', 'guestCheckout')).toBe('The setting was not saved.');
   });
 });

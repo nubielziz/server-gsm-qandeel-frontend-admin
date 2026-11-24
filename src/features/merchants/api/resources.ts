@@ -9,12 +9,11 @@ import {
   listClientGroups,
   updateClientGroup,
 } from './groups';
-import { getKycSubmission, listKycSubmissions } from './kyc';
 import { createClientPrice, deleteClientPrice, listClientPrices, updateClientPrice } from './prices';
 
 /**
  * Each resource lists only the operations its endpoints offer: merchants cannot be deleted (they are suspended), client
- * prices have no show route, and verification requests are only read here (a decision is an action endpoint).
+ * prices have no show route.
  */
 export const merchantsResources: ResourceRegistry = {
   clients: { list: listClients, show: getClient, create: createClient, update: updateClient },
@@ -31,5 +30,4 @@ export const merchantsResources: ResourceRegistry = {
     update: updateClientPrice,
     delete: deleteClientPrice,
   },
-  'kyc-submissions': { list: listKycSubmissions, show: getKycSubmission },
 };

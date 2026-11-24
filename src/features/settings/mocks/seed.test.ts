@@ -26,11 +26,11 @@ describe('buildStores', () => {
     expect(stores.taxRates.find(9)).toMatchObject({ country: 'US', ratePercent: '0.0000', ossScheme: '' });
     expect(stores.currencies.size).toBe(7);
     expect(stores.currencies.find(4)).toMatchObject({ code: 'SEK', rateToBase: '10.6000' });
-    expect(stores.templates.size).toBe(8);
+    expect(stores.templates.size).toBe(7);
     expect(stores.templates.find(6)).toMatchObject({ event: 'payment.failed', isActive: false });
   });
 
-  it('makes the same logs every time, newest first', async () => {
+  it('makes the same log every time, newest first', async () => {
     const state = await loadDemoState();
     const first = buildStores(state);
     const second = buildStores(state);
@@ -38,8 +38,6 @@ describe('buildStores', () => {
       stores.notifications.list().map((row) => `${row.id}:${row.status}:${row.event}`);
     expect(ids(first)).toEqual(ids(second));
     expect(first.notifications.size).toBe(48);
-    expect(first.deliveries.size).toBe(36);
     expect(first.notifications.list()[0].id).toBe(48);
-    expect(first.deliveries.list().every((row) => row.client && row.endpoint)).toBe(true);
   });
 });

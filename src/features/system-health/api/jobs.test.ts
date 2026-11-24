@@ -33,7 +33,7 @@ describe('runJob', () => {
 
 describe('getWebhooksHealth', () => {
   it('reads webhook delivery with a plain GET', async () => {
-    http.reply({ outgoing: {}, incoming: {} });
+    http.reply({ incoming: {} });
     await getWebhooksHealth();
     expect(http.last()).toEqual({
       method: 'GET',

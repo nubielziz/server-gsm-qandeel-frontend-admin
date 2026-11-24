@@ -250,7 +250,6 @@ function mapOrder(demo: DemoOrder, ctx: Context): MockOrder {
           : { code: null, comment: null, fileId: null },
     verificationStatus: null,
     inputFileId: null,
-    clientNote: null,
     adminNote: null,
     pricingSnapshot: snapshotOf(demo, service),
     createdAt: toIso(demo.created),

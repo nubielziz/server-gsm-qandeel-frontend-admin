@@ -4,7 +4,7 @@ import { KeyValue } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import { useNotification } from '../hooks/useLogs';
 import { jsonText, NOTIFICATION_STATUS } from '../lib/logs';
-import { CHANNEL_LABEL, eventLabel } from '../lib/templates';
+import { channelLabel, eventLabel } from '../lib/templates';
 import type { NotificationLogEntry } from '../types';
 import { LogDrawerShell } from './LogDrawerShell';
 import { StatusBadge } from './StatusBadge';
@@ -40,7 +40,7 @@ export function NotificationDrawer({
           )}
           <KeyValue
             rows={[
-              ['Channel', CHANNEL_LABEL[notification.channel]],
+              ['Channel', channelLabel(notification.channel)],
               [
                 'Sent to',
                 <span key="to" className="mono">

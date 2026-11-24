@@ -16,7 +16,7 @@ import { merchantStore, type MerchantStore, type MockClient } from './store';
 const SEARCH_FIELDS = ['name', 'email', 'company', 'country', 'username'];
 const MIXED = 'Send one change at a time: a status, a group or details.';
 
-/** Open merchant sessions by merchant id: the Security tab's count and the sessions list read the same mock rows. */
+/** Open merchant sessions by merchant id: the Security tab's "Active sessions" count reads the sessions mock. */
 async function openSessions(): Promise<Map<number, number>> {
   const counts = new Map<number, number>();
   for (const session of (await sessionStore()).list()) {
@@ -54,7 +54,7 @@ export const clientRoutes: HttpHandler[] = [
     return row ? HttpResponse.json(await clientDto(row, store)) : notFound('merchant', call.params.id);
   }),
 
-  // An invitation: the account starts pending and the server would email the sign-up link.
+  // An invitation: the account starts active, without a password, and the server would email the link to choose one.
   route('post', '/admin/clients', async ({ request }) => {
     const store = await merchantStore();
     const body = await bodyOf(request);
@@ -91,16 +91,12 @@ export const clientRoutes: HttpHandler[] = [
       phone: '',
       country,
       groupId,
-      status: 'pending',
-      kycStatus: 'none',
-      referredById: null,
-      referralCode: `GSM${Date.now().toString(36).toUpperCase()}`,
+      status: 'active',
       emailVerifiedAt: null,
       createdAt: toIso(Date.now()),
       address: '',
       taxId: '',
       internalNotes: '',
-      telegramLinked: false,
       security: {
         hasPassword: false,
         mustChangePassword: false,
@@ -188,8 +184,8 @@ export const clientRoutes: HttpHandler[] = [
 ];
 
 /**
- * The status rules of the server: `active` from `pending` or `suspended`, `suspended` from `active` or `pending` with a reason of
- * 3 to 140 characters; anything else is a 409. A suspension ends the merchant's sessions and cancels open links.
+ * The status rules of the server: `active` from `pending` (a legacy account) or `suspended`, `suspended` from `active` or `pending`
+ * with a reason of 3 to 140 characters; anything else is a 409. A suspension ends the merchant's sessions and cancels open links.
  */
 async function changeStatus(
   current: MockClient,

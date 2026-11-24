@@ -14,8 +14,8 @@ const group = (over: Partial<ErrorGroup> = {}): ErrorGroup => ({
   code: 'SUPPLIER_TIMEOUT',
   status: 504,
   method: 'POST',
-  endpoint: '/v1/orders',
-  surface: 'v1',
+  endpoint: '/dhru/api/index.php',
+  surface: 'dhru',
   count: 1284,
   firstSeenAt: minutesAgo(38),
   lastSeenAt: minutesAgo(0),
@@ -45,7 +45,7 @@ function renderCard(data: ErrorsResponse, surface?: string) {
       query={query(data)}
       range="24h"
       surface={surface}
-      scope={surface ? 'Merchant API v1' : 'All surfaces'}
+      scope={surface ? 'Dhru Fusion API' : 'All surfaces'}
     />,
   );
 }
@@ -57,7 +57,7 @@ describe('TopErrorsCard rows', () => {
     expect(screen.getByText('req_8f3a1c9d2e4b')).toHaveClass('mono');
     expect(screen.getByRole('button', { name: 'Copy request ID req_8f3a1c9d2e4b' })).toBeInTheDocument();
     const row = screen.getAllByRole('row')[1]!;
-    expect(row).toHaveTextContent('POST /v1/orders');
+    expect(row).toHaveTextContent('POST /dhru/api/index.php');
     expect(row).toHaveTextContent('504');
     expect(row).toHaveTextContent('1,284');
   });
@@ -81,7 +81,7 @@ describe('TopErrorsCard rows', () => {
     renderCard(
       answer([
         group({ code: 'FIRST_CODE', count: 900 }),
-        group({ code: 'SECOND_CODE', count: 40, endpoint: '/v1/orders/:id' }),
+        group({ code: 'SECOND_CODE', count: 40, endpoint: '/dhru/api/status' }),
         group({ code: 'THIRD_CODE', count: 3 }),
       ]),
     );
@@ -114,7 +114,7 @@ describe('TopErrorsCard Sentry links', () => {
     renderCard(
       answer([
         group({ code: 'WITH_ISSUE' }),
-        group({ code: 'WITHOUT_ISSUE', sentryUrl: null, endpoint: '/v1/other' }),
+        group({ code: 'WITHOUT_ISSUE', sentryUrl: null, endpoint: '/dhru/api/other' }),
       ]),
     );
     const link = screen.getByRole('link', { name: 'Sentry issue of WITH_ISSUE (opens in a new tab)' });
@@ -127,9 +127,9 @@ describe('TopErrorsCard Sentry links', () => {
 
 describe('TopErrorsCard header and empty list', () => {
   it('puts the total of the range, the scope and the range in the subtitle', () => {
-    renderCard(answer([group()], 5000), 'v1');
+    renderCard(answer([group()], 5000), 'dhru');
     expect(screen.getByText(/5,000 errors/)).toHaveTextContent(
-      '5,000 errors · Merchant API v1 (v1) · Last 24 hours',
+      '5,000 errors · Dhru Fusion API (dhru) · Last 24 hours',
     );
   });
 

@@ -1,5 +1,5 @@
 // The people the mock campaigns reach: a small made-up audience (6 staff, 28 merchants, 80 customers) with the facts the server's providers know (can see an
-// inbox, may be emailed, has a Telegram chat, agreed to marketing), so the live count, the send and the recipients agree with each other.
+// inbox, may be emailed, agreed to marketing), so the live count, the send and the recipients agree with each other.
 // Mocks fake answers only (decision 014): the real server counts the real people.
 import type { AudiencePreview, AudienceSpec, CampaignChannel, CampaignPurpose, PersonType } from '../types';
 
@@ -9,7 +9,6 @@ export type MockPerson = {
   id: number;
   inApp: boolean;
   email: boolean;
-  telegram: boolean;
   /** Customers only: agreed to marketing. Everyone else is true. */
   consent: boolean;
 };
@@ -36,9 +35,8 @@ const customer = (id: number) => ({
   country: COUNTRIES[id % 5],
 });
 
-/** A merchant who switched the announcement email off (about one in twenty-five), and one with a linked Telegram chat (three in five). */
+/** A merchant who switched the announcement email off (about one in twenty-five). */
 const merchantEmail = (id: number) => id % 25 !== 0;
-const merchantTelegram = (id: number) => id % 5 < 3;
 /** A customer agrees to marketing seven times in ten. */
 const customerConsent = (id: number) => id % 10 < 7;
 
@@ -56,7 +54,7 @@ export function eligiblePeople(
     const row = staff(id);
     const inSegment = spec.staff && (!spec.staff.roleIds || spec.staff.roleIds.includes(row.roleId));
     if (inSegment || include.has(`staff:${id}`))
-      out.push({ type: 'staff', id, inApp: true, email: true, telegram: false, consent: true });
+      out.push({ type: 'staff', id, inApp: true, email: true, consent: true });
   }
   for (let id = 1; id <= MERCHANT_COUNT; id++) {
     const row = merchant(id);
@@ -73,7 +71,6 @@ export function eligiblePeople(
         id,
         inApp: true,
         email: merchantEmail(id),
-        telegram: merchantTelegram(id),
         consent: true,
       });
   }
@@ -94,7 +91,6 @@ export function eligiblePeople(
       id,
       inApp: row.hasAccount,
       email: true,
-      telegram: false,
       consent: true,
     });
   }
@@ -110,9 +106,7 @@ export function previewOf(
   const { people, noConsent } = eligiblePeople(spec, purpose);
   const wants = (channel: CampaignChannel) => channels.includes(channel);
   const reached = (person: MockPerson) =>
-    (wants('in_app') && person.inApp) ||
-    (wants('email') && person.email) ||
-    (wants('telegram') && person.telegram);
+    (wants('in_app') && person.inApp) || (wants('email') && person.email);
   const reachable = people.filter(reached);
   const count = (pick: (person: MockPerson) => boolean) => reachable.filter(pick).length;
   const wasted = (pick: (person: MockPerson) => boolean) => people.filter(pick).length;
@@ -127,12 +121,10 @@ export function previewOf(
     byChannel: {
       inApp: wants('in_app') ? count((p) => p.inApp) : 0,
       email: wants('email') ? count((p) => p.email) : 0,
-      telegram: wants('telegram') ? count((p) => p.telegram) : 0,
     },
     excluded: {
       noConsent,
       optedOut: wants('email') ? wasted((p) => !p.email) : 0,
-      noTelegram: wants('telegram') ? wasted((p) => p.type === 'client' && !p.telegram) : 0,
       noAccount: wants('in_app') ? wasted((p) => !p.inApp) : 0,
     },
   };

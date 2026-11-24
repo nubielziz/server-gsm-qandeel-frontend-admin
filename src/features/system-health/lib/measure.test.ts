@@ -1,9 +1,8 @@
 // Tests for measure.ts: every unit prints with its unit, null prints "No data", thresholds print what the server sent.
 import { describe, expect, it } from 'vitest';
-import type { MeasureUnit, MetricState } from '../types';
+import type { MeasureUnit } from '../types';
 import {
   NO_DATA,
-  compareStates,
   formatBytes,
   formatDuration,
   formatMeasure,
@@ -159,17 +158,11 @@ describe('thresholdText', () => {
   });
 });
 
-describe('state meta and the problems-first comparator', () => {
+describe('state meta', () => {
   it('gives every state a word, an icon and a tone, and never a green unknown', () => {
     expect(stateMeta('ok')).toMatchObject({ word: 'OK', tone: 'good' });
     expect(stateMeta('warn')).toMatchObject({ word: 'Warn', tone: 'warn', icon: 'alert' });
     expect(stateMeta('crit')).toMatchObject({ word: 'Critical', tone: 'crit', icon: 'xCircle' });
     expect(stateMeta('unknown')).toMatchObject({ word: 'Unknown', tone: 'neutral', icon: 'info' });
-  });
-
-  it('puts crit first, then warn, then unknown, then ok', () => {
-    const states: MetricState[] = ['ok', 'crit', 'unknown', 'warn', 'ok', 'crit'];
-    expect([...states].sort(compareStates)).toEqual(['crit', 'crit', 'warn', 'unknown', 'ok', 'ok']);
-    expect(compareStates('ok', 'ok')).toBe(0);
   });
 });

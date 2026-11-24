@@ -29,7 +29,6 @@ const monthly = (): ({ month: string } & TypeCounts)[] =>
 export const NAV_COUNTS: DashboardNavCounts = {
   orders: { open: 12, pastSla: 3 },
   finance: { pendingDeposits: 2 },
-  merchants: { pendingApproval: 1 },
   support: { open: 7, late: 2 },
   refunds: { open: 5, disputesDueSoon: 1 },
   risk: { held: 4 },
@@ -138,14 +137,6 @@ export const ATTENTION_SAMPLES: AttentionItem[] = [
     currencies: ['SEK', 'CAD'],
     oldestUpdatedAt: '2026-10-29T04:00:00.000Z',
   },
-  {
-    id: 'pend',
-    severity: 'low',
-    kind: 'merchants_pending',
-    count: 2,
-    names: ['Aqaba Gadgets', 'Doha Unlock'],
-  },
-  { id: 'comm', severity: 'low', kind: 'commissions_accrued', count: 4, total: '12.3400', agents: 2 },
 ];
 
 /** A complete payload for the All channels view. */
@@ -230,12 +221,11 @@ export function dashboardFixture(overrides: Partial<Dashboard> = {}): Dashboard 
       },
     },
     storefront: {
-      funnel: { visitorsEstimated: 5000, imeiChecks: 900, checkoutsStarted: 300, paid: 104, delivered: 98 },
+      funnel: { visitorsEstimated: 5000, checkoutsStarted: 300, paid: 104, delivered: 98 },
       averageOrder: '18.5000',
       refundRate: 2.4,
       disputeRate: 1.25,
       firstReplySeconds: 1800,
-      satisfaction: { average: 4.6, ratings: 12 },
       heldForReview: 4,
     },
     topCustomers: [

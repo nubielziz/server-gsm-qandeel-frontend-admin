@@ -19,8 +19,8 @@ const PREVIEW = (reachable: number) => ({
   total: reachable + 2,
   reachable,
   byType: { staff: 0, client: reachable, customer: 0 },
-  byChannel: { inApp: reachable, email: 0, telegram: 0 },
-  excluded: { noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 2 },
+  byChannel: { inApp: reachable, email: 0 },
+  excluded: { noConsent: 0, optedOut: 0, noAccount: 2 },
 });
 
 async function openSend(id = 3, name = 'New unlock services') {

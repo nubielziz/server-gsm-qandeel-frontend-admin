@@ -6,9 +6,8 @@ import { createGateway, deleteGateway, getGateway, listGateways, updateGateway }
 import { getNotification, listNotifications } from './notifications';
 import { createTaxRate, getTaxRate, listTaxRates, updateTaxRate } from './taxRates';
 import { createTemplate, deleteTemplate, getTemplate, listTemplates, updateTemplate } from './templates';
-import { getWebhookDelivery, listWebhookDeliveries } from './webhooks';
 
-/** Each resource lists only the operations its endpoints offer: tax rates cannot be deleted, the logs can only be read. */
+/** Each resource lists only the operations its endpoints offer: tax rates cannot be deleted, the log can only be read. */
 export const settingsResources: ResourceRegistry = {
   'payment-gateways': {
     list: listGateways,
@@ -27,5 +26,4 @@ export const settingsResources: ResourceRegistry = {
     delete: deleteTemplate,
   },
   notifications: { list: listNotifications, show: getNotification },
-  'webhook-deliveries': { list: listWebhookDeliveries, show: getWebhookDelivery },
 };

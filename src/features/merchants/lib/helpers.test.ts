@@ -1,11 +1,9 @@
-// Tests for the small helpers: group labels, API key states, verification documents, input hints, addresses and the tabs of the
-// detail page.
+// Tests for the small helpers: group labels, API key states, input hints, addresses and the tabs of the detail page.
 import { describe, expect, it } from 'vitest';
 import { parseDetailTab, writeDetailTab } from './detailTabs';
 import { defaultGroupId, groupLabel, isRetailGroup, merchantGroups, percentText } from './groups';
 import { cleanCountry, cleanEmail, joinedText, validCountry, validEmail } from './input';
 import { apiKeyState } from './keys';
-import { documentsOf, fileSize } from './kyc';
 import { merchantPath, merchantsListPath } from './paths';
 import { isMerchantTab, isStatusTab, tabStatus } from './status';
 import type { ClientGroup } from '../types';
@@ -16,7 +14,6 @@ const group = (over: Partial<ClientGroup>): ClientGroup => ({
   kind: 'b2b',
   discountPercent: '0.0000',
   isDefault: false,
-  earnThreshold: '0.0000',
   depositLimit: '0.0000',
   overdraftAllowed: false,
   sort: 1,
@@ -64,26 +61,6 @@ describe('apiKeyState', () => {
   });
 });
 
-describe('verification documents', () => {
-  it('names a document by its file when the server joined it, else by its place in the request', () => {
-    expect(
-      documentsOf({
-        fileIds: [7, 8],
-        files: [{ id: 8, filename: 'passport.jpg', mime: 'image/jpeg', size: 482_000 }],
-      }),
-    ).toEqual([
-      { id: 7, label: 'Document 1', size: undefined },
-      { id: 8, label: 'passport.jpg', size: '482 kB' },
-    ]);
-  });
-
-  it('writes sizes the way people read them', () => {
-    expect(fileSize(512)).toBe('512 B');
-    expect(fileSize(482_000)).toBe('482 kB');
-    expect(fileSize(1_240_000)).toBe('1.2 MB');
-  });
-});
-
 describe('input hints', () => {
   it('checks the email shape the demo checked and sends it trimmed and lower case', () => {
     expect(validEmail('owner@example.com')).toBe(true);
@@ -119,7 +96,7 @@ describe('addresses and tabs', () => {
   it('builds the address of the filtered list, leaving defaults out', () => {
     expect(merchantsListPath()).toBe('/merchants');
     expect(merchantsListPath({ tab: 'all' })).toBe('/merchants');
-    expect(merchantsListPath({ tab: 'pending' })).toBe('/merchants?tab=pending');
+    expect(merchantsListPath({ tab: 'suspended' })).toBe('/merchants?tab=suspended');
     expect(merchantsListPath({ tab: 'groups', group: 3, q: 'zain' })).toBe(
       '/merchants?tab=groups&group=3&q=zain',
     );
@@ -128,9 +105,13 @@ describe('addresses and tabs', () => {
   it('knows which tabs show the merchant table and which status each filters by', () => {
     expect(isMerchantTab('groups')).toBe(true);
     expect(isMerchantTab('nope')).toBe(false);
+    // The Verification tab was retired (MISMATCHES M278), so its old name is no tab.
+    expect(isMerchantTab('verification')).toBe(false);
+    // So was the Pending approval tab, with the approval step.
+    expect(isMerchantTab('pending')).toBe(false);
     expect(isStatusTab('suspended')).toBe(true);
-    expect(isStatusTab('verification')).toBe(false);
-    expect(tabStatus('pending')).toBe('pending');
+    expect(isStatusTab('groups')).toBe(false);
+    expect(tabStatus('suspended')).toBe('suspended');
     expect(tabStatus('all')).toBeUndefined();
   });
 
@@ -138,6 +119,10 @@ describe('addresses and tabs', () => {
     expect(parseDetailTab(new URLSearchParams('tab=pricing'), ['orders', 'pricing'])).toBe('pricing');
     expect(parseDetailTab(new URLSearchParams('tab=api'), ['orders', 'pricing'])).toBe('orders');
     expect(parseDetailTab(new URLSearchParams(''), [])).toBeUndefined();
+    // An old address that names the retired Verification tab opens the first tab.
+    expect(parseDetailTab(new URLSearchParams('tab=verification&kyc=3'), ['orders', 'pricing'])).toBe(
+      'orders',
+    );
     expect(writeDetailTab(new URLSearchParams('tab=wallet&order=5'), 'orders').toString()).toBe('');
     expect(writeDetailTab(new URLSearchParams('order=5'), 'api').toString()).toBe('tab=api');
   });

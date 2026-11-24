@@ -48,10 +48,9 @@ describe('foldKeyErrors', () => {
   const problem = (fieldErrors: Record<string, string[]>) =>
     new ApiError({ status: 422, code: 'VALIDATION_FAILED', title: 'Check the form', fieldErrors });
 
-  it('puts the entries of each list under its one input, with the line of an address', () => {
+  it('puts the entries of the address list under its one input, with the line of each address', () => {
     const folded = foldKeyErrors(
       problem({
-        'scopes.1': ['Unknown scope.'],
         'allowedIps.0': ['Enter an IP address or range.'],
         'allowedIps.2': ['Enter an IP address or range.'],
         name: ['Name the key.'],
@@ -60,7 +59,6 @@ describe('foldKeyErrors', () => {
     expect(folded).toMatchObject({
       status: 422,
       fieldErrors: {
-        scopes: ['Unknown scope.'],
         allowedIps: ['Line 1: Enter an IP address or range.', 'Line 3: Enter an IP address or range.'],
         name: ['Name the key.'],
       },

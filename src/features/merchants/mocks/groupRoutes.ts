@@ -14,7 +14,7 @@ function fieldsOf(body: Record<string, unknown>): Partial<ClientGroup> {
   const fields: Partial<ClientGroup> = {};
   const name = textOf(body.name);
   if (name) fields.name = name;
-  for (const key of ['discountPercent', 'earnThreshold', 'depositLimit'] as const) {
+  for (const key of ['discountPercent', 'depositLimit'] as const) {
     if (typeof body[key] === 'string' && body[key] !== '') fields[key] = body[key];
   }
   if (typeof body.overdraftAllowed === 'boolean') fields.overdraftAllowed = body.overdraftAllowed;
@@ -60,7 +60,6 @@ export const groupRoutes: HttpHandler[] = [
       kind: 'b2b',
       discountPercent: '0.0000',
       isDefault: false,
-      earnThreshold: '0.0000',
       depositLimit: '0.0000',
       overdraftAllowed: false,
       sort: store.groups.size + 1,

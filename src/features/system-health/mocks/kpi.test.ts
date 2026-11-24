@@ -158,10 +158,10 @@ describe('errors and the cache', () => {
 });
 
 describe('jobs and webhooks', () => {
-  it('lists seven schedules; the history of a job comes with ?job=', async () => {
+  it('lists five schedules; the history of a job comes with ?job=', async () => {
     setMockScenario('healthy');
     const all = await apiGet<JobsResponse>('/admin/system/jobs');
-    expect(all.jobs).toHaveLength(7);
+    expect(all.jobs).toHaveLength(5);
     expect(all.runs).toEqual([]);
     for (const job of all.jobs) {
       expect(job.lastRun?.status).toBe('succeeded');

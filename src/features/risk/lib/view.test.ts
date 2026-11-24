@@ -1,23 +1,17 @@
-// Tests for the Risk page's address: tab, filters, page, sort and the open check.
+// Tests for the Risk page's address: tab, blocklist filter, page and sort.
 import { describe, expect, it } from 'vitest';
 import {
-  normalizeSearch,
+  BLOCK_SORT_FIELDS,
   parseBlockView,
-  parseChecksView,
-  parseCheckId,
   parsePage,
   parseSort,
   parseTab,
   toBlockFilters,
-  toCheckFilters,
   toRefineFilters,
   writeBlockView,
-  writeCheckId,
-  writeChecksView,
   writePage,
   writeSort,
   writeTab,
-  CHECK_SORT_FIELDS,
 } from './view';
 
 const params = (query: string) => new URLSearchParams(query);
@@ -30,41 +24,14 @@ describe('tab', () => {
     expect(parseTab(params('tab=nonsense'))).toBe('queue');
   });
 
+  it('opens the queue for the tab that was retired, with or without the rest of its address', () => {
+    expect(parseTab(params('tab=checks'))).toBe('queue');
+    expect(parseTab(params('tab=checks&kind=icloud&result=locked&check=9900&page=2'))).toBe('queue');
+  });
+
   it('writes only the tab, leaving the queue as the clean address', () => {
     expect(writeTab('queue').toString()).toBe('');
-    expect(writeTab('checks').toString()).toBe('tab=checks');
-  });
-});
-
-describe('IMEI check filters', () => {
-  it('reads the search, kind and result, dropping what is unknown', () => {
-    expect(parseChecksView(params('q=pixel&kind=icloud&result=locked'))).toEqual({
-      q: 'pixel',
-      kind: 'icloud',
-      result: 'locked',
-    });
-    expect(parseChecksView(params('kind=bogus&result=bogus'))).toEqual({ q: '', kind: '', result: '' });
-  });
-
-  it('writes a change, goes back to page 1 and leaves empty filters out', () => {
-    const next = writeChecksView(params('tab=checks&page=3&sort=status&dir=asc'), { kind: 'icloud' });
-    expect(next.toString()).toBe('tab=checks&sort=status&dir=asc&kind=icloud');
-    expect(writeChecksView(next, { kind: '' }).toString()).toBe('tab=checks&sort=status&dir=asc');
-  });
-
-  it('searches an IMEI without the spaces the screen puts in it, and anything else as typed', () => {
-    expect(normalizeSearch(' 35 389011 884201 4 ')).toBe('353890118842014');
-    expect(normalizeSearch('Redmi Note')).toBe('Redmi Note');
-    expect(toCheckFilters({ q: '35 389011', kind: 'basic', result: '' })).toEqual({
-      q: '35389011',
-      checkType: 'basic',
-    });
-  });
-
-  it('turns filters into Refine filters, skipping the empty ones', () => {
-    expect(toRefineFilters({ checkType: 'basic', status: undefined, q: '' })).toEqual([
-      { field: 'checkType', operator: 'eq', value: 'basic' },
-    ]);
+    expect(writeTab('rules').toString()).toBe('tab=rules');
   });
 });
 
@@ -73,8 +40,15 @@ describe('blocklist filter', () => {
     expect(parseBlockView(params('kind=imei'))).toEqual({ kind: 'imei' });
     expect(parseBlockView(params('kind=icloud'))).toEqual({ kind: '' });
     expect(writeBlockView(params('page=2'), { kind: 'card' }).toString()).toBe('kind=card');
+    expect(writeBlockView(params('tab=block&kind=card&page=2'), { kind: '' }).toString()).toBe('tab=block');
     expect(toBlockFilters({ kind: 'card' })).toEqual({ kind: 'card' });
     expect(toBlockFilters({ kind: '' })).toEqual({});
+  });
+
+  it('turns filters into Refine filters, skipping the empty ones', () => {
+    expect(toRefineFilters({ kind: 'card', q: undefined, source: '' })).toEqual([
+      { field: 'kind', operator: 'eq', value: 'card' },
+    ]);
   });
 });
 
@@ -84,17 +58,18 @@ describe('page and sort', () => {
     expect(parsePage(params('page=3'))).toBe(3);
     expect(parsePage(params('page=0'))).toBe(1);
     expect(parsePage(params('page=abc'))).toBe(1);
-    expect(writePage(params('page=3&tab=checks'), 1).toString()).toBe('tab=checks');
-    expect(writePage(params('tab=checks'), 2).toString()).toBe('tab=checks&page=2');
+    expect(writePage(params('page=3&tab=block'), 1).toString()).toBe('tab=block');
+    expect(writePage(params('tab=block'), 2).toString()).toBe('tab=block&page=2');
   });
 
   it('sorts newest first unless the address names a sortable column', () => {
-    expect(parseSort(params(''), CHECK_SORT_FIELDS)).toEqual({ field: 'createdAt', order: 'desc' });
-    expect(parseSort(params('sort=status&dir=asc'), CHECK_SORT_FIELDS)).toEqual({
-      field: 'status',
+    expect(parseSort(params(''), BLOCK_SORT_FIELDS)).toEqual({ field: 'createdAt', order: 'desc' });
+    expect(parseSort(params('sort=kind&dir=asc'), BLOCK_SORT_FIELDS)).toEqual({
+      field: 'kind',
       order: 'asc',
     });
-    expect(parseSort(params('sort=imei&dir=asc'), CHECK_SORT_FIELDS)).toEqual({
+    // The sort columns of the retired IMEI check table mean nothing now.
+    expect(parseSort(params('sort=status&dir=asc'), BLOCK_SORT_FIELDS)).toEqual({
       field: 'createdAt',
       order: 'desc',
     });
@@ -102,19 +77,8 @@ describe('page and sort', () => {
 
   it('leaves the default sort out of the address and goes back to page 1', () => {
     expect(
-      writeSort(params('sort=status&dir=asc&page=2'), { field: 'createdAt', order: 'desc' }).toString(),
+      writeSort(params('sort=kind&dir=asc&page=2'), { field: 'createdAt', order: 'desc' }).toString(),
     ).toBe('');
-    expect(writeSort(params('page=2'), { field: 'status', order: 'asc' }).toString()).toBe(
-      'sort=status&dir=asc',
-    );
-  });
-});
-
-describe('open check', () => {
-  it('reads and writes the check id', () => {
-    expect(parseCheckId(params('check=9900'))).toBe(9900);
-    expect(parseCheckId(params('check=abc'))).toBeNull();
-    expect(writeCheckId(params('tab=checks'), 7).toString()).toBe('tab=checks&check=7');
-    expect(writeCheckId(params('tab=checks&check=7'), null).toString()).toBe('tab=checks');
+    expect(writeSort(params('page=2'), { field: 'kind', order: 'asc' }).toString()).toBe('sort=kind&dir=asc');
   });
 });

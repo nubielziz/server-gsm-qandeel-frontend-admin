@@ -1,5 +1,5 @@
 // The actions on a merchant account, each with the toast the demo showed and the reads it makes stale. The buttons that act at
-// once (approve, reactivate, move to a group) let the default error toast show the server's refusal; the dialogs (invite,
+// once (activate, reactivate, move to a group) let the default error toast show the server's refusal; the dialogs (invite,
 // suspend, credit limit) show a failed call themselves, in the error slot or under the field the server named.
 import { useApiMutation, DASHBOARD_KEY } from '@/lib/query';
 import { createClient, setClientCreditLimit, updateClient } from '../api';
@@ -12,14 +12,17 @@ const NO_ERROR_TOAST = () => false as const;
 /** The part of a merchant the toasts and requests need. */
 type Target = Pick<Client, 'id' | 'name'>;
 
-/** Approves a pending merchant: they can order once they fund their wallet. Ports `m-approve`. */
-export function useApproveClient() {
+/**
+ * Activates a merchant whose status is still `pending` (an account made before staff-made accounts were active at once): the
+ * same request that reactivates a suspended one. They can order once they fund their wallet.
+ */
+export function useActivateClient() {
   return useApiMutation({
     mutationFn: (client: Target) => updateClient(client.id, { status: 'active' }),
     invalidates: (_updated, client) => staleClient(client.id),
     invalidateKeys: CLIENT_STALE_KEYS,
     successNotification: (_updated, client) => ({
-      message: `${client.name} approved`,
+      message: `${client.name} activated`,
       description: 'They can place orders once they fund their wallet.',
     }),
   });
@@ -36,18 +39,15 @@ export function useReactivateClient() {
 }
 
 /**
- * Suspends a merchant with a reason for the audit log. Ports `m-suspend`. A pending applicant can be suspended too: that is how
- * an application is declined (`decline`), the same request with another toast.
+ * Suspends a merchant with a reason for the audit log. Ports `m-suspend`.
  */
 export function useSuspendClient() {
   return useApiMutation({
-    mutationFn: ({ client, reason }: { client: Target; reason: string; decline?: boolean }) =>
+    mutationFn: ({ client, reason }: { client: Target; reason: string }) =>
       updateClient(client.id, { status: 'suspended', reason }),
     invalidates: (_updated, { client }) => staleClient(client.id),
     invalidateKeys: CLIENT_STALE_KEYS,
-    successNotification: (_updated, { client, decline }) => ({
-      message: decline ? `${client.name}’s application declined` : `${client.name} suspended`,
-    }),
+    successNotification: (_updated, { client }) => ({ message: `${client.name} suspended` }),
     errorNotification: NO_ERROR_TOAST,
   });
 }
@@ -87,15 +87,23 @@ export function useChangeGroup() {
   });
 }
 
-/** Invites a merchant: the server emails the sign-up link and creates the account as pending. Ports `m-invite`. */
+/**
+ * Invites a merchant: the server creates the account and emails the link to choose a password. The account is active at once; a
+ * server not updated yet still answers `pending`, and then the toast says the account waits until staff activate it on its page.
+ * Ports `m-invite`.
+ */
 export function useInviteClient() {
   return useApiMutation({
     mutationFn: (body: CreateClientBody) => createClient(body),
     invalidates: [{ resource: 'clients' }, { resource: 'client-groups' }],
     invalidateKeys: CLIENT_STALE_KEYS,
-    successNotification: (_created, body) => ({
+    successNotification: (created, body) => ({
       message: 'Invitation sent',
-      description: `${body.email} gets a sign-up link. The account stays pending until you approve it.`,
+      description: `${body.email} gets a link to choose a password. ${
+        created.status === 'pending'
+          ? 'The account waits until you activate it on its page.'
+          : 'The account is active at once.'
+      }`,
     }),
     errorNotification: NO_ERROR_TOAST,
   });

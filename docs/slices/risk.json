@@ -8,7 +8,7 @@
   "folders": [
     "src/features/risk"
   ],
-  "notes": "Held queue, IMEI checks, blocklist, rules.",
+  "notes": "Held queue, blocklist, rules.",
   "rules": {
     "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
     "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
@@ -76,44 +76,6 @@
         "method": "POST",
         "ops": null,
         "path": "/admin/risk/orders/:id/refund"
-      }
-    },
-    {
-      "key": "GET /admin/imei-checks",
-      "method": "GET",
-      "path": "/admin/imei-checks",
-      "group": "risk",
-      "op": "list",
-      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
-      "access": "permission",
-      "permission": "risk:read",
-      "stage": 18,
-      "tables": [
-        "imei_checks"
-      ],
-      "origin": {
-        "method": "CRUD",
-        "ops": "LS",
-        "path": "/admin/imei-checks"
-      }
-    },
-    {
-      "key": "GET /admin/imei-checks/:id",
-      "method": "GET",
-      "path": "/admin/imei-checks/:id",
-      "group": "risk",
-      "op": "show",
-      "description": "Log of IMEI checks and their results (erased or hashed after the retention period).",
-      "access": "permission",
-      "permission": "risk:read",
-      "stage": 18,
-      "tables": [
-        "imei_checks"
-      ],
-      "origin": {
-        "method": "CRUD",
-        "ops": "LS",
-        "path": "/admin/imei-checks"
       }
     },
     {

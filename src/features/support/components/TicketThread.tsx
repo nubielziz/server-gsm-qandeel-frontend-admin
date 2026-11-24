@@ -1,7 +1,7 @@
 // TicketThread: the right-hand pane: the header with its controls, who wrote and the order, the conversation, and the composer (or the
 // resolved notice). Ports `threadView` of 49-p-support.js. It reads the ticket by id, so a link works whatever the list shows, and
-// it shows its own loading, error and not-found states. It follows the live stream (feature 28): new messages, the typing lines, the
-// Sent/Seen line and the collision warning; and it tells the server when the team has seen the requester's newest message.
+// it shows its own loading, error and not-found states. It follows the live stream (feature 28): new messages, the Sent/Seen line and
+// the collision warning; and it tells the server when the team has seen the requester's newest message.
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import { useOrderDrawer } from '@/features/orders';
 import { isApiError } from '@/lib/api';
@@ -13,15 +13,12 @@ import type { SupportGrants } from '../hooks/useSupportGrants';
 import { useTemplates } from '../hooks/useTemplates';
 import { useTicket, useTicketOrder } from '../hooks/useTicket';
 import { useTicketLive } from '../hooks/useTicketLive';
-import type { TypingBoard } from '../hooks/useTypingBoard';
 import { templatesFor } from '../lib/macros';
-import { requesterLabel } from '../lib/status';
 import { Composer } from './Composer';
 import { MessageList } from './MessageList';
 import { ResolvedNotice } from './ResolvedNotice';
 import { ThreadHeader } from './ThreadHeader';
 import { ThreadParties } from './ThreadParties';
-import { TypingLine } from './TypingLine';
 
 export interface TicketThreadProps {
   id: number;
@@ -29,8 +26,6 @@ export interface TicketThreadProps {
   composer: ComposerState;
   /** The ticket was just chosen on a wide screen: put the cursor in the composer. */
   focusComposer: boolean;
-  /** Who is typing on which ticket (one board for the whole inbox). */
-  typing: TypingBoard;
   /** The thread is on screen (a phone shows the list instead while no ticket is open): the team can only have seen what is shown. */
   shown: boolean;
   onBack: () => void;
@@ -47,15 +42,7 @@ function ThreadSkeleton() {
   );
 }
 
-export function TicketThread({
-  id,
-  grants,
-  composer,
-  focusComposer,
-  typing,
-  shown,
-  onBack,
-}: TicketThreadProps) {
+export function TicketThread({ id, grants, composer, focusComposer, shown, onBack }: TicketThreadProps) {
   const now = useNow();
   const { ticket, query } = useTicket(id);
   const { collision } = useTicketLive(id);
@@ -85,23 +72,15 @@ export function TicketThread({
 
   return (
     <div className="flex h-full flex-col">
-      <ThreadHeader
-        ticket={ticket}
-        grants={grants}
-        assignees={assignees}
-        now={now}
-        staffTyping={typing.staffTyping(ticket.id)}
-        onBack={onBack}
-      />
+      <ThreadHeader ticket={ticket} grants={grants} assignees={assignees} now={now} onBack={onBack} />
       <ThreadParties ticket={ticket} order={order} />
       <MessageList
         messages={ticket.messages}
         seenId={ticket.requesterSeenMessageId}
         seenAt={ticket.requesterSeenAt}
       />
-      <TypingLine name={requesterLabel(ticket)} typing={typing.requesterTyping(ticket.id)} />
       {ticket.status === 'resolved' ? (
-        <ResolvedNotice rating={ticket.csatScore} />
+        <ResolvedNotice />
       ) : (
         <Composer
           key={ticket.id}

@@ -24,10 +24,10 @@ Everything below is marked "Assumed contract" in the JSDoc of `types/index.ts` a
   (top five by spend in the period; not for `b2b`, else `null`), `navCounts` (whole console, whatever the scope).
 - Units: `successRate`, `successRate1h`, `refundRate`, `disputeRate` are percentages from 0 to 100; `medianTurnaroundSeconds`,
   `firstReplySeconds`, `overdueSeconds`, `targetSeconds` are seconds; `p50Ms` is milliseconds; `runwayDays` is days (`null`: nothing spent);
-  `satisfaction.average` is out of 5; money is a 4-decimal string. Chart buckets are calendar days `YYYY-MM-DD` and months `YYYY-MM` (the console prints them in UTC).
+  money is a 4-decimal string. Chart buckets are calendar days `YYYY-MM-DD` and months `YYYY-MM` (the console prints them in UTC).
 - `stats.previous` is the period of the same length just before, or `null` when there is nothing to compare with.
 - `attention` is the whole list, ranked by the server. Kinds: `orders_past_sla`, `orders_review`, `supplier_down`, `supplier_degraded`,
-  `supplier_balance_low`, `services_below_floor`, `deposits_pending`, `wallets_negative`, `merchants_pending`, `commissions_accrued`,
+  `supplier_balance_low`, `services_below_floor`, `deposits_pending`, `wallets_negative`,
   `orders_held`, `disputes_due`, `tickets_late`, `refunds_requested`, `refunds_failed`, `fx_stale`. Ids shown as `DP-<id>`, `T-<id>`, `RF-<id>` are plain numbers.
 - `GET /admin/reports/top-clients?days=1|7|14&limit=6` returns `TopClient[]` ranked by `spend`, highest first; `walletBalance` may be negative.
 - `GET /admin/queues` is a web page. It is not fetched: `queuesBoardUrl()` builds the link (MISMATCHES M8).
@@ -37,7 +37,7 @@ Everything below is marked "Assumed contract" in the JSDoc of `types/index.ts` a
 
 1. Please confirm the `GET /admin/dashboard` body, the `days` parameter (1, 7, 14) and the units above (percentages 0 to 100, seconds, milliseconds).
 2. Can the `orders_past_sla` item carry the channel of the oldest order (`oldestOrderChannel: 'b2b' | 'b2c'`)? The console could then show ORD-/SF- as the demo does.
-3. Is there room for a lighter counts route (or `?fields=navCounts`)? The sidebar needs six numbers and loads the whole dashboard once a minute.
+3. Is there room for a lighter counts route (or `?fields=navCounts`)? The sidebar needs five numbers and loads the whole dashboard once a minute.
 4. `top-clients` is described as "by volume and by profit": is that one list sorted by spend (assumed), or two lists? Does it take `days` and `limit`?
 5. Is the storefront block always the last 30 days, or should it follow `days`? Should `reports/funnel` replace it?
 6. Are `ordersByType` days UTC calendar days, and does `monthly` for All include the storefront?
@@ -48,19 +48,18 @@ Everything below is marked "Assumed contract" in the JSDoc of `types/index.ts` a
 
 The map gives no bodies (MISMATCHES M10). Every shape below is marked "Assumed contract" in the JSDoc of its function or type.
 
-- `GET /admin/clients`: filters `status` (`active` | `pending` | `suspended`), `groupId`, `q` (name, email, company); sort `name`, `status`. Rows are the `clients` row plus the joins `group` `{ id, name, discountPercent }` and `referredBy` `{ id, name }`, and, for staff who can read wallets, `wallet` (same four figures as below) and `stats` (last 30 days: `orders`, `spend`, `profit`, `margin` percent or null, `successRate` percent or null, `lastOrderAt`). `kycStatus` is `none | pending | approved | rejected`.
+- `GET /admin/clients`: filters `status` (`active` | `pending` | `suspended`), `groupId`, `q` (name, email, company); sort `name`, `status`. Rows are the `clients` row plus the join `group` `{ id, name, discountPercent }`, and, for staff who can read wallets, `wallet` (same four figures as below) and `stats` (last 30 days: `orders`, `spend`, `profit`, `margin` percent or null, `successRate` percent or null, `lastOrderAt`).
 - `GET /admin/clients/:id`: same shape as a list row.
-- `POST /admin/clients`: body `{ name, email, country, groupId?, creditLimit?, invite: true }`; the server emails the sign-up link and creates the account as `pending`. 409 `EMAIL_TAKEN` shows under the email field.
-- `PATCH /admin/clients/:id`: body is only what changes: approve and reactivate `{ status: 'active' }`, suspend `{ status: 'suspended', reason }`, group `{ groupId }`.
+- `POST /admin/clients`: body `{ name, email, country, groupId?, creditLimit?, invite: true }`; the server creates the account (`active` at once, no password yet) and emails the link to choose a password. 409 `EMAIL_TAKEN` shows under the email field.
+- `PATCH /admin/clients/:id`: body is only what changes: activate (an account still `pending`, made before staff-made accounts were active at once) and reactivate `{ status: 'active' }`, suspend `{ status: 'suspended', reason }`, group `{ groupId }`.
 - `GET /admin/clients/:id/wallet`: `{ balance, reserved, creditLimit, available }` as 4-decimal strings (see M56).
 - `GET /admin/clients/:id/statement`: rows `{ id, transactionId, kind, memo, amount, balanceAfter, createdAt }`; `amount` is signed from the merchant's side (a deposit is positive); sorted with `_sort=createdAt`.
 - `POST /admin/clients/:id/wallet/adjust`: body `{ amount, direction: 'credit' | 'debit', reason }` with a positive 4-decimal `amount`; answer `{ transactionId, wallet }`. Refusals (credit limit, approval limit) are problem+json shown as they come.
 - `PATCH /admin/clients/:id/credit-limit`: body `{ creditLimit }`; answer the wallet.
 - `GET /admin/clients/:id/api-keys`: a plain array of `ApiKeyRow` (without any secret); the console works out active / revoked / expired from `revokedAt` and `expiresAt`.
 - `DELETE /admin/api-keys/:id`: no body, 204.
-- `GET /admin/client-groups`: `ClientGroupRow` plus optional `merchantCount`; `kind` is `b2c_retail` for the retail group. Create body `{ name, discountPercent, earnThreshold, depositLimit, overdraftAllowed, isDefault }`; PATCH takes any of them; DELETE answers 409 while merchants are in the group.
+- `GET /admin/client-groups`: `ClientGroupRow` plus optional `merchantCount`; `kind` is `b2c_retail` for the retail group. Create body `{ name, discountPercent, depositLimit, overdraftAllowed, isDefault }`; PATCH takes any of them; a row may still carry `earnThreshold`, which the console ignores; DELETE answers 409 while merchants are in the group.
 - `GET /admin/client-prices?clientId=`: rows `ServiceClientPriceRow` plus `service` `{ id, name, type?, basePrice, floorPrice }` and `groupPrice` (the group's fixed price or the discounted base). POST body `{ clientId, serviceId, price, note? }`; PATCH `{ price?, note? }`. A price under the floor answers 422 with the message on `price`.
-- `GET /admin/kyc-submissions`: filter `status`; rows `KycSubmissionRow` plus `client` `{ id, name, email, country, status }`, `reviewedBy` `{ id, name }` and optionally `files` `[{ id, filename, mime, size }]`. `POST …/decide` body `{ decision: 'approve' | 'reject', note? }` (the note is required for a rejection by the console, not assumed of the server); answer the request.
 - `GET /admin/reports/client-statement/:clientId`: answers a file; the console takes the name from `Content-Disposition`.
 - Private lookup for the Add override menu (no route tag, the services feature owns it): `GET /admin/services?status=active&_sort=name&_start=0&_end=200`, rows `{ id, name, type?, status?, floorPrice? }`.
 
@@ -70,11 +69,11 @@ The map gives no bodies (MISMATCHES M10). Every shape below is marked "Assumed c
 2. Wallet: what do "available", "reserved" and "limit" mean exactly, and is the wallet balance a separate figure? The console assumes `balance`, `reserved`, `creditLimit` and `available` (balance plus credit limit).
 3. Statement: sign of `amount`, whether `balanceAfter` is the running balance after that line, and whether `transactionId` is the id `GET /admin/ledger/transactions/:id` takes.
 4. Adjustment: the answer's shape, the error codes for "past the credit limit" and "needs a second approver", and whether $10,000 is the rule.
-5. Status changes: does `PATCH /admin/clients/:id` take `status` and `reason`, or are approve, suspend and reactivate separate actions? Does approving need an approved verification?
+5. Status changes: does `PATCH /admin/clients/:id` take `status` and `reason`, or are activate, suspend and reactivate separate actions?
 6. Invitation: is `POST /admin/clients` with `invite: true` the right shape, is `country` required, and what does the 409 `EMAIL_TAKEN` carry?
-7. Groups: what is `earn_threshold` (the console calls it "Upgrade threshold": spend that moves a merchant up) and in which unit? Is `merchantCount` available? Can the retail group be edited or deleted? What is `kind` for ordinary groups?
+7. Groups: is `merchantCount` available? Can the retail group be edited or deleted? What is `kind` for ordinary groups?
 8. Client prices: are `service` and `groupPrice` joined, is a second price for the same service a 409, and does the 422 name the `price` field? The map lists `LCUD` (no show route).
-9. Verification: are `files` joined, are the status values `pending | approved | rejected`, does approving also activate the merchant or only set `kyc_status`, and is a rejection reason sent to the merchant?
+9. Verification: retired (decision 020); no question.
 10. API keys: a plain array or a paged list? Is there a status field, or are `revokedAt` and `expiresAt` the truth?
 11. Official statement: PDF or CSV, and does it take a period (`from`, `to`)?
 12. Dhru endpoint: is `<API base>/api/index.php` the address merchants should use?
@@ -118,16 +117,15 @@ The map gives routes, permissions and tables, not bodies (M10). Every function b
 
 All are marked "Assumed contract" in the JSDoc of the function or type, and live in `types/index.ts`.
 
-- `Customer` (list row): the `CustomerRow` columns with `riskLevel` `low|medium|high`, `status` `active|suspended|blocked|anonymized`,
+- `Customer` (list row): the `CustomerRow` columns without the risk level (the console shows none; an older server may still send it), `status` `active|suspended|blocked|anonymized`,
   `suspendedReason` and `suspendedBy` nullable, plus `ordersCount`, `lastOrderAt` and an optional `currencyCode`. `createdBy` is null
   for a customer who came on their own and a staff id for one the team added.
 - `GET /admin/customers/:id`: `Customer` plus `stats { orders, spent, lastOrderAt, refunds, tickets, disputes }`, `account`
   (`emailVerified`, `mustChangePassword`, `passwordChangedAt`, `resetSentAt`, `activeSessions`, `lastIp`; null for a guest),
   `latestConsents { orderId, records[{ purpose, document, at, ip }] }` (null without orders) and `risk { highestScore, signals[{ text, orderId }] }`.
   `document` is the legal document with its version, ready to show (`Terms of service v3.2`), or null.
-- `GET /admin/customers` filters: `q` (name, email), `country`, `status` (repeat the key), `riskLevel` (repeat the key; the
-  Flagged tab sends `medium` and `high`) and `hasAccount` (not in the brief; the header sentence needs it). Sorts: `name`, `country`,
-  `hasAccount`, `ordersCount`, `totalSpent`, `lastOrderAt`, `riskLevel`, `status`.
+- `GET /admin/customers` filters: `q` (name, email), `country`, `status` (repeat the key) and `hasAccount` (not in the brief; the
+  header sentence needs it). Sorts: `name`, `country`, `hasAccount`, `ordersCount`, `totalSpent`, `lastOrderAt`, `status`.
 - Bodies: create `{ name, email, country, phone?, password: { mode } }` answers 201 with the customer and
   `temporaryPassword?`; `PATCH` sends only changed fields (`name`, `email`, `country`, `phone`, `internalNotes`);
   account `{ mode }` and password `{ mode, revokeSessions }` answer `{ temporaryPassword? }` (shown once, `gcTime: 0`);
@@ -144,16 +142,15 @@ All are marked "Assumed contract" in the JSDoc of the function or type, and live
 
 ### Questions for the backend
 
-1. Is the middle risk level `medium` (assumed) or `med`? Does sorting by `riskLevel` follow low, medium, high rather than the alphabet?
-2. Where does a guest's last address come from? A guest has no session, so the console reads the latest consent record's address.
-3. Does `POST /admin/customers/:id/block` with `{ blocked: false }` need a reason (the map says "with a reason")? What does it answer?
-4. Do `GET /admin/customers/:id/export` and `POST /admin/customers/:id/anonymize` close the customer's open data request, and with which status?
-5. What are the data-request statuses and allowed moves, and is the `note` of the `PATCH` kept (audit log)?
-6. Is `totalSpent` the gross amount (VAT included) of the orders that were not rejected, as the demo's spend? Does `ordersCount` count every order?
-7. Is `suspendedReason` stored as the reason and the note joined, or do they need two columns?
-8. Which countries does the storefront accept, and is there a route the console can read them from?
-9. Does `GET /admin/customers` support the `hasAccount` filter, and `GET /admin/data-requests` the `customerId` and repeated `status` filters?
-10. May an anonymised customer's old email be used for a new customer?
+1. Where does a guest's last address come from? A guest has no session, so the console reads the latest consent record's address.
+2. Does `POST /admin/customers/:id/block` with `{ blocked: false }` need a reason (the map says "with a reason")? What does it answer?
+3. Do `GET /admin/customers/:id/export` and `POST /admin/customers/:id/anonymize` close the customer's open data request, and with which status?
+4. What are the data-request statuses and allowed moves, and is the `note` of the `PATCH` kept (audit log)?
+5. Is `totalSpent` the gross amount (VAT included) of the orders that were not rejected, as the demo's spend? Does `ordersCount` count every order?
+6. Is `suspendedReason` stored as the reason and the note joined, or do they need two columns?
+7. Which countries does the storefront accept, and is there a route the console can read them from?
+8. Does `GET /admin/customers` support the `hasAccount` filter, and `GET /admin/data-requests` the `customerId` and repeated `status` filters?
+9. May an anonymised customer's old email be used for a new customer?
 
 ## services
 
@@ -195,9 +192,8 @@ All are marked "Assumed contract" in the JSDoc of the function that carries them
 
 All bodies are assumed (M10); each is marked "Assumed contract" in the JSDoc of its function in `api/`.
 
-- `GET /admin/risk/queue` answers `{ held: HeldOrder[], stats?: { decided30d, approved30d, refunded30d, heldShare }, recent?: DecidedOrder[] }`. A `HeldOrder` has `orderId`, `paidAt`, `score`, `service`, `supplier`, `imei`, `device`, `capturedAmount` (USD with VAT), `currency`, `fxRate`, `paymentMethod` (`card`, `wallet`, `crypto`), `signals` (strings) and `customer` (`id`, `name`, `email`, `country` code, `riskLevel` `low|medium|high`, `history: { earlierOrders, refunds, disputes }`). `heldShare` is a percent number.
+- `GET /admin/risk/queue` answers `{ held: HeldOrder[], stats?: { decided30d, approved30d, refunded30d, heldShare }, recent?: DecidedOrder[] }`. A `HeldOrder` has `orderId`, `paidAt`, `score`, `service`, `supplier`, `imei`, `device`, `capturedAmount` (USD with VAT), `currency`, `fxRate`, `paymentMethod` (`card`, `wallet`, `crypto`), `signals` (strings) and `customer` (`id`, `name`, `email`, `country` code, `history: { earlierOrders, refunds, disputes }`). `heldShare` is a percent number.
 - `POST /admin/risk/orders/:id/approve`: no body; the answer is not used. `POST .../refund`: `{ reason?, blockEmail?, blockDevice? }`; the answer is not used. A decision on an order that is no longer held answers `409`; the console shows the server’s message.
-- `GET /admin/imei-checks` (`/:id`): rows with `id`, `imei` (digits, or a hash or mask after retention), `brand`, `model`, `checkType` (`blacklist|basic|icloud|sim_lock`), `status` (`clean|blacklisted|locked|unknown`), `source` (`pre_order|storefront_free`), `country`, `ip`, `cost`, `price`, `cachedUntil`, `createdAt`, `orderId`, `customer`, `supplier`, `result` (free-form object). Filters `checkType`, `status`, `source`, `q` (IMEI, brand, model); sort `model`, `checkType`, `status`, `createdAt`.
 - `GET /admin/blocklist` (`/:id`): rows with `id`, `kind`, `display`, `reason`, `expiresAt`, `source` (`manual|auto|chargeback`), `createdBy` (`{ id, name }` or null for the system), `createdAt`. Filter `kind`; sort `kind`, `display`, `createdAt`. `POST` body `{ kind: email|domain|imei|card, value, reason }` (an IMEI as 15 digits), answer the new entry (201). `DELETE` answers 204.
 - `GET` and `PUT /admin/risk/rules`: `{ rules: [{ id, on, value, label?, hint?, unit? }] }`; `PUT` takes `{ rules: [{ id, on, value }] }` (the whole set) and answers the saved rules. A field message is keyed by rule id (`reviewThreshold`), by path (`rules.reviewThreshold.value`) or by index (`rules.1.value`).
 
@@ -207,9 +203,8 @@ All bodies are assumed (M10); each is marked "Assumed contract" in the JSDoc of 
 2. `POST .../refund`: are `reason`, `blockEmail` and `blockDevice` the right body? Does blocking the email also set the customer to `blocked`? Is "device" the order's IMEI or a device fingerprint?
 3. Rules: which ids and which units? Does `PUT` replace the whole set (then two editors can overwrite each other; is there a version or `If-Match`)? Which field name carries the "review below block" message?
 4. Blocklist: does `POST` take `value` (and derive `display`) or `display`? Which code answers a duplicate? Can the console set `expiresAt`? Can system entries (chargebacks) be removed?
-5. IMEI checks: what does `imei` look like after the retention period (hash, mask, null)? Can the list send the 30-day figures (conversion to an order, lookup cost) in a header or a summary route? Which sort fields and filters are supported?
-6. Permissions: are blocklist create and delete `risk:create` and `risk:delete`, and does the rules `PUT` need the literal `risk:*`?
-7. Does approve or refund return the updated order?
+5. Permissions: are blocklist create and delete `risk:create` and `risk:delete`, and does the rules `PUT` need the literal `risk:*`?
+6. Does approve or refund return the updated order?
 
 ## refunds
 
@@ -251,6 +246,7 @@ The map gives no bodies (M10). Each is in one function's JSDoc marked "Assumed c
 - `GET /admin/reports/profit?groupBy=day|service|supplier|client&from=YYYY-MM-DD&to=YYYY-MM-DD` returns `{ groupBy, from, to, currency, rows: [{ key, label, orders, revenue, cost, profit }], totals }`; for `day` the `key` is the date.
 - `GET /admin/reports/wallet-exposure` returns `{ currency, totals: { clients, balance, reserved, overdraftLimit, overdraftUsed, inOverdraft }, rows: [{ clientId, name, balance, reserved, overdraftLimit, overdraftUsed }] }`, largest wallets first.
 - `GET /admin/reports/vat?from=&to=` returns `{ from, to, currency, rows: [{ country, period (YYYY-MM), rate (percent), orders, taxable, vat }], totals: { orders, taxable, vat } }`.
+- `GET /admin/reports/funnel?days=7|30|90` (default 30): answer `{ days, paymentStarted, paid, delivered }`, all integers. The Reports tab shows it as the Sales funnel (`reports:growth`); a backend that still sends `imeiChecks` is read the same way, the key is ignored.
 - The console writes the dates of the presets (last 7, 30, 90 days; this or last month or quarter) in the browser's time zone.
 
 ### Questions for the backend
@@ -261,26 +257,7 @@ The map gives no bodies (M10). Each is in one function's JSDoc marked "Assumed c
 4. Reconciliation: does it only report, or also correct? Can it run long (should the answer be a job)? Does it also check that every entry sums to zero?
 5. Payments: the `status` values of a manual deposit, the `note` field's meaning, whether `approve` returns the payment with the wallet, and whether `approve` needs an idempotency key.
 6. Invoices: the `kind` and `status` words; there is no description column in `invoices`, so where does a manual invoice's text go? Does a manual invoice get VAT, and can it carry a due date?
-7. Reports: the parameter names and the time zone of `from`/`to`; how many rows the wallet exposure caps at; whether VAT rows are split by month.
-
-## checkouts
-
-The map gives routes, permissions and tables, not bodies (M10). Marked "Assumed contract" in the JSDoc of `api/` and `types/index.ts`.
-
-- `GET /admin/checkouts/abandoned`: simple-rest list (`_start`, `_end`, `_sort`, `_order`, `q`, total in `x-total-count`). Filter `canRecover=true`. Sort fields `createdAt`, `grossAmount`, `recoveryEmailedAt`. Row `AbandonedCheckout`: `id`, `email` (masked), `grossAmount` (4-decimal USD string), `fxRate`, `currencyCode`, `serviceName`, `status`, `utm` (object, `utm.source` shown), `createdAt`, `recoveryEmailedAt | null`, `orderId | null`, `marketingConsent`, `canRecover`.
-- `POST /admin/checkouts/recover`: body `{ ids: number[] }`; answer `{ sent: number, skipped: [{ id, reason }] }`. Known reason codes: `no_marketing_consent`, `already_emailed`, `already_paid`, `not_found`; any other code is shown with underscores as spaces. 422 with a message on `ids` for an empty list. The console sends only ticked rows with `canRecover`.
-- `GET /admin/reports/funnel?days=7|30|90` (default 30): answer `{ days, imeiChecks, paymentStarted, paid, delivered }`, all integers.
-- The "recovered" word: a row with `recoveryEmailedAt` and `orderId` set.
-
-### Questions for the backend
-
-1. List: is `GET /admin/checkouts/abandoned` a simple-rest list with `x-total-count`, does `q` match the full address (the rows come masked), and are `serviceName`, `currencyCode` and `utm` joined?
-2. What exactly makes `marketingConsent` true (the latest `consent_records` row with purpose marketing is a grant)? What if consent is withdrawn after the email went out?
-3. What exactly is `canRecover`: consent, no email sent, not paid, and past the automatic-reminder delay? Is there a maximum age (an expired basket link)?
-4. Recover: is `{ ids }` right, what are the skip reason codes, is there a maximum number of ids per call or a rate limit, and does the send write an audit entry (the demo logs "sent recovery emails")?
-5. Does the automatic reminder (after the `abandonedMinutes` policy) follow the same consent rule and set `recoveryEmailedAt`? Is "recovered" a payment within 3 days of the email (the demo's tooltip)?
-6. Funnel: which periods are allowed, are the counts people or events, is it storefront-only, and should it replace the dashboard's `storefront` block (M39)?
-7. Do you want a `summary` on the list (left at checkout, not reminded, recovered, revenue recovered) so the demo's figures strip can come back (M136)?
+7. Reports: the parameter names and the time zone of `from`/`to`; how many rows the wallet exposure caps at; whether VAT rows are split by month. Funnel: which periods are allowed, are the counts people or events, is it storefront-only, and should it replace the dashboard's `storefront` block (M39)?
 
 ## support
 
@@ -288,10 +265,10 @@ Every one is marked "Assumed contract" in the JSDoc of `api/*.ts` and typed in `
 
 - `GET /admin/support-tickets` (list): rows are the `support_tickets` columns with the words narrowed (`status` new / open / pending / resolved, `priority` high / normal / low, `channel` email / web / chat / telegram, `category` as the demo's `TICKET_CATS`, `requesterType` customer / client) plus joined `requester { name, email }`, `assignee { id, name }`, `orderId` (null when none) and the timers `lastPublicAt`, `slaDueAt`, `late`. Filters: `status` (repeated key), `late`, `assigneeId`, `requesterType`, `requesterId`, `q` (number, subject, requester name). Sort fields: `late`, `updatedAt`. The figures are `_start=0&_end=1` calls read from `x-total-count`.
 - `GET /admin/support-tickets/:id`: the list row plus `messages[]` (oldest first: `id`, `authorType` customer / client / staff / system, `authorId`, `authorName`, `body`, `isInternal`, `fileIds`, `createdAt`) and `replyChannels` (`email`, `telegram`). The map has no messages route, so the thread rides on the show answer. 404 for an unknown id.
-- `PATCH /admin/support-tickets/:id`: body `{ priority?, assigneeId? (null clears), status? }` where `status` is `resolved` (Resolve) or `open` (Reopen); answer the updated row. Resolving writes an internal "Marked resolved by …" message and sends the satisfaction survey (server side).
+- `PATCH /admin/support-tickets/:id`: body `{ priority?, assigneeId? (null clears), status? }` where `status` is `resolved` (Resolve) or `open` (Reopen); answer the updated row. Resolving writes an internal "Marked resolved by …" message (server side).
 - `POST /admin/support-tickets/:id/reply`: body `{ body, channel? }`, answer 201 with the new message. A new or open ticket becomes `pending`, the first public reply sets `firstResponseAt`, an unassigned ticket goes to the sender. 409 `TICKET_RESOLVED` for a resolved ticket; 422 with `errors[{ field: 'body' }]` for empty text.
 - `POST /admin/support-tickets/:id/note`: body `{ body }`, answer 201 with the new internal message; the status stays.
-- Live chat (feature 28, backend B218 and B219; written from the plan, not yet confirmed by the built backend): rows and messages also carry `hasUnread`, `requesterSeenMessageId` / `requesterSeenAt`, `staffSeenMessageId` / `staffSeenAt` and `attachments[]` (`id`, `filename`, `mime`, `size`); `reply` and `note` take `fileIds` (at most 5, the text may be empty with one). `POST /admin/support-tickets/:id/read` `{ upToMessageId }` (204; 422 `upToMessageId` for a message of another ticket), `POST …/typing` `{ mode: 'reply' | 'note' }` (204, never stored), `POST …/files` (multipart, one part `file`, PDF / JPEG / PNG up to 5 MiB, answer 201 `{ id, filename, size, mime, sha256, createdAt }`), `GET …/files/:fileId` (a redirect to a link that lives 5 minutes; the console only builds the link). Events on the staff stream: `ticket.message.created`, `ticket.updated`, `ticket.read`, `ticket.typing` (staff view; M262).
+- Live chat (feature 28, backend B218 and B219; written from the plan, not yet confirmed by the built backend): rows and messages also carry `hasUnread`, `requesterSeenMessageId` / `requesterSeenAt`, `staffSeenMessageId` / `staffSeenAt` and `attachments[]` (`id`, `filename`, `mime`, `size`); `reply` and `note` take `fileIds` (at most 5, the text may be empty with one). `POST /admin/support-tickets/:id/read` `{ upToMessageId }` (204; 422 `upToMessageId` for a message of another ticket), `POST …/files` (multipart, one part `file`, PDF / JPEG / PNG up to 5 MiB, answer 201 `{ id, filename, size, mime, sha256, createdAt }`), `GET …/files/:fileId` (a redirect to a link that lives 5 minutes; the console only builds the link). Events on the staff stream: `ticket.message.created`, `ticket.updated`, `ticket.read` (staff view; M262).
 - `GET /admin/reply-templates`: rows `{ id, title, category, body, shortcut, createdBy, createdAt, updatedAt }`, `body` raw with `{{name}}`, `{{order}}`, `{{eta}}`. The console loads up to 200 sorted by `title`.
 - `POST /admin/reply-templates` `{ title, category, body, shortcut }` (201), `PATCH` with the changed fields only, `DELETE` (204). Refusals: 422 with a message per field (the mock refuses a shortcut that does not start with `/`), 409 `SHORTCUT_TAKEN` (shown under the Shortcut field).
 - Permissions: page `support:read`; priority, assignee, Resolve / Reopen need `support:update`; reply and note need `support:reply`; templates need `support:create`, `support:update`, `support:delete` (M7).
@@ -300,34 +277,11 @@ Every one is marked "Assumed contract" in the JSDoc of `api/*.ts` and typed in `
 
 1. Do list rows join `requester { name, email }` and `assignee { id, name }`, and do they carry `late`, `slaDueAt` and `lastPublicAt`? Is `late=true` an accepted filter and `late` a sort field? Without them the Overdue filter and the sort cannot be server-side.
 2. Does `GET /admin/support-tickets/:id` embed the messages (there is no messages route in the map)? Which channels does `replyChannels` list, and does `POST …/reply` take `channel`?
-3. Stats for the strip: median first reply and the satisfaction average (needs a stats route or a header on the list). Until then the strip shows open, past reply target and resolved.
-4. What does `PATCH` accept for `status` (we send `resolved` and `open`)? Does resolving write the "Marked resolved by …" note and send the survey itself?
+3. Stats for the strip: median first reply (needs a stats route or a header on the list). Until then the strip shows open, past reply target and resolved.
+4. What does `PATCH` accept for `status` (we send `resolved` and `open`)? Does resolving write the "Marked resolved by …" note itself?
 5. Template variables: is `{{name}}` / `{{order}}` / `{{eta}}` the syntax, and does the server also render them on send? What is `shortcut` for: should typing `/refund` in the composer expand the template?
 6. `GET /admin/staff` needs `staff:read`; should a support agent be able to read a short staff list (names only) to assign tickets without it?
 7. Is there an event stream for new customer messages? Yes since feature 28 (`ticket.*` on `GET /admin/stream`, M262). The console asks again every 30 seconds while the stream is closed and every 5 minutes while it is open (inbox, open thread, figures).
-
-## commissions
-
-All bodies and answers are assumed (M10); each function says so in its JSDoc.
-
-- `GET /admin/commission-plans`, `/:id`: rows are the generated plan columns with `kind` of `referral` or `rebate`; `percent` is a percent string ("3.0000" is 3%); `tiers` is a free JSON object.
-- `POST /admin/commission-plans`: `{ name, kind, percent, basis, period, tiers, isActive }`, answer the plan. `PATCH`: any of those fields, answer the plan. `DELETE`: no body, 204; 409 for a plan that agents are assigned to.
-- `GET /admin/commission-assignments`, `/:id`: rows are the generated columns plus the joins `beneficiary { id, name, country? }` and `plan { id, name, percent }`.
-- `POST /admin/commission-assignments`: `{ beneficiaryId, planId }`, the server sets `scope` and `startsAt`; answer the assignment. `PATCH`: `{ planId }`. `DELETE`: ends the assignment, 204.
-- `GET /admin/commission-accruals`, `/:id`: rows are the generated columns plus `ledgerTxId` that is null until paid, and the joins `beneficiary { id, name }` and `merchant { id, name }` (the referred merchant). Filters: `status` (`accrued`, `approved`), `beneficiaryId`, `createdAt_gte`. Sort: `createdAt`, `basisAmount`, `percent`, `amount`, `status`. A status the console does not know is shown as sent.
-- `POST /admin/commission-accruals/approve`: `{ ids }`, answer `{ approved, total, skipped: [{ id, reason }] }`.
-
-The mock (`mocks/`) plays the server: it keeps the demo's 0.5 to 15 rate limit and refuses a plan that has agents, a merchant that already has a plan (409 `ALREADY_ASSIGNED`) and ids that do not exist. Approving marks the accruals approved, sets `ledgerTxId` and posts one `commission` journal per agent into the mock ledger (`ledgerStore`, `refType: 'accrual'`, as the demo's seed journals have). It does not move the merchants mock's wallet balance (that store belongs to the merchants feature).
-
-### Questions for the backend
-
-1. Approve: is the body `{ ids }` and the answer `{ approved, total, skipped: [{ id, reason }] }`? Does it skip an accrual that is not ready, or fail the whole request? Does it enforce the 7-day wait ("Normally approved after 7 days to cover refunds. You can approve earlier.") or only warn?
-2. Accrual list: does it join `beneficiary` and the referred `merchant`? Which filters and sort fields does it accept (`status`, `beneficiaryId`, `createdAt_gte`)? Are there statuses besides `accrued` and `approved` (reversed, void)?
-3. Is there a summary read (for example `GET /admin/commission-accruals/summary`) with the ready amount and agent count, the approved and earned amounts over a period, and commission as a share of the referred revenue? The strip shows dashes for these until there is one, because the console adds no money itself.
-4. Is there an approval date? The strip's "Approved, 30 days" would be exact with `approvedAt` on the row (today it counts accruals earned in 30 days that are approved).
-5. Plans: the values of `kind`, `basis` and `period`; what `percent` is ("3.0000" for 3%?) and its allowed range; the shape of `tiers` (a minimum payout, brackets?); whether a fixed amount instead of a rate is possible.
-6. Assignments: values of `scope`; can a merchant have more than one plan; does `DELETE` end the assignment (set `ends_at`) or remove the row; is it refused while accruals are ready? Could the row carry per-agent figures (referred count, 30-day revenue, ready and approved amounts) for the Agents tab?
-7. Does approving credit the wallet and post the journal in one transaction, and does it also change the merchant's wallet figures the merchants page shows?
 
 ## settings
 
@@ -360,25 +314,22 @@ function or type (`api/*.ts`, `types/*.ts`).
 - `GET /admin/currencies[/:id]`: `CurrencyRow`, optionally `isStale`. `POST` body: `code`, `name`, `rateToBase`, `markupPercent`,
   `charmRounding`, `isStorefront`, `decimals`. `PATCH` takes any of them (the switch sends `{ isStorefront }`).
 - `POST /admin/currencies/refresh-fx`: no body; answer `{ refreshed?: [{ code, rateToBase, rateUpdatedAt }], failed?: [{ code, message }], source? }`.
-- `GET /admin/settings`: one flat object. Policy keys: `guestCheckout`, `require3ds`, `withdrawalWaiver`, `autoRefundFailed`,
-  `imeiPrecheck` (booleans); `refundHoursBeforeDispatch`, `abandonedMinutes`, `imeiRetentionDays` (whole numbers). `PATCH
+- `GET /admin/settings`: one flat object. Policy keys: `guestCheckout`, `require3ds`, `withdrawalWaiver`, `autoRefundFailed`
+  (booleans); `refundHoursBeforeDispatch` (a whole number). `PATCH
   /admin/storefront/settings`: body is those keys (only the ones that change); answer the policy keys after the change; a field error
   names the key.
-- `GET /admin/notification-templates[/:id]`: `NotificationTemplateRow` with `channel` `email | telegram`, `audience` `customer | merchant |
+- `GET /admin/notification-templates[/:id]`: `NotificationTemplateRow` with `channel` `email` (a template of another, retired channel that an older backend still lists is left out), `audience` `customer | merchant |
   staff`; filters `audience`, `channel`; may carry `sentLast30Days`. `POST` body: `event`, `channel`, `audience`, `subject`,
   `body`, `isActive`; a second template for the same event, channel and audience is a 422 on `event`. `PATCH` takes any of them.
 - `POST /admin/notification-templates/:id/preview`: body `{ subject?, body? }` (empty: preview the saved text); answer `{ subject, body,
   format?: 'text' | 'html', from?, note? }`. Without `format` the console guesses from the markup.
 - `GET /admin/notifications[/:id]`: rows with `event` (key), `channel`, `status`, `recipient` (masked), `sentAt`, `createdAt`; the detail
   adds `payload` and `error`. Filters `status`, `channel`.
-- `GET /admin/webhook-deliveries[/:id]`: rows with the joins `endpoint { id, url }` and `client { id, name }`; the detail adds
-  `responseBody` and `error`. Filters `status`; `q` searches merchant, event and address.
-- `POST /admin/webhook-deliveries/:id/retry`: no body; answer the delivery after queuing; 409 `DELIVERY_SUCCEEDED` for one that worked.
 
 ### Questions for the backend
 
 1. `GET /admin/settings`: are the policy keys named as in "Assumed contracts" (`guestCheckout`, `require3ds`, `withdrawalWaiver`,
-   `autoRefundFailed`, `imeiPrecheck`, `refundHoursBeforeDispatch`, `abandonedMinutes`, `imeiRetentionDays`)? Does the answer carry the
+   `autoRefundFailed`, `refundHoursBeforeDispatch`)? Does the answer carry the
    other keys (as `{ key: value }`) so the System tab can show them?
 2. `PATCH /admin/storefront/settings`: is the body a flat set of policy keys? The map says it also changes payment methods and email
    templates; should the console send those through it (and with which body), or through their own CRUD routes as it does now?
@@ -389,8 +340,7 @@ function or type (`api/*.ts`, `types/*.ts`).
 5. Templates: what are the event keys (the console asks before turning off `order.received`, `order.completed`, `order.failed`)? Does the
    preview take `subject` and `body` to preview unsaved text, and does it say `format`? Are templates ever HTML?
 6. Notification log: is `recipient` sent already masked? Which `status` values exist? Is `event` the event key rather than an id?
-7. Webhook deliveries: are `endpoint` and `client` joined into each row? Which `status` values exist? Does the detail carry the merchant's
-   `responseBody` and a network `error`? Does a retry make a new attempt at once, and is it rate limited?
+7. Webhook deliveries: retired (the merchant webhooks); no question.
 8. Tax rates: should two rates for one country be refused when their dates overlap? Which `taxType` values exist?
 9. Ready-made methods: the console starts a method from an entry with the entry's `instructions` and a free `code` made from the key
    (`vodafone_cash`, then `vodafone_cash_2`; the contract allows `-` and `_` in a code), and for **both** audiences (lead decision,
@@ -435,7 +385,7 @@ The map gives the table `audit_logs` and the two routes but no bodies (M10). Mar
 
 - `GET /admin/audit-logs`: rows are `AuditLog`: `AuditLogRow` with `actorId` and `ip` nullable, plus `actorName` and `entityLabel` (joined by the server; the label is the record's name at the time of the change). `actorType` is `staff` or `system`. `action` is the readable phrase ("changed price of").
 - Filters: `actorType`, `actorId`, `entityType`, `from`, `to` (days, both included) and `q` (person, action, record name), with `_start`, `_end`, `_sort=createdAt`, `_order=desc`.
-- `entityType` values: the singular names of the demo (`order`, `merchant`, `service`, `supplier`, `payment`, `withdrawal`, `plan`, `session`, `customer`, `staff`, `ip_rule`, `checkout`, `refund`, `dispute`, `ticket`, `listing`, `blocklist`, `legal`, `setting`). Table names (`orders`, `clients`, `staff_users`, `support_tickets`...) are read as the same types when the server sends them, but the filter sends the singular name.
+- `entityType` values: the singular names of the demo (`order`, `merchant`, `service`, `supplier`, `payment`, `withdrawal`, `session`, `customer`, `staff`, `ip_rule`, `checkout`, `refund`, `dispute`, `ticket`, `listing`, `blocklist`, `legal`, `setting`). Table names (`orders`, `clients`, `staff_users`, `support_tickets`...) are read as the same types when the server sends them, but the filter sends the singular name.
 - A list row may leave out `before` and `after` (both `undefined`); the screen then reads `GET /admin/audit-logs/:id` when the entry is opened. A row with `null` for both is a plain action (a sign-in).
 - `GET /admin/audit-logs/:id`: the same shape as a list row, with `before` and `after`.
 
@@ -495,8 +445,9 @@ The map describes the 22 rows of the `health` group in words only. Every shape b
 - `GET /admin/system/database` and `/cache`: see `types/stores.ts` (connections, pool wait, locks, replica lag, size
   and growth, pending migrations, slow queries, long transactions; Redis memory, evictions, hit rate, clients,
   latency).
-- `GET /admin/system/webhooks`: `{ outgoing, incoming }`, each `{successRate, delivered, failed, retrying,
-  oldestUndeliveredAt, oldestAge}` over the last 24 hours.
+- `GET /admin/system/webhooks`: `{ incoming }`, the callbacks payment gateways send us: `{successRate, delivered, failed, retrying,
+  oldestUndeliveredAt, oldestAge}` over the last 24 hours. An older answer may still carry an `outgoing` part (webhooks to merchants,
+  retired); the console does not read it.
 - Alerts: severities `info | warning | critical`, statuses `firing | acknowledged | resolved`, comparators
   `gt | gte | lt | lte`, channels `telegram | email`. An alert carries its rule (`rule {id, key, name, metric,
   comparator, threshold, windowSeconds, unit}`), `subjectLabel`, `acknowledgedBy {id, name}`, `note`, `incidentId`.
@@ -530,8 +481,8 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
   the rules cannot be evaluated. `incidents` holds ongoing incidents only. The KPI row always reads
   `metrics?range=24h`, `queues`, `orders-health` and the summary, whatever the page range.
 - **Keys the mock uses** (a guess at the server's): components `api`, `postgres`, `redis`, `storage`, `workers`, `mail`,
-  `supplier:<id>`, `gateway:<id>`; surfaces `v1`, `dhru`, `client`, `store`, `admin`, `hooks`; jobs `price_sync`,
-  `supplier_balance`, `reminders`, `fx_refresh`, `accruals`, `ledger_integrity`, `data_retention`.
+  `supplier:<id>`, `gateway:<id>`; surfaces `dhru`, `client`, `store`, `admin`, `hooks`; jobs `price_sync`,
+  `supplier_balance`, `reminders`, `fx_refresh`, `ledger_integrity`.
 - **Series sizes.** Metrics: 1h = 60 × 1 min, 6h = 72 × 5 min, 24h = 96 × 15 min, 7d = 168 × 1 h. Uptime cells
   (checks): at most 100 per range.
 
@@ -575,7 +526,7 @@ Added after the foundation slice (the mock layer plays all of it; `src/features/
 3. Should acknowledging an alert have its own permission? Today `alerts:update` covers both the ack and editing rules.
 4. Could the maintenance state also come with `GET /admin/auth/me` (or `GET /health`), so the shell banner reaches staff
    without `system:read` (MISMATCHES M201)?
-5. Which surfaces does `/metrics` report (`v1`, `dhru`, `client`, `store`, `admin`, `hooks`?) and with which labels?
+5. Which surfaces does `/metrics` report (`dhru`, `client`, `store`, `admin`, `hooks`?) and with which labels?
 6. Do the actions (pause, run job, integrity run, ack, maintenance) answer with the changed record, or 204?
 7. Does `POST …/queues/:name/pause` require `reason` to pause (422 on `reason`)?
 8. Where does "the action taken" go when an incident closes: `rootCause`, or the closing timeline `update` (M205)?

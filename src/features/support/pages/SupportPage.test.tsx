@@ -420,12 +420,12 @@ describe('the live inbox', () => {
     expect(listReads(sent).length - before).toBe(5);
   });
 
-  it('shows a pencil on the row of a ticket whose requester is typing', async () => {
+  it('ignores the typing events an older backend still sends: no mark on any row', async () => {
     await openSupport();
     await streamOpen();
     push('ticket.typing', { ticketId: 4201, by: 'requester', staffId: null, staffName: null, mode: null });
     const row = await ticketRow('Order SF-20487 is taking longer than expected');
-    expect(row.getByRole('img', { name: 'Typing' })).toBeInTheDocument();
+    expect(row.queryByRole('img', { name: 'Typing' })).not.toBeInTheDocument();
     expect(
       (await ticketRow('Phone still locked after unlock (SF-20471)')).queryByRole('img', { name: 'Typing' }),
     ).not.toBeInTheDocument();

@@ -16,9 +16,6 @@ export function navCounts(world: World): DashboardNavCounts {
   return {
     orders: { open: open.length, pastSla: open.filter((order) => isPastSla(order, world.now)).length },
     finance: { pendingDeposits: world.payments.filter((payment) => payment.status === 'pending').length },
-    merchants: {
-      pendingApproval: world.merchants.filter((merchant) => merchant.status === 'pending').length,
-    },
     support: supportCounts(world),
     refunds: {
       open: refunds.length + disputes.length,

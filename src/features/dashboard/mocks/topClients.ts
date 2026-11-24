@@ -6,7 +6,7 @@ import { createdAt } from './orderRules';
 import { DAY, sumBy } from './util';
 import type { World } from './world';
 
-/** Merchants that are not waiting for approval and ordered in the period, best spend first. */
+/** Merchants that can order (not `pending`) and ordered in the period, best spend first. */
 export function topClients(world: World, days: number, limit: number): TopClient[] {
   const since = world.now - days * DAY;
   return world.merchants

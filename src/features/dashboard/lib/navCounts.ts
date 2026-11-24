@@ -13,7 +13,6 @@ export function toNavCounts(counts: DashboardNavCounts): NavCounts {
   };
   put('orders', counts.orders.open, counts.orders.pastSla);
   put('finance', counts.finance.pendingDeposits);
-  put('merchants', counts.merchants.pendingApproval);
   put('support', counts.support.open, counts.support.late, 'past the reply target');
   put('refunds', counts.refunds.open, counts.refunds.disputesDueSoon, 'dispute deadlines within 3 days');
   put('risk', counts.risk.held);

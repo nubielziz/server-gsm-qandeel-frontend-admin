@@ -1,81 +1,18 @@
-// Tests for the System tab, run through the whole app against the dev mock API: the typed setting with Save, the server's message under
-// it, the setting another page edits, the keys shown read-only as JSON, and permissions.
+// Tests for the System tab, run through the whole app against the dev mock API: the setting another page edits, the keys shown
+// read-only as JSON (an older server's retired keys are not among them), and what a reader sees. The Customer wallet panel has
+// its own file next to this one.
 import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
-import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { getSettings } from '../api';
 import { openSettings } from '../test/settingsPage';
-import { recordRequests } from '../test/requests';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.restoreAllMocks());
 
 const SYSTEM = '/settings?tab=system';
-const retention = () => screen.getByRole('textbox', { name: /^IMEI retention/ });
-// The Save button of the IMEI retention row (the Customer wallet panel has Save buttons of its own).
-const save = () => within(retention().closest('li') as HTMLElement).getByRole('button', { name: 'Save' });
-
-describe('the typed settings', () => {
-  it('shows the saved number, and Save wakes up when it changes', async () => {
-    const user = userEvent.setup();
-    await openSettings(SYSTEM);
-    await screen.findByRole('textbox', { name: /^IMEI retention/ });
-    expect(retention()).toHaveValue('180');
-    expect(save()).toBeDisabled();
-    await user.type(retention(), '0');
-    expect(save()).toBeEnabled();
-  });
-
-  it('saves the one key and shows the new value', async () => {
-    const user = userEvent.setup();
-    const recorder = recordRequests();
-    await openSettings(SYSTEM);
-    await screen.findByRole('textbox', { name: /^IMEI retention/ });
-    await user.clear(retention());
-    await user.type(retention(), '90');
-    await user.click(save());
-    expect(await screen.findByText('Setting saved')).toBeInTheDocument();
-    expect(recorder.to('PATCH', '/admin/settings')[0].body).toEqual({ imeiRetentionDays: 90 });
-    expect((await getSettings()).imeiRetentionDays).toBe(90);
-    expect(retention()).toHaveValue('90');
-  });
-
-  it('checks the range before it calls the server', async () => {
-    const user = userEvent.setup();
-    const recorder = recordRequests();
-    await openSettings(SYSTEM);
-    await screen.findByRole('textbox', { name: /^IMEI retention/ });
-    await user.clear(retention());
-    await user.type(retention(), '5000');
-    await user.click(save());
-    expect(await screen.findByText('Enter 0 to 3650.')).toBeInTheDocument();
-    expect(recorder.to('PATCH', '/admin/settings')).toHaveLength(0);
-  });
-
-  it('shows the server’s message under the box', async () => {
-    const user = userEvent.setup();
-    mockServer.use(
-      http.patch('*/admin/settings', () =>
-        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'imeiRetentionDays', message: 'Our legal minimum is 30 days.' },
-        ]),
-      ),
-    );
-    await openSettings(SYSTEM);
-    await screen.findByRole('textbox', { name: /^IMEI retention/ });
-    await user.clear(retention());
-    await user.type(retention(), '10');
-    await user.click(save());
-    expect(await screen.findByText('Our legal minimum is 30 days.')).toBeInTheDocument();
-    expect(retention()).toHaveAttribute('aria-invalid', 'true');
-    expect((await getSettings()).imeiRetentionDays).toBe(180);
-  });
-});
 
 describe('the other settings', () => {
   it('shows the restriction another page edits, with a link to it', async () => {
@@ -88,11 +25,16 @@ describe('the other settings', () => {
     );
   });
 
+  it('has no box for how long an IMEI is kept, which was retired with the IMEI check', async () => {
+    await openSettings(SYSTEM);
+    expect(await screen.findByText('Only allowed IPs can open the console')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^IMEI retention/ })).not.toBeInTheDocument();
+  });
+
   it('shows keys the console does not know as read-only JSON, and leaves the policies to their own tab', async () => {
     mockServer.use(
       http.get('*/admin/settings', () =>
         HttpResponse.json({
-          imeiRetentionDays: 180,
           adminAllowlistOnly: false,
           guestCheckout: true,
           maintenanceBanner: { enabled: true, text: 'Back at noon' },
@@ -112,18 +54,31 @@ describe('the other settings', () => {
     expect(other.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
+  it('does not show the key of a retired feature that a backend still sends', async () => {
+    mockServer.use(
+      http.get('*/admin/settings', () =>
+        HttpResponse.json({ imeiRetentionDays: 180, adminAllowlistOnly: false, abandonedMinutes: 60 }),
+      ),
+    );
+    await openSettings(SYSTEM);
+    expect(await screen.findByText('There are no other settings.')).toBeInTheDocument();
+    expect(screen.queryByText('abandonedMinutes')).not.toBeInTheDocument();
+  });
+
+  it('does not show the two keys of the retired IMEI check that an older server still sends', async () => {
+    mockServer.use(
+      http.get('*/admin/settings', () =>
+        HttpResponse.json({ adminAllowlistOnly: false, imeiPrecheck: true, imeiRetentionDays: 180 }),
+      ),
+    );
+    await openSettings(SYSTEM);
+    expect(await screen.findByText('There are no other settings.')).toBeInTheDocument();
+    expect(screen.queryByText('imeiRetentionDays')).not.toBeInTheDocument();
+    expect(screen.queryByText('imeiPrecheck')).not.toBeInTheDocument();
+  });
+
   it('says there are no other settings when the server has none', async () => {
     await openSettings(SYSTEM);
     expect(await screen.findByText('There are no other settings.')).toBeInTheDocument();
-  });
-});
-
-describe('permissions', () => {
-  it('lets a reader see the settings but not change them', async () => {
-    await openSettings(SYSTEM, { permissions: ['settings:read'] });
-    await screen.findByRole('textbox', { name: /^IMEI retention/ });
-    expect(retention()).toBeDisabled();
-    expect(retention()).toHaveAttribute('title', 'You need the settings:update permission');
-    expect(save()).toBeDisabled();
   });
 });

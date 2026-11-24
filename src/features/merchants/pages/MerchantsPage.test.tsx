@@ -1,6 +1,6 @@
 // Tests for the merchants list, run through the whole app against the dev mock API: the tabs and their counts, the filters in the
-// address, sorting and paging, approving a merchant, inviting one (with the server's refusal), the Groups tab, the Verification tab
-// and what the staff member's permissions hide.
+// address, sorting and paging, the legacy account that is still pending, and the Groups tab. Actions on the list and what the
+// staff member's permissions hide are in MerchantsActions.test.tsx.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -15,20 +15,11 @@ installMerchantMocks();
 vi.setConfig({ testTimeout: 30_000 });
 
 describe('tabs and counts', () => {
-  it('shows the status tabs with the counts the server gives, then Groups and Verification', async () => {
+  it('shows the status tabs with the counts the server gives, then Groups', async () => {
     await openMerchants();
-    await waitFor(() =>
-      expect(tabTexts()).toEqual([
-        'All20',
-        'Active17',
-        'Pending approval2',
-        'Suspended1',
-        'Groups4',
-        'Verification2',
-      ]),
-    );
+    await waitFor(() => expect(tabTexts()).toEqual(['All20', 'Active18', 'Suspended1', 'Groups4']));
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
-    expect(await screen.findByText('17 active, 2 waiting for approval.')).toBeInTheDocument();
+    expect(await screen.findByText('18 active.')).toBeInTheDocument();
     expect(await screen.findByText('20 merchants')).toBeInTheDocument();
   });
 
@@ -44,15 +35,12 @@ describe('tabs and counts', () => {
     expect(app.location()).toBe('/merchants');
   });
 
-  it('opens the tab named in the address (the deep link of the dashboard)', async () => {
-    await openMerchants('/merchants?tab=pending');
-    expect(await screen.findByText('2 merchants')).toBeInTheDocument();
-    expect(statusTabs().getByRole('tab', { name: /Pending approval/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+  it('opens the tab named in the address', async () => {
+    await openMerchants('/merchants?tab=active');
+    expect(await screen.findByText('18 merchants')).toBeInTheDocument();
+    expect(statusTabs().getByRole('tab', { name: /Active/ })).toHaveAttribute('aria-selected', 'true');
     expect(await rowOf('Merchants', 'Algiers Service Plus')).toBeTruthy();
-    expect(await rowOf('Merchants', 'Accra Devices')).toBeTruthy();
+    expect(screen.queryByText('Accra Devices')).not.toBeInTheDocument();
   });
 });
 
@@ -67,16 +55,24 @@ describe('the table', () => {
     expect(row.getByText('$1,209.75')).toBeInTheDocument();
     expect(row.getByText('$71 held')).toBeInTheDocument();
     expect(row.getByRole('link', { name: 'Zain Mobile Hub' })).toHaveAttribute('href', '/merchants/1');
-    expect(row.queryByRole('button', { name: /Approve/ })).not.toBeInTheDocument();
+    expect(row.queryByRole('button', { name: /Approve|Activate/ })).not.toBeInTheDocument();
   });
 
   it('marks a wallet below zero in red with an alert, and a merchant that never ordered', async () => {
     await openMerchants();
     const row = await rowOf('Merchants', "Sana'a Repair");
     expect(row.getByText('-$81.95')).toHaveClass('text-crit-fg');
-    const pending = await rowOf('Merchants', 'Algiers Service Plus');
-    expect(pending.getByText('Pending')).toBeInTheDocument();
-    expect(pending.getByText('Never')).toBeInTheDocument();
+    const invited = await rowOf('Merchants', 'Algiers Service Plus');
+    expect(invited.getByText('Active')).toBeInTheDocument();
+    expect(invited.getByText('Invitation pending')).toBeInTheDocument();
+    expect(invited.getByText('Never')).toBeInTheDocument();
+  });
+
+  it('shows the one legacy account that is still pending with its status word and no action', async () => {
+    await openMerchants();
+    const legacy = await rowOf('Merchants', 'Accra Devices');
+    expect(legacy.getByText('Pending')).toBeInTheDocument();
+    expect(legacy.queryByRole('button', { name: /Approve|Activate/ })).not.toBeInTheDocument();
   });
 
   it('lists the merchants alphabetically and sorts on the server when a column header is pressed', async () => {

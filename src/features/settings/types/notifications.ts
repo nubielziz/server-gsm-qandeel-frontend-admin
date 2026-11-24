@@ -3,7 +3,8 @@
 import type { JsonValue } from '@/lib/api';
 import type { NotificationRow, NotificationTemplateRow } from '@/lib/api/schema.gen';
 
-export type NotificationChannel = 'email' | 'telegram';
+/** The one way a template is sent: by email. */
+export type NotificationChannel = 'email';
 export type NotificationAudience = 'customer' | 'merchant' | 'staff';
 
 /**
@@ -56,7 +57,8 @@ export type NotificationStatus = 'queued' | 'sent' | 'failed';
  */
 export type NotificationLogEntry = Omit<NotificationRow, 'event' | 'status' | 'channel' | 'payload'> & {
   event: string;
-  channel: NotificationChannel;
+  /** `email`, or the word of a channel that was retired, as a message from before it was stored (shown as it is). */
+  channel: string;
   status: NotificationStatus;
   recipient: string;
   payload?: JsonValue;

@@ -1,4 +1,4 @@
-// Types for the report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`), new in the console (MISMATCHES M124). The
+// Types for the report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`, `/funnel`), new in the console (MISMATCHES M124). The
 // map gives no bodies (MISMATCHES M10), so every shape is an assumed contract. The server works out every figure.
 import type { Id, Money } from '@/lib/api';
 
@@ -86,3 +86,20 @@ export type VatReport = {
 
 /** The query of the VAT report: the dates (`YYYY-MM-DD`, both included). */
 export type VatQuery = { from: string; to: string };
+
+// ---- Sales funnel ----
+
+/** The query of the sales funnel: how many days back it looks (7, 30 or 90; the server uses 30 when it is left out). */
+export type FunnelQuery = { days?: number };
+
+/**
+ * `GET /admin/reports/funnel` (assumed contract): how many people reached each step in the last `days` days. The three counts
+ * are the steps after the basket: a payment started, paid, delivered. The server counts; the console only formats. A backend
+ * that still sends an IMEI-check count (the retired first step) is read the same way: the key is ignored.
+ */
+export type FunnelReport = {
+  days: number;
+  paymentStarted: number;
+  paid: number;
+  delivered: number;
+};

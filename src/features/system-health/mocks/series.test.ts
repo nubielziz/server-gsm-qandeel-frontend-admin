@@ -37,7 +37,6 @@ describe('metrics series', () => {
       expect(result.range).toBe(range);
       expect(result.bucketSeconds).toBe(seconds);
       expect(result.surfaces.map((surface) => surface.surface)).toEqual([
-        'v1',
         'dhru',
         'client',
         'store',
@@ -90,7 +89,9 @@ describe('metrics series', () => {
     expect(hooks?.series.requestsPerMin.filter((point) => point.value === null)).toHaveLength(gaps.length);
     expect(result.total.series.p95.every((point) => point.value !== null)).toBe(true);
     expect(
-      result.surfaces.find((surface) => surface.surface === 'v1')?.series.p95.every((p) => p.value !== null),
+      result.surfaces
+        .find((surface) => surface.surface === 'dhru')
+        ?.series.p95.every((p) => p.value !== null),
     ).toBe(true);
   });
 
@@ -118,12 +119,12 @@ describe('metrics series', () => {
   });
 
   it('narrows to one surface: its own totals, its own slowest endpoints', async () => {
-    const result = await metrics('24h', 'v1');
-    expect(result.surfaces.map((surface) => surface.surface)).toEqual(['v1']);
-    expect(result.total).toMatchObject({ surface: 'v1', label: 'Merchant API v1' });
+    const result = await metrics('24h', 'dhru');
+    expect(result.surfaces.map((surface) => surface.surface)).toEqual(['dhru']);
+    expect(result.total).toMatchObject({ surface: 'dhru', label: 'Dhru Fusion API' });
     expect(result.total.p95.value).toBe(result.surfaces[0].p95.value);
     expect(result.slowest.length).toBeGreaterThan(0);
-    expect(result.slowest.every((endpoint) => endpoint.surface === 'v1')).toBe(true);
+    expect(result.slowest.every((endpoint) => endpoint.surface === 'dhru')).toBe(true);
     expect((await failure(metrics('24h', 'mobile'))).fieldErrors).toEqual({ surface: ['Unknown surface.'] });
     expect((await failure(apiGet('/admin/system/metrics', { range: '30d' }))).fieldErrors).toHaveProperty(
       'range',
@@ -142,7 +143,7 @@ describe('metrics series', () => {
     });
     setMockScenario('degraded');
     const slow = await metrics('24h');
-    expect(slow.slowest[0]).toMatchObject({ method: 'POST', path: '/v1/orders' });
+    expect(slow.slowest[0]).toMatchObject({ method: 'POST', path: '/dhru/api/index.php' });
     expect(slow.slowest[0].p95.state).toBe('crit');
   });
 });
@@ -153,31 +154,23 @@ describe('surface states in a trouble', () => {
     return Object.fromEntries(surfaces.map((surface) => [surface.surface, surface.p95.state]));
   };
 
-  it('degraded: the merchant API is critical, the Dhru API warns, the rest is fine', async () => {
+  it('degraded: the Dhru API is critical, the rest is fine', async () => {
     setMockScenario('degraded');
     expect(await p95States()).toEqual({
-      v1: 'crit',
-      dhru: 'warn',
+      dhru: 'crit',
       client: 'ok',
       store: 'ok',
       admin: 'ok',
       hooks: 'ok',
     });
     const { total, surfaces } = await metrics('24h');
-    expect(surfaces.map((surface) => surface.rate5xx.state)).toEqual([
-      'warn',
-      'warn',
-      'ok',
-      'ok',
-      'ok',
-      'ok',
-    ]);
+    expect(surfaces.map((surface) => surface.rate5xx.state)).toEqual(['warn', 'ok', 'ok', 'ok', 'ok']);
     expect(total.p95.state).toBe('warn');
   });
 
   it('outage: every surface is critical and the traffic falls', async () => {
     setMockScenario('outage');
-    expect(Object.values(await p95States())).toEqual(Array(6).fill('crit'));
+    expect(Object.values(await p95States())).toEqual(Array(5).fill('crit'));
     const calm = (await metrics('24h')).total.requestsPerMin.value ?? 0;
     setMockScenario('healthy');
     expect(calm).toBeLessThan(((await metrics('24h')).total.requestsPerMin.value ?? 0) * 0.7);

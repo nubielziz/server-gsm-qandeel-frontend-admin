@@ -1,5 +1,6 @@
-// Tests for the Settings page frame, run through the whole app against the dev mock API: the seven tabs, the address (`?tab=`), the
-// tabs a role may open, the stale-rate count, and the exports other features already use (the access and customers pages).
+// Tests for the Settings page frame, run through the whole app against the dev mock API: the six tabs, the address (`?tab=`), the
+// tabs a role may open, the stale-rate count, the old address of the retired webhook tab, and the exports other features already use
+// (the access and customers pages).
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -11,7 +12,7 @@ setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 
 describe('the tabs', () => {
-  it('shows the demo’s four tabs and the three the map adds, with the stale rates counted on Tax and currency', async () => {
+  it('shows the demo’s four tabs and the two the map adds, with the stale rates counted on Tax and currency', async () => {
     await openSettings();
     // The demo's SEK rate is days old, so one currency is stale.
     await waitFor(() =>
@@ -23,7 +24,6 @@ describe('the tabs', () => {
       'Policies',
       'Customer emails',
       'Notification log',
-      'Webhook deliveries',
       'System',
     ]);
     expect(sectionTabs().getByRole('tab', { name: 'Payment methods' })).toHaveAttribute(
@@ -54,6 +54,17 @@ describe('the tabs', () => {
     );
     expect(await screen.findByRole('article', { name: 'Card gateway' })).toBeInTheDocument();
   });
+
+  it('opens the first tab for the old address of the retired webhook tab, with its filters and drawer', async () => {
+    await openSettings('/settings?tab=webhooks&status=failed&delivery=34');
+    expect(sectionTabs().getByRole('tab', { name: 'Payment methods' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('tab', { name: /Webhook/ })).not.toBeInTheDocument();
+    expect(await screen.findByRole('article', { name: 'Card gateway' })).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 });
 
 describe('what a role may open', () => {
@@ -64,12 +75,6 @@ describe('what a role may open', () => {
       'aria-selected',
       'true',
     );
-  });
-
-  it('gives a webhook reader just the webhook log', async () => {
-    await openSettings('/settings', { permissions: ['webhooks:read'] });
-    expect(tabTexts()).toEqual(['Webhook deliveries']);
-    expect(await screen.findByRole('table', { name: 'Webhook deliveries' })).toBeInTheDocument();
   });
 
   it('shows Tax and currency to a role that can read only the tax rates', async () => {

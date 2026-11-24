@@ -8,7 +8,7 @@ import { templateHandlers } from './templateHandlers';
 import { ticketHandlers } from './ticketHandlers';
 
 export const mocks: FeatureMocks = {
-  // The live routes end in `/read`, `/typing` or `/files…`, so the plain `/:id` routes never answer them (and the reverse).
+  // The live routes end in `/read` or `/files…`, so the plain `/:id` routes never answer them (and the reverse).
   handlers: [...liveHandlers, ...ticketHandlers, ...templateHandlers],
   reset: () => {
     stopEchoes();

@@ -14,7 +14,7 @@ export const FINANCE_TABS: readonly TabSpec[] = [
   { id: 'accounts', label: 'Trial balance', permission: 'ledger:read' },
   { id: 'wallets', label: 'Customer wallets', permission: 'wallet:read' },
   { id: 'invoices', label: 'Invoices', permission: 'invoices:read' },
-  { id: 'reports', label: 'Reports', permission: ['reports:read', 'reports:finance'] },
+  { id: 'reports', label: 'Reports', permission: ['reports:read', 'reports:finance', 'reports:growth'] },
 ];
 
 /** Any one of these opens the page (the page permission of the manifest); each tab then checks its own. */
@@ -25,6 +25,7 @@ export const FINANCE_PAGE_PERMISSION: readonly string[] = [
   'invoices:read',
   'reports:read',
   'reports:finance',
+  'reports:growth',
 ];
 
 export function isFinanceTab(value: string | null): value is FinanceTab {

@@ -12,24 +12,36 @@ import {
   type ListQuery,
   type ListResult,
 } from '@/lib/api';
-import type {
-  AudiencePreview,
-  AudiencePreviewBody,
-  Campaign,
-  CampaignChannel,
-  CampaignDetail,
-  CampaignInput,
-  CampaignPreview,
-  CampaignRecipient,
-  PreviewCampaignBody,
-  ScheduleCampaignBody,
-  SendCampaignBody,
-  TestCampaignBody,
-  TestCampaignResult,
-  UpdateCampaignBody,
+import {
+  CAMPAIGN_CHANNELS,
+  type AudiencePreview,
+  type AudiencePreviewBody,
+  type Campaign,
+  type CampaignChannel,
+  type CampaignDetail,
+  type CampaignInput,
+  type CampaignPreview,
+  type CampaignRecipient,
+  type PreviewCampaignBody,
+  type ScheduleCampaignBody,
+  type SendCampaignBody,
+  type TestCampaignBody,
+  type TestCampaignResult,
+  type UpdateCampaignBody,
 } from '../types';
 
 const BASE = '/admin/notification-campaigns';
+
+const isKnownChannel = (channel: string): channel is CampaignChannel =>
+  (CAMPAIGN_CHANNELS as readonly string[]).includes(channel);
+
+/**
+ * A campaign written before a channel was retired can still carry that channel's word (an older backend, or a stored draft). The
+ * console has no screen for such a channel, so it keeps only the channels it knows, in the order the server sent them.
+ */
+function knownChannels<T extends { channels: readonly string[] }>(campaign: T): T {
+  return { ...campaign, channels: campaign.channels.filter(isKnownChannel) };
+}
 
 /** What the recipients list needs besides the usual query: the channel is required. */
 export type RecipientsQuery = ListQuery & { channel: CampaignChannel };
@@ -40,7 +52,10 @@ export type RecipientsQuery = ListQuery & { channel: CampaignChannel };
  * @route GET /admin/notification-campaigns
  */
 export function listCampaigns(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Campaign>> {
-  return apiList<Campaign>(BASE, query, undefined, init);
+  return apiList<Campaign>(BASE, query, undefined, init).then(({ data, total }) => ({
+    data: data.map(knownChannels),
+    total,
+  }));
 }
 
 /**
@@ -48,16 +63,15 @@ export function listCampaigns(query: ListQuery = {}, init?: ApiInit): Promise<Li
  * @route GET /admin/notification-campaigns/:id
  */
 export function getCampaign(id: Id, init?: ApiInit): Promise<CampaignDetail> {
-  return apiGet<CampaignDetail>(pathOf(`${BASE}/:id`, { id }), undefined, init);
+  return apiGet<CampaignDetail>(pathOf(`${BASE}/:id`, { id }), undefined, init).then(knownChannels);
 }
 
 /**
- * Saves a campaign as a draft. Nothing is sent. The server refuses HTML in the text, a Telegram channel with no merchants and an empty audience
- * (422 with the field named). Needs `broadcasts:send`.
+ * Saves a campaign as a draft. Nothing is sent. The server refuses HTML in the text and an empty audience (422 with the field named). Needs `broadcasts:send`.
  * @route POST /admin/notification-campaigns
  */
 export function createCampaign(body: CampaignInput, init?: ApiInit): Promise<CampaignDetail> {
-  return apiPost<CampaignDetail>(BASE, body, init);
+  return apiPost<CampaignDetail>(BASE, body, init).then(knownChannels);
 }
 
 /**
@@ -65,7 +79,7 @@ export function createCampaign(body: CampaignInput, init?: ApiInit): Promise<Cam
  * @route PATCH /admin/notification-campaigns/:id
  */
 export function updateCampaign(id: Id, body: UpdateCampaignBody, init?: ApiInit): Promise<CampaignDetail> {
-  return apiPatch<CampaignDetail>(pathOf(`${BASE}/:id`, { id }), body, init);
+  return apiPatch<CampaignDetail>(pathOf(`${BASE}/:id`, { id }), body, init).then(knownChannels);
 }
 
 /**
@@ -113,7 +127,7 @@ export function sendCampaignTest(
  * @route POST /admin/notification-campaigns/:id/send
  */
 export function sendCampaign(id: Id, body: SendCampaignBody, init?: ApiInit): Promise<CampaignDetail> {
-  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/send`, { id }), body, init);
+  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/send`, { id }), body, init).then(knownChannels);
 }
 
 /**
@@ -126,7 +140,7 @@ export function scheduleCampaign(
   body: ScheduleCampaignBody,
   init?: ApiInit,
 ): Promise<CampaignDetail> {
-  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/schedule`, { id }), body, init);
+  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/schedule`, { id }), body, init).then(knownChannels);
 }
 
 /**
@@ -135,11 +149,11 @@ export function scheduleCampaign(
  * @route POST /admin/notification-campaigns/:id/cancel
  */
 export function cancelCampaign(id: Id, init?: ApiInit): Promise<CampaignDetail> {
-  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/cancel`, { id }), undefined, init);
+  return apiPost<CampaignDetail>(pathOf(`${BASE}/:id/cancel`, { id }), undefined, init).then(knownChannels);
 }
 
 /**
- * The people of a campaign on one channel (`channel` is required): in-app items are `delivered` or `read`, email and Telegram messages `queued`,
+ * The people of a campaign on one channel (`channel` is required): in-app items are `delivered` or `read`, email messages `queued`,
  * `sent` or `failed`. Filter by `status`; the address is masked by the server. Needs `broadcasts:read`.
  * @route GET /admin/notification-campaigns/:id/recipients
  */

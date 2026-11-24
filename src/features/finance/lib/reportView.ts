@@ -5,13 +5,17 @@ import type { ProfitGroup } from '../types';
 import { PROFIT_GROUPS, PROFIT_RANGES, VAT_PERIODS, type ProfitRange, type VatPeriod } from './reports';
 import { withParams } from './url';
 
-export type ReportId = 'profit' | 'exposure' | 'vat';
+export type ReportId = 'profit' | 'exposure' | 'vat' | 'funnel';
 
-/** The reports and the permission each needs: profit and wallet exposure `reports:read`, VAT `reports:finance`. */
+/**
+ * The reports and the permission each needs: profit and wallet exposure `reports:read`, VAT `reports:finance`, the sales funnel
+ * `reports:growth`. The funnel takes its period (7, 30 or 90 days) from the same `range` choice as the profit report.
+ */
 export const REPORTS: readonly { id: ReportId; label: string; permission: string }[] = [
   { id: 'profit', label: 'Profit', permission: 'reports:read' },
   { id: 'exposure', label: 'Wallet exposure', permission: 'reports:read' },
   { id: 'vat', label: 'VAT', permission: 'reports:finance' },
+  { id: 'funnel', label: 'Sales funnel', permission: 'reports:growth' },
 ];
 
 export const DEFAULT_GROUP: ProfitGroup = 'day';

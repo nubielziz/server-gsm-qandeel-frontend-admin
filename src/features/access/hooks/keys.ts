@@ -1,7 +1,7 @@
 // Query keys of the access reads that are not Refine resources (decision 005: they start with `['api', <feature>]`).
 // A mutation lists the keys it makes stale; React Query matches them as prefixes.
 
-/** Open sessions of staff and merchants (every filter and page). */
+/** Open sessions of staff (every page). */
 export const SESSIONS_KEY = ['api', 'access', 'sessions'] as const;
 
 /** The permission catalog behind the role dialog. */

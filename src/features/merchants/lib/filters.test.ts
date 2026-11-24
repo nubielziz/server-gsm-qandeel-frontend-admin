@@ -1,18 +1,16 @@
-// Tests for the merchants page's address: the tab, the toolbar filters, the page, the sort and the verification filter, and the
-// API filters they become.
+// Tests for the merchants page's address: the tab, the toolbar filters, the page and the sort, an old address that names a retired
+// tab (Verification, Pending approval), and the API filters they become.
 import { describe, expect, it } from 'vitest';
 import {
   clearMerchantFilters,
   DEFAULT_SORT,
   hasActiveFilters,
-  parseKycFilter,
   parseMerchantFilters,
   parseMerchantTab,
   parsePage,
   parseSort,
   toClientFilters,
   toRefineFilters,
-  writeKycFilter,
   writeMerchantFilters,
   writeTab,
   writeView,
@@ -20,19 +18,19 @@ import {
 import type { MerchantTab } from './status';
 
 const params = (query: string) => new URLSearchParams(query);
-const ALL: MerchantTab[] = ['all', 'active', 'pending', 'suspended', 'groups', 'verification'];
+const ALL: MerchantTab[] = ['all', 'active', 'suspended', 'groups'];
 
 describe('parseMerchantTab', () => {
   it('opens the tab named in the address when the staff member may open it', () => {
-    expect(parseMerchantTab(params('tab=pending'), ALL)).toBe('pending');
-    expect(parseMerchantTab(params('tab=verification'), ALL)).toBe('verification');
+    expect(parseMerchantTab(params('tab=suspended'), ALL)).toBe('suspended');
+    expect(parseMerchantTab(params('tab=groups'), ALL)).toBe('groups');
   });
 
   it('falls back to the first tab they may open for an unknown, forbidden or missing tab', () => {
     expect(parseMerchantTab(params(''), ALL)).toBe('all');
     expect(parseMerchantTab(params('tab=bogus'), ALL)).toBe('all');
     expect(parseMerchantTab(params('tab=groups'), ['all', 'active'])).toBe('all');
-    expect(parseMerchantTab(params('tab=all'), ['verification'])).toBe('verification');
+    expect(parseMerchantTab(params('tab=all'), ['groups'])).toBe('groups');
   });
 
   it('gives no tab to a role that may open none', () => {
@@ -56,18 +54,23 @@ describe('filters in the address', () => {
     expect(hasActiveFilters({ q: '  ', group: '' })).toBe(false);
     expect(hasActiveFilters({ q: 'a', group: '' })).toBe(true);
     expect(hasActiveFilters({ q: '', group: '2' })).toBe(true);
-    expect(clearMerchantFilters(params('tab=pending&q=a&group=2&page=3')).toString()).toBe('tab=pending');
+    expect(clearMerchantFilters(params('tab=suspended&q=a&group=2&page=3')).toString()).toBe('tab=suspended');
   });
 });
 
 describe('writeTab', () => {
-  it('drops the page, the sort and the open request, which belong to the tab being left', () => {
-    const base = params('tab=pending&page=3&sort=name&dir=desc&kyc=5&kycStatus=all&q=zain');
+  it('drops the page and the sort, which belong to the tab being left', () => {
+    const base = params('tab=suspended&page=3&sort=name&dir=desc&q=zain');
     expect(writeTab(base, 'groups').toString()).toBe('tab=groups&q=zain');
   });
 
   it('leaves no tab for All, the default', () => {
-    expect(writeTab(params('tab=pending&q=a'), 'all').toString()).toBe('q=a');
+    expect(writeTab(params('tab=suspended&q=a'), 'all').toString()).toBe('q=a');
+  });
+
+  it('drops the parameters of the retired Verification tab, so an old link does not carry them on', () => {
+    const base = params('tab=verification&kycStatus=approved&kyc=1&q=zain');
+    expect(writeTab(base, 'active').toString()).toBe('tab=active&q=zain');
   });
 });
 
@@ -95,21 +98,50 @@ describe('page and sort', () => {
   });
 });
 
-describe('verification filter', () => {
-  it('opens on the pending requests and names any other status in the address', () => {
-    expect(parseKycFilter(params(''))).toBe('pending');
-    expect(parseKycFilter(params('kycStatus=approved'))).toBe('approved');
-    expect(parseKycFilter(params('kycStatus=bogus'))).toBe('pending');
-    expect(writeKycFilter(params('page=3'), 'rejected').toString()).toBe('kycStatus=rejected');
-    expect(writeKycFilter(params('kycStatus=all&page=2'), 'pending').toString()).toBe('');
+// The Verification tab was retired (MISMATCHES M278): a bookmark or a link that still names it must open the page, not fail.
+describe('an old address that names the retired Verification tab', () => {
+  it('opens the first tab, whatever the old parameters say', () => {
+    expect(parseMerchantTab(params('tab=verification'), ALL)).toBe('all');
+    expect(parseMerchantTab(params('tab=verification&kycStatus=approved&kyc=3'), ALL)).toBe('all');
+    expect(parseMerchantTab(params('tab=verification'), ['groups'])).toBe('groups');
+  });
+
+  it('still reads the parameters that are still in use', () => {
+    const old = params('tab=verification&kycStatus=all&kyc=5&q=zain&page=2');
+    expect(parseMerchantFilters(old)).toEqual({ q: 'zain', group: '' });
+    expect(parsePage(old)).toBe(2);
+    expect(toClientFilters('all', parseMerchantFilters(old))).toEqual({ q: 'zain' });
+  });
+});
+
+// The Pending approval tab was retired with the approval step: a bookmark or an older dashboard link that still names it must open
+// the page, not fail.
+describe('an old address that names the retired Pending approval tab', () => {
+  it('opens the first tab', () => {
+    expect(parseMerchantTab(params('tab=pending'), ALL)).toBe('all');
+    expect(parseMerchantTab(params('tab=pending&q=zain&page=2'), ALL)).toBe('all');
+    expect(parseMerchantTab(params('tab=pending'), ['groups'])).toBe('groups');
+  });
+
+  it('still reads the parameters that are still in use, and asks the server for no status', () => {
+    const old = params('tab=pending&q=zain&group=3&page=2');
+    expect(parseMerchantFilters(old)).toEqual({ q: 'zain', group: '3' });
+    expect(parsePage(old)).toBe(2);
+    const tab = parseMerchantTab(old, ALL) ?? 'all';
+    expect(toClientFilters(tab, parseMerchantFilters(old))).toEqual({ groupId: 3, q: 'zain' });
+  });
+
+  it('is replaced by the tab the staff member picks next', () => {
+    expect(writeTab(params('tab=pending&q=zain&page=2'), 'active').toString()).toBe('tab=active&q=zain');
+    expect(writeTab(params('tab=pending&q=zain'), 'all').toString()).toBe('q=zain');
   });
 });
 
 describe('API filters', () => {
   it('maps the tab and the toolbar to the status, group and search the server filters by', () => {
     expect(toClientFilters('all', { q: '', group: '' })).toEqual({});
-    expect(toClientFilters('pending', { q: ' zain ', group: '3' })).toEqual({
-      status: 'pending',
+    expect(toClientFilters('suspended', { q: ' zain ', group: '3' })).toEqual({
+      status: 'suspended',
       groupId: 3,
       q: 'zain',
     });

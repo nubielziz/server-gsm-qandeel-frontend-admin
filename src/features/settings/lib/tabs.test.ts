@@ -3,33 +3,32 @@ import { describe, expect, it } from 'vitest';
 import { isSettingsTab, PAGE_PERMISSIONS, settingsPath, SETTINGS_TABS } from './tabs';
 
 describe('the tabs', () => {
-  it('has the demo’s four tabs first and the three the map adds after them', () => {
+  it('has the demo’s four tabs first and the two the map adds after them', () => {
     expect(SETTINGS_TABS.map((tab) => tab.id)).toEqual([
       'payments',
       'tax',
       'policies',
       'notifications',
       'log',
-      'webhooks',
       'system',
     ]);
   });
 
-  it('opens the page for any one of the five read permissions, and every tab needs one of them or settings:update', () => {
+  it('opens the page for any one of the four read permissions, and every tab needs one of them or settings:update', () => {
     expect(PAGE_PERMISSIONS).toEqual([
       'settings:read',
       'payments:gateways',
       'tax:read',
       'notifications:read',
-      'webhooks:read',
     ]);
     const allowed: readonly string[] = [...PAGE_PERMISSIONS, 'settings:update'];
     for (const tab of SETTINGS_TABS)
       expect(tab.permissions.some((permission) => allowed.includes(permission))).toBe(true);
   });
 
-  it('knows its own ids', () => {
+  it('knows its own ids, and not the id of the retired webhook tab', () => {
     expect(isSettingsTab('tax')).toBe(true);
+    expect(isSettingsTab('webhooks')).toBe(false);
     expect(isSettingsTab('nope')).toBe(false);
     expect(isSettingsTab(null)).toBe(false);
   });

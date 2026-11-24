@@ -24,11 +24,12 @@ const valueOf = (label: string) => screen.findByLabelText(`Value for ${label}`);
 const savedValue = async (id: string) => (await getRiskRules()).rules.find((rule) => rule.id === id)?.value;
 
 describe('the rules', () => {
-  it('lists the demo’s eight rules with their hints, numbers and units', async () => {
+  it('lists the demo’s seven rules with their hints, numbers and units', async () => {
     await openRisk('/risk?tab=rules');
     const list = within(await screen.findByRole('region', { name: 'Rules' }));
     expect(await list.findByText(HOLD)).toBeInTheDocument();
-    expect(list.getAllByRole('listitem')).toHaveLength(8);
+    expect(list.getAllByRole('listitem')).toHaveLength(7);
+    expect(list.queryByText(/blacklisted IMEIs/)).not.toBeInTheDocument();
     expect(
       list.getByText('Held orders wait in the risk queue and are not sent to a supplier.'),
     ).toBeInTheDocument();
@@ -62,6 +63,43 @@ describe('the rules', () => {
     );
     await openRisk('/risk?tab=rules');
     expect(await screen.findByText('Could not load the rules')).toBeInTheDocument();
+  });
+
+  it('does not list a rule an older server still sends, and sends it back unchanged with a save', async () => {
+    const user = userEvent.setup();
+    const sent: unknown[] = [];
+    mockServer.use(
+      http.get('*/admin/risk/rules', () =>
+        HttpResponse.json({
+          rules: [
+            { id: 'blockBlacklistedImei', on: true, value: null },
+            { id: 'reviewThreshold', on: true, value: 50 },
+            { id: 'blockThreshold', on: true, value: 80 },
+            { id: 'require3ds', on: true, value: null },
+          ],
+        }),
+      ),
+      http.put('*/admin/risk/rules', async ({ request }) => {
+        const body = await request.json();
+        sent.push(body);
+        return HttpResponse.json(body);
+      }),
+    );
+    await openRisk('/risk?tab=rules');
+    const list = within(await screen.findByRole('region', { name: 'Rules' }));
+    expect(await list.findByText(HOLD)).toBeInTheDocument();
+    expect(list.getAllByRole('listitem')).toHaveLength(3);
+    expect(list.queryByText('blockBlacklistedImei')).not.toBeInTheDocument();
+    await user.click(await screen.findByRole('switch', { name: `Turn off: ${THREE_DS}` }));
+    await waitFor(() => expect(sent).toHaveLength(1));
+    expect(sent[0]).toEqual({
+      rules: [
+        { id: 'blockBlacklistedImei', on: true, value: null },
+        { id: 'reviewThreshold', on: true, value: 50 },
+        { id: 'blockThreshold', on: true, value: 80 },
+        { id: 'require3ds', on: false, value: null },
+      ],
+    });
   });
 
   it('says so when the server sends no rules', async () => {

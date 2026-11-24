@@ -5,6 +5,12 @@ import { apiDelete, apiGet, apiPatch, apiPost, pathOf, type ApiInit, type Id } f
 import type { ApiKey, CreateApiKeyBody, CreatedApiKey, UpdateApiKeyBody } from '../types';
 
 /**
+ * The one scope a key carries: a key is a Dhru credential. A backend that still keeps a scope list asks for at least one entry on
+ * a new key and accepts this one; a backend that no longer has the list ignores the field.
+ */
+const KEY_SCOPES = ['dhru'];
+
+/**
  * The keys of one merchant, newest first as the server sends them: name, prefix, allowed addresses, last use and whether
  * a key is revoked or expired. The secret is never readable. Needs `api_keys:read`.
  * Assumed contract: a plain array.
@@ -27,8 +33,9 @@ export function revokeApiKey(id: Id, init?: ApiInit): Promise<void> {
 /**
  * Creates a key for an active merchant. The answer carries the full key once as `secret`; only a keyed hash is stored, so it can
  * never be shown again. The key is marked `createdByStaff` and the merchant is mailed a security notice. Needs `api_keys:create`.
- * Refusals: `NOT_ACTIVE` (409, the merchant is not active), `VALIDATION_FAILED` (422 on `name`, `scopes.N`, `allowedIps.N`,
+ * Refusals: `NOT_ACTIVE` (409, the merchant is not active), `VALIDATION_FAILED` (422 on `name`, `allowedIps.N`,
  * `expiresAt` or `rateLimitPerMin`; a merchant may hold ten live keys, the next one is a 422 on `name`).
+ * The body goes out with `scopes: ['dhru']` (see `KEY_SCOPES`).
  * @route POST /admin/clients/:id/api-keys
  */
 export function createClientApiKey(
@@ -36,7 +43,11 @@ export function createClientApiKey(
   body: CreateApiKeyBody,
   init?: ApiInit,
 ): Promise<CreatedApiKey> {
-  return apiPost<CreatedApiKey>(pathOf('/admin/clients/:id/api-keys', { id: clientId }), body, init);
+  return apiPost<CreatedApiKey>(
+    pathOf('/admin/clients/:id/api-keys', { id: clientId }),
+    { ...body, scopes: KEY_SCOPES },
+    init,
+  );
 }
 
 /**

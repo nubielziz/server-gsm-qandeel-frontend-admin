@@ -31,7 +31,7 @@ describe('parseSurface', () => {
   });
 
   it('keeps the key as written, trimmed, and leaves unknown keys to the server', () => {
-    expect(parseSurface('v1')).toBe('v1');
+    expect(parseSurface('store')).toBe('store');
     expect(parseSurface(' dhru ')).toBe('dhru');
     expect(parseSurface('nope')).toBe('nope');
   });
@@ -50,10 +50,10 @@ describe('useSurface', () => {
 
   it('sets the surface and keeps the tab and the range', () => {
     const { view, search } = openAt('/system-health?tab=api&range=7d');
-    act(() => view.result.current[1]('v1'));
-    expect(view.result.current[0]).toBe('v1');
+    act(() => view.result.current[1]('store'));
+    expect(view.result.current[0]).toBe('store');
     const params = new URLSearchParams(search());
-    expect(params.get('surface')).toBe('v1');
+    expect(params.get('surface')).toBe('store');
     expect(params.get('tab')).toBe('api');
     expect(params.get('range')).toBe('7d');
   });

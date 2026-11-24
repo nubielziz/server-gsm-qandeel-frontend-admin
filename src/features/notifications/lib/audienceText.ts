@@ -93,10 +93,6 @@ export function exclusionLines(excluded: AudiencePreview['excluded']): string[] 
     lines.push(
       `${plural(excluded.optedOut, 'person', 'people')} ${excluded.optedOut === 1 ? 'has' : 'have'} switched announcement emails off`,
     );
-  if (excluded.noTelegram > 0)
-    lines.push(
-      `${plural(excluded.noTelegram, 'merchant', 'merchants')} ${has(excluded.noTelegram)} no Telegram chat linked, or switched it off`,
-    );
   if (excluded.noAccount > 0)
     lines.push(
       `${plural(excluded.noAccount, 'customer', 'customers')} ${has(excluded.noAccount)} no account, so no inbox`,
@@ -122,7 +118,6 @@ export function byChannelText(
   const parts = [
     channels.includes('in_app') && `${num(byChannel.inApp)} in the app`,
     channels.includes('email') && `${num(byChannel.email)} by email`,
-    channels.includes('telegram') && `${num(byChannel.telegram)} on Telegram`,
   ].filter((part): part is string => Boolean(part));
   return sentenceList(parts);
 }
@@ -132,21 +127,16 @@ export function plannedText(planned: Campaign['planned']): string {
   const parts = [
     planned.inApp > 0 && `${num(planned.inApp)} in-app`,
     planned.email > 0 && `${num(planned.email)} email`,
-    planned.telegram > 0 && `${num(planned.telegram)} Telegram`,
   ].filter((part): part is string => Boolean(part));
   return parts.length > 0 ? parts.join(', ') : 'No messages planned';
 }
 
 /** Why the fan-out made fewer messages than people: one sentence per reason that applies. */
-export function skippedLines(skipped: { optedOut: number; noTelegram: number; noAccount: number }): string[] {
+export function skippedLines(skipped: { optedOut: number; noAccount: number }): string[] {
   const lines: string[] = [];
   if (skipped.optedOut > 0)
     lines.push(
       `${plural(skipped.optedOut, 'person', 'people')} ${skipped.optedOut === 1 ? 'has' : 'have'} switched announcement emails off`,
-    );
-  if (skipped.noTelegram > 0)
-    lines.push(
-      `${plural(skipped.noTelegram, 'merchant', 'merchants')} ${has(skipped.noTelegram)} no Telegram chat linked, or switched it off`,
     );
   if (skipped.noAccount > 0)
     lines.push(

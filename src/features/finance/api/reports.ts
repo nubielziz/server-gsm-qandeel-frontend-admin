@@ -1,7 +1,15 @@
-// Report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`): the Reports tab and the header's wallet figures. New
+// Report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`, `/funnel`): the Reports tab and the header's wallet figures. New
 // in the console (MISMATCHES M124); the map gives no bodies (MISMATCHES M10). The server adds everything up.
 import { apiGet, type ApiInit } from '@/lib/api';
-import type { ProfitQuery, ProfitReport, VatQuery, VatReport, WalletExposure } from '../types';
+import type {
+  FunnelQuery,
+  FunnelReport,
+  ProfitQuery,
+  ProfitReport,
+  VatQuery,
+  VatReport,
+  WalletExposure,
+} from '../types';
 
 /**
  * Profit split by day, service, supplier or merchant, for a date range. Why a report route: profit is revenue minus
@@ -36,4 +44,15 @@ export function getWalletExposure(init?: ApiInit): Promise<WalletExposure> {
  */
 export function getVatReport(query: VatQuery, init?: ApiInit): Promise<VatReport> {
   return apiGet<VatReport>('/admin/reports/vat', { from: query.from, to: query.to }, init);
+}
+
+/**
+ * How many people reached each step of a shop sale in the last `days` days (30 when left out): started a payment, paid, got their
+ * order delivered. The server counts every step; the console formats them and shows each step's share of the one before. Needs
+ * the `reports:growth` permission.
+ * Assumed contract: query `days`, answer `{ days, paymentStarted, paid, delivered }`.
+ * @route GET /admin/reports/funnel
+ */
+export function getFunnel(query: FunnelQuery = {}, init?: ApiInit): Promise<FunnelReport> {
+  return apiGet<FunnelReport>('/admin/reports/funnel', query, init);
 }

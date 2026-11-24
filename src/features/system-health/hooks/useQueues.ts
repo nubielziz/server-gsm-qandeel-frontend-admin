@@ -52,7 +52,7 @@ export function useJobs(query: JobsQuery = {}, enabled = true) {
   });
 }
 
-/** Delivery health of outgoing and incoming webhooks. */
+/** Delivery health of the webhooks payment gateways send us. */
 export function useWebhooksHealth(enabled = true) {
   return useHealthQuery({ key: healthKey('webhooks'), read: getWebhooksHealth, poll: POLL.normal, enabled });
 }

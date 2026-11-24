@@ -1,8 +1,10 @@
-// The finance feature's dev mocks (decision 014): deposits, invoices, the trial balance with reconciliation, the customer wallets list, and the reports.
+// The finance feature's dev mocks (decision 014): deposits, invoices, the trial balance with reconciliation, the customer wallets list, and the reports
+// (profit, wallet exposure, VAT and the sales funnel).
 // The ledger entries themselves are served by the shared mock (`src/mocks/handlers/ledger.ts`); see HANDOFF.md.
 import type { FeatureMocks } from '@/mocks/featureMocks';
 import { accountHandlers } from './accountHandlers';
 import { customerWalletHandlers } from './customerWalletHandlers';
+import { funnelHandlers } from './funnel';
 import { invoiceHandlers } from './invoiceHandlers';
 import { resetInvoiceStore } from './invoices';
 import { paymentHandlers } from './paymentHandlers';
@@ -16,6 +18,7 @@ export const mocks: FeatureMocks = {
     ...accountHandlers,
     ...customerWalletHandlers,
     ...reportHandlers,
+    ...funnelHandlers,
   ],
   reset: () => {
     resetPaymentStore();

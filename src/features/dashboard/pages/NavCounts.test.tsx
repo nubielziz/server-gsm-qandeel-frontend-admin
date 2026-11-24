@@ -9,7 +9,7 @@ import { DASHBOARD_KEY } from '@/lib/query';
 import { mockMe, renderApp, renderShell, setupMockApi, signInAs } from '@/test/renderApp';
 import { answerDashboard } from '../test/answers';
 import { openDashboard } from '../test/dashboardPage';
-import { dashboardFixture } from '../test/fixtures';
+import { dashboardFixture, NAV_COUNTS } from '../test/fixtures';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -38,19 +38,32 @@ describe('sidebar counts', () => {
     expect(within(link(/^Orders/)).getByText('12')).toHaveClass('count');
     expect(within(link(/^Orders/)).getByText('3 past SLA')).toHaveClass('sr-only');
     expect(within(link(/^Finance/)).getByText('2')).toBeInTheDocument();
-    expect(within(link(/^Merchants/)).getByText('1')).toBeInTheDocument();
     expect(within(link(/^Support/)).getByText('7')).toBeInTheDocument();
     expect(within(link(/^Support/)).getByText('2 past the reply target')).toBeInTheDocument();
     expect(within(link(/^Refunds/)).getByText('5')).toBeInTheDocument();
     expect(within(link(/^Refunds/)).getByText('1 dispute deadlines within 3 days')).toBeInTheDocument();
     expect(within(link(/^Risk/)).getByText('4')).toBeInTheDocument();
-    // Finance, Merchants and Risk have nothing late: a number and no dot.
+    // Finance and Risk have nothing late: a number and no dot.
     expect(link(/^Finance/).querySelector('.dot')).toBeNull();
     expect(link(/^Risk/).querySelector('.dot')).toBeNull();
     // Pages the dashboard has no count for show none.
-    for (const name of [/^Dashboard/, /^Customers/, /^Settings/, /^Audit log/]) {
+    for (const name of [/^Dashboard/, /^Merchants/, /^Customers/, /^Settings/, /^Audit log/]) {
       expect(link(name).querySelector('.count')).toBeNull();
     }
+  });
+
+  it('ignores the count of merchants waiting for approval that an older server still sends', async () => {
+    // The key is spread in from an untyped object: the console's type no longer has it.
+    const older = { ...NAV_COUNTS, ...{ merchants: { pendingApproval: 3 } } };
+    answerDashboard(dashboardFixture({ navCounts: older }));
+    await signInAs();
+    mockMe({ permissions: ['*'] });
+    renderApp('/audit');
+    const nav = await primaryNav();
+    await waitFor(() =>
+      expect(within(nav.getByRole('link', { name: /^Orders/ })).getByText('12')).toBeInTheDocument(),
+    );
+    expect(nav.getByRole('link', { name: /^Merchants/ }).querySelector('.count')).toBeNull();
   });
 
   it('leaves out a page whose count is zero', async () => {
@@ -59,7 +72,6 @@ describe('sidebar counts', () => {
         navCounts: {
           orders: { open: 0, pastSla: 0 },
           finance: { pendingDeposits: 0 },
-          merchants: { pendingApproval: 0 },
           support: { open: 0, late: 0 },
           refunds: { open: 0, disputesDueSoon: 0 },
           risk: { held: 1 },

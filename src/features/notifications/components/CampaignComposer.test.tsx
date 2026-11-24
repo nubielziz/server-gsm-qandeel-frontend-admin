@@ -1,4 +1,4 @@
-// Tests for the campaign composer, run through the whole app against the dev mock API: the required fields, Telegram only with merchants, the one title and
+// Tests for the campaign composer, run through the whole app against the dev mock API: the required fields, the two channels, the one title and
 // text, the live count that waits for a pause, the server's field errors, the people-picker button and saving a draft.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -53,24 +53,21 @@ describe('the required fields', () => {
     expect(composer.getByRole('radio', { name: /Service announcement/ })).toBeChecked();
     expect(composer.getByRole('checkbox', { name: 'In-app' })).toBeChecked();
     expect(composer.getByRole('checkbox', { name: 'Email' })).toBeChecked();
-    expect(composer.getByRole('checkbox', { name: /Telegram/ })).not.toBeChecked();
     expect(composer.getByText(/Choose who gets the message/)).toBeInTheDocument();
   });
 });
 
-describe('Telegram', () => {
-  it('is disabled until merchants are targeted, and drops out again when they are not', async () => {
+describe('the channels', () => {
+  it('are the app and email, whoever is targeted, and both stay available for merchants', async () => {
     const { user, composer } = await openComposer();
-    const telegram = composer.getByRole('checkbox', { name: /Telegram/ });
-    expect(telegram).toBeDisabled();
-    expect(composer.getByText('Target merchants to use Telegram.')).toBeInTheDocument();
+    const channels = () => within(composer.getByRole('group', { name: 'Channels' }));
+    expect(channels().getAllByRole('checkbox')).toHaveLength(2);
+    expect(composer.queryByRole('checkbox', { name: /Telegram/ })).not.toBeInTheDocument();
     await user.click(composer.getByRole('button', { name: 'Merchants' }));
-    expect(telegram).toBeEnabled();
-    await user.click(telegram);
-    expect(telegram).toBeChecked();
-    await user.click(composer.getByRole('button', { name: 'Staff' }));
-    expect(composer.getByRole('checkbox', { name: /Telegram/ })).toBeDisabled();
-    expect(composer.getByRole('checkbox', { name: /Telegram/ })).not.toBeChecked();
+    expect(channels().getAllByRole('checkbox')).toHaveLength(2);
+    expect(composer.getByRole('checkbox', { name: 'In-app' })).toBeEnabled();
+    expect(composer.getByRole('checkbox', { name: 'Email' })).toBeEnabled();
+    expect(composer.queryByRole('checkbox', { name: /Telegram/ })).not.toBeInTheDocument();
   });
 });
 

@@ -176,7 +176,7 @@ interactions (render against the mock API as above).
 - **queues** — Queues table (state, paused, waiting, active, delayed, failed, oldest, rate, workers; Pause/Resume with
   reason, Retry all failed, Bull Board link per queue); failed jobs of `?queue=` (paginated, Retry one); scheduled
   jobs (schedule mono + words, last run badge, duration, next run, Run now, History drawer `?job=` from
-  `useJobs({ job })`); webhooks card (outgoing and incoming).
+  `useJobs({ job })`); webhooks card (the callbacks payment gateways send us).
 - **alerts** — Sub-views `?view=alerts|rules|incidents` (`SectionTabs`). Alerts: status filter (Firing,
   Acknowledged, Resolved, All), rows with severity, rule, subject, "23 % > 20 % for 3m", started, status, who
   acknowledged; Acknowledge (note) and Declare incident (prefilled). Rules: table with condition, severity, channels,

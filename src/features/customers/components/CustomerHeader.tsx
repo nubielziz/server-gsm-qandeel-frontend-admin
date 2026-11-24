@@ -1,4 +1,4 @@
-// CustomerHeader: the customer's name with the status and risk badges, the sub-line (email, country, since when) and the
+// CustomerHeader: the customer's name with the status badge, the sub-line (email, country, since when) and the
 // actions: Edit details, Suspend… / Reactivate, Block… / Unblock. Ports the `head` of pageCustomer in 48-p-customers.js,
 // without its Email button (MISMATCHES M84). A removed (anonymised) customer has no actions.
 import { Button, Icon, PageHeader } from '@/components/ui';
@@ -8,7 +8,6 @@ import { customerSince } from '../lib/text';
 import type { CustomerDetail } from '../types';
 import type { CustomerDialogKind } from './customerDialogState';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
-import { RiskBadge } from './RiskBadge';
 import { customerLabel } from '@/lib/format';
 
 export interface CustomerHeaderProps {
@@ -28,7 +27,6 @@ export function CustomerHeader({ customer, grants, onAction }: CustomerHeaderPro
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
           {customerLabel(customer)} <CustomerStatusBadge status={customer.status} />
-          {customer.riskLevel !== 'low' && <RiskBadge level={customer.riskLevel} suffix=" risk" />}
         </span>
       }
       sub={`${gone ? 'Personal data removed' : customer.email} · ${countryName(customer.country)} · customer since ${customerSince(customer.createdAt)}`}

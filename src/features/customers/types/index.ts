@@ -9,12 +9,9 @@ import type { CustomerRow, DataRequestRow } from '@/lib/api/schema.gen';
 /** Where a customer stands: active, paused by a person (suspended), stopped for fraud (blocked) or erased (anonymized). */
 export type CustomerStatus = 'active' | 'suspended' | 'blocked' | 'anonymized';
 
-/** How risky the account looks. The demo says `med`; the API word is `medium` (MISMATCHES M82). */
-export type RiskLevel = 'low' | 'medium' | 'high';
-
 /**
- * One customer as `GET /admin/customers` sends a row (assumed contract): the `customers` table with the words narrowed, and
- * the two list aggregates `ordersCount` and `lastOrderAt` (the sort and the Orders column need them). `currencyCode` is an
+ * One customer as `GET /admin/customers` sends a row (assumed contract): the `customers` table with the words narrowed (the
+ * risk level column is left out: the console shows no level, and an older server may still send it), and the two list aggregates `ordersCount` and `lastOrderAt` (the sort and the Orders column need them). `currencyCode` is an
  * optional join (the table only has the currency id); without it the list shows the country alone.
  * `createdBy` is null for a customer who signed up or checked out alone, and a staff id for one added by the team.
  */
@@ -22,7 +19,6 @@ export type Customer = Omit<
   CustomerRow,
   'riskLevel' | 'status' | 'suspendedReason' | 'suspendedBy' | 'updatedAt'
 > & {
-  riskLevel: RiskLevel;
   status: CustomerStatus;
   suspendedReason: string | null;
   suspendedBy: Id | null;
@@ -146,13 +142,12 @@ export type UpdateDataRequestBody = { status: Exclude<DataRequestStatus, 'open'>
 
 /**
  * What the customers list filters by (simple-rest field filters plus `q`, `GET /admin/customers`): an array repeats the
- * key, so the Flagged tab is `riskLevel: ['medium', 'high']`. `q` searches the name and the email.
+ * key. `q` searches the name and the email.
  */
 export type CustomerListFilters = {
   q?: string;
   country?: string;
   status?: CustomerStatus | CustomerStatus[];
-  riskLevel?: RiskLevel | RiskLevel[];
   hasAccount?: boolean;
 };
 

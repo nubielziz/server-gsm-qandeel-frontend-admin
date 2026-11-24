@@ -2,11 +2,10 @@
 // policies live in the settings as flat keys of these names, and the route takes the same keys back.
 
 /** The yes/no policies of the Policies tab. */
-export type BooleanPolicyKey =
-  'guestCheckout' | 'require3ds' | 'withdrawalWaiver' | 'autoRefundFailed' | 'imeiPrecheck';
+export type BooleanPolicyKey = 'guestCheckout' | 'require3ds' | 'withdrawalWaiver' | 'autoRefundFailed';
 
 /** The policies that are a number: hours, minutes or days. */
-export type NumberPolicyKey = 'refundHoursBeforeDispatch' | 'abandonedMinutes' | 'imeiRetentionDays';
+export type NumberPolicyKey = 'refundHoursBeforeDispatch';
 
 export type PolicyKey = BooleanPolicyKey | NumberPolicyKey;
 

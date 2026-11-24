@@ -1,7 +1,7 @@
 // InboxView: the inbox: the figures, then the ticket list on the left and the open thread on the right. Ports the body of pageSupport
 // (49-p-support.js). The open thread is `?ticket=<id>` in the address; with none, the list's first ticket shows on a wide screen.
 // On a phone the list and the thread take turns (the demo's `ui.support.open`). The inbox follows the live stream (feature 28): rows and
-// figures refresh on ticket events, and one board tells every row and the open thread who is typing.
+// figures refresh on ticket events.
 import { useState } from 'react';
 import { cx, EmptyState, usePageClamp } from '@/components/ui';
 import { OrderDrawerHost } from '@/features/orders';
@@ -12,7 +12,6 @@ import { useInboxLive } from '../hooks/useInboxLive';
 import { useSupportView } from '../hooks/useSupportView';
 import { useTicketCounts } from '../hooks/useTicketCounts';
 import { useTicketsList } from '../hooks/useTicketsList';
-import { useTypingBoard } from '../hooks/useTypingBoard';
 import { useWideScreen } from '../hooks/useWideScreen';
 import { hasActiveFilters, PAGE_SIZE, toListFilters } from '../lib/filters';
 import { SupportStats } from './SupportStats';
@@ -31,7 +30,6 @@ export function InboxView({ grants, composer }: InboxViewProps) {
   // The ticket the staff member just chose, so its composer takes the cursor; any filter change forgets it.
   const [chosen, setChosen] = useState<number | null>(null);
   useInboxLive();
-  const typing = useTypingBoard();
   const wide = useWideScreen();
 
   // Mine needs the staff member's id, so the first request waits for `me`.
@@ -80,7 +78,6 @@ export function InboxView({ grants, composer }: InboxViewProps) {
           page={view.page}
           selectedId={selectedId}
           now={now}
-          typing={typing}
           hiddenOnPhone={open}
           inboxEmpty={inboxEmpty}
           filtersOn={hasActiveFilters(filters)}
@@ -104,7 +101,6 @@ export function InboxView({ grants, composer }: InboxViewProps) {
               grants={grants}
               composer={composer}
               focusComposer={chosen === selectedId}
-              typing={typing}
               shown={open || wide}
               onBack={view.closeThread}
             />

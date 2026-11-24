@@ -1,5 +1,5 @@
-// Background work: BullMQ queues and their failed jobs, scheduled jobs and their runs (`job_runs`), and webhook
-// delivery. Routes `/admin/system/queues*`, `/admin/system/jobs*`, `/admin/system/webhooks`. Assumed contract.
+// Background work: BullMQ queues and their failed jobs, scheduled jobs and their runs (`job_runs`), and the delivery of the
+// callbacks payment gateways send us. Routes `/admin/system/queues*`, `/admin/system/jobs*`, `/admin/system/webhooks`. Assumed contract.
 import type { IsoDateTime, JsonObject } from '@/lib/api';
 import type { JobRunRow } from '@/lib/api/schema.gen';
 import type { Measure, MetricState, SeriesPoint, StaffRef } from './common';
@@ -97,8 +97,8 @@ export interface JobsResponse {
   runs: JobRun[];
 }
 
-/** Delivery health of one direction of webhooks over the last 24 hours. */
-export interface WebhookDirectionHealth {
+/** Delivery health of the callbacks payment gateways send us, over the last 24 hours. */
+export interface WebhookHealth {
   successRate: Measure;
   delivered: number;
   failed: number;
@@ -108,8 +108,10 @@ export interface WebhookDirectionHealth {
   oldestAge: Measure;
 }
 
-/** Answer of `GET /admin/system/webhooks`: outgoing to merchants, incoming from payment gateways. */
+/**
+ * Answer of `GET /admin/system/webhooks`: the callbacks from payment gateways. Webhooks to merchants are retired; a backend that
+ * still sends an `outgoing` part is read without it.
+ */
 export interface WebhooksHealth {
-  outgoing: WebhookDirectionHealth;
-  incoming: WebhookDirectionHealth;
+  incoming: WebhookHealth;
 }

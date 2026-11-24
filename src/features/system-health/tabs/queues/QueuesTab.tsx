@@ -1,5 +1,5 @@
 // QueuesTab: the "Queues & jobs" tab of the System health page (route group `health`). Four reads, each in its own card:
-// the queue counters, the scheduled jobs, webhook delivery and, in a drawer, the failed jobs of `?queue=` or the run
+// the queue counters, the scheduled jobs, the delivery of gateway callbacks and, in a drawer, the failed jobs of `?queue=` or the run
 // history of `?job=`. The tab only composes; each card handles its own loading, error and stale states.
 import { useCallback, useState } from 'react';
 import { PartBoundary } from '../../header/PartBoundary';

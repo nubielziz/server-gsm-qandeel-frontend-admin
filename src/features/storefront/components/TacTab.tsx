@@ -38,7 +38,7 @@ export function TacTab({ grants }: { grants: StorefrontGrants }) {
     <>
       <Panel
         title="TAC catalogue"
-        sub="The first 8 digits of an IMEI tell which phone it is. The IMEI checker and the landing page generator read this table to name the model."
+        sub="The first 8 digits of an IMEI tell which phone it is. The landing page generator reads this table to name the model."
         right={
           <Button
             variant="primary"

@@ -7,7 +7,10 @@ import type { ClientRow } from '@/lib/api/schema.gen';
 /** A record named in a join. */
 export type NamedRef = { id: Id; name: string };
 
-/** Where a merchant account stands: waiting for approval, trading, or stopped by staff. */
+/**
+ * Where a merchant account stands: trading, or stopped by staff. `pending` is a legacy value: accounts made by staff are active
+ * at once, but one made before that change may still wait for staff to activate it.
+ */
 export type ClientStatus = 'active' | 'pending' | 'suspended';
 
 /**
@@ -29,9 +32,6 @@ export type ClientSecurity = {
 
 /** Why, when and by whom a merchant was suspended (`ClientRow.suspension`); the whole object is null unless the status is `suspended`. */
 export type ClientSuspension = { at: IsoDateTime | null; reason: string | null; by: NamedRef | null };
-
-/** The state of a merchant's identity check (`clients.kyc_status`). */
-export type ClientKycStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 /** The merchant's group, named in a join. `discountPercent` is the group's discount off base prices ("4" is 4%). */
 export type ClientGroupRef = NamedRef & { discountPercent: Decimal };
@@ -61,8 +61,9 @@ export type ClientStats = {
 };
 
 /**
- * One merchant, as `GET /admin/clients` and `GET /admin/clients/:id` send it. The group and the referrer come as joins so a
- * row needs no second request. `wallet` and `stats` are extras the server may add for staff who can read wallets; a screen
+ * One merchant, as `GET /admin/clients` and `GET /admin/clients/:id` send it. The group comes as a join so a
+ * row needs no second request. A server that is not updated yet may still send fields the console no longer
+ * reads: they are ignored. `wallet` and `stats` are extras the server may add for staff who can read wallets; a screen
  * shows a dash where they are missing. The keys from `address` to `suspension` are optional in the backend schema (its recorded
  * fixtures predate them) but the server always sends them, so a screen treats a missing one as "not known".
  */
@@ -76,29 +77,25 @@ export type Client = Pick<
   | 'phone'
   | 'country'
   | 'groupId'
-  | 'referralCode'
   | 'emailVerifiedAt'
   | 'createdAt'
 > & {
   status: ClientStatus;
-  kycStatus: ClientKycStatus;
   group: ClientGroupRef | null;
-  referredBy: NamedRef | null;
   wallet?: ClientWallet | null;
   stats?: ClientStats | null;
   address?: string;
   taxId?: string;
   /** Staff only; never on a `/client` route. */
   internalNotes?: string;
-  /** Whether the merchant linked Telegram (never the chat id). */
-  telegramLinked?: boolean;
   security?: ClientSecurity;
   suspension?: ClientSuspension | null;
 };
 
 /**
- * Body of `POST /admin/clients` (assumed contract): the invitation. The server emails a sign-up link and creates the
- * account as pending. `groupId` and `creditLimit` fall back to the server's defaults when left out.
+ * Body of `POST /admin/clients` (assumed contract): the invitation. The server creates the account (active at once) and
+ * emails the link to choose a password. `groupId` and `creditLimit` fall back to the server's
+ * defaults when left out.
  */
 export type CreateClientBody = {
   name: string;
@@ -125,8 +122,8 @@ export type ClientDetails = {
 };
 
 /**
- * Body of `PATCH /admin/clients/:id`: one kind of change per call. A status (approve and reactivate send `status: 'active'`;
- * suspend and decline send `status: 'suspended'` with a `reason`), or a group move (`groupId`), or details (any of
+ * Body of `PATCH /admin/clients/:id`: one kind of change per call. A status (activate and reactivate send `status: 'active'`;
+ * suspend sends `status: 'suspended'` with a `reason`), or a group move (`groupId`), or details (any of
  * `ClientDetails`). Mixing kinds is a 422 on the first key of the second kind.
  */
 export type UpdateClientBody = { status?: ClientStatus; reason?: string; groupId?: Id } & ClientDetails;

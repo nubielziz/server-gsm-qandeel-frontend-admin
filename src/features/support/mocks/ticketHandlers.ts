@@ -180,14 +180,14 @@ export const ticketHandlers: HttpHandler[] = [
     if (body.status === 'resolved' && ticket.status !== 'resolved') {
       ticket.status = 'resolved';
       ticket.resolvedAt = now;
-      // The demo's note in the thread: who resolved it, and that the survey went out.
+      // The demo's note in the thread: who resolved it.
       ticket.messages.push({
         id: state.nextMessageId++,
         ticketId: ticket.id,
         authorType: 'system',
         authorId: null,
         authorName: 'System',
-        body: `Marked resolved by ${me?.name ?? 'staff'}. A satisfaction survey is emailed to the customer.`,
+        body: `Marked resolved by ${me?.name ?? 'staff'}.`,
         isInternal: true,
         fileIds: [],
         attachments: [],

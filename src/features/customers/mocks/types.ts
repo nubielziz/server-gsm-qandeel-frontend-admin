@@ -1,7 +1,7 @@
 // The shapes the customers mock keeps: a customer (API-style names plus the account side), a data request, the risk of an order,
 // and the whole state the handlers work on. Dev and tests only.
 import type { Collection } from '@/mocks/db';
-import type { CustomerStatus, DataRequestKind, DataRequestStatus, RiskLevel } from '../types';
+import type { CustomerStatus, DataRequestKind, DataRequestStatus } from '../types';
 
 /** A customer as the mock keeps it: API-style names, plus the account side and the address of the last checkout. */
 export type MockCustomer = {
@@ -16,7 +16,6 @@ export type MockCustomer = {
   hasAccount: boolean;
   createdBy: number | null;
   marketingOptIn: boolean;
-  riskLevel: RiskLevel;
   status: CustomerStatus;
   suspendedAt: string | null;
   suspendedReason: string | null;

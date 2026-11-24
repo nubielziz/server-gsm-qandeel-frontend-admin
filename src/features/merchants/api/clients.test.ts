@@ -7,7 +7,6 @@ import { ApiError } from '@/lib/api';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { installMerchantMocks } from '../test/installMerchantMocks';
-import { listSessions } from '@/features/access';
 import {
   adjustClientWallet,
   createClient,
@@ -17,7 +16,6 @@ import {
   getClientWallet,
   listClientApiKeys,
   listClients,
-  listKycSubmissions,
   listClientStatement,
   resendClientVerification,
   resetClientTwoFactor,
@@ -41,8 +39,8 @@ afterEach(() => {
 
 // Merchants of the mock seed (taken from the demo; see mocks/seed.ts).
 const ZAIN = 1; // VIP, active, $1,209.75 in the wallet, $71.23 held, a $2,000 credit limit, three API keys
-const PENDING = 18; // Algiers Service Plus, waiting for approval
-const EMPTY_WALLET = 20; // Accra Devices, pending, nothing in the wallet and a $300 credit limit
+const INVITED = 18; // Algiers Service Plus, invited by staff: active at once, no password chosen yet
+const PENDING = 20; // Accra Devices, the one legacy account that is still pending: nothing in the wallet and a $300 credit limit
 
 // Answers a route itself and records how it was called, for the checks that are about the request.
 type Seen = { method: string; path: string; params: URLSearchParams; body: unknown; headers: Headers };
@@ -70,7 +68,7 @@ describe('listClients', () => {
     const total = async (status?: 'active' | 'pending' | 'suspended') =>
       (await listClients({ start: 0, end: 1, filters: status ? { status } : undefined })).total;
     expect([await total(), await total('active'), await total('pending'), await total('suspended')]).toEqual([
-      20, 17, 2, 1,
+      20, 18, 1, 1,
     ]);
   });
 
@@ -113,28 +111,30 @@ describe('listClients', () => {
     expect(sorted.data.map((client) => client.name)).toEqual(['Accra Devices', 'Al-Noor Telecom']);
   });
 
-  it('carries the joined group and referrer, the wallet and the 30-day figures', async () => {
+  it('carries the joined group, the wallet and the 30-day figures', async () => {
     const { data } = await listClients({ q: 'Zain' });
     expect(data[0]).toMatchObject({
       id: ZAIN,
       status: 'active',
       country: 'JO',
       group: { id: 3, name: 'VIP', discountPercent: '8.0000' },
-      referredBy: null,
       wallet: { balance: '1209.7500', reserved: '71.2300', creditLimit: '2000.0000', available: '3209.7500' },
     });
     expect(data[0].stats?.orders).toBeGreaterThan(0);
-    const referred = await getClient(8);
-    expect(referred.referredBy).toEqual({ id: 1, name: 'Zain Mobile Hub' });
+    expect(data[0]).not.toHaveProperty('referredBy');
+    expect(data[0]).not.toHaveProperty('referralCode');
   });
 });
 
 describe('getClient', () => {
   it('reads one merchant', async () => {
-    expect(await getClient(PENDING)).toMatchObject({
+    expect(await getClient(INVITED)).toMatchObject({
       name: 'Algiers Service Plus',
+      status: 'active',
+    });
+    expect(await getClient(PENDING)).toMatchObject({
+      name: 'Accra Devices',
       status: 'pending',
-      kycStatus: 'pending',
     });
   });
 
@@ -152,24 +152,25 @@ describe('createClient', () => {
     invite: true,
   } as const;
 
-  it('sends the invitation as it is and gets a pending merchant back', async () => {
+  it('sends the invitation as it is and gets an active merchant back', async () => {
     const seen = spy('post', '/admin/clients', () =>
-      HttpResponse.json({ id: 99, name: 'Muscat Gadgets', status: 'pending' }, { status: 201 }),
+      HttpResponse.json({ id: 99, name: 'Muscat Gadgets', status: 'active' }, { status: 201 }),
     );
     await createClient({ ...body, creditLimit: '500.0000' });
     expect(seen[0]).toMatchObject({ method: 'POST', body: { ...body, creditLimit: '500.0000' } });
   });
 
-  it('adds the merchant to the list as pending, in the group asked for', async () => {
+  it('adds the merchant to the list as active with no password, in the group asked for', async () => {
     const created = await createClient({ ...body });
     expect(created).toMatchObject({
-      status: 'pending',
-      kycStatus: 'none',
+      status: 'active',
+      security: { hasPassword: false },
       email: 'hello@muscat.example',
       country: 'OM',
     });
     expect(created.group?.name).toBe('Wholesale');
-    expect((await listClients({ filters: { status: 'pending' } })).total).toBe(3);
+    expect((await listClients({ filters: { status: 'active' } })).total).toBe(19);
+    expect((await listClients({ filters: { status: 'pending' } })).total).toBe(1);
   });
 
   it('refuses an email that already has an account with the server’s EMAIL_TAKEN', async () => {
@@ -199,7 +200,7 @@ describe('updateClient', () => {
     });
   });
 
-  it('approves, suspends with a reason and moves a merchant to another group', async () => {
+  it('activates a pending merchant, suspends with a reason and moves a merchant to another group', async () => {
     expect((await updateClient(PENDING, { status: 'active' })).status).toBe('active');
     expect((await updateClient(ZAIN, { status: 'suspended', reason: 'Chargeback dispute' })).status).toBe(
       'suspended',
@@ -243,14 +244,14 @@ describe('wallet', () => {
 
   it('posts an adjustment, shows it as the newest line and moves the balance', async () => {
     const result = await adjustClientWallet(
-      EMPTY_WALLET,
+      PENDING,
       { amount: '25.0000', direction: 'credit', reason: 'Refund for duplicate charge' },
       'key-adjust-1',
     );
     expect(result.wallet).toMatchObject({ balance: '25.0000', available: '325.0000' });
     expect(result.transactionId).toBeGreaterThan(0);
     const [newest] = (
-      await listClientStatement(EMPTY_WALLET, { start: 0, end: 1, sort: ['createdAt'], order: ['desc'] })
+      await listClientStatement(PENDING, { start: 0, end: 1, sort: ['createdAt'], order: ['desc'] })
     ).data;
     expect(newest).toMatchObject({
       transactionId: result.transactionId,
@@ -363,7 +364,6 @@ describe('merchant details', () => {
       address: 'Abdali Boulevard, Amman',
       taxId: 'JO-1234567',
       internalNotes: 'Pays by bank transfer on Sundays.',
-      telegramLinked: true,
       suspension: null,
       security: {
         hasPassword: true,
@@ -373,7 +373,7 @@ describe('merchant details', () => {
         linkSentAt: null,
       },
     });
-    expect((await getClient(PENDING)).security).toMatchObject({ hasPassword: false });
+    expect((await getClient(INVITED)).security).toMatchObject({ hasPassword: false });
     expect((await getClient(19)).suspension).toMatchObject({
       reason: 'Chargeback dispute',
       by: { name: 'Rami K.' },
@@ -400,7 +400,7 @@ describe('merchant details', () => {
     expect(updated.emailVerifiedAt).toBeNull();
     expect(updated.security?.verificationSentAt).not.toBeNull();
     // An invited merchant with no password gets the invitation again instead.
-    const invited = await updateClient(PENDING, { email: 'fresh@algiers.example' });
+    const invited = await updateClient(INVITED, { email: 'fresh@algiers.example' });
     expect(invited.security).toMatchObject({ hasPassword: false });
     expect(invited.security?.linkSentAt).not.toBeNull();
     expect(invited.security?.verificationSentAt).toBeNull();
@@ -447,11 +447,11 @@ describe('merchant details', () => {
     });
   });
 
-  it('follows the status rules: decline a pending merchant, refuse a status that is not a transition', async () => {
-    const declined = await updateClient(PENDING, { status: 'suspended', reason: 'Documents do not match' });
-    expect(declined).toMatchObject({
+  it('follows the status rules: suspend a pending merchant, refuse a status that is not a transition', async () => {
+    const suspended = await updateClient(PENDING, { status: 'suspended', reason: 'Chargeback dispute' });
+    expect(suspended).toMatchObject({
       status: 'suspended',
-      suspension: { reason: 'Documents do not match', by: { name: 'Rami K.' } },
+      suspension: { reason: 'Chargeback dispute', by: { name: 'Rami K.' } },
     });
     expect((await updateClient(PENDING, { status: 'active' })).suspension).toBeNull();
     await expect(updateClient(ZAIN, { status: 'active' })).rejects.toMatchObject({
@@ -465,10 +465,8 @@ describe('merchant details', () => {
   });
 
   it('ends the merchant’s sessions and cancels open links when suspended', async () => {
-    const before = await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } });
-    expect(before.total).toBe(1);
+    expect((await getClient(ZAIN)).security?.activeSessions).toBe(1);
     await updateClient(ZAIN, { status: 'suspended', reason: 'Fraud review' });
-    expect((await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } })).total).toBe(0);
     expect((await getClient(ZAIN)).security?.activeSessions).toBe(0);
   });
 });
@@ -501,7 +499,7 @@ describe('security tools', () => {
   });
 
   it('answers the link mode with which mail went out and the temporary mode with the password once', async () => {
-    expect(await setClientPassword(PENDING, { mode: 'reset_link', revokeSessions: false })).toEqual({
+    expect(await setClientPassword(INVITED, { mode: 'reset_link', revokeSessions: false })).toEqual({
       link: 'invite',
     });
     expect(await setClientPassword(ZAIN, { mode: 'reset_link', revokeSessions: false })).toEqual({
@@ -524,8 +522,8 @@ describe('security tools', () => {
       code: 'TWOFA_NOT_ENABLED',
     });
     await expect(resendClientVerification(ZAIN)).rejects.toMatchObject({ status: 409, code: 'CONFLICT' });
-    await resendClientVerification(EMPTY_WALLET);
-    expect((await getClient(EMPTY_WALLET)).security?.verificationSentAt).not.toBeNull();
+    await resendClientVerification(PENDING);
+    expect((await getClient(PENDING)).security?.verificationSentAt).not.toBeNull();
     await expect(
       setClientPassword(9999, { mode: 'reset_link', revokeSessions: false }),
     ).rejects.toMatchObject({
@@ -538,15 +536,10 @@ describe('security tools', () => {
     });
   });
 
-  it('lists one merchant’s sessions with subjectId, and needs subjectType beside it', async () => {
-    const mine = await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } });
-    expect(mine.data.map((session) => session.subject.id)).toEqual([ZAIN]);
-    await expect(listSessions({ filters: { subjectId: ZAIN } })).rejects.toMatchObject({
-      status: 422,
-      fieldErrors: { subjectId: ['Send subjectType together with subjectId.'] },
-    });
+  it('signs a merchant out of every device, which drops the count of open sessions', async () => {
+    expect((await getClient(ZAIN)).security?.activeSessions).toBe(1);
     await revokeClientSessions(ZAIN);
-    expect((await listSessions({ filters: { subjectType: 'client', subjectId: ZAIN } })).total).toBe(0);
+    expect((await getClient(ZAIN)).security?.activeSessions).toBe(0);
   });
 });
 
@@ -554,7 +547,6 @@ describe('staff-made API keys', () => {
   it('creates a key for an active merchant: the secret once, the row marked as made by staff', async () => {
     const created = await createClientApiKey(ZAIN, {
       name: 'Support key',
-      scopes: ['orders:read', 'orders:*'],
       allowedIps: ['203.0.113.9'],
       rateLimitPerMin: 300,
     });
@@ -563,7 +555,6 @@ describe('staff-made API keys', () => {
       clientId: ZAIN,
       name: 'Support key',
       prefix: created.secret.slice(0, 8),
-      scopes: ['orders:read', 'orders:*'],
       allowedIps: ['203.0.113.9'],
       rateLimitPerMin: 300,
       createdByStaff: true,
@@ -575,14 +566,13 @@ describe('staff-made API keys', () => {
   });
 
   it('refuses a merchant who is not active, bad entries and the eleventh live key', async () => {
-    await expect(createClientApiKey(PENDING, { name: 'K', scopes: ['orders:read'] })).rejects.toMatchObject({
+    await expect(createClientApiKey(PENDING, { name: 'K' })).rejects.toMatchObject({
       status: 409,
       code: 'NOT_ACTIVE',
     });
     await expect(
       createClientApiKey(ZAIN, {
         name: '',
-        scopes: ['orders:read', 'admin:*'],
         allowedIps: ['nope'],
         rateLimitPerMin: 7000,
         expiresAt: '2000-01-01T00:00:00.000Z',
@@ -591,7 +581,6 @@ describe('staff-made API keys', () => {
       status: 422,
       fieldErrors: {
         name: ['Name the key.'],
-        'scopes.1': expect.any(Array),
         'allowedIps.0': ['Enter an IP address or range.'],
         rateLimitPerMin: ['Use at most 6000.'],
         expiresAt: ['Use a time in the future.'],
@@ -599,9 +588,9 @@ describe('staff-made API keys', () => {
     });
     // Zain holds two live keys (Production, Staging); eight more reach ten.
     for (let n = 0; n < 8; n += 1) {
-      await createClientApiKey(ZAIN, { name: `Key ${n}`, scopes: ['dhru'] });
+      await createClientApiKey(ZAIN, { name: `Key ${n}` });
     }
-    await expect(createClientApiKey(ZAIN, { name: 'One too many', scopes: ['dhru'] })).rejects.toMatchObject({
+    await expect(createClientApiKey(ZAIN, { name: 'One too many' })).rejects.toMatchObject({
       status: 422,
       fieldErrors: { name: ['This merchant already has 10 live keys. Revoke one first.'] },
     });
@@ -638,20 +627,12 @@ describe('staff-made API keys', () => {
     const created = spy('post', '/admin/clients/7/api-keys', () =>
       HttpResponse.json({ key: { id: 1 }, secret: 's' }),
     );
-    await createClientApiKey(7, { name: 'K', scopes: ['dhru'] });
+    await createClientApiKey(7, { name: 'K' });
+    // The one scope of a Dhru key goes with every new key, for a backend that still asks for a scope list.
     expect(created[0]).toMatchObject({
       method: 'POST',
       path: '/admin/clients/7/api-keys',
       body: { name: 'K', scopes: ['dhru'] },
     });
-  });
-});
-
-describe('verification requests of one merchant', () => {
-  it('filters by clientId', async () => {
-    const mine = await listKycSubmissions({ filters: { clientId: PENDING } });
-    expect(mine.total).toBe(1);
-    expect(mine.data[0].client.id).toBe(PENDING);
-    expect((await listKycSubmissions({ filters: { clientId: 5 } })).total).toBe(0);
   });
 });

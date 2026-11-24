@@ -114,13 +114,13 @@ describe('one tab on its own', () => {
     await flush();
     expect(tab.source()?.names()).toEqual(['bye', 'hb', 'ready', 'resync', 'ticket.updated']);
     const late: unknown[] = [];
-    const stop = tab.client.subscribe('ticket.typing', (data) => late.push(data));
-    expect(tab.source()?.names()).toContain('ticket.typing');
+    const stop = tab.client.subscribe('ticket.read', (data) => late.push(data));
+    expect(tab.source()?.names()).toContain('ticket.read');
     tab.source()?.emit('ready', READY);
-    tab.source()?.emit('ticket.typing', { id: 4 });
+    tab.source()?.emit('ticket.read', { id: 4 });
     tab.source()?.emit('ticket.updated', { id: 4 });
     stop();
-    tab.source()?.emit('ticket.typing', { id: 5 });
+    tab.source()?.emit('ticket.read', { id: 5 });
     expect(late).toEqual([{ id: 4 }]);
     expect(early.map(([data]) => data)).toEqual([{ id: 4 }]);
   });
@@ -727,21 +727,21 @@ describe('one stream for the tabs of a browser', () => {
     const b = shared(world, 'b');
     const c = shared(world, 'c');
     record(a, 'ready');
-    const bTyping = record(b, 'ticket.typing');
+    const bRead = record(b, 'ticket.read');
     a.client.start();
     b.client.start();
     c.client.start();
     await flush();
-    expect(a.source()?.names()).toContain('ticket.typing');
+    expect(a.source()?.names()).toContain('ticket.read');
     // A name subscribed after the start reaches the leader too.
     const cUpdated = record(c, 'ticket.updated');
     await flush();
     expect(a.source()?.names()).toContain('ticket.updated');
     a.source()?.emit('ready', READY);
-    a.source()?.emit('ticket.typing', { ticket: 4 });
+    a.source()?.emit('ticket.read', { ticket: 4 });
     a.source()?.emit('ticket.updated', { ticket: 4 });
     await flush();
-    expect(bTyping.map(([data]) => data)).toEqual([{ ticket: 4 }]);
+    expect(bRead.map(([data]) => data)).toEqual([{ ticket: 4 }]);
     expect(cUpdated.map(([data]) => data)).toEqual([{ ticket: 4 }]);
     // After a hand-over the new leader learns the names again.
     a.kill();

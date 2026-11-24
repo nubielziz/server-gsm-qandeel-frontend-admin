@@ -2,7 +2,15 @@
 // service the cost, the supplier's price, the base price, the shop price and one price per merchant group, every figure the server's. The
 // prices are typed in place and saved by the bar at the foot, row by row; "Display Enable/Disable Service" and "Set Order" add a box per row.
 import { useEffect, useState } from 'react';
-import { ButtonLink, Button, DataTable, EmptyState, FooterPager, usePageClamp } from '@/components/ui';
+import {
+  ButtonLink,
+  Button,
+  DataTable,
+  EmptyState,
+  FooterPager,
+  UnsavedGuard,
+  usePageClamp,
+} from '@/components/ui';
 import { BulkPriceDialog } from '../../BulkPriceDialog';
 import { useCategories, useGroupOptions } from '../../../hooks/useChoices';
 import { usePriceGrid } from '../../../hooks/usePriceGrid';
@@ -10,7 +18,6 @@ import { useSetGridStatus } from '../../../hooks/useSetGridStatus';
 import { gridQuery } from '../../../lib/priceGrid';
 import { productsPath } from '../../../lib/productsPath';
 import type { PriceGridRow } from '../../../types';
-import { UnsavedGuard } from '../edit/UnsavedGuard';
 import type { ProductsViewProps } from '../types';
 import { priceColumns, type Lock } from './priceColumns';
 import { PricingSearch } from './PricingSearch';

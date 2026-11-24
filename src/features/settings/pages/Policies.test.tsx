@@ -1,4 +1,4 @@
-// Tests for the Policies tab, run through the whole app against the dev mock API: the eight rules with their saved values, a switch, a number
+// Tests for the Policies tab, run through the whole app against the dev mock API: the five rules with their saved values, a switch, a number
 // box, the server's message under a rule, the check before a request, the warnings, and permissions.
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -19,21 +19,18 @@ const POLICIES = '/settings?tab=policies';
 const box = (name: RegExp) => screen.getByRole('textbox', { name });
 
 describe('the rules', () => {
-  it('shows the eight policies with the values the settings hold', async () => {
+  it('shows the five policies with the values the settings hold', async () => {
     await openSettings(POLICIES);
     expect(await screen.findByRole('switch', { name: 'Turn off: Guest checkout' })).toHaveAttribute(
       'aria-checked',
       'true',
     );
     expect(screen.getByRole('switch', { name: 'Turn off: Require 3D Secure' })).toBeInTheDocument();
-    expect(
-      screen.getByRole('switch', { name: 'Turn off: Check the IMEI before payment' }),
-    ).toBeInTheDocument();
     expect(box(/^Cancel freely within/)).toHaveValue('1');
-    expect(box(/^Send a reminder after/)).toHaveValue('60');
-    expect(box(/^Keep the IMEI for/)).toHaveValue('180');
-    expect(screen.getByText('days after the order')).toBeInTheDocument();
-    expect(screen.getAllByRole('switch')).toHaveLength(5);
+    expect(screen.queryByRole('textbox', { name: /^Send a reminder after/ })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('switch')).toHaveLength(4);
+    expect(screen.queryByText(/Check the IMEI before payment/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: /^Keep the IMEI for/ })).not.toBeInTheDocument();
   });
 });
 
@@ -106,13 +103,15 @@ describe('a number', () => {
     const recorder = recordRequests();
     await openSettings(POLICIES);
     await screen.findByRole('switch', { name: 'Turn off: Guest checkout' });
-    await user.click(box(/^Send a reminder after/));
+    await user.click(box(/^Cancel freely within/));
     await user.tab();
     expect(recorder.to('PATCH', '/admin/storefront/settings')).toHaveLength(0);
-    await user.clear(box(/^Send a reminder after/));
-    await user.type(box(/^Send a reminder after/), '90{Enter}');
+    await user.clear(box(/^Cancel freely within/));
+    await user.type(box(/^Cancel freely within/), '3{Enter}');
     expect(await screen.findByText('Saved')).toBeInTheDocument();
-    expect(recorder.to('PATCH', '/admin/storefront/settings')[0].body).toEqual({ abandonedMinutes: 90 });
+    expect(recorder.to('PATCH', '/admin/storefront/settings')[0].body).toEqual({
+      refundHoursBeforeDispatch: 3,
+    });
   });
 
   it('shows the server’s message under the box and keeps what was typed', async () => {
@@ -138,8 +137,8 @@ describe('a number', () => {
     const recorder = recordRequests();
     await openSettings(POLICIES);
     await screen.findByRole('switch', { name: 'Turn off: Guest checkout' });
-    await user.clear(box(/^Keep the IMEI for/));
-    await user.type(box(/^Keep the IMEI for/), 'many{Enter}');
+    await user.clear(box(/^Cancel freely within/));
+    await user.type(box(/^Cancel freely within/), 'many{Enter}');
     expect(await screen.findByText('Enter a whole number.')).toBeInTheDocument();
     expect(recorder.to('PATCH', '/admin/storefront/settings')).toHaveLength(0);
   });

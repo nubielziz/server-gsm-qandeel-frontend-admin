@@ -15,7 +15,7 @@ export function MerchantOrdersTab({ client }: { client: Pick<Client, 'id' | 'nam
       empty={
         <EmptyState icon="orders" title="No orders from this merchant">
           {client.status === 'pending'
-            ? 'Orders appear after the account is approved and funded.'
+            ? 'Orders appear after the account is active and funded.'
             : 'Orders show here as soon as they place one.'}
         </EmptyState>
       }

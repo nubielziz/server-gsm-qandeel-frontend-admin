@@ -22,7 +22,7 @@ describe('needs attention', () => {
     const panel = await panelOf('Needs attention');
     const rows = await panel.findAllByRole('listitem');
     expect(rows).toHaveLength(6);
-    expect(panel.getByText('15 open, most urgent first')).toBeInTheDocument();
+    expect(panel.getByText(`${ATTENTION_SAMPLES.length} open, most urgent first`)).toBeInTheDocument();
 
     const first = within(rows[0]);
     expect(first.getByText('Critical')).toBeInTheDocument();
@@ -45,7 +45,8 @@ describe('needs attention', () => {
     answerDashboard(dashboardFixture({ attention: ATTENTION_SAMPLES }));
     await openDashboard();
     const panel = await panelOf('Needs attention');
-    const toggle = await panel.findByRole('button', { name: 'Show 9 more' });
+    const more = `Show ${ATTENTION_SAMPLES.length - 6} more`;
+    const toggle = await panel.findByRole('button', { name: more });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).toHaveAttribute('aria-controls', 'attn-list');
     expect(document.getElementById('attn-list')).toBeInTheDocument();
@@ -55,11 +56,11 @@ describe('needs attention', () => {
     expect(fewer).toBe(toggle);
     expect(fewer).toHaveAttribute('aria-expanded', 'true');
     expect(fewer).toHaveFocus();
-    expect(panel.getAllByRole('listitem')).toHaveLength(15);
+    expect(panel.getAllByRole('listitem')).toHaveLength(ATTENTION_SAMPLES.length);
 
     await user.click(fewer);
     expect(panel.getAllByRole('listitem')).toHaveLength(6);
-    expect(panel.getByRole('button', { name: 'Show 9 more' })).toHaveFocus();
+    expect(panel.getByRole('button', { name: more })).toHaveFocus();
   });
 
   it('has no toggle when everything fits', async () => {
@@ -76,7 +77,7 @@ describe('needs attention', () => {
     const panel = await panelOf('Needs attention');
     expect(await panel.findByRole('heading', { name: 'All clear' })).toBeInTheDocument();
     expect(
-      panel.getByText('No late orders, supplier problems or pending approvals right now.'),
+      panel.getByText('No late orders, supplier problems or open reviews right now.'),
     ).toBeInTheDocument();
     expect(panel.queryByText(/most urgent first/)).not.toBeInTheDocument();
     expect(panel.queryByRole('listitem')).not.toBeInTheDocument();
@@ -92,6 +93,38 @@ describe('needs attention', () => {
     expect(row.getByText('Needs attention')).toBeInTheDocument();
     await settle();
     expect(row.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('leaves out an item of a kind an older server still sends and the console retired', async () => {
+    const retired = {
+      id: 'pend',
+      severity: 'low',
+      kind: 'merchants_pending',
+      count: 2,
+      names: ['Aqaba Gadgets', 'Doha Unlock'],
+    } as unknown as AttentionItem;
+    answerDashboard(dashboardFixture({ attention: [...ATTENTION_SAMPLES.slice(0, 2), retired] }));
+    await openDashboard();
+    const panel = await panelOf('Needs attention');
+    expect(await panel.findAllByRole('listitem')).toHaveLength(2);
+    expect(panel.getByText('2 open, most urgent first')).toBeInTheDocument();
+  });
+
+  it('leaves out a row of a retired kind that a server not yet updated still sends', async () => {
+    const retired = {
+      id: 'comm',
+      severity: 'low',
+      kind: 'commissions_accrued',
+      count: 4,
+      total: '12.3400',
+      agents: 2,
+    } as unknown as AttentionItem;
+    answerDashboard(dashboardFixture({ attention: [ATTENTION_SAMPLES[0], retired] }));
+    await openDashboard();
+    const panel = await panelOf('Needs attention');
+    expect(await panel.findAllByRole('listitem')).toHaveLength(1);
+    expect(panel.getByText('1 open, most urgent first')).toBeInTheDocument();
+    expect(panel.getByText('3 orders are past SLA')).toBeInTheDocument();
   });
 
   it('leaves out the button of a page the staff member may not open, and keeps the row', async () => {

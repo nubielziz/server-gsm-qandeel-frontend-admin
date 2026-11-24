@@ -9,9 +9,6 @@ export const RISK_QUEUE_KEY = ['api', 'risk', 'queue'] as const;
 /** `GET /admin/risk/rules`. */
 export const RISK_RULES_KEY = ['api', 'risk', 'rules'] as const;
 
-/** The figures above the IMEI check table: one counted call each (`_start=0&_end=1`). */
-export const IMEI_COUNTS_KEY = ['api', 'risk', 'imei-counts'] as const;
-
 /** The number on the Blocklist tab. */
 export const BLOCK_COUNT_KEY = ['api', 'risk', 'blocklist-count'] as const;
 

@@ -1,15 +1,8 @@
 // Tests for the grouping of the Queues & jobs tab: problems first by the server's state, healthy rows folded away, and
 // nothing decided from the counters.
 import { describe, expect, it } from 'vitest';
-import type {
-  MetricState,
-  QueueStats,
-  ScheduledJob,
-  WebhookDirectionHealth,
-  WebhooksHealth,
-} from '../../types';
-import { groupJobs, groupQueues, groupWebhooks, queueNeedsAttention, webhookNeedsAttention } from './groups';
-import { webhookRows } from './webhooks';
+import type { MetricState, QueueStats, ScheduledJob } from '../../types';
+import { groupJobs, groupQueues, queueNeedsAttention } from './groups';
 
 function queue(name: string, state: MetricState, over: Partial<QueueStats> = {}): QueueStats {
   return {
@@ -101,65 +94,9 @@ describe('groupJobs', () => {
       job('balance', 'crit'),
       job('fx', 'unknown'),
       job('reminders', 'ok'),
-      job('accruals', 'warn'),
+      job('cleanup', 'warn'),
     ]);
-    expect(names(attention)).toEqual(['balance', 'accruals', 'fx']);
+    expect(names(attention)).toEqual(['balance', 'cleanup', 'fx']);
     expect(names(calm)).toEqual(['sync', 'reminders']);
-  });
-});
-
-function direction(rate: MetricState, age: MetricState): WebhookDirectionHealth {
-  return {
-    successRate: { value: 99, unit: 'percent', state: rate },
-    delivered: 100,
-    failed: 1,
-    retrying: 0,
-    oldestUndeliveredAt: null,
-    oldestAge: { value: 0, unit: 's', state: age },
-  };
-}
-
-const webhookIds = (health: WebhooksHealth) => {
-  const { attention, calm } = groupWebhooks(webhookRows(health));
-  return { attention: attention.map((row) => row.id), calm: calm.map((row) => row.id) };
-};
-
-describe('webhookNeedsAttention', () => {
-  it('is false only when both judged numbers are ok', () => {
-    expect(webhookNeedsAttention(direction('ok', 'ok'))).toBe(false);
-    expect(webhookNeedsAttention(direction('warn', 'ok'))).toBe(true);
-    expect(webhookNeedsAttention(direction('ok', 'crit'))).toBe(true);
-  });
-
-  it('counts a number nobody could read, or a state it does not know, as a reason to look', () => {
-    expect(webhookNeedsAttention(direction('ok', 'unknown'))).toBe(true);
-    expect(webhookNeedsAttention(direction('degraded' as MetricState, 'ok'))).toBe(true);
-  });
-});
-
-describe('groupWebhooks', () => {
-  it('folds both directions away when all four judged numbers are ok', () => {
-    expect(webhookIds({ outgoing: direction('ok', 'ok'), incoming: direction('ok', 'ok') })).toEqual({
-      attention: [],
-      calm: ['outgoing', 'incoming'],
-    });
-  });
-
-  it('keeps the direction in trouble as a row, worst first, and folds the healthy one', () => {
-    expect(webhookIds({ outgoing: direction('ok', 'ok'), incoming: direction('crit', 'ok') })).toEqual({
-      attention: ['incoming'],
-      calm: ['outgoing'],
-    });
-    expect(webhookIds({ outgoing: direction('warn', 'ok'), incoming: direction('crit', 'ok') })).toEqual({
-      attention: ['incoming', 'outgoing'],
-      calm: [],
-    });
-  });
-
-  it('folds nothing for a direction whose age is the one in trouble', () => {
-    expect(webhookIds({ outgoing: direction('ok', 'warn'), incoming: direction('ok', 'ok') })).toEqual({
-      attention: ['outgoing'],
-      calm: ['incoming'],
-    });
   });
 });

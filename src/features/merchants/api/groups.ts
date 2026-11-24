@@ -1,4 +1,4 @@
-// Merchant group routes (`/admin/client-groups*`): the discount, upgrade threshold and deposit limit of each price group. A tab
+// Merchant group routes (`/admin/client-groups*`): the discount and deposit limit of each price group. A tab
 // the demo lacks (it had three fixed groups, MISMATCHES M46). The map gives no bodies (MISMATCHES M10), so shapes are assumed.
 import {
   apiDelete,
@@ -36,7 +36,7 @@ export function getClientGroup(id: Id, init?: ApiInit): Promise<ClientGroup> {
 
 /**
  * Creates a merchant group. Needs `groups:create`.
- * Assumed contract: body `{ name, discountPercent, earnThreshold, depositLimit, overdraftAllowed, isDefault }`, answer the group.
+ * Assumed contract: body `{ name, discountPercent, depositLimit, overdraftAllowed, isDefault }`, answer the group.
  * @route POST /admin/client-groups
  */
 export function createClientGroup(body: CreateClientGroupBody, init?: ApiInit): Promise<ClientGroup> {

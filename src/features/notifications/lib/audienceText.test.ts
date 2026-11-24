@@ -81,12 +81,12 @@ describe('the audience in words', () => {
 
 describe('the live count in words', () => {
   it('says who is left out and why, only for the reasons that apply', () => {
-    expect(exclusionLines({ noConsent: 1204, optedOut: 1, noTelegram: 0, noAccount: 2 })).toEqual([
+    expect(exclusionLines({ noConsent: 1204, optedOut: 1, noAccount: 2 })).toEqual([
       '1,204 customers did not agree to marketing',
       '1 person has switched announcement emails off',
       '2 customers have no account, so no inbox',
     ]);
-    expect(exclusionLines({ noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 0 })).toEqual([]);
+    expect(exclusionLines({ noConsent: 0, optedOut: 0, noAccount: 0 })).toEqual([]);
   });
 
   it('breaks the reach down by kind and channel', () => {
@@ -94,17 +94,17 @@ describe('the live count in words', () => {
       '6 staff, 402 merchants and 800 customers',
     );
     expect(byTypeText({ staff: 0, client: 0, customer: 1 })).toBe('1 customer');
-    expect(byChannelText({ inApp: 1208, email: 1190, telegram: 0 }, ['in_app', 'email'])).toBe(
+    expect(byChannelText({ inApp: 1208, email: 1190 }, ['in_app', 'email'])).toBe(
       '1,208 in the app and 1,190 by email',
     );
   });
 
   it('says what the fan-out planned and skipped', () => {
-    expect(plannedText({ inApp: 12, email: 10, telegram: 0 })).toBe('12 in-app, 10 email');
-    expect(plannedText({ inApp: 0, email: 0, telegram: 0 })).toBe('No messages planned');
-    expect(skippedLines({ optedOut: 2, noTelegram: 1, noAccount: 0 })).toEqual([
+    expect(plannedText({ inApp: 12, email: 10 })).toBe('12 in-app, 10 email');
+    expect(plannedText({ inApp: 0, email: 0 })).toBe('No messages planned');
+    expect(skippedLines({ optedOut: 2, noAccount: 1 })).toEqual([
       '2 people have switched announcement emails off',
-      '1 merchant has no Telegram chat linked, or switched it off',
+      '1 customer has no account, so no inbox item',
     ]);
   });
 });

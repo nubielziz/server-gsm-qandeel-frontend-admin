@@ -17,17 +17,6 @@ export type SurfaceSpec = {
 
 export const SURFACES: SurfaceSpec[] = [
   {
-    key: 'v1',
-    label: 'Merchant API v1',
-    rpm: 96,
-    p50: 120,
-    p95: 340,
-    p99: 780,
-    rate4xx: 3.1,
-    rate5xx: 0.06,
-    count429: 3,
-  },
-  {
     key: 'dhru',
     label: 'Dhru Fusion API',
     rpm: 142,
@@ -92,11 +81,9 @@ export type Stress = { p50: number; p95: number; rate5xx: number; traffic?: numb
 
 export const SURFACE_STRESS = {
   degraded: {
-    v1: { p50: 4.5, p95: 6, rate5xx: 1.1 },
-    dhru: { p50: 2, p95: 2.9, rate5xx: 1.6 },
+    dhru: { p50: 3.6, p95: 5, rate5xx: 1.6 },
   },
   outage: {
-    v1: { p50: 20, p95: 28, rate5xx: 20, traffic: 0.55 },
     dhru: { p50: 20, p95: 28, rate5xx: 22, traffic: 0.5 },
     client: { p50: 16, p95: 22, rate5xx: 16, traffic: 0.6 },
     store: { p50: 18, p95: 25, rate5xx: 18, traffic: 0.5 },
@@ -112,7 +99,6 @@ export const ENDPOINTS: EndpointSpec[] = [
   { method: 'GET', path: '/admin/reports/finance', surface: 'admin', p95: 780, rpm: 0.4 },
   { method: 'GET', path: '/admin/ledger/transactions', surface: 'admin', p95: 610, rpm: 1.2 },
   { method: 'GET', path: '/admin/audit-logs', surface: 'admin', p95: 560, rpm: 0.8 },
-  { method: 'POST', path: '/v1/orders', surface: 'v1', p95: 520, rpm: 41 },
   { method: 'GET', path: '/admin/orders', surface: 'admin', p95: 470, rpm: 3.1 },
   { method: 'POST', path: '/store/v1/checkout', surface: 'store', p95: 455, rpm: 2.6 },
   { method: 'POST', path: '/dhru/api/index.php', surface: 'dhru', p95: 430, rpm: 118 },
@@ -120,7 +106,6 @@ export const ENDPOINTS: EndpointSpec[] = [
   { method: 'GET', path: '/client/v1/orders', surface: 'client', p95: 240, rpm: 12 },
   { method: 'POST', path: '/hooks/card-gateway', surface: 'hooks', p95: 235, rpm: 5.2 },
   { method: 'GET', path: '/store/v1/services', surface: 'store', p95: 210, rpm: 18 },
-  { method: 'GET', path: '/v1/orders/:id', surface: 'v1', p95: 190, rpm: 33 },
 ];
 
 export type ErrorSpec = {
@@ -144,11 +129,18 @@ export const ERRORS: ErrorSpec[] = [
     code: 'INSUFFICIENT_FUNDS',
     status: 402,
     method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
+    endpoint: '/dhru/api/index.php',
+    surface: 'dhru',
     per24h: 142,
   },
-  { code: 'RATE_LIMITED', status: 429, method: 'POST', endpoint: '/v1/orders', surface: 'v1', per24h: 88 },
+  {
+    code: 'RATE_LIMITED',
+    status: 429,
+    method: 'POST',
+    endpoint: '/dhru/api/index.php',
+    surface: 'dhru',
+    per24h: 88,
+  },
   {
     code: 'INVALID_IMEI',
     status: 422,
@@ -161,8 +153,8 @@ export const ERRORS: ErrorSpec[] = [
     code: 'VALIDATION_FAILED',
     status: 422,
     method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
+    endpoint: '/dhru/api/index.php',
+    surface: 'dhru',
     per24h: 64,
   },
   {
@@ -198,15 +190,6 @@ export const ERRORS: ErrorSpec[] = [
     per24h: 6,
   },
   {
-    code: 'SUPPLIER_TIMEOUT',
-    status: 504,
-    method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
-    per24h: 4,
-    sentry: 4821,
-  },
-  {
     code: 'INTERNAL_ERROR',
     status: 500,
     method: 'GET',
@@ -216,16 +199,6 @@ export const ERRORS: ErrorSpec[] = [
     sentry: 4790,
   },
   // The slow supplier: its timeouts reach the merchants who order through it.
-  {
-    code: 'SUPPLIER_TIMEOUT',
-    status: 504,
-    method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
-    perMin: 6.5,
-    sentry: 4821,
-    when: 'slow',
-  },
   {
     code: 'SUPPLIER_TIMEOUT',
     status: 504,
@@ -240,23 +213,13 @@ export const ERRORS: ErrorSpec[] = [
     code: 'SUPPLIER_UNAVAILABLE',
     status: 502,
     method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
+    endpoint: '/dhru/api/index.php',
+    surface: 'dhru',
     perMin: 2.5,
     sentry: 4903,
     when: 'slow',
   },
   // The database is down: nearly everything fails.
-  {
-    code: 'DATABASE_UNAVAILABLE',
-    status: 503,
-    method: 'POST',
-    endpoint: '/v1/orders',
-    surface: 'v1',
-    perMin: 310,
-    sentry: 4977,
-    when: 'outage',
-  },
   {
     code: 'DATABASE_UNAVAILABLE',
     status: 503,

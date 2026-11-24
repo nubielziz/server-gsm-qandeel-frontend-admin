@@ -1,5 +1,5 @@
 // How the risk feature plugs into the app (src/app/features.ts finds this file): the Risk & checks page and the Refine
-// resources of the IMEI check log and the blocklist.
+// resource of the blocklist.
 import type { FeatureManifest } from '@/app/featureManifest';
 import { riskResources } from './api/resources';
 

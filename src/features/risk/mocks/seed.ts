@@ -1,22 +1,11 @@
-// Seeds the risk mocks from the demo's own data: the storefront orders' risk blocks (`S.orders[].risk`), `S.imeiChecks`,
-// `S.risk.block` and `S.risk.rules`, mapped to the DTOs of this feature (decision 014). Mock data only: the real scores,
-// checks and rules come from the server. Shapes of the demo are listed here so the mapping can be read in one place.
-import type { JsonObject } from '@/lib/api';
+// Seeds the risk mocks from the demo's own data: the storefront orders' risk blocks (`S.orders[].risk`), `S.risk.block` and
+// `S.risk.rules`, mapped to the DTOs of this feature (decision 014). Mock data only: the real scores and rules come from
+// the server. Shapes of the demo are listed here so the mapping can be read in one place.
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, toMoney, type DemoState } from '@/mocks/seed';
 import { demoStaffIds } from '@/mocks/staff';
-import type {
-  BlocklistEntry,
-  CheckKind,
-  CheckResult,
-  CustomerRisk,
-  HeldOrder,
-  ImeiCheck,
-  NamedRef,
-  RiskOutcome,
-  RiskRule,
-} from '../types';
-import type { DemoBlock, DemoCheck, DemoCustomer, DemoNamed, DemoRiskOrder, DemoRule } from './demoShapes';
+import type { BlocklistEntry, HeldOrder, NamedRef, RiskOutcome, RiskRule } from '../types';
+import type { DemoBlock, DemoCustomer, DemoNamed, DemoRiskOrder, DemoRule } from './demoShapes';
 
 /** A storefront order's risk assessment as the mock keeps it: the held order's DTO plus the decision. `id` is the order id. */
 export type MockAssessment = HeldOrder & {
@@ -30,16 +19,12 @@ export type MockAssessment = HeldOrder & {
 /** Everything the risk mocks keep. */
 export type RiskMockState = {
   assessments: Collection<MockAssessment>;
-  checks: Collection<ImeiCheck>;
   blocklist: Collection<BlocklistEntry>;
   rules: RiskRule[];
 };
 
-const RISK_LEVEL: Record<DemoCustomer['risk'], CustomerRisk> = { low: 'low', med: 'medium', high: 'high' };
-
 // The demo's rr1..rr8 become named rules (the API's words; assumed contract).
 const RULE_IDS: Record<string, string> = {
-  rr1: 'blockBlacklistedImei',
   rr2: 'reviewThreshold',
   rr3: 'blockThreshold',
   rr4: 'maxOrdersPerEmail',
@@ -48,27 +33,6 @@ const RULE_IDS: Record<string, string> = {
   rr7: 'reviewIpCountryMismatch',
   rr8: 'blockDisposableEmail',
 };
-
-/** The IMEI the server keeps after the retention period: a short hash, not the digits. The mock's hash is not real. */
-function hashed(imei: string): string {
-  let hash = 0x811c9dc5;
-  for (const ch of imei) hash = Math.imul(hash ^ ch.charCodeAt(0), 0x01000193) >>> 0;
-  return `sha256:${hash.toString(16).padStart(8, '0')}…`;
-}
-
-// What a lookup returned, by kind (free-form on the real server).
-function resultOf(kind: CheckKind, status: CheckResult): JsonObject {
-  switch (kind) {
-    case 'blacklist':
-      return { blacklist: status === 'blacklisted' ? 'listed' : 'not listed' };
-    case 'icloud':
-      return { findMy: status === 'locked' ? 'on' : 'off' };
-    case 'sim_lock':
-      return { simLock: status === 'locked' ? 'locked' : status === 'clean' ? 'unlocked' : 'unknown' };
-    case 'basic':
-      return { modelMatched: true };
-  }
-}
 
 function assessments(state: DemoState, ids: Map<string, number>): MockAssessment[] {
   const named = (key: string) => new Map(demoRows<DemoNamed>(state, key).map((row) => [row.id, row]));
@@ -108,7 +72,6 @@ function assessments(state: DemoState, ids: Map<string, number>): MockAssessment
           name: customer.name,
           email: customer.email,
           country: customer.country,
-          riskLevel: RISK_LEVEL[customer.risk],
           history: {
             earlierOrders: earlier,
             refunds: countBy('refunds', customer.id),
@@ -121,35 +84,6 @@ function assessments(state: DemoState, ids: Map<string, number>): MockAssessment
       },
     ];
   });
-}
-
-function checks(state: DemoState): ImeiCheck[] {
-  const rows = demoRows<DemoCheck>(state, 'imeiChecks');
-  const oldest = new Set(
-    [...rows]
-      .sort((a, b) => a.ts - b.ts)
-      .slice(0, 6)
-      .map((row) => row.id),
-  );
-  return rows.map((row, index) => ({
-    id: demoNumericId(row.id),
-    imei: oldest.has(row.id) ? hashed(row.imei) : row.imei,
-    brand: row.brand,
-    model: row.model,
-    checkType: row.kind,
-    status: row.status,
-    source: row.source,
-    country: row.country,
-    ip: `203.0.113.${(index % 200) + 20}`,
-    cost: toMoney(row.cost),
-    price: toMoney(0),
-    cachedUntil: null,
-    createdAt: toIso(row.ts),
-    orderId: row.converted ? demoNumericId(row.converted) : null,
-    customer: null,
-    supplier: null,
-    result: resultOf(row.kind, row.status),
-  }));
 }
 
 function blocklist(state: DemoState, ids: Map<string, number>): BlocklistEntry[] {
@@ -180,7 +114,6 @@ export function buildRiskState(state: DemoState): RiskMockState {
   const ids = demoStaffIds(state);
   return {
     assessments: new Collection(assessments(state, ids)),
-    checks: new Collection(checks(state)),
     blocklist: new Collection(blocklist(state, ids)),
     rules: rules(state),
   };

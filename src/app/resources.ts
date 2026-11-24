@@ -53,12 +53,6 @@ export const resources: ResourceProps[] = [
   ),
   page('support', { label: 'Support', group: 'Operations', icon: 'life', permission: 'support:read' }),
   page('risk', { label: 'Risk & checks', group: 'Operations', icon: 'shield', permission: 'risk:read' }),
-  page('checkouts', {
-    label: 'Abandoned checkouts',
-    group: 'Operations',
-    icon: 'mail',
-    permission: 'growth:read',
-  }),
   // Backend addition (feature 23): no demo page. Campaigns, with the detail at `/notifications/:id`.
   page(
     'notifications',
@@ -75,12 +69,6 @@ export const resources: ResourceProps[] = [
   }),
   page('suppliers', { label: 'Suppliers', group: 'Catalog', icon: 'server', permission: 'suppliers:read' }),
   page('finance', { label: 'Finance', group: 'Money', icon: 'wallet', permission: 'ledger:read' }),
-  page('commissions', {
-    label: 'Commissions',
-    group: 'Money',
-    icon: 'percent',
-    permission: 'commissions:read',
-  }),
   page('refunds', { label: 'Refunds & disputes', group: 'Money', icon: 'undo', permission: 'refunds:read' }),
   // The access feature's manifest widens this to any tab's read permission (MISMATCHES M19).
   page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),

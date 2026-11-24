@@ -1,17 +1,14 @@
 // The checks the mock makes on the bodies of `POST /admin/clients/:id/api-keys` and `PATCH /admin/api-keys/:id`, with the limits
-// of the backend's contract (name 1-60, 1-20 scopes, up to 20 addresses, a limit of 1 to 6000, an expiry in the future). Mock
-// only: the real rules are the server's (decision 014).
+// of the backend's contract (name 1-60, up to 20 addresses, a limit of 1 to 6000, an expiry in the future). The `scopes` the console
+// sends with a new key are not checked: a key is a Dhru credential. Mock only: the real rules are the server's (decision 014).
 import type { ProblemError } from '@/mocks/problem';
 import { textOf } from './shared';
 
-const SCOPES = ['dhru', 'account:read', 'orders:read', 'orders:write', 'services:read'];
-const AREAS = ['account', 'orders', 'services'];
 const IP = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$|^[0-9a-f:]+(\/\d{1,3})?$/i;
 
 /** What a valid body holds, ready to store. */
 export type CheckedKeyBody = {
   name?: string;
-  scopes?: string[];
   allowedIps?: string[];
   expiresAt?: string;
   rateLimitPerMin?: number;
@@ -49,15 +46,6 @@ export function checkNewKey(body: Record<string, unknown>): {
   if (!name) errors.push({ field: 'name', message: 'Name the key.' });
   else if (name.length > 60) errors.push({ field: 'name', message: 'Use at most 60 characters.' });
   else value.name = name;
-
-  const scopes = Array.isArray(body.scopes) ? body.scopes.map(textOf) : [];
-  if (scopes.length === 0) errors.push({ field: 'scopes', message: 'Choose at least one scope.' });
-  scopes.forEach((scope, index) => {
-    const known = SCOPES.includes(scope) || (scope.endsWith(':*') && AREAS.includes(scope.slice(0, -2)));
-    if (!known)
-      errors.push({ field: `scopes.${index}`, message: `Unknown scope. Use ${SCOPES.join(', ')}.` });
-  });
-  value.scopes = [...new Set(scopes)];
 
   if (body.expiresAt !== undefined) {
     const at = typeof body.expiresAt === 'string' ? Date.parse(body.expiresAt) : Number.NaN;

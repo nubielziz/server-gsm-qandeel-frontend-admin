@@ -1,6 +1,6 @@
 // TacDialog: "Add TAC" and "Edit TAC" (`POST` and `PATCH /admin/tac-catalog`): the first 8 digits of an IMEI, with the brand,
 // the model code, the name customers know and the release year. The TAC catalogue is a tab the map adds; the demo kept the
-// table inside its IMEI checker. The 8-digit check is a hint; the server also refuses a prefix that is already there.
+// table inside its own lookup code. The 8-digit check is a hint; the server also refuses a prefix that is already there.
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, TextField, toast } from '@/components/ui';
 import { useCreateTac, useUpdateTac } from '../hooks/useTacMutations';

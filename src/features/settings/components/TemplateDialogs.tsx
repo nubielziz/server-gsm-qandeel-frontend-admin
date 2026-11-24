@@ -48,11 +48,7 @@ export function TemplateDialogs({
     <ConfirmDialog
       open
       title={`Delete “${eventLabel(template.event)}”?`}
-      body={
-        <p>
-          The template is removed for good. The event then sends nothing in this channel to this audience.
-        </p>
-      }
+      body={<p>The template is removed for good. The event then sends nothing to this audience.</p>}
       confirm="Delete template"
       kind="danger"
       onClose={onClose}

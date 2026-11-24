@@ -17,8 +17,8 @@ setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 
 const DANIEL = /Daniel Whitmore/; // c1: an account, 4 orders, one session, one refund, one dispute
-const TYLER = /Tyler Brooks/; // c10: a guest, medium risk, 9 orders, one ticket
-const JACK = /Jack Turner/; // c19: a guest, blocked, high risk, one order with two risk signals
+const TYLER = /Tyler Brooks/; // c10: a guest, 9 orders, one ticket
+const JACK = /Jack Turner/; // c19: a guest, blocked, one order with two risk signals
 
 const tab = (name: RegExp) => detailTabs().getByRole('tab', { name });
 
@@ -52,11 +52,11 @@ describe('the page', () => {
     expect(await screen.findByRole('heading', { level: 1, name: DANIEL })).toBeInTheDocument();
   });
 
-  it('shows the name with the status and risk badges, the sub-line, and the name in the breadcrumb', async () => {
+  it('shows the name with the status badge, the sub-line, and the name in the breadcrumb', async () => {
     await openCustomer(10, TYLER);
     const title = screen.getByRole('heading', { level: 1, name: TYLER });
     expect(within(title).getByText('Active')).toBeInTheDocument();
-    expect(within(title).getByText('Medium risk')).toBeInTheDocument();
+    expect(within(title).queryByText(/risk/i)).not.toBeInTheDocument();
     expect(
       screen.getByText(
         /^tyler\.brooks@inbox\.example · United States · customer since \d{2} [A-Z][a-z]{2,3}$/,
@@ -88,25 +88,29 @@ describe('the page', () => {
     expect(screen.getByRole('heading', { level: 1, name: /Customer #77/ })).toBeInTheDocument();
   });
 
-  it('shows a risk or status it does not know as it is, in a neutral badge, instead of failing', async () => {
+  it('shows a status it does not know as it is, in a neutral badge, instead of failing', async () => {
     mockServer.use(
       http.get('*/admin/customers/:id', () =>
-        HttpResponse.json(customerDetail({ riskLevel: 'med' as never, status: 'pending_review' as never })),
+        HttpResponse.json(customerDetail({ status: 'pending_review' as never })),
       ),
     );
     await openCustomer(1, DANIEL, { tab: 'risk' });
     const title = screen.getByRole('heading', { level: 1, name: DANIEL });
     expect(within(title).getByText('pending_review').closest('.badge')).toHaveClass('b-neutral');
-    expect(within(title).getByText('med risk').closest('.badge')).toHaveClass('b-neutral');
-    expect(await screen.findByText('Risk level')).toBeInTheDocument();
+    expect(await screen.findByText('Highest score')).toBeInTheDocument();
     expect(within(screen.getByRole('tabpanel')).getAllByText('pending_review')).toHaveLength(1);
   });
 
-  it('shows no risk badge for a low risk', async () => {
-    await openCustomer(1, DANIEL);
+  it('shows no risk level in the header or on the Risk tab, even when an older server still sends one', async () => {
+    mockServer.use(
+      http.get('*/admin/customers/:id', () => HttpResponse.json({ ...customerDetail(), riskLevel: 'high' })),
+    );
+    await openCustomer(1, DANIEL, { tab: 'risk' });
     const title = screen.getByRole('heading', { level: 1, name: DANIEL });
-    expect(within(title).getByText('Active')).toBeInTheDocument();
-    expect(within(title).queryByText(/risk$/)).not.toBeInTheDocument();
+    expect(within(title).queryByText(/risk/i)).not.toBeInTheDocument();
+    expect(await screen.findByText('Highest score')).toBeInTheDocument();
+    expect(screen.queryByText('Risk level')).not.toBeInTheDocument();
+    expect(screen.queryByText('High')).not.toBeInTheDocument();
   });
 
   it('shows the five figures', async () => {
@@ -299,10 +303,7 @@ describe('Consents and data tab', () => {
     expect(screen.getAllByText(/IP 203\.0\.113\.177/)).toHaveLength(4);
     expect(screen.getByText(/stored with the order/)).toBeInTheDocument();
     expect(screen.getByText('Not opted in')).toBeInTheDocument();
-    // The retention line comes from a second request (the settings), which may answer later.
-    expect(
-      await screen.findByText('Kept for 180 days after the order, then removed', {}, { timeout: 10_000 }),
-    ).toBeInTheDocument();
+    expect(screen.queryByText('IMEI storage')).not.toBeInTheDocument();
     expect(await screen.findByText('None')).toBeInTheDocument();
   });
 
@@ -328,7 +329,6 @@ describe('Consents and data tab', () => {
   it('leaves out the rows the staff member cannot read, and disables the privacy buttons', async () => {
     await openCustomer(1, DANIEL, { tab: 'consents', permissions: ['customers:read'] });
     expect(await screen.findByText('Marketing emails')).toBeInTheDocument();
-    expect(screen.queryByText('IMEI storage')).not.toBeInTheDocument();
     expect(screen.queryByText('Requests')).not.toBeInTheDocument();
     for (const name of ['Export their data', 'Anonymise…']) {
       expect(screen.getByRole('button', { name })).toBeDisabled();
@@ -341,11 +341,10 @@ describe('Consents and data tab', () => {
 });
 
 describe('Risk tab', () => {
-  it('shows the level, status, notes and highest score, and the signals with a link to each order', async () => {
+  it('shows the status, notes and highest score, and the signals with a link to each order', async () => {
     await openCustomer(19, JACK, { tab: 'risk' });
-    const level = await screen.findByText('Risk level');
-    expect(level.nextElementSibling).toHaveTextContent('High');
-    expect(screen.getByText('Status').nextElementSibling).toHaveTextContent('Blocked');
+    expect((await screen.findByText('Status')).nextElementSibling).toHaveTextContent('Blocked');
+    expect(screen.queryByText('Risk level')).not.toBeInTheDocument();
     expect(screen.getByText(/Chargeback lost on SF-20400/)).toBeInTheDocument();
     expect(screen.getByText('71')).toBeInTheDocument();
     expect(screen.getByText('Email on a previous chargeback')).toBeInTheDocument();

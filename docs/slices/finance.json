@@ -7,7 +7,7 @@
   "folders": [
     "src/features/finance"
   ],
-  "notes": "Ledger, accounts, payments review, invoices and reports. Demo withdrawals tab has no admin API (see MISMATCHES).",
+  "notes": "Ledger, accounts, payments review, invoices and reports (profit, wallet exposure, VAT, sales funnel). Demo withdrawals tab has no admin API (see MISMATCHES).",
   "rules": {
     "pagination": "Refine simple-rest: _start, _end, _sort, _order, field filters; total count in the x-total-count header",
     "errors": "application/problem+json {type,title,status,code,detail,errors[]}",
@@ -286,6 +286,27 @@
         "method": "GET",
         "ops": null,
         "path": "/admin/reports/vat"
+      }
+    },
+    {
+      "key": "GET /admin/reports/funnel",
+      "method": "GET",
+      "path": "/admin/reports/funnel",
+      "group": "promo",
+      "op": "action",
+      "description": "Sales funnel: check, then payment started, then paid, then delivered.",
+      "access": "permission",
+      "permission": "reports:growth",
+      "stage": 19,
+      "tables": [
+        "imei_checks",
+        "checkout_sessions",
+        "orders"
+      ],
+      "origin": {
+        "method": "GET",
+        "ops": null,
+        "path": "/admin/reports/funnel"
       }
     }
   ]

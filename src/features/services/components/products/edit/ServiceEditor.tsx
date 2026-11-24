@@ -2,7 +2,7 @@
 // refusal (a service that does not exist is told apart from a failed read), or a move to the service's own kind on the strip. It also holds
 // the unsaved mark of the open part, beside the read (see below).
 import { Navigate } from 'react-router';
-import { ButtonLink, EmptyState, ErrorState } from '@/components/ui';
+import { ButtonLink, EmptyState, ErrorState, useDirtyMark } from '@/components/ui';
 import { isApiError, type Id } from '@/lib/api';
 import { useServiceDetail } from '../../../hooks/useServiceDetail';
 import { productsPath, type ServicePartId } from '../../../lib/productsPath';
@@ -11,7 +11,6 @@ import type { ProductsViewProps } from '../types';
 import { OpenService } from './OpenService';
 import { openPart } from './openPart';
 import { ServiceLoading } from './ServiceLoading';
-import { useDirtyMark } from './useDirtyMark';
 
 type EditorProps = ProductsViewProps & { id: Id; part: ServicePartId | null };
 

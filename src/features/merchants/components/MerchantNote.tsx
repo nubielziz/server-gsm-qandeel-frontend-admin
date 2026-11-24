@@ -1,10 +1,9 @@
-// MerchantNote: the banner under the page header that says why a merchant cannot order: "Waiting for approval" (with the state of
-// their verification) or "Suspended" (with the reason, who and when, from the server). Ports the `pendingNote` of pageMerchant in
-// 42-p-merchants.js.
+// MerchantNote: the banner under the page header that says why a merchant cannot order: "Not active yet" (an account still
+// `pending`, made before accounts were active at once) or "Suspended" (with the reason, who and when, from the server). Ports
+// the `pendingNote` of pageMerchant in 42-p-merchants.js.
 import type { ReactNode } from 'react';
 import { Icon, type IconName } from '@/components/ui';
 import { ago } from '@/lib/format';
-import { KYC_WORDS } from '../lib/status';
 import type { Client } from '../types';
 
 function Note({
@@ -44,21 +43,20 @@ function suspensionLine(suspension: Client['suspension'], now: number): string |
 }
 
 /**
- * Shows why a pending or suspended merchant cannot order, or nothing for an active one. `now` moves the age with the page's clock
+ * Shows why a not-yet-active or suspended merchant cannot order, or nothing for an active one. `now` moves the age with the page's clock
  * (a test can fix it).
  */
 export function MerchantNote({
   client,
   now = Date.now(),
 }: {
-  client: Pick<Client, 'status' | 'kycStatus' | 'suspension'>;
+  client: Pick<Client, 'status' | 'suspension'>;
   now?: number;
 }) {
   if (client.status === 'pending') {
-    const kyc = Object.hasOwn(KYC_WORDS, client.kycStatus) ? KYC_WORDS[client.kycStatus] : client.kycStatus;
     return (
-      <Note tone="warn" icon="clock" title="Waiting for approval">
-        {`KYC is ${kyc}. The merchant cannot place orders until you approve the account.`}
+      <Note tone="warn" icon="clock" title="Not active yet">
+        The merchant cannot place orders until staff activate the account.
       </Note>
     );
   }

@@ -1,5 +1,5 @@
 // The tabs of a merchant's page and how the address names them (`/merchants/7?tab=wallet`). Ports the `tabs` of pageMerchant in
-// 42-p-merchants.js, plus the Billing, Profile, Security, Verification and Audit tabs of feature 20. A tab whose read permission
+// 42-p-merchants.js, plus the Billing, Profile, Security and Audit tabs of feature 20. A tab whose read permission
 // the staff member lacks is left out.
 import type { DetailTab } from './paths';
 
@@ -18,11 +18,13 @@ export const DETAIL_TABS: readonly DetailTabSpec[] = [
   { id: 'api', label: 'API access', permission: 'api_keys:read' },
   { id: 'profile', label: 'Profile', permission: 'clients:read' },
   { id: 'security', label: 'Security', permission: 'clients:read' },
-  { id: 'verification', label: 'Verification', permission: 'kyc:read' },
   { id: 'audit', label: 'Audit', permission: 'audit:read' },
 ];
 
-/** The open tab: the one in the address when the staff member may open it, else the first they may. */
+/**
+ * The open tab: the one in the address when the staff member may open it, else the first they may. An address that names a tab
+ * that no longer exists (an old `?tab=verification`) therefore opens the first tab, without an error.
+ */
 export function parseDetailTab(
   params: URLSearchParams,
   visible: readonly DetailTab[],

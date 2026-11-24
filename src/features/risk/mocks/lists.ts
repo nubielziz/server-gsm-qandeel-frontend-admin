@@ -1,6 +1,5 @@
-// Mock of the IMEI check log and the blocklist (`/admin/imei-checks*`, `/admin/blocklist*`): list with filters, sort, row
-// range and `x-total-count`, one row, and for the blocklist add and remove. The refusals are the obvious ones (a bad or
-// duplicate value, no such entry): the real server owns the rules (decision 014).
+// Mock of the blocklist (`/admin/blocklist*`): list with filters, sort, row range and `x-total-count`, one row, add and remove.
+// The refusals are the obvious ones (a bad or duplicate value, no such entry): the real server owns the rules (decision 014).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { fmtImei } from '@/lib/format';
 import { bodyOf, invalid, notFound, readHandlers, textOf } from '@/mocks/handlers/accessShared';
@@ -15,13 +14,6 @@ import { riskState } from './store';
 
 const addable = (kind: string): kind is AddableBlockKind =>
   ADDABLE_KINDS.some((candidate) => candidate === kind);
-
-export const checkHandlers: HttpHandler[] = readHandlers({
-  base: '/admin/imei-checks',
-  what: 'IMEI check',
-  source: async () => ({ rows: (await riskState()).checks.list(), toDto: (row) => row }),
-  searchFields: ['imei', 'brand', 'model'],
-});
 
 export const blocklistHandlers: HttpHandler[] = [
   ...readHandlers({

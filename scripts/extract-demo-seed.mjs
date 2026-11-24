@@ -6,6 +6,14 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { dropLanguages, formatDemoState } from './english-only-seed.mjs';
+import {
+  dropCheckoutReminders,
+  dropCommissions,
+  dropMerchantApproval,
+  dropMerchantVerification,
+  dropTicketRatings,
+} from './retired-seed.mjs';
+import { dropRetiredRisk } from './retired-seed-risk.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const demoDir = resolve(root, 'reference/gsm-admin/src/js');
@@ -88,8 +96,24 @@ function replacer(_key, value) {
 const code = FILES.map((name) => readFileSync(resolve(demoDir, `${name}.js`), 'utf8')).join('\n;\n');
 const context = createContext();
 vm.runInContext(code, context, { filename: 'demo-bundle.js' });
-// English only (decision 039): the demo still lists languages; the console's seed does not.
-const state = dropLanguages(vm.runInContext('S', context));
+// English only (decision 039): the demo still lists languages; the console's seed does not. The merchant verification word was
+// retired (decision 020): the demo still gives one to each merchant; the console's seed does not. The same for the merchants that
+// waited for approval: staff-made accounts are active at once, so only the one legacy row stays pending. The commission plans,
+// accruals, agents and referrals were retired too, and the seed has none of them; nor the risk data of the free IMEI check and the
+// customer risk level (see retired-seed-risk.mjs), nor the customer rating of a ticket (the survey was retired), nor the reminder of
+// an abandoned checkout.
+const RETIRED_STEPS = [
+  dropMerchantVerification,
+  dropMerchantApproval,
+  dropCommissions,
+  dropTicketRatings,
+  dropCheckoutReminders,
+  dropRetiredRisk,
+];
+const state = RETIRED_STEPS.reduce(
+  (current, step) => step(current),
+  dropLanguages(vm.runInContext('S', context)),
+);
 
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, formatDemoState(NOW, state, replacer));

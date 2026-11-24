@@ -7,7 +7,6 @@ import {
   parseMessageCreated,
   parseTicketRead,
   parseTicketRow,
-  parseTicketTyping,
   parseTicketUpdated,
 } from './liveEvents';
 
@@ -74,28 +73,6 @@ describe('parseTicketRead', () => {
   it('skips a read by someone else, or without a message', () => {
     expect(parseTicketRead({ ticketId: 10, by: 'you', upToMessageId: 4, at: 'x' })).toBeNull();
     expect(parseTicketRead({ ticketId: 10, by: 'staff', at: 'x' })).toBeNull();
-  });
-});
-
-describe('parseTicketTyping', () => {
-  it('reads the requester typing and a colleague typing a reply or a note', () => {
-    expect(parseTicketTyping({ ticketId: 10, by: 'requester' })).toEqual({
-      ticketId: 10,
-      by: 'requester',
-      staffId: null,
-      staffName: null,
-      mode: null,
-    });
-    expect(
-      parseTicketTyping({ ticketId: 10, by: 'staff', staffId: 2, staffName: 'Lina S.', mode: 'note' }),
-    ).toMatchObject({ staffId: 2, mode: 'note' });
-  });
-
-  it('skips an unknown mode or a party it does not know', () => {
-    expect(
-      parseTicketTyping({ ticketId: 10, by: 'staff', staffId: 2, staffName: 'L', mode: 'shout' }),
-    ).toBeNull();
-    expect(parseTicketTyping({ ticketId: 10, by: 'bot' })).toBeNull();
   });
 });
 

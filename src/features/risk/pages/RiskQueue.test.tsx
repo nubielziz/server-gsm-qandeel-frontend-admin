@@ -7,9 +7,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { dialogOf, heldCard, openRisk, tabTexts } from '../test/riskPage';
+import { dialogOf, heldCard, openRisk, riskTabs } from '../test/riskPage';
 
 setupMockApi();
+
+// The tabs are found by their names, not by their place in the strip: a tab's text is its name and its count, such as "Blocklist5".
+const queueTab = () => riskTabs().getByRole('tab', { name: /^Review queue/ });
+const blocklistTab = () => riskTabs().getByRole('tab', { name: /^Blocklist/ });
 // The page is a lazy chunk: the first test of a run waits for its modules to load, which is slow while the whole suite
 // runs in parallel. Every flow here also goes through the mock API with real dialogs, so give them room.
 vi.setConfig({ testTimeout: 20_000 });
@@ -38,14 +42,45 @@ describe('the queue', () => {
     expect(card.getByText('86 741205 271530 6')).toBeInTheDocument();
     expect(card.getByText('67')).toBeInTheDocument();
     expect(card.getByText(/Paid .*, the customer is waiting/)).toBeInTheDocument();
-    expect(card.getByText('VPN or proxy IP')).toBeInTheDocument();
     expect(card.getByText('New customer, first order above $40')).toBeInTheDocument();
     expect(card.getByRole('link', { name: 'Tyler Brooks' })).toHaveAttribute('href', '/customers/10');
-    expect(card.getByText('Medium risk')).toBeInTheDocument();
     expect(card.getByText('ty•••@inbox.example')).toBeInTheDocument();
     expect(card.getByText('United States')).toBeInTheDocument();
     expect(card.getByText(/earlier order/)).toBeInTheDocument();
     expect(card.getByText('The supplier has not been contacted.')).toBeInTheDocument();
+  });
+
+  it('ignores the risk level an older server still sends with the customer of a held order', async () => {
+    const held = {
+      orderId: 20490,
+      paidAt: new Date(Date.now() - 4 * 3_600_000).toISOString(),
+      score: 67,
+      service: { id: 1, name: 'EE UK Unlock' },
+      supplier: null,
+      imei: '867412052715306',
+      device: null,
+      capturedAmount: '12.9900',
+      currency: 'USD',
+      fxRate: '1.0000',
+      paymentMethod: 'card',
+      signals: ['New customer, first order above $40'],
+      customer: {
+        id: 10,
+        name: 'Tyler Brooks',
+        email: 'tyler@inbox.example',
+        country: 'US',
+        riskLevel: 'high',
+        history: { earlierOrders: 1, refunds: 0, disputes: 0 },
+      },
+    };
+    mockServer.use(http.get('*/admin/risk/queue', () => HttpResponse.json({ held: [held] })));
+    await openRisk();
+    const card = heldCard(
+      await screen.findByRole('article', { name: 'Held order SF-20490' }).then(() => 'SF-20490'),
+    );
+    expect(card.getByRole('link', { name: 'Tyler Brooks' })).toBeInTheDocument();
+    expect(card.queryByText(/high risk/i)).not.toBeInTheDocument();
+    expect(card.queryByText(/medium risk/i)).not.toBeInTheDocument();
   });
 
   it('writes the amount in the customer’s currency with the dollars in brackets', async () => {
@@ -130,7 +165,7 @@ describe('approving', () => {
     await waitFor(() =>
       expect(screen.queryByRole('article', { name: 'Held order SF-20490' })).not.toBeInTheDocument(),
     );
-    await waitFor(() => expect(tabTexts()[0]).toBe('Review queue3'));
+    await waitFor(() => expect(queueTab()).toHaveTextContent(/^Review queue3$/));
     const recent = within(screen.getByRole('region', { name: 'Decided recently' }));
     expect(await recent.findByText('SF-20490')).toBeInTheDocument();
   });
@@ -179,7 +214,7 @@ describe('refunding', () => {
       expect(screen.queryByRole('article', { name: 'Held order SF-20491' })).not.toBeInTheDocument(),
     );
     // Nobody was blocked: the Blocklist tab still counts the five seeded entries.
-    expect(tabTexts()[2]).toBe('Blocklist5');
+    expect(blocklistTab()).toHaveTextContent(/^Blocklist5$/);
   });
 
   it('refunds and blocks: the email is ticked from the button, the device can be ticked too, and the blocklist grows', async () => {
@@ -200,7 +235,7 @@ describe('refunding', () => {
     await user.click(dialog.getByRole('button', { name: 'Refund and block' }));
     expect(await screen.findByText('SF-20495 refunded')).toBeInTheDocument();
     expect(screen.getByText(/ is blocked\.$/)).toBeInTheDocument();
-    await waitFor(() => expect(tabTexts()[2]).toBe('Blocklist7'));
+    await waitFor(() => expect(blocklistTab()).toHaveTextContent(/^Blocklist7$/));
   });
 
   it('un-ticking the block turns the title and the button back to a plain refund', async () => {

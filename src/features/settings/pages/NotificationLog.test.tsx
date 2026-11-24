@@ -1,5 +1,5 @@
 // Tests for the Notification log tab, run through the whole app against the dev mock API: the page of messages with masked recipients, the
-// filters and pager kept in the address, the details drawer (also from a link), and the error and empty states.
+// filter and pager kept in the address, the details drawer (also from a link), and the error and empty states.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { dialogOf, openSettings, rowOf } from '../test/settingsPage';
+import { dialogOf, openSettings } from '../test/settingsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -45,6 +45,38 @@ describe('the list', () => {
   });
 });
 
+describe('a message from before a channel was retired', () => {
+  it('shows the channel word as it was stored', async () => {
+    mockServer.use(
+      http.get('*/admin/notifications', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 1,
+              event: 'order.completed',
+              channel: 'telegram',
+              status: 'sent',
+              recipient: '@a***',
+              recipientType: 'client',
+              recipientId: 1,
+              campaignId: null,
+              attempts: 1,
+              sentAt: '2026-11-10T09:00:00.000Z',
+              createdAt: '2026-11-10T09:00:00.000Z',
+              updatedAt: '2026-11-10T09:00:00.000Z',
+            },
+          ],
+          { headers: { 'x-total-count': '1' } },
+        ),
+      ),
+    );
+    await openSettings(LOG);
+    const [row] = await dataRows();
+    expect(within(row).getByText('telegram')).toBeInTheDocument();
+    expect(within(row).getByText('Sent')).toBeInTheDocument();
+  });
+});
+
 describe('the filters', () => {
   it('shows only the failed messages and keeps the filter in the address', async () => {
     const user = userEvent.setup();
@@ -56,15 +88,13 @@ describe('the filters', () => {
     for (const row of await dataRows()) expect(within(row).getByText('Failed')).toBeInTheDocument();
   });
 
-  it('filters by channel and says when nothing matches', async () => {
+  it('has no channel filter and says when nothing matches', async () => {
     const user = userEvent.setup();
     await openSettings(LOG);
     await dataRows();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by channel' }), 'telegram');
-    const rows = await screen.findByText(/messages?$/);
-    expect(rows).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Filter by channel' })).not.toBeInTheDocument();
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by status' }), 'queued');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by channel' }), 'telegram');
+    expect(await screen.findByText(/messages?$/)).toBeInTheDocument();
     mockServer.use(
       http.get('*/admin/notifications', () => HttpResponse.json([], { headers: { 'x-total-count': '0' } })),
     );
@@ -155,7 +185,9 @@ describe('the details drawer', () => {
   it('opens from a row and shows the failure reason and the data the message was built from', async () => {
     const user = userEvent.setup();
     const app = await openSettings(`${LOG}&status=failed`);
-    await user.click((await rowOf(TABLE, 'Support reply')).getByText('Failed'));
+    // The newest failed message (the 4th) was made from the Support reply template; every failed message may share it, so the row is the first one.
+    const [first] = await dataRows();
+    await user.click(within(first).getByText('Failed'));
     const drawer = dialogOf('Support reply');
     expect(await drawer.findByText('The mailbox does not exist.')).toBeInTheDocument();
     expect(drawer.getByText(/^[a-z]\*\*\*[a-z]@example\.com$/)).toBeInTheDocument();
@@ -169,8 +201,8 @@ describe('the details drawer', () => {
   it('opens from a link, even for a message that is not on the page', async () => {
     // Message 3 is the 46th newest, so it is on page 2.
     await openSettings(`${LOG}&notification=3`);
-    const drawer = within(await screen.findByRole('dialog', { name: 'Payment failed' }));
-    expect(await drawer.findByText('payment.failed')).toBeInTheDocument();
+    const drawer = within(await screen.findByRole('dialog', { name: 'Support reply' }));
+    expect(await drawer.findByText('support.reply')).toBeInTheDocument();
     expect(drawer.getByText('Failed')).toBeInTheDocument();
     expect(await drawer.findByText('The mailbox does not exist.')).toBeInTheDocument();
   });

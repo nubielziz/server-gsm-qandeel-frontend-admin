@@ -3,7 +3,7 @@
 // Order figures come from the orders mock store when asked (see dto.ts). Dev and tests only.
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, type DemoState } from '@/mocks/seed';
-import type { CustomerStatus, DataRequestKind, RiskLevel } from '../types';
+import type { CustomerStatus, DataRequestKind } from '../types';
 import type { CustomerState, MockCustomer, MockRequest, OrderRisk } from './types';
 
 /** A customer of the demo seed, as the demo stores it (the fields the mock uses). */
@@ -15,7 +15,6 @@ type DemoCustomer = {
   cur: string;
   hasAccount: boolean;
   optIn: boolean;
-  risk: 'low' | 'med' | 'high';
   status: CustomerStatus;
   created: number;
   notes: string;
@@ -65,7 +64,6 @@ export const COUNTRY_CURRENCY: Record<string, string> = {
 };
 export const currencyId = (code: string): number => CURRENCY_IDS[code] ?? 1;
 
-const RISK: Record<DemoCustomer['risk'], RiskLevel> = { low: 'low', med: 'medium', high: 'high' };
 const iso = (ms: number | null): string | null => (ms ? toIso(ms) : null);
 
 function fromDemoCustomer(c: DemoCustomer): MockCustomer {
@@ -82,7 +80,6 @@ function fromDemoCustomer(c: DemoCustomer): MockCustomer {
     // A customer the team added would carry a staff id; the seed has none, and the others came on their own.
     createdBy: c.createdBy === 'admin' ? 1 : null,
     marketingOptIn: c.optIn,
-    riskLevel: RISK[c.risk],
     status: c.status,
     suspendedAt: iso(c.suspendedAt),
     suspendedReason: c.suspendedReason || null,
@@ -121,7 +118,6 @@ function nameless(): MockCustomer {
     hasAccount: false,
     createdBy: null,
     marketingOptIn: false,
-    riskLevel: 'low',
     status: 'active',
     suspendedAt: null,
     suspendedReason: null,

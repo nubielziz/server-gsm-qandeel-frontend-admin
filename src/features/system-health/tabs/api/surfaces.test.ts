@@ -124,7 +124,7 @@ describe('orderSurfaces', () => {
 
 describe('viewSurfaces', () => {
   const ordered = orderSurfaces([
-    surface('v1', { p95: 'crit' }),
+    surface('admin', { p95: 'crit' }),
     surface('dhru', { p95: 'warn' }),
     surface('client'),
     surface('store'),
@@ -134,7 +134,7 @@ describe('viewSurfaces', () => {
 
   it('folds the ok surfaces into the quiet line while another surface has a problem', () => {
     const view = viewSurfaces(ordered, undefined, false, false);
-    expect(keys(view.rows)).toEqual(['v1', 'dhru', 'hooks']);
+    expect(keys(view.rows)).toEqual(['admin', 'dhru', 'hooks']);
     expect(view.quiet).toBe(2);
   });
 
@@ -144,13 +144,13 @@ describe('viewSurfaces', () => {
 
   it('shows every surface, still worst first, when the line is expanded', () => {
     const view = viewSurfaces(ordered, undefined, true, false);
-    expect(keys(view.rows)).toEqual(['v1', 'dhru', 'hooks', 'client', 'store']);
+    expect(keys(view.rows)).toEqual(['admin', 'dhru', 'hooks', 'client', 'store']);
     expect(view.quiet).toBe(2);
   });
 
   it('keeps the picked surface in view even when it is ok', () => {
     const view = viewSurfaces(ordered, 'store', false, false);
-    expect(keys(view.rows)).toEqual(['v1', 'dhru', 'hooks', 'store']);
+    expect(keys(view.rows)).toEqual(['admin', 'dhru', 'hooks', 'store']);
     expect(view.quiet).toBe(1);
   });
 

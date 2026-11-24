@@ -45,13 +45,16 @@ describe('SidebarNav', () => {
   });
 
   it('leaves out a group with no page', () => {
-    renderNav(
-      {},
-      PAGES.filter((page) => page.meta.group === 'Money'),
-    );
+    const money = PAGES.filter((page) => page.meta.group === 'Money');
+    renderNav({}, money);
     expect(screen.getByText('Money')).toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
-    expect(screen.getAllByRole('link')).toHaveLength(3);
+    // Only the pages handed over show, each by its name: no link of another group comes with them.
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(
+      money.map((page) => page.meta.label),
+    );
+    expect(screen.getByRole('link', { name: 'Finance' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Refunds/ })).toBeInTheDocument();
   });
 
   it('tells the shell when a link is followed', async () => {

@@ -45,16 +45,7 @@ describe('recordTarget', () => {
   });
 
   it('gives nothing for a record without a page of its own', () => {
-    for (const type of [
-      'payment',
-      'withdrawal',
-      'setting',
-      'listing',
-      'legal',
-      'ticket',
-      'session',
-      'plan',
-    ]) {
+    for (const type of ['payment', 'withdrawal', 'setting', 'listing', 'legal', 'ticket', 'session']) {
       expect(recordTarget(type, 3, 'Anything')).toBeNull();
     }
   });

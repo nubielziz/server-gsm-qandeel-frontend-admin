@@ -1,9 +1,12 @@
 // The words and looks of a merchant's status, and the tabs of the merchants page. Ports merBadge of 20-ui.js and the `tabs`
-// of pageMerchants in 42-p-merchants.js, plus the Groups and Verification tabs the map adds (MISMATCHES M46, MISMATCHES M47).
+// of pageMerchants in 42-p-merchants.js, plus the Groups tab the map adds (MISMATCHES M46).
 import type { BadgeTone, IconName } from '@/components/ui';
-import type { ClientKycStatus, ClientStatus } from '../types';
+import type { ClientStatus } from '../types';
 
-/** How a status looks: the demo's merBadge (green Active, amber Pending, red Suspended). */
+/**
+ * How a status looks: the demo's merBadge (green Active, amber Pending, red Suspended). `pending` is a legacy status: staff-made
+ * accounts are active at once, but an account made before that change may still be `pending` until staff activate it.
+ */
 export const STATUS_BADGE: Readonly<
   Record<ClientStatus, { tone: BadgeTone; icon: IconName; label: string }>
 > = {
@@ -15,16 +18,8 @@ export const STATUS_BADGE: Readonly<
 /** The status words, in the order the tabs use. */
 export const CLIENT_STATUSES: readonly ClientStatus[] = ['active', 'pending', 'suspended'];
 
-/** The merchant's verification state in a sentence ("KYC is in review", the demo's pending note). */
-export const KYC_WORDS: Readonly<Record<ClientKycStatus, string>> = {
-  none: 'not submitted',
-  pending: 'in review',
-  approved: 'verified',
-  rejected: 'rejected',
-};
-
-/** The tabs of the page: four status filters of the merchant table, then the two other lists. */
-export type MerchantTab = 'all' | 'active' | 'pending' | 'suspended' | 'groups' | 'verification';
+/** The tabs of the page: three status filters of the merchant table, then the groups list. */
+export type MerchantTab = 'all' | 'active' | 'suspended' | 'groups';
 
 /** One tab of the list: its id, its label and the permission it needs. */
 export type MerchantTabSpec = {
@@ -38,26 +33,24 @@ export type MerchantTabSpec = {
 export const MERCHANT_TABS: readonly MerchantTabSpec[] = [
   { id: 'all', label: 'All', permission: 'clients:read' },
   { id: 'active', label: 'Active', permission: 'clients:read' },
-  { id: 'pending', label: 'Pending approval', permission: 'clients:read' },
   { id: 'suspended', label: 'Suspended', permission: 'clients:read' },
   { id: 'groups', label: 'Groups', permission: 'groups:read' },
-  { id: 'verification', label: 'Verification', permission: 'kyc:read' },
 ];
 
 /** The tabs that show the merchant table. */
-export const STATUS_TABS: readonly MerchantTab[] = ['all', 'active', 'pending', 'suspended'];
+export const STATUS_TABS: readonly MerchantTab[] = ['all', 'active', 'suspended'];
 
 /** Whether a value from the address names a tab. */
 export function isMerchantTab(value: string | null): value is MerchantTab {
   return MERCHANT_TABS.some((tab) => tab.id === value);
 }
 
-/** The status a tab filters by; `all` and the two other lists filter by none. */
+/** The status a tab filters by; `all` and the groups list filter by none. */
 export function tabStatus(tab: MerchantTab): ClientStatus | undefined {
-  return tab === 'active' || tab === 'pending' || tab === 'suspended' ? tab : undefined;
+  return tab === 'active' || tab === 'suspended' ? tab : undefined;
 }
 
-/** True for the four tabs that show the merchant table. */
+/** True for the three tabs that show the merchant table. */
 export function isStatusTab(tab: MerchantTab): boolean {
   return STATUS_TABS.includes(tab);
 }

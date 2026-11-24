@@ -117,13 +117,12 @@ export const campaignRoutes: HttpHandler[] = [
           cancelledAt: null,
           expectedRecipients: null,
           recipients: 0,
-          planned: { inApp: 0, email: 0, telegram: 0 },
+          planned: { inApp: 0, email: 0 },
           error: null,
-          skipped: { optedOut: 0, noTelegram: 0, noAccount: 0 },
+          skipped: { optedOut: 0, noAccount: 0 },
           delivery: {
             inApp: { delivered: 0, read: 0 },
             email: { queued: 0, sent: 0, failed: 0 },
-            telegram: { queued: 0, sent: 0, failed: 0 },
           },
           createdBy: await staffRef(),
           createdAt: now,
@@ -150,7 +149,7 @@ export const campaignRoutes: HttpHandler[] = [
         const problems = [
           ...(channels.length === 0 ? [{ field: 'channels', message: 'Choose at least one channel.' }] : []),
           ...(purpose ? [] : [{ field: 'purpose', message: 'Choose a purpose.' }]),
-          ...audienceProblems(audience, channels),
+          ...audienceProblems(audience),
         ];
         if (problems.length > 0 || !purpose) return invalid(problems);
         return HttpResponse.json(previewOf(audience, channels, purpose));
@@ -222,12 +221,7 @@ export const campaignRoutes: HttpHandler[] = [
             ? `<html><body>${lines.map((line) => `<p>${line}</p>`).join('')}</body></html>`
             : lines.join('\n'),
         format: channel === 'email' ? 'html' : 'text',
-        from:
-          channel === 'email'
-            ? 'IMEI-HUB <no-reply@gsm-supply.example>'
-            : channel === 'telegram'
-              ? 'Telegram bot'
-              : 'In-app notification',
+        from: channel === 'email' ? 'IMEI-HUB <no-reply@gsm-supply.example>' : 'In-app notification',
         note: 'A sample with made-up details.',
       });
     }),
@@ -371,7 +365,7 @@ export const campaignRoutes: HttpHandler[] = [
     route('broadcasts:read', ({ request, id }) => {
       const params = new URL(request.url).searchParams;
       if (!CAMPAIGN_CHANNELS.some((channel) => channel === params.get('channel'))) {
-        return invalid([{ field: 'channel', message: 'Choose a channel: in_app, email or telegram.' }]);
+        return invalid([{ field: 'channel', message: 'Choose a channel: in_app or email.' }]);
       }
       const rows = notificationsState().rows.get(id) ?? [];
       const { page, total } = applyListQuery(rows, params);

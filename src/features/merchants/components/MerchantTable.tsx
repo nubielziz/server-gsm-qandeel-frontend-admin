@@ -1,10 +1,9 @@
-// MerchantTable: the merchants table with the demo's columns (merchant, group, status, wallet, spend, orders, success, last order,
-// Approve). Ports the `cols` of pageMerchants in 42-p-merchants.js. It only draws what it is given: the page owns the data, the
+// MerchantTable: the merchants table with the demo's columns (merchant, group, status, wallet, spend, orders, success, last order).
+// Ports the `cols` of pageMerchants in 42-p-merchants.js. It only draws what it is given: the page owns the data, the
 // sort and the page. The wallet and 30-day figures come with the rows when the server sends them; a dash shows where they are missing.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import {
-  Button,
   DataTable,
   Icon,
   TypeTag,
@@ -13,7 +12,6 @@ import {
   type SortState,
 } from '@/components/ui';
 import { ago, money, money0, pct, toAmount } from '@/lib/format';
-import type { MerchantGrants } from '../hooks/useMerchantGrants';
 import { merchantPath } from '../lib/paths';
 import type { Client } from '../types';
 import { MerchantStatusBadge } from './MerchantStatusBadge';
@@ -29,10 +27,6 @@ export interface MerchantTableProps {
   onSortChange?: (sort: SortState) => void;
   pagination?: PaginationState;
   onPageChange?: (page: number) => void;
-  grants: MerchantGrants;
-  /** The id of the merchant being approved, so only that button shows its spinner. */
-  approving?: number | null;
-  onApprove: (client: Client) => void;
   empty?: ReactNode;
 }
 
@@ -67,12 +61,8 @@ export function MerchantTable({
   onSortChange,
   pagination,
   onPageChange,
-  grants,
-  approving,
-  onApprove,
   empty,
 }: MerchantTableProps) {
-  const approveLock = grants.needs('clients:update');
   const columns: DataTableColumn<Client>[] = [
     {
       key: 'name',
@@ -145,24 +135,6 @@ export function MerchantTable({
           <span className="text-ink3">Never</span>
         );
       },
-    },
-    {
-      key: 'act',
-      label: '',
-      className: 'w-24',
-      render: (client) =>
-        client.status === 'pending' ? (
-          <Button
-            size="sm"
-            aria-label={`Approve ${client.name}`}
-            disabled={approveLock.disabled}
-            title={approveLock.title}
-            loading={approving === client.id}
-            onClick={() => onApprove(client)}
-          >
-            Approve
-          </Button>
-        ) : null,
     },
   ];
 

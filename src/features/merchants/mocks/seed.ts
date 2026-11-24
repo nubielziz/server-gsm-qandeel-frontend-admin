@@ -1,5 +1,5 @@
 // Builds the merchants mock data from the demo seed (`S.merchants`, wallets, holds, client and group prices, services), the
-// order mock (30-day figures) and the ledger mock (statements). Verification requests and extra API keys are made up, since
+// order mock (30-day figures) and the ledger mock (statements). Extra API keys are made up, since
 // the demo has none; ids lose their prefix (`m3` is 3).
 import { Collection } from '@/mocks/db';
 import { ledgerStore } from '@/mocks/ledger';
@@ -8,7 +8,6 @@ import { sessionStore } from '@/mocks/sessions';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
 import type { ApiKey, ClientGroup, ClientSecurity, ClientSuspension, StatementRow } from '../types';
 import { statementOf, statsOf } from './figures';
-import { kycRows } from './kycSeed';
 import type { MerchantStore, MockClient, MockPrice, MockService } from './store';
 
 /** A merchant of the demo seed, as the demo stores it (the fields the mock uses). */
@@ -20,11 +19,9 @@ type DemoMerchant = {
   status: 'active' | 'pending' | 'suspended';
   credit: number;
   joined: number;
-  referredBy: string | null;
   email: string;
   key: string;
   ips: string[];
-  kyc: string;
   lastSeen: number;
 };
 
@@ -47,7 +44,6 @@ const group = (
   id: number,
   name: string,
   discount: number,
-  threshold: number,
   deposit: number,
   extra: Partial<ClientGroup> = {},
 ): ClientGroup => ({
@@ -56,7 +52,6 @@ const group = (
   kind: 'b2b',
   discountPercent: toMoney(discount),
   isDefault: false,
-  earnThreshold: toMoney(threshold),
   depositLimit: toMoney(deposit),
   overdraftAllowed: true,
   sort: id,
@@ -65,10 +60,10 @@ const group = (
 });
 
 const GROUPS: ClientGroup[] = [
-  group(1, 'Standard', 0, 0, 5000, { isDefault: true, overdraftAllowed: false }),
-  group(2, 'Wholesale', 4, 5000, 20000),
-  group(3, 'VIP', 8, 25000, 100000),
-  group(4, 'Storefront retail', 0, 0, 1000, { kind: 'b2c_retail', overdraftAllowed: false }),
+  group(1, 'Standard', 0, 5000, { isDefault: true, overdraftAllowed: false }),
+  group(2, 'Wholesale', 4, 20000),
+  group(3, 'VIP', 8, 100000),
+  group(4, 'Storefront retail', 0, 1000, { kind: 'b2c_retail', overdraftAllowed: false }),
 ];
 
 const slug = (name: string) =>
@@ -77,14 +72,17 @@ const slug = (name: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
-// One key per merchant that is not pending; the first merchant also has an unused staging key and a revoked old one.
+/** The merchant of the seed that staff invited and who has not chosen a password yet: active, with "Invitation pending" in the list. */
+const INVITED_ID = 18;
+
+// One key per merchant that is not pending and has chosen a password; the first merchant also has an unused staging key and a
+// revoked old one.
 function keysOf(merchants: DemoMerchant[]): ApiKey[] {
   const keys: Omit<ApiKey, 'id'>[] = [];
   const base = (m: DemoMerchant, name: string, extra: Partial<ApiKey> = {}): Omit<ApiKey, 'id'> => ({
     clientId: demoNumericId(m.id),
     name,
     prefix: m.key.slice(0, 13),
-    scopes: ['orders:create', 'orders:read', 'account:read'],
     allowedIps: m.ips,
     rateLimitPerMin: 120,
     lastUsedAt: m.lastSeen ? toIso(m.lastSeen) : null,
@@ -95,7 +93,9 @@ function keysOf(merchants: DemoMerchant[]): ApiKey[] {
     createdByStaff: false,
     ...extra,
   });
-  for (const m of merchants.filter((merchant) => merchant.status !== 'pending')) {
+  for (const m of merchants.filter(
+    (merchant) => merchant.status !== 'pending' && demoNumericId(merchant.id) !== INVITED_ID,
+  )) {
     keys.push(base(m, 'Production'));
   }
   const first = merchants[0];
@@ -122,15 +122,18 @@ const BUSINESS: Record<number, { address: string; taxId: string; internalNotes: 
   2: { address: 'Olaya Street, Riyadh', taxId: 'SA-300112233400003', internalNotes: '' },
 };
 
-/** How a merchant signs in, made up from the demo's status, last sign-in and allowed addresses. Merchant 18 was invited and has not chosen a password; 20 registered but has not verified the email. */
+/**
+ * How a merchant signs in, made up from the demo's status, last sign-in and allowed addresses. Merchant 18 was invited and has not
+ * chosen a password; 20 is the one legacy account that is still `pending` and has not verified the email.
+ */
 function securityOf(m: DemoMerchant, id: number, created: number, sessions: number): ClientSecurity {
   const pending = m.status === 'pending';
-  const invited = id === 18;
+  const invited = id === INVITED_ID;
   return {
     hasPassword: !invited,
     mustChangePassword: false,
-    passwordChangedAt: pending ? null : toIso(created + HOUR_MS),
-    twofaEnabled: !pending && id % 2 === 1,
+    passwordChangedAt: pending || invited ? null : toIso(created + HOUR_MS),
+    twofaEnabled: !pending && !invited && id % 2 === 1,
     lastLoginAt: m.lastSeen ? toIso(m.lastSeen) : null,
     lastLoginIp: m.lastSeen ? (m.ips?.[0] ?? '203.0.113.201') : null,
     activeSessions: sessions,
@@ -168,15 +171,11 @@ export async function buildStore(): Promise<MerchantStore> {
       country: m.cc,
       groupId: GROUP_IDS[m.group],
       status: m.status,
-      kycStatus: m.kyc === 'Verified' ? 'approved' : 'pending',
-      referredById: m.referredBy ? demoNumericId(m.referredBy) : null,
-      referralCode: `GSM${String(id).padStart(4, '0')}`,
-      emailVerifiedAt: m.status === 'pending' ? null : toIso(created + 3_600_000),
+      emailVerifiedAt: m.status === 'pending' || id === INVITED_ID ? null : toIso(created + 3_600_000),
       createdAt: toIso(created),
       address: BUSINESS[id]?.address ?? '',
       taxId: BUSINESS[id]?.taxId ?? '',
       internalNotes: BUSINESS[id]?.internalNotes ?? '',
-      telegramLinked: id % 3 === 1,
       security: securityOf(
         m,
         id,
@@ -240,7 +239,6 @@ export async function buildStore(): Promise<MerchantStore> {
     clients: new Collection(clients),
     groups: new Collection(GROUPS.map((g) => ({ ...g }))),
     prices: new Collection(prices),
-    kyc: new Collection(kycRows(clients)),
     keys: new Collection(keysOf(merchants)),
     statements,
     services,

@@ -21,7 +21,7 @@ const spec = {
     '/health': { get: { 'x-gsm-key': 'GET /health' } },
     '/docs': { get: { 'x-gsm-key': 'GET /docs' } },
     '/metrics': { get: {} },
-    '/v1/orders': { get: { 'x-gsm-key': 'GET /v1/orders' } },
+    '/client/orders': { get: { 'x-gsm-key': 'GET /client/orders' } },
   },
 };
 
@@ -38,7 +38,7 @@ describe('collectLiveKeys', () => {
 
   it('leaves out docs, metrics and non-admin routes, with or without a key', () => {
     const keys = collectLiveKeys(spec);
-    for (const left of ['GET /docs', 'GET /v1/orders']) expect(keys).not.toContain(left);
+    for (const left of ['GET /docs', 'GET /client/orders']) expect(keys).not.toContain(left);
     expect(keys).toHaveLength(5);
   });
 

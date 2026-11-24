@@ -1,43 +1,23 @@
 // SessionsTab: the "Sessions" tab, which the demo lacks and the map adds (`GET /admin/sessions`, `DELETE
-// /admin/sessions/:id`): who is signed in, from where, on what device, when last seen and when it ends, with End session.
+// /admin/sessions/:id`): which staff members are signed in, from where, on what device, when last seen and when it ends, with End
+// session.
 import { useState } from 'react';
-import {
-  Avatar,
-  Button,
-  DataTable,
-  EmptyState,
-  Panel,
-  SegmentedControl,
-  TypeTag,
-  type DataTableColumn,
-} from '@/components/ui';
+import { Avatar, Button, DataTable, EmptyState, Panel, TypeTag, type DataTableColumn } from '@/components/ui';
 import { ago, useNow } from '@/lib/format';
 import { useAccessGrants } from '../hooks/useAccessGrants';
 import { SESSIONS_PAGE_SIZE, useSessions } from '../hooks/useSessions';
 import { ageText } from '../lib/ipRules';
 import { describeUserAgent } from '../lib/userAgent';
-import type { Session, SessionSubjectType } from '../types';
+import type { Session } from '../types';
 import { EndSessionDialog } from './EndSessionDialog';
 
-type Filter = 'all' | SessionSubjectType;
-
-const FILTERS = [
-  { value: 'all', label: 'All' },
-  { value: 'staff', label: 'Staff' },
-  { value: 'client', label: 'Merchants' },
-] as const;
-
-/**
- * Lists the open sessions a page at a time, with a filter for staff or merchants and an End session
- * button.
- */
+/** Lists the open sessions of staff a page at a time, with an End session button. */
 export function SessionsTab() {
   const grants = useAccessGrants();
   const now = useNow();
-  const [filter, setFilter] = useState<Filter>('all');
   const [page, setPage] = useState(1);
   const [ending, setEnding] = useState<Session | null>(null);
-  const query = useSessions({ subjectType: filter === 'all' ? undefined : filter, page });
+  const query = useSessions({ page });
   const lock = grants.needs('sessions:revoke');
   const sessions = query.data?.data ?? [];
 
@@ -55,12 +35,6 @@ export function SessionsTab() {
           </div>
         </div>
       ),
-    },
-    {
-      key: 'type',
-      label: 'Type',
-      hide: 'sm',
-      render: (session) => <TypeTag>{session.subjectType === 'staff' ? 'Staff' : 'Merchant'}</TypeTag>,
     },
     { key: 'ip', label: 'Address', render: (session) => <span className="mono">{session.ip}</span> },
     {
@@ -105,18 +79,7 @@ export function SessionsTab() {
     <>
       <Panel
         title="Sessions"
-        sub="Everyone signed in right now, staff and merchants. Ending a session signs that person out of that device."
-        right={
-          <SegmentedControl
-            items={FILTERS}
-            value={filter}
-            onChange={(next) => {
-              setFilter(next);
-              setPage(1);
-            }}
-            label="Who is signed in"
-          />
-        }
+        sub="Every staff member signed in right now. Ending a session signs that person out of that device."
       >
         <DataTable
           caption="Open sessions"
@@ -131,9 +94,7 @@ export function SessionsTab() {
           onPageChange={setPage}
           empty={
             <EmptyState icon="users" title="No open sessions">
-              {filter === 'all'
-                ? 'Nobody is signed in right now.'
-                : 'Nobody in this group is signed in right now.'}
+              Nobody is signed in right now.
             </EmptyState>
           }
         />

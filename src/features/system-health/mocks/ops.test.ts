@@ -71,7 +71,7 @@ describe('queues', () => {
 
     const paused = await apiPost<QueueStats>('/admin/system/queues/notifications/pause', {
       paused: true,
-      reason: 'Telegram is rate limiting us',
+      reason: 'The mail provider is rate limiting us',
     });
     expect(paused).toMatchObject({ name: 'notifications', paused: true, active: 0, state: 'warn' });
     expect(paused.ratePerMin.value).toBe(0);

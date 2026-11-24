@@ -308,7 +308,7 @@ describe('Suspend… and Reactivate', () => {
 });
 
 describe('Block… and Unblock', () => {
-  it('needs a reason, then blocks and marks the customer high risk', async () => {
+  it('needs a reason, then blocks the customer', async () => {
     const user = userEvent.setup();
     const bodies = recordBodies('post', '*/admin/customers/:id/block');
     await openCustomer(1, DANIEL);
@@ -324,7 +324,7 @@ describe('Block… and Unblock', () => {
     expect(bodies).toEqual([{ blocked: true, reason: 'Card testing or fraud' }]);
     const title = screen.getByRole('heading', { level: 1 });
     expect(await within(title).findByText('Blocked')).toBeInTheDocument();
-    expect(within(title).getByText('High risk')).toBeInTheDocument();
+    expect(within(title).queryByText(/risk/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unblock' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Block…' })).not.toBeInTheDocument();
     // A blocked customer is not offered Suspend.

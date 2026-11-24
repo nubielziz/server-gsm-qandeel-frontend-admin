@@ -72,8 +72,6 @@ export type AttentionItem = { id: string; severity: AttentionSeverity } & (
   | { kind: 'services_below_floor'; count: number; serviceNames: string[] }
   | { kind: 'deposits_pending'; count: number; total: Money; oldestAt: IsoDateTime }
   | { kind: 'wallets_negative'; count: number; clients: { id: Id; name: string; balance: Money }[] }
-  | { kind: 'merchants_pending'; count: number; names: string[] }
-  | { kind: 'commissions_accrued'; count: number; total: Money; agents: number }
   | { kind: 'orders_held'; count: number; captured: Money; oldestAt: IsoDateTime }
   | { kind: 'disputes_due'; count: number; firstDisputeId: Id; dueAt: IsoDateTime; amount: Money; fee: Money }
   | { kind: 'tickets_late'; count: number; oldestTicketId: Id; waitingSince: IsoDateTime; subject: string }
@@ -138,7 +136,6 @@ export type ChannelRevenue = {
 export type StorefrontSummary = {
   funnel: {
     visitorsEstimated: number;
-    imeiChecks: number;
     checkoutsStarted: number;
     paid: number;
     delivered: number;
@@ -147,7 +144,6 @@ export type StorefrontSummary = {
   refundRate: number | null;
   disputeRate: number | null;
   firstReplySeconds: number | null;
-  satisfaction: { average: number; ratings: number } | null;
   heldForReview: number;
 };
 
@@ -161,7 +157,6 @@ export type TopCustomer = { id: Id; name: string; country: string; orders: numbe
 export type DashboardNavCounts = {
   orders: { open: number; pastSla: number };
   finance: { pendingDeposits: number };
-  merchants: { pendingApproval: number };
   support: { open: number; late: number };
   refunds: { open: number; disputesDueSoon: number };
   risk: { held: number };

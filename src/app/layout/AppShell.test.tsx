@@ -21,12 +21,10 @@ const OWNER_PAGES = [
   'Customers',
   'Support',
   'Risk & checks',
-  'Abandoned checkouts',
   'Notifications',
   'Product / Services',
   'Suppliers',
   'Finance',
-  'Commissions',
   'Refunds & disputes',
   'Admins & access',
   'Settings',
@@ -44,7 +42,7 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 18 pages (the demo’s, with Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
+  it('lists the 16 pages (the demo’s, with Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
@@ -561,7 +559,7 @@ describe('account menu', () => {
     await signInAs();
     const user = userEvent.setup();
     renderApp('/dashboard');
-    expect((await primaryNav()).getAllByRole('link')).toHaveLength(18);
+    expect((await primaryNav()).getAllByRole('link')).toHaveLength(16);
     expect(await screen.findByRole('button', { name: 'Account menu for Rami K.' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Account menu for/ }));

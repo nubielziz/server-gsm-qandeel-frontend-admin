@@ -9,15 +9,7 @@ import type { ClientGroupRow, ServiceClientPriceRow } from '@/lib/api/schema.gen
  */
 export type ClientGroup = Pick<
   ClientGroupRow,
-  | 'id'
-  | 'name'
-  | 'discountPercent'
-  | 'isDefault'
-  | 'earnThreshold'
-  | 'depositLimit'
-  | 'overdraftAllowed'
-  | 'sort'
-  | 'createdAt'
+  'id' | 'name' | 'discountPercent' | 'isDefault' | 'depositLimit' | 'overdraftAllowed' | 'sort' | 'createdAt'
 > & {
   kind: string;
   merchantCount?: number;
@@ -27,7 +19,6 @@ export type ClientGroup = Pick<
 export type CreateClientGroupBody = {
   name: string;
   discountPercent: Decimal;
-  earnThreshold: Money;
   depositLimit: Money;
   overdraftAllowed: boolean;
   isDefault: boolean;

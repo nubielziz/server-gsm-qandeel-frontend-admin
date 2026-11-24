@@ -1,5 +1,5 @@
 // How the settings feature plugs into the app (src/app/features.ts finds this file): the Settings page with its any-tab permission and
-// the Refine resources of the gateways, tax rates, currencies, templates and the two logs.
+// the Refine resources of the gateways, tax rates, currencies, templates and the notification log.
 import type { FeatureManifest } from '@/app/featureManifest';
 import { settingsResources } from './api/resources';
 import { PAGE_PERMISSIONS } from './lib/tabs';

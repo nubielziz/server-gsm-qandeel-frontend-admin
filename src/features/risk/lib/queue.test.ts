@@ -64,7 +64,7 @@ describe('history', () => {
 
 describe('refund wording', () => {
   it('starts the reason from the first signal, or a general one', () => {
-    expect(defaultRefundReason(['Disposable email domain', 'VPN'])).toBe(
+    expect(defaultRefundReason(['Disposable email domain', 'Prepaid card BIN'])).toBe(
       'Refunded after risk review: Disposable email domain',
     );
     expect(defaultRefundReason([])).toBe('Refunded after risk review: high risk score');

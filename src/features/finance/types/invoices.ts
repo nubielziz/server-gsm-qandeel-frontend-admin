@@ -5,7 +5,7 @@ import type { Id, Money } from '@/lib/api';
 import type { InvoiceRow } from '@/lib/api/schema.gen';
 
 /** What the invoice is for. `manual` is the kind staff issue from the console. */
-export type InvoiceKind = 'topup' | 'manual' | 'receipt' | 'statement';
+export type InvoiceKind = 'topup' | 'manual' | 'receipt';
 
 /** Where an invoice stands: waiting for payment, paid, or cancelled. */
 export type InvoiceStatus = 'open' | 'paid' | 'void';

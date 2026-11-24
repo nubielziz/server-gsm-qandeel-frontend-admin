@@ -1,12 +1,10 @@
 // ProfileTab: the "Profile" tab of a merchant's page (feature 20): three cards, Account (who they are and how to reach them),
-// Business (address and tax ID) and Settings and notes (Telegram and the staff-only notes), with "Edit details". A value the server
+// Business (address and tax ID) and Notes (the staff-only notes), with "Edit details". A value the server
 // did not send shows a dash.
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
 import { Badge, Button, Icon, KeyValue, type KeyValueRow } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
-import { merchantPath } from '../lib/paths';
 import type { Client } from '../types';
 
 const DASH = <span className="text-ink3">–</span>;
@@ -67,23 +65,7 @@ export function ProfileTab({
         {client.username}
       </span>,
     ],
-    [
-      'Referral code',
-      <span key="r" className="mono">
-        {client.referralCode}
-      </span>,
-    ],
     ['Group', client.group ? client.group.name : DASH],
-    [
-      'Referred by',
-      client.referredBy ? (
-        <Link className="link" to={merchantPath(client.referredBy.id)}>
-          {client.referredBy.name}
-        </Link>
-      ) : (
-        DASH
-      ),
-    ],
     ['Joined', fmtDate(client.createdAt)],
   ];
 
@@ -111,17 +93,9 @@ export function ProfileTab({
               ]}
             />
           </Card>
-          <Card title="Settings and notes">
+          <Card title="Notes">
             <KeyValue
               rows={[
-                [
-                  'Telegram',
-                  client.telegramLinked === undefined
-                    ? DASH
-                    : client.telegramLinked
-                      ? 'Linked'
-                      : 'Not linked',
-                ],
                 [
                   'Internal notes',
                   client.internalNotes ? (

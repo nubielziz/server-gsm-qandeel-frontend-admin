@@ -1,34 +1,34 @@
-// The Risk page's tab, filters, page, sort and open IMEI check as URL search parameters (`?tab=checks&kind=icloud&page=2`),
-// so a link or a reload shows the same screen (ARCHITECTURE §5.2). Ports the `ui.risk`, `ui.rkI` and `ui.rkB` state of
-// 54-p-risk.js, which lived in memory. Nothing here decides which rows match: it only writes and reads the question.
+// The Risk page's tab, blocklist filter, page and sort as URL search parameters (`?tab=block&kind=imei&page=2`), so a link or a
+// reload shows the same screen (ARCHITECTURE §5.2). Ports the `ui.risk` and `ui.rkB` state of 54-p-risk.js, which lived in
+// memory. Nothing here decides which rows match: it only writes and reads the question.
 import type { CrudFilters } from '@refinedev/core';
 import type { SortState } from '@/components/ui';
 import type { FilterValue } from '@/lib/api';
-import type { BlocklistFilters, BlockKind, CheckKind, CheckResult, ImeiCheckFilters } from '../types';
-import { BLOCK_KINDS, CHECK_KINDS, CHECK_RESULTS } from './labels';
+import type { BlocklistFilters, BlockKind } from '../types';
+import { BLOCK_KINDS } from './labels';
 
-export type RiskTab = 'queue' | 'checks' | 'block' | 'rules';
+export type RiskTab = 'queue' | 'block' | 'rules';
 
 /** The tabs in the demo's order. */
 export const RISK_TABS: readonly { id: RiskTab; label: string }[] = [
   { id: 'queue', label: 'Review queue' },
-  { id: 'checks', label: 'IMEI checks' },
   { id: 'block', label: 'Blocklist' },
   { id: 'rules', label: 'Rules' },
 ];
 
-/** The page opens on the review queue; it is also what `/risk?tab=queue` links to. */
+/**
+ * The page opens on the review queue; it is also what `/risk?tab=queue` links to, and where an address that names a tab the
+ * page no longer has (the retired `?tab=checks`) lands.
+ */
 export const DEFAULT_TAB: RiskTab = 'queue';
 
-/** Rows per page: the demo pages the checks table by 15 and every other table by 25 (its `PAGE`). */
-export const CHECK_PAGE_SIZE = 15;
+/** Rows per page of the blocklist (the demo's `PAGE`). */
 export const BLOCK_PAGE_SIZE = 25;
 
-/** The columns the server can sort the two lists by (plain fields of the rows). */
-export const CHECK_SORT_FIELDS = ['model', 'checkType', 'status', 'createdAt'] as const;
+/** The columns the server can sort the blocklist by (plain fields of the rows). */
 export const BLOCK_SORT_FIELDS = ['kind', 'display', 'createdAt'] as const;
 
-/** Newest first: the demo's default (`sort: 'ts', dir: -1`) for both lists. */
+/** Newest first: the demo's default (`sort: 'ts', dir: -1`). */
 export const NEWEST_FIRST: SortState = { field: 'createdAt', order: 'desc' };
 
 export function isRiskTab(value: string | null): value is RiskTab {
@@ -45,44 +45,6 @@ export function writeTab(tab: RiskTab): URLSearchParams {
   return tab === DEFAULT_TAB ? new URLSearchParams() : new URLSearchParams({ tab });
 }
 
-// ---- IMEI checks ----
-
-/** The checks toolbar: the search text, the kind of check and the result. */
-export type ChecksView = { q: string; kind: CheckKind | ''; result: CheckResult | '' };
-
-export function parseChecksView(params: URLSearchParams): ChecksView {
-  const kind = params.get('kind');
-  const result = params.get('result');
-  return {
-    q: params.get('q') ?? '',
-    kind: CHECK_KINDS.find((candidate) => candidate === kind) ?? '',
-    result: CHECK_RESULTS.find((candidate) => candidate === result) ?? '',
-  };
-}
-
-export function hasChecksFilters(view: ChecksView): boolean {
-  return Boolean(view.q.trim() || view.kind || view.result);
-}
-
-/**
- * An IMEI is pasted with or without the spaces the screen puts in it ("35 389011 884201 4"). Text made only of digits and
- * spaces is searched without the spaces; anything else (a brand, a model) is searched as typed, trimmed.
- */
-export function normalizeSearch(text: string): string {
-  const trimmed = text.trim();
-  return /^[\d\s]+$/.test(trimmed) ? trimmed.replace(/\s/g, '') : trimmed;
-}
-
-/** The API filters for the toolbar. */
-export function toCheckFilters(view: ChecksView): ImeiCheckFilters {
-  const q = normalizeSearch(view.q);
-  return {
-    ...(q ? { q } : {}),
-    ...(view.kind ? { checkType: view.kind } : {}),
-    ...(view.result ? { status: view.result } : {}),
-  };
-}
-
 // ---- Blocklist ----
 
 /** The blocklist toolbar: the kind of entry. */
@@ -97,7 +59,7 @@ export function toBlockFilters(view: BlockView): BlocklistFilters {
   return view.kind ? { kind: view.kind } : {};
 }
 
-/** The same filters as Refine's list filters, which the data provider turns into the query string (`q` becomes the search text). */
+/** The same filters as Refine's list filters, which the data provider turns into the query string. */
 export function toRefineFilters(filters: Readonly<Record<string, FilterValue | undefined>>): CrudFilters {
   return Object.entries(filters).flatMap(([field, value]) =>
     value === undefined || value === '' ? [] : [{ field, operator: 'eq' as const, value }],
@@ -108,17 +70,6 @@ export function toRefineFilters(filters: Readonly<Record<string, FilterValue | u
 
 const put = (next: URLSearchParams, key: string, value: string) =>
   value ? next.set(key, value) : next.delete(key);
-
-/** The address with some checks filters changed. A filter change goes back to page 1; the sort is kept. */
-export function writeChecksView(base: URLSearchParams, patch: Partial<ChecksView>): URLSearchParams {
-  const merged = { ...parseChecksView(base), ...patch };
-  const next = new URLSearchParams(base);
-  put(next, 'q', merged.q);
-  put(next, 'kind', merged.kind);
-  put(next, 'result', merged.result);
-  next.delete('page');
-  return next;
-}
 
 export function writeBlockView(base: URLSearchParams, patch: Partial<BlockView>): URLSearchParams {
   const merged = { ...parseBlockView(base), ...patch };
@@ -162,20 +113,5 @@ export function writeSort(base: URLSearchParams, sort: SortState): URLSearchPara
     next.set('dir', sort.order);
   }
   next.delete('page');
-  return next;
-}
-
-// ---- The open IMEI check ----
-
-/** The check whose details are open, kept in the address as `?check=<id>` (like the order drawer's `?order=<id>`). */
-export function parseCheckId(params: URLSearchParams): number | null {
-  const raw = params.get('check');
-  return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null;
-}
-
-export function writeCheckId(base: URLSearchParams, id: number | null): URLSearchParams {
-  const next = new URLSearchParams(base);
-  if (id === null) next.delete('check');
-  else next.set('check', String(id));
   return next;
 }

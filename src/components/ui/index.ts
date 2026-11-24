@@ -25,7 +25,6 @@ export * from './InfoTip';
 export * from './Timeline';
 export * from './Meter';
 export * from './ScoreMeter';
-export * from './Stars';
 
 // Navigation and controls
 export * from './Tabs';
@@ -68,6 +67,11 @@ export { outcomeOf, SAVED_MS, useSaveFlow } from './useSaveFlow';
 export type { SaveOutcome } from './useSaveFlow';
 export { useDirtySections, useReportDirty } from './useReportDirty';
 export type { ReportSection } from './useReportDirty';
+export { useDirtyMark } from './useDirtyMark';
+export type { DirtyMark } from './useDirtyMark';
+export * from './UnsavedGuard';
+export { isPlainClick, leaveLink } from './leaveLink';
+export type { HereAddress } from './leaveLink';
 export * from './Menu';
 export * from './FloatingPanel';
 export * from './CommandPalette';

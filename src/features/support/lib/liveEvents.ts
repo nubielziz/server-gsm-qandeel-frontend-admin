@@ -11,15 +11,13 @@ import type {
   TicketMessage,
   TicketPriority,
   TicketStatus,
-  TypingMode,
 } from '../types';
 
-/** The names of the four ticket events (staff view: notes and system messages included). */
+/** The names of the three ticket events (staff view: notes and system messages included). */
 export const TICKET_EVENTS = {
   messageCreated: 'ticket.message.created',
   updated: 'ticket.updated',
   read: 'ticket.read',
-  typing: 'ticket.typing',
 } as const;
 
 /** A message was written on a ticket. `live` is false for one the server replayed after a reconnect. The stream's event id is `t<message id>`. */
@@ -29,7 +27,7 @@ export interface TicketMessageCreated {
   live: boolean;
 }
 
-/** A ticket changed (status, assignee, priority, rating, a new ticket, a new message): its whole list row. */
+/** A ticket changed (status, assignee, priority, a new ticket, a new message): its whole list row. */
 export interface TicketUpdated {
   ticket: SupportTicket;
 }
@@ -40,15 +38,6 @@ export interface TicketRead {
   by: 'requester' | 'staff';
   upToMessageId: Id;
   at: IsoDateTime;
-}
-
-/** Someone is typing on a ticket: the requester, or a staff member (`staffId` and `staffName` say who; `mode` says reply or note). */
-export interface TicketTyping {
-  ticketId: Id;
-  by: 'requester' | 'staff';
-  staffId: Id | null;
-  staffName: string | null;
-  mode: TypingMode | null;
 }
 
 type Obj = Record<string, unknown>;
@@ -179,23 +168,6 @@ export function parseTicketRead(data: unknown): TicketRead | null {
         at: data.at as string,
       }
     : null;
-}
-
-export function parseTicketTyping(data: unknown): TicketTyping | null {
-  if (!isObject(data) || !isId(data.ticketId) || !(data.by === 'requester' || data.by === 'staff'))
-    return null;
-  const staffId = data.staffId ?? null;
-  const staffName = data.staffName ?? null;
-  const mode = data.mode ?? null;
-  if (!isNullable(staffId, isId) || !isNullable(staffName, isText)) return null;
-  if (mode !== null && mode !== 'reply' && mode !== 'note') return null;
-  return {
-    ticketId: data.ticketId,
-    by: data.by,
-    staffId: staffId as number | null,
-    staffName: staffName as string | null,
-    mode,
-  };
 }
 
 /** True for a message the requester wrote (a customer or a merchant); a reply, a note and a system line are not. */

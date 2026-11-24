@@ -1,4 +1,4 @@
-// TemplateDialog: "New template" and "Edit <event>" (`POST` and `PATCH /admin/notification-templates`): event, channel and audience
+// TemplateDialog: "New template" and "Edit <event>" (`POST` and `PATCH /admin/notification-templates`): event and audience
 // (fixed after the first save), the subject and the message, and whether it is sent. The demo only had a canned preview; the map
 // lets staff edit the texts. Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
@@ -12,7 +12,7 @@ import {
   toast,
 } from '@/components/ui';
 import { useCreateTemplate, useUpdateTemplate } from '../hooks/useTemplates';
-import { AUDIENCE_OPTIONS, CHANNEL_OPTIONS, eventLabel } from '../lib/templates';
+import { AUDIENCE_OPTIONS, eventLabel } from '../lib/templates';
 import type { CreateTemplateBody, NotificationTemplate, UpdateTemplateBody } from '../types';
 
 type Values = CreateTemplateBody;
@@ -39,19 +39,19 @@ export function TemplateDialog({
   });
   const {
     register,
-    watch,
     formState: { errors },
   } = form;
-  const channel = watch('channel');
   const fixed = template !== undefined;
 
   const submit = dialogSubmit(
     form,
     async (values) => {
+      // A template is an email: the one channel there is.
       const next: CreateTemplateBody = {
         ...values,
+        channel: 'email',
         event: values.event.trim(),
-        subject: values.channel === 'email' ? values.subject.trim() : '',
+        subject: values.subject.trim(),
       };
       if (!template) {
         await create.mutateAsync(next);
@@ -67,7 +67,7 @@ export function TemplateDialog({
       }
       await update.mutateAsync({ template, body });
     },
-    { fields: ['event', 'channel', 'audience', 'subject', 'body', 'isActive'] },
+    { fields: ['event', 'audience', 'subject', 'body', 'isActive'] },
   );
 
   return (
@@ -91,14 +91,6 @@ export function TemplateDialog({
             {...register('event', { validate: (v) => v.trim() !== '' || 'Enter the event.' })}
           />
           <SelectField
-            label="Channel"
-            selectWrapClassName="w-full"
-            disabled={fixed}
-            options={CHANNEL_OPTIONS}
-            error={errors.channel}
-            {...register('channel')}
-          />
-          <SelectField
             label="Sent to"
             selectWrapClassName="w-full"
             disabled={fixed}
@@ -107,17 +99,13 @@ export function TemplateDialog({
             {...register('audience')}
           />
         </div>
-        {channel === 'email' && (
-          <TextField
-            label="Subject"
-            autoComplete="off"
-            autoFocus={fixed}
-            error={errors.subject}
-            {...register('subject', {
-              validate: (v) => channel !== 'email' || v.trim() !== '' || 'An email needs a subject.',
-            })}
-          />
-        )}
+        <TextField
+          label="Subject"
+          autoComplete="off"
+          autoFocus={fixed}
+          error={errors.subject}
+          {...register('subject', { validate: (v) => v.trim() !== '' || 'An email needs a subject.' })}
+        />
         <TextareaField
           label="Message"
           rows={7}

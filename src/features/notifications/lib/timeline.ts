@@ -47,12 +47,7 @@ export function timelineOf(campaign: CampaignDetail): TimelineEvent[] {
 /** The share of planned messages that are done (made, sent or failed), 0 to 1; 0 while nothing is planned yet. */
 export function progressOf(campaign: CampaignDetail): { done: number; planned: number; ratio: number } {
   const { planned, delivery } = campaign;
-  const total = planned.inApp + planned.email + planned.telegram;
-  const done =
-    delivery.inApp.delivered +
-    delivery.email.sent +
-    delivery.email.failed +
-    delivery.telegram.sent +
-    delivery.telegram.failed;
+  const total = planned.inApp + planned.email;
+  const done = delivery.inApp.delivered + delivery.email.sent + delivery.email.failed;
   return { done, planned: total, ratio: total > 0 ? Math.min(1, done / total) : 0 };
 }

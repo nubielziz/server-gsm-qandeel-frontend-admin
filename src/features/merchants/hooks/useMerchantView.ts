@@ -1,4 +1,4 @@
-// The merchants page's tab, filters, page, sort and verification filter, kept in the address (`?tab=pending&q=…&page=2`), so a
+// The merchants page's tab, filters, page and sort, kept in the address (`?tab=suspended&q=…&page=2`), so a
 // link or a reload shows the same list. Changes replace the history entry: Back should leave the page, not walk through every
 // keystroke of a search.
 import { useCallback, useMemo } from 'react';
@@ -6,16 +6,13 @@ import { useSearchParams } from 'react-router';
 import type { SortState } from '@/components/ui';
 import {
   clearMerchantFilters,
-  parseKycFilter,
   parseMerchantFilters,
   parseMerchantTab,
   parsePage,
   parseSort,
-  writeKycFilter,
   writeMerchantFilters,
   writeTab,
   writeView,
-  type KycFilter,
   type MerchantFilters,
 } from '../lib/filters';
 import type { MerchantTab } from '../lib/status';
@@ -27,7 +24,6 @@ export function useMerchantView(visible: readonly MerchantTab[]) {
   const filters = useMemo(() => parseMerchantFilters(params), [params]);
   const sort = useMemo(() => parseSort(params), [params]);
   const page = parsePage(params);
-  const kycFilter = parseKycFilter(params);
 
   const setTab = useCallback(
     (next: MerchantTab) => setParams((prev) => writeTab(prev, next), { replace: true }),
@@ -51,22 +47,16 @@ export function useMerchantView(visible: readonly MerchantTab[]) {
     (next: SortState) => setParams((prev) => writeView(prev, { sort: next, page: 1 }), { replace: true }),
     [setParams],
   );
-  const setKycFilter = useCallback(
-    (next: KycFilter) => setParams((prev) => writeKycFilter(prev, next), { replace: true }),
-    [setParams],
-  );
 
   return {
     tab,
     filters,
     sort,
     page,
-    kycFilter,
     setTab,
     setFilters,
     clearFilters,
     setPage,
     setSort,
-    setKycFilter,
   };
 }

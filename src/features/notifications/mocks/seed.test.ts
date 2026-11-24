@@ -91,14 +91,13 @@ describe('the made-up audience', () => {
       { customers: { countries: ['SA'] }, merchants: { countries: ['JO'] } },
     ];
     for (const spec of specs) {
-      for (const channels of [['in_app'], ['email'], ['in_app', 'email', 'telegram']] as const) {
+      for (const channels of [['in_app'], ['email'], ['in_app', 'email']] as const) {
         for (const purpose of ['service', 'marketing'] as const) {
           const preview = previewOf(spec, channels, purpose);
           const made = fanOut({ audience: spec, purpose, channels: [...channels] }, 'done', NOW, 1);
           expect(made.recipients).toBe(preview.reachable);
           expect(made.planned.inApp).toBe(preview.byChannel.inApp);
           expect(made.planned.email).toBe(preview.byChannel.email);
-          expect(made.planned.telegram).toBe(preview.byChannel.telegram);
         }
       }
     }
@@ -109,12 +108,5 @@ describe('the made-up audience', () => {
     const marketing = previewOf({ customers: {} }, ['email'], 'marketing');
     expect(marketing.total).toBeLessThan(service.total);
     expect(marketing.excluded.noConsent).toBe(service.total - marketing.total);
-  });
-
-  it('reaches by Telegram only merchants with a chat, and counts the others as not reached', () => {
-    const preview = previewOf({ merchants: {}, staff: {} }, ['telegram'], 'service');
-    expect(preview.byType.staff).toBe(0);
-    expect(preview.excluded.noTelegram).toBeGreaterThan(0);
-    expect(preview.reachable).toBe(preview.byChannel.telegram);
   });
 });

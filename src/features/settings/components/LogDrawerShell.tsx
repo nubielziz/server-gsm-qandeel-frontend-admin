@@ -1,4 +1,4 @@
-// LogDrawerShell: the drawer frame both log drawers share: a loading skeleton, the error state with Retry, or the content once the record is
+// LogDrawerShell: the drawer frame of the notification log: a loading skeleton, the error state with Retry, or the content once the record is
 // known. A deep link (`?notification=<id>`) has no list row, so the first paint is the skeleton.
 import type { ReactNode } from 'react';
 import { Drawer, ErrorState, SkeletonTable } from '@/components/ui';

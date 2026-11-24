@@ -60,7 +60,6 @@ export const QUEUES: QueueSpec[] = [
   { name: 'orders.fetch', waiting: 11, active: 3, delayed: 28, workers: 3, rate: 61, age: 7 },
   { name: 'supplier.sync', waiting: 0, active: 1, delayed: 6, workers: 2, rate: 4, age: 0 },
   { name: 'notifications', waiting: 5, active: 2, delayed: 0, workers: 2, rate: 52, age: 3 },
-  { name: 'webhooks.out', waiting: 8, active: 3, delayed: 14, workers: 3, rate: 44, age: 6 },
   { name: 'ledger.jobs', waiting: 1, active: 1, delayed: 0, workers: 2, rate: 23, age: 2 },
   { name: 'risk.assess', waiting: 0, active: 0, delayed: 0, workers: 1, rate: 9, age: 0 },
   { name: 'reports.export', waiting: 0, active: 0, delayed: 0, workers: 1, rate: 1, age: 0 },
@@ -71,23 +70,21 @@ export const QUEUE_STRESS: Record<'degraded' | 'outage', Record<string, Partial<
   degraded: {
     'orders.dispatch': { waiting: 64, active: 8, delayed: 41, age: 192, rate: 12 },
     'orders.fetch': { waiting: 29, delayed: 55, age: 48, rate: 40 },
-    'webhooks.out': { waiting: 40, age: 95 },
   },
   outage: {
     'orders.dispatch': { waiting: 412, active: 0, age: 840, rate: 0, workers: 1 },
     'orders.fetch': { waiting: 233, active: 0, age: 905, rate: 0, workers: 1 },
     'ledger.jobs': { waiting: 188, active: 0, age: 710, rate: 0 },
-    'webhooks.out': { waiting: 96, age: 305, rate: 6 },
     notifications: { waiting: 22, age: 19 },
   },
 };
 
 /** Failed jobs kept per queue, by part of the story. */
 export const FAILED_COUNTS: Record<'calm' | 'slow' | 'outage' | 'ledger', Record<string, number>> = {
-  calm: { 'orders.fetch': 2, 'webhooks.out': 3, notifications: 1 },
-  slow: { 'orders.dispatch': 23, 'orders.fetch': 9, 'webhooks.out': 4 },
-  outage: { 'orders.dispatch': 61, 'orders.fetch': 34, 'ledger.jobs': 27, 'webhooks.out': 18 },
-  ledger: { 'ledger.jobs': 1, 'webhooks.out': 3 },
+  calm: { 'orders.fetch': 2, notifications: 1 },
+  slow: { 'orders.dispatch': 23, 'orders.fetch': 9 },
+  outage: { 'orders.dispatch': 61, 'orders.fetch': 34, 'ledger.jobs': 27 },
+  ledger: { 'ledger.jobs': 1 },
 };
 
 /** Failure texts and subjects a queue's failed jobs are made from, by part of the story. */
@@ -97,22 +94,17 @@ export const FAILURES: Record<
 > = {
   calm: {
     'orders.fetch': [{ reason: 'Supplier answered 502 (Bad Gateway)', subject: 'order #' }],
-    'webhooks.out': [
-      { reason: 'Connection refused: https://hooks.merchant.example/gsm', subject: 'delivery #' },
-    ],
-    notifications: [{ reason: 'Telegram: 429 Too Many Requests (retry after 3 s)', subject: 'message #' }],
+    notifications: [{ reason: 'SMTP: 421 Too many connections (retry after 30 s)', subject: 'message #' }],
     'ledger.jobs': [{ reason: 'Entry rejected: its lines do not sum to zero', subject: 'entry #' }],
   },
   slow: {
     'orders.dispatch': [{ reason: 'Supplier timeout after 6000 ms (Rapid IMEI)', subject: 'order #' }],
     'orders.fetch': [{ reason: 'Supplier timeout after 6000 ms (Rapid IMEI)', subject: 'order #' }],
-    'webhooks.out': [{ reason: 'Request timed out after 10000 ms', subject: 'delivery #' }],
   },
   outage: {
     'orders.dispatch': [{ reason: 'connect ECONNREFUSED 10.0.3.12:5432', subject: 'order #' }],
     'orders.fetch': [{ reason: 'FATAL: sorry, too many clients already', subject: 'order #' }],
     'ledger.jobs': [{ reason: 'Connection terminated unexpectedly', subject: 'entry #' }],
-    'webhooks.out': [{ reason: 'connect ECONNREFUSED 10.0.3.12:5432', subject: 'delivery #' }],
   },
 };
 
@@ -173,16 +165,6 @@ export const JOBS: JobSpec[] = [
     processed: 7,
   },
   {
-    name: 'accruals',
-    label: 'Commission accruals',
-    schedule: '0 1 * * *',
-    text: 'Every day at 01:00 UTC',
-    every: DAY,
-    offset: HOUR,
-    typical: 38_000,
-    processed: 214,
-  },
-  {
     name: 'ledger_integrity',
     label: 'Ledger integrity check',
     schedule: '30 2 * * *',
@@ -191,16 +173,6 @@ export const JOBS: JobSpec[] = [
     offset: 2.5 * HOUR,
     typical: 14_200,
     processed: 48_213,
-  },
-  {
-    name: 'data_retention',
-    label: 'Expired data cleanup',
-    schedule: '0 3 * * *',
-    text: 'Every day at 03:00 UTC',
-    every: DAY,
-    offset: 3 * HOUR,
-    typical: 96_000,
-    processed: 1830,
   },
 ];
 

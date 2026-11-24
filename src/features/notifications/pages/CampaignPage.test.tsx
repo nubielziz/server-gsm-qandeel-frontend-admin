@@ -77,15 +77,14 @@ describe('the figures', () => {
       status: 'sent',
       expectedRecipients: 20,
       recipients: 18,
-      planned: { inApp: 18, email: 10, telegram: 4 },
-      channels: ['in_app', 'email', 'telegram'],
-      skipped: { optedOut: 2, noTelegram: 1, noAccount: 0 },
+      planned: { inApp: 18, email: 10 },
+      channels: ['in_app', 'email'],
+      skipped: { optedOut: 2, noAccount: 1 },
       finishedAt: '2026-11-10T09:30:00.000Z',
     });
     detail.delivery = {
       inApp: { delivered: 18, read: 7 },
       email: { queued: 1, sent: 8, failed: 1 },
-      telegram: { queued: 0, sent: 3, failed: 1 },
     };
     return detail;
   };
@@ -100,7 +99,7 @@ describe('the figures', () => {
     expect(grid.getByText('In-app').closest('div')).toHaveTextContent('7 read');
     expect(grid.getByText('Email').closest('div')).toHaveTextContent('8 sent');
     expect(grid.getByText('Email').closest('div')).toHaveTextContent('1 waiting, 1 failed');
-    expect(grid.getByText('Telegram').closest('div')).toHaveTextContent('3 sent');
+    expect(grid.queryByText('Telegram')).not.toBeInTheDocument();
   });
 
   it('leaves out the channels the campaign does not use and shows how far the delivery is', async () => {
@@ -110,10 +109,9 @@ describe('the figures', () => {
     await open(9, {}, 'Counted');
     const grid = within(await screen.findByRole('region', { name: 'Campaign figures' }));
     expect(grid.queryByText('Email')).not.toBeInTheDocument();
-    expect(grid.queryByText('Telegram')).not.toBeInTheDocument();
-    // 18 + 8 + 1 + 3 + 1 of 32 planned.
-    expect(await screen.findByText('31 of 32 messages done')).toBeInTheDocument();
-    expect(screen.getByRole('meter', { name: 'Delivery progress' })).toHaveAttribute('aria-valuenow', '97');
+    // 18 + 8 + 1 of 28 planned.
+    expect(await screen.findByText('27 of 28 messages done')).toBeInTheDocument();
+    expect(screen.getByRole('meter', { name: 'Delivery progress' })).toHaveAttribute('aria-valuenow', '96');
   });
 
   it('says why people were skipped, and shows the failure reason of a failed campaign', async () => {
@@ -125,9 +123,7 @@ describe('the figures', () => {
     await open(9, {}, 'Counted');
     expect(await screen.findByText(/The fan-out stopped/)).toBeInTheDocument();
     expect(screen.getByText('2 people have switched announcement emails off')).toBeInTheDocument();
-    expect(
-      screen.getByText('1 merchant has no Telegram chat linked, or switched it off'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('1 customer has no account, so no inbox item')).toBeInTheDocument();
   });
 });
 

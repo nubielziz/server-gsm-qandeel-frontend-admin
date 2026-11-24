@@ -1,18 +1,18 @@
-// StorefrontPanel: "Storefront funnel", the five steps from estimated visitors to delivered orders, and six small figures
+// StorefrontPanel: "Storefront funnel", the four steps from estimated visitors to delivered orders, and five small figures
 // under it. Covers the last 30 days whatever the period. Ports storefrontPanel() of 40-p-dashboard.js.
 import { EmptyState, Panel, SkeletonTable } from '@/components/ui';
 import { num } from '@/lib/format';
 import { funnelSteps, isStorefrontIdle, storefrontKpis } from '../lib/storefront';
 import type { StorefrontSummary } from '../types';
 
-const SUB = 'Last 30 days. Visitor numbers are estimated from IMEI checks.';
+const SUB = 'Last 30 days. Visitor numbers are estimated.';
 
 export interface StorefrontPanelProps {
   /** `undefined` while the dashboard loads; `null` when the server sent none (the panel then stays out). */
   summary: StorefrontSummary | null | undefined;
 }
 
-/** The funnel and its six figures, an empty state for an idle storefront, and nothing when the server sent no storefront block. */
+/** The funnel and its five figures, an empty state for an idle storefront, and nothing when the server sent no storefront block. */
 export function StorefrontPanel({ summary }: StorefrontPanelProps) {
   if (summary === null) return null;
   if (!summary) {
@@ -26,7 +26,7 @@ export function StorefrontPanel({ summary }: StorefrontPanelProps) {
     return (
       <Panel title="Storefront funnel" sub={SUB}>
         <EmptyState icon="store" title="No storefront activity yet">
-          Visits, IMEI checks and orders from the public site appear here.
+          Visits, checkouts and orders from the public site appear here.
         </EmptyState>
       </Panel>
     );

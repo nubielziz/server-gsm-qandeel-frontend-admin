@@ -1,4 +1,4 @@
-// The storefront policies the Policies tab shows: the eight rows of the demo's POLICY_ROWS (55-p-settings.js) with their texts, which
+// The storefront policies the Policies tab shows: five of the eight rows of the demo's POLICY_ROWS (55-p-settings.js) with their texts, which
 // of them are switches and which are numbers, and how the values are read from the settings. Names of the keys are assumed (HANDOFF).
 import { isApiError } from '@/lib/api';
 import type { PolicyKey, Settings, StorefrontPolicies } from '../types';
@@ -37,27 +37,10 @@ export const POLICY_ROWS: readonly PolicySpec[] = [
     hint: 'When a supplier rejects the order, the customer is refunded without waiting for a person.',
   },
   {
-    key: 'imeiPrecheck',
-    label: 'Check the IMEI before payment',
-    hint: 'A blacklisted phone is turned away before the customer pays, so no refund is ever needed.',
-  },
-  {
     key: 'refundHoursBeforeDispatch',
     label: 'Cancel freely within',
     unit: 'hours of paying, if not yet sent',
     hint: 'Until the order goes to a supplier the customer can cancel on their own.',
-  },
-  {
-    key: 'abandonedMinutes',
-    label: 'Send a reminder after',
-    unit: 'minutes at checkout',
-    hint: 'One email to people who left an address and did not pay.',
-  },
-  {
-    key: 'imeiRetentionDays',
-    label: 'Keep the IMEI for',
-    unit: 'days after the order',
-    hint: 'Then it is removed from the order. An IMEI tied to a person is personal data, so keep this as short as support allows.',
   },
 ];
 
@@ -69,7 +52,6 @@ const SWITCHES: readonly PolicyKey[] = [
   'require3ds',
   'withdrawalWaiver',
   'autoRefundFailed',
-  'imeiPrecheck',
 ];
 
 /** Whether a policy is a yes/no switch (the others are numbers). */
@@ -100,7 +82,7 @@ export function switchToast(spec: PolicySpec, on: boolean): string {
 
 /**
  * The message the server gave for one policy: the one under its field name, else the problem's own text. The server may write the
- * field with a prefix (`policies.abandonedMinutes`), so the end of the name counts.
+ * field with a prefix (`policies.refundHoursBeforeDispatch`), so the end of the name counts.
  */
 export function policyMessage(error: unknown, key: string): string {
   if (!isApiError(error)) return error instanceof Error ? error.message : 'The setting was not saved.';

@@ -26,6 +26,8 @@ describe('labels', () => {
   it('names the kinds and falls back to plain words', () => {
     expect(invoiceKindLabel('manual')).toBe('Manual');
     expect(invoiceKindLabel('credit_note')).toBe('Credit note');
+    // The statement kind is retired: an old invoice that still has it reads as plain words.
+    expect(invoiceKindLabel('statement')).toBe('Statement');
     expect(invoiceStatusBadge('paid')).toMatchObject({ label: 'Paid', tone: 'good' });
     expect(invoiceStatusBadge('open')).toMatchObject({ label: 'Open', tone: 'warn' });
     expect(invoiceStatusBadge('disputed')).toMatchObject({ label: 'Disputed', tone: 'neutral' });
@@ -56,6 +58,8 @@ describe('the list filters', () => {
       status: 'paid',
       kind: '',
     });
+    // An old address that filters by the retired statement kind opens the list with no kind filter.
+    expect(parseInvoiceFilters(new URLSearchParams('kind=statement'))).toMatchObject({ kind: '' });
     expect(writeInvoiceFilters(new URLSearchParams('page=2'), { status: 'open' }).toString()).toBe(
       'page=2&status=open',
     );

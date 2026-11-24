@@ -46,7 +46,6 @@ export function toCustomer(row: MockCustomer, orders: readonly MockOrder[]): Cus
     hasAccount: row.hasAccount,
     createdBy: row.createdBy,
     marketingOptIn: row.marketingOptIn,
-    riskLevel: row.riskLevel,
     status: row.status,
     suspendedAt: row.suspendedAt,
     suspendedReason: row.suspendedReason,

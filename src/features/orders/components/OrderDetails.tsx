@@ -107,7 +107,6 @@ export function OrderDetails({ order, now, grants }: OrderDetailsProps) {
         order.inputFileId !== null
           ? ['Input file', <FileLink id={order.inputFileId} allowed={files} />]
           : null,
-        order.clientNote ? ['Note from the buyer', order.clientNote] : null,
         order.adminNote ? ['Internal note', order.adminNote] : null,
       ]}
     />

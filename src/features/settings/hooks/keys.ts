@@ -21,5 +21,5 @@ export const LOOKUP_STALE_MS = 5 * 60_000;
 /** Rows one list call asks for when the tab shows a whole short table (gateways, tax, currencies, templates). */
 export const WHOLE_LIST = 200;
 
-/** Rows per page of the two logs. */
+/** Rows per page of the notification log. */
 export const LOG_PAGE_SIZE = 25;

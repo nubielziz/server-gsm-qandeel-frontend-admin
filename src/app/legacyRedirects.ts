@@ -1,7 +1,8 @@
-// The old addresses of the Catalog, Services & pricing and Storefront pages and where each one goes now (Product / Services, or Shop content
-// when the address already names one of its tabs). Pure, so every case is a table row in the tests; `LegacyRedirect` runs it before a page's
-// gate. The addresses stay for good: stored links (mails, the notification bell, bookmarks) still use them; the backend's mail about
-// shop price changes links to `/catalog?view=settings&tab=shop-prices`.
+// The old addresses of the Catalog, Services & pricing, Storefront, Commissions and Abandoned checkouts pages and where each one goes now
+// (Product / Services, Shop content when the address already names one of its tabs, Finance for the retired Commissions page, and the
+// sales funnel report of Finance for the retired checkouts page). Pure, so every case is a table row in the tests; `LegacyRedirect` runs it
+// before a page's gate. The addresses stay for good: stored links (mails, the notification bell, bookmarks) still use them; the backend's
+// mail about shop price changes links to `/catalog?view=settings&tab=shop-prices`.
 
 // The Services tabs that are Catalog settings tabs (the Services tab itself is the table), and the Catalog settings tabs.
 const SERVICES_SETTINGS_TABS: ReadonlySet<string> = new Set(['categories', 'rules', 'resolver', 'inventory']);
@@ -149,6 +150,18 @@ function fromStorefront(old: URLSearchParams): string | null {
   return null;
 }
 
+// The days the sales funnel report offers. 30 is its default, so it leaves no trace in the address.
+const FUNNEL_DAYS: ReadonlySet<string> = new Set(['7', '90']);
+
+// `/checkouts`: the page of abandoned checkouts is gone and no list replaces it. What stays of it is the sales funnel, which is the
+// Funnel report of the Finance page now; its `days` period is that report's `range`. The list's own filter, search, page and sort are dropped.
+function fromCheckouts(old: URLSearchParams): string {
+  const params = new URLSearchParams({ tab: 'reports', report: 'funnel' });
+  const days = old.get('days');
+  if (days && FUNNEL_DAYS.has(days)) params.set('range', days);
+  return `/finance?${params.toString()}`;
+}
+
 /**
  * The address an old one now leads to (path and query), or null when the address is not an old one. `search` may start with `?`.
  * - `/catalog` and `/services` with table keys is `/products?view=all`: `q`, `type` and `page` stay, `categoryId` is `group`, `supplierId`
@@ -162,6 +175,9 @@ function fromStorefront(old: URLSearchParams): string | null {
  * - `/storefront?tab=publish` is `view=publish`; `tab=pricing` is `view=rules&tab=shop`; `tab=listings`, or no tab and one of `q`,
  *   `page`, `sort`, `dir`, is `view=all` with `q` and `page`.
  * - A bare `/storefront` and a `/storefront` that names one of the Shop content tabs stay where they are (null).
+ * - `/commissions` is `/finance` whatever its query: the page is gone, and Finance still lists the old commission entries in its
+ *   ledger. Nothing of the old query (tab, status, agent) means anything there, so none of it is carried.
+ * - `/checkouts` is `/finance?tab=reports&report=funnel`; `days=7` or `days=90` is `range=7` or `range=90`, any other key is dropped.
  */
 export function legacyTarget(pathname: string, search = ''): string | null {
   const path = pathname.replace(/\/+$/, '').toLowerCase();
@@ -169,5 +185,7 @@ export function legacyTarget(pathname: string, search = ''): string | null {
   if (path === '/services') return fromServices(old);
   if (path === '/catalog') return fromCatalog(old);
   if (path === '/storefront') return fromStorefront(old);
+  if (path === '/commissions') return '/finance';
+  if (path === '/checkouts') return fromCheckouts(old);
   return null;
 }

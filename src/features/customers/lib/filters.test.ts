@@ -28,8 +28,8 @@ describe('parseCustomerFilters', () => {
   });
 
   it('reads the tab, the search text, the country and the request status', () => {
-    expect(parseCustomerFilters(params('tab=flagged&q=ann&country=gb'))).toEqual({
-      tab: 'flagged',
+    expect(parseCustomerFilters(params('tab=suspended&q=ann&country=gb'))).toEqual({
+      tab: 'suspended',
       q: 'ann',
       country: 'GB',
       status: '',
@@ -38,6 +38,15 @@ describe('parseCustomerFilters', () => {
     for (const status of ['open', 'in_progress', 'completed', 'rejected', 'all']) {
       expect(parseCustomerFilters(params(`tab=requests&status=${status}`)).status).toBe(status);
     }
+  });
+
+  it('opens All for the Flagged tab, which was retired, and keeps the rest of the address', () => {
+    expect(parseCustomerFilters(params('tab=flagged&q=ann&country=gb'))).toEqual({
+      tab: 'all',
+      q: 'ann',
+      country: 'GB',
+      status: '',
+    });
   });
 
   it('drops a tab, country or status it does not know', () => {
@@ -53,8 +62,14 @@ describe('parseCustomerFilters', () => {
 describe('writeCustomerFilters', () => {
   it('leaves defaults out, so a clean address means "all customers"', () => {
     expect(writeCustomerFilters(params('tab=blocked&q=x'), { tab: 'all', q: '' }).toString()).toBe('');
-    expect(writeCustomerFilters(params(''), { tab: 'flagged', country: 'DE' }).toString()).toBe(
-      'tab=flagged&country=DE',
+    expect(writeCustomerFilters(params(''), { tab: 'suspended', country: 'DE' }).toString()).toBe(
+      'tab=suspended&country=DE',
+    );
+  });
+
+  it('writes an old Flagged address back without its tab on the next change', () => {
+    expect(writeCustomerFilters(params('tab=flagged&q=a'), { country: 'GB' }).toString()).toBe(
+      'q=a&country=GB',
     );
   });
 
@@ -148,6 +163,11 @@ describe('page and sort', () => {
     expect(parseSort(params('sort=password'))).toEqual({ field: 'totalSpent', order: 'desc' });
   });
 
+  it('opens the default sort for an old address that sorts by the risk level, which was retired', () => {
+    expect(parseSort(params('sort=riskLevel&dir=asc'))).toEqual({ field: 'totalSpent', order: 'desc' });
+    expect(writeCustomerFilters(params('sort=riskLevel&dir=asc'), { q: 'a' }).toString()).toBe('q=a');
+  });
+
   it('writes the page and sort, leaving out the defaults', () => {
     expect(writeView(params(''), { page: 3 }).toString()).toBe('page=3');
     expect(writeView(params('page=3'), { page: 1 }).toString()).toBe('');
@@ -167,25 +187,24 @@ describe('page and sort', () => {
 
   it('builds the address of a filtered list for links from other pages', () => {
     expect(customersListPath()).toBe('/customers');
-    expect(customersListPath({ tab: 'flagged' })).toBe('/customers?tab=flagged');
+    expect(customersListPath({ tab: 'blocked' })).toBe('/customers?tab=blocked');
     expect(customersListPath({ tab: 'all', q: 'ann' })).toBe('/customers?q=ann');
     expect(customersListPath({ tab: 'requests', status: 'all' })).toBe('/customers?tab=requests&status=all');
   });
 });
 
 describe('what each tab asks the server', () => {
-  it('maps the tabs to filters: Flagged is every level above low', () => {
+  it('maps the tabs to filters', () => {
     expect(tabFilters('all')).toEqual({});
     expect(tabFilters('requests')).toEqual({});
     expect(tabFilters('active')).toEqual({ status: 'active' });
     expect(tabFilters('suspended')).toEqual({ status: 'suspended' });
     expect(tabFilters('blocked')).toEqual({ status: 'blocked' });
-    expect(tabFilters('flagged')).toEqual({ riskLevel: ['medium', 'high'] });
   });
 
   it('adds the trimmed search text and the country to the tab', () => {
-    expect(toListFilters({ tab: 'flagged', q: '  ann  ', country: 'GB', status: '' })).toEqual({
-      riskLevel: ['medium', 'high'],
+    expect(toListFilters({ tab: 'blocked', q: '  ann  ', country: 'GB', status: '' })).toEqual({
+      status: 'blocked',
       q: 'ann',
       country: 'GB',
     });
@@ -212,16 +231,16 @@ describe('what each tab asks the server', () => {
       toRefineFilters({
         q: 'ann',
         country: 'GB',
-        riskLevel: ['medium', 'high'],
+        status: ['active', 'blocked'],
         hasAccount: true,
-        status: [],
       }),
     ).toEqual([
       { field: 'q', operator: 'eq', value: 'ann' },
       { field: 'country', operator: 'eq', value: 'GB' },
-      { field: 'riskLevel', operator: 'in', value: ['medium', 'high'] },
+      { field: 'status', operator: 'in', value: ['active', 'blocked'] },
       { field: 'hasAccount', operator: 'eq', value: true },
     ]);
+    expect(toRefineFilters({ status: [] })).toEqual([]);
     expect(toRefineFilters({ customerId: 4, status: ['open', 'in_progress'] })).toEqual([
       { field: 'customerId', operator: 'eq', value: 4 },
       { field: 'status', operator: 'in', value: ['open', 'in_progress'] },

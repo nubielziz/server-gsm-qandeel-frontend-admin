@@ -99,9 +99,8 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/products?view=edit-group&id=<id>` | Product / Services: one group, as the label-left form of +Add Group with Save |
 | `/storefront?tab=landing\|content\|help\|tac\|search` | Shop content on that tab |
 | `/finance?tab=payments` | Finance on the pending deposits |
-| `/merchants?tab=pending`, `/merchants/<id>` | merchants waiting for approval; one merchant |
+| `/merchants`, `/merchants/<id>` | the merchants list (an old `?tab=pending` opens its first tab); one merchant |
 | `/customers/<id>` (`?tab=orders\|account\|support\|consents\|risk`) | one customer |
-| `/commissions` | commissions (accruals ready to approve first) |
 | `/risk` (`?tab=queue`) | the held-orders queue |
 | `/refunds?tab=disputes`, `/refunds?tab=refunds&status=requested\|failed` | disputes; refunds by status |
 | `/support?filter=late`, `/support?customerId=<id>` | late tickets; one customer's tickets |

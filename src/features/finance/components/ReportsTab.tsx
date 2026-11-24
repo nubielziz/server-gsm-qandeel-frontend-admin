@@ -1,9 +1,11 @@
 // ReportsTab: the Reports tab of the Finance page: a switch between the reports the staff member may read (profit and wallet
-// exposure need `reports:read`, VAT needs `reports:finance`) and the open report. New (MISMATCHES M124); each report reads its own route.
+// exposure need `reports:read`, VAT needs `reports:finance`, the sales funnel needs `reports:growth`) and the open report. New (MISMATCHES M124);
+// each report reads its own route.
 import { EmptyState, SegmentedControl } from '@/components/ui';
 import type { FinanceGrants } from '../hooks/useFinanceGrants';
 import { useReportView } from '../hooks/useReportView';
 import { ProfitReport } from './ProfitReport';
+import { SalesFunnelReport } from './SalesFunnelReport';
 import { VatReport } from './VatReport';
 import { WalletExposureReport } from './WalletExposureReport';
 
@@ -30,6 +32,7 @@ export function ReportsTab({ grants }: { grants: FinanceGrants }) {
         {view.report === 'profit' && <ProfitReport choices={view.choices} onChange={view.setChoices} />}
         {view.report === 'exposure' && <WalletExposureReport />}
         {view.report === 'vat' && <VatReport choices={view.choices} onChange={view.setChoices} />}
+        {view.report === 'funnel' && <SalesFunnelReport choices={view.choices} onChange={view.setChoices} />}
       </div>
     </>
   );

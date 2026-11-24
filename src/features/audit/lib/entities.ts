@@ -11,7 +11,6 @@ export const ENTITY_LABEL: Readonly<Record<string, string>> = {
   supplier: 'Supplier',
   payment: 'Deposit',
   withdrawal: 'Withdrawal',
-  plan: 'Plan',
   session: 'Session',
   customer: 'Customer',
   staff: 'Admin',
@@ -50,7 +49,6 @@ const ALIASES: Readonly<Record<string, string>> = {
   blocklist_entry: 'blocklist',
   blocklist_entries: 'blocklist',
   settings: 'setting',
-  plans: 'plan',
 };
 
 /**

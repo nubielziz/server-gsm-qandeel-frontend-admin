@@ -1,5 +1,5 @@
 // MerchantsPage: the merchants list (`/merchants`, the demo's `pageMerchants` in 42-p-merchants.js): counts, status tabs plus
-// Groups and Verification (map-only), filters and the table. Tab, filters, page and sort live in the address; the page only
+// Groups (map-only), filters and the table. Tab, filters, page and sort live in the address; the page only
 // composes, and the server filters, sorts and counts.
 import { useState } from 'react';
 import { EmptyState, Panel, SectionTabs, SkeletonTable, usePageClamp, type TabItem } from '@/components/ui';
@@ -10,8 +10,6 @@ import { MerchantsEmpty } from '../components/MerchantsEmpty';
 import { MerchantsHeader } from '../components/MerchantsHeader';
 import { MerchantsToolbar } from '../components/MerchantsToolbar';
 import { MerchantTable } from '../components/MerchantTable';
-import { VerificationTab } from '../components/VerificationTab';
-import { useApproveClient } from '../hooks/useClientMutations';
 import { useClientGroups } from '../hooks/useClientGroups';
 import { useClientsList } from '../hooks/useClientsList';
 import { useMerchantCounts } from '../hooks/useMerchantCounts';
@@ -29,7 +27,6 @@ export function MerchantsPage() {
   const [inviting, setInviting] = useState(false);
   const canReadGroups = grants.can('groups:read');
   const groups = useClientGroups(canReadGroups);
-  const approve = useApproveClient();
 
   const tab = view.tab;
   const onTable = tab !== undefined && isStatusTab(tab);
@@ -40,7 +37,7 @@ export function MerchantsPage() {
     sort: view.sort,
     enabled: onTable,
   });
-  // A shrinking list (an approval, a filter, an old link) must not leave the table on an empty page.
+  // A shrinking list (a filter, an old link, a merchant moving to another tab) must not leave the table on an empty page.
   usePageClamp({
     page: view.page,
     pageSize: PAGE_SIZE,
@@ -60,32 +57,19 @@ export function MerchantsPage() {
 
   return (
     <>
-      <MerchantsHeader
-        grants={grants}
-        active={counts.active}
-        pending={counts.pending}
-        onInvite={() => setInviting(true)}
-      />
+      <MerchantsHeader grants={grants} active={counts.active} onInvite={() => setInviting(true)} />
       <Panel flush>
         {!grants.ready ? (
           <SkeletonTable cols={6} rows={6} />
         ) : !tab ? (
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot read merchants, groups or verification requests. Ask an owner if you need access.
+            Your role cannot read merchants or groups. Ask an owner if you need access.
           </EmptyState>
         ) : (
           <>
             <SectionTabs items={items} value={tab} onChange={view.setTab} label="Merchant status" />
             {tab === 'groups' ? (
               <GroupsTab grants={grants} />
-            ) : tab === 'verification' ? (
-              <VerificationTab
-                grants={grants}
-                filter={view.kycFilter}
-                page={view.page}
-                onFilterChange={view.setKycFilter}
-                onPageChange={view.setPage}
-              />
             ) : (
               <>
                 <MerchantsToolbar
@@ -110,9 +94,6 @@ export function MerchantsPage() {
                       total: list.total ?? list.clients.length,
                     }}
                     onPageChange={view.setPage}
-                    grants={grants}
-                    approving={approve.isPending ? (approve.variables?.id ?? null) : null}
-                    onApprove={(client) => approve.mutate(client)}
                     empty={
                       <MerchantsEmpty
                         tab={tab}

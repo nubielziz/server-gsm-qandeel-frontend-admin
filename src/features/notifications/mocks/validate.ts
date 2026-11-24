@@ -1,7 +1,7 @@
 // The refusals of the mock create and edit routes: the same field rules the server applies (plain text only, `{{name}}` the only placeholder, a title
-// and a text, a site path for each link, Telegram only with merchants, an audience that targets someone). The mock is the reference behaviour for the UI tests.
+// and a text, a site path for each link, an audience that targets someone). The mock is the reference behaviour for the UI tests.
 import type { ProblemError } from '@/mocks/problem';
-import type { AudienceSpec, CampaignChannel, CampaignInput } from '../types';
+import type { AudienceSpec, CampaignInput } from '../types';
 
 const HTML_TAG = /<\/?[A-Za-z][A-Za-z0-9-]*(\s[^<>]*)?\/?>/;
 const SITE_PATH = /^\/(?!\/)[A-Za-z0-9\-._~/?#=&%]{0,199}$/;
@@ -22,26 +22,13 @@ function textProblems(field: string, value: string): ProblemError[] {
 }
 
 /** The audience rules that one field cannot say. */
-export function audienceProblems(
-  audience: AudienceSpec,
-  channels: readonly CampaignChannel[],
-): ProblemError[] {
+export function audienceProblems(audience: AudienceSpec): ProblemError[] {
   const errors: ProblemError[] = [];
   const include = audience.include ?? [];
   if (!audience.staff && !audience.merchants && !audience.customers && include.length === 0) {
     errors.push({
       field: 'audience',
       message: 'Choose at least one group of people (staff, merchants or customers) or add people.',
-    });
-  }
-  if (
-    channels.includes('telegram') &&
-    !audience.merchants &&
-    !include.some((person) => person.type === 'client')
-  ) {
-    errors.push({
-      field: 'channels',
-      message: 'Telegram reaches merchants only: target merchants or remove Telegram.',
     });
   }
   for (const key of ['merchants', 'customers'] as const) {
@@ -61,9 +48,9 @@ export function inputProblems(input: CampaignInput): ProblemError[] {
   const errors: ProblemError[] = [];
   if (input.name.trim() === '') errors.push({ field: 'name', message: 'Give the campaign a name.' });
   if (input.channels.length === 0 || new Set(input.channels).size !== input.channels.length) {
-    errors.push({ field: 'channels', message: 'Choose one to three different channels.' });
+    errors.push({ field: 'channels', message: 'Choose one or two different channels.' });
   }
-  errors.push(...audienceProblems(input.audience, input.channels));
+  errors.push(...audienceProblems(input.audience));
   for (const part of ['title', 'body'] as const)
     errors.push(...textProblems(`content.${part}`, input.content[part]));
   for (const key of ['staff', 'merchant', 'customer'] as const) {

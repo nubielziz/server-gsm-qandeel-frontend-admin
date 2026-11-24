@@ -5,12 +5,10 @@ import type { ProblemError } from '@/mocks/problem';
 import { settingsStore } from '@/mocks/settings';
 import { bodyOf, invalid, signedIn } from './http';
 
-const SWITCHES = ['guestCheckout', 'require3ds', 'withdrawalWaiver', 'autoRefundFailed', 'imeiPrecheck'];
+const SWITCHES = ['guestCheckout', 'require3ds', 'withdrawalWaiver', 'autoRefundFailed'];
 // The number policies with the range the mock accepts and the sentence for a value outside it.
 const NUMBERS: Record<string, { min: number; max: number; message: string }> = {
   refundHoursBeforeDispatch: { min: 0, max: 72, message: 'Enter 0 to 72 hours.' },
-  abandonedMinutes: { min: 5, max: 1440, message: 'Enter 5 to 1,440 minutes.' },
-  imeiRetentionDays: { min: 0, max: 3650, message: 'Enter 0 to 3,650 days.' },
 };
 
 /** The storefront settings route. */

@@ -21,7 +21,7 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
   };
   const base = {
     link: null,
-    skipped: { optedOut: 0, noTelegram: 0, noAccount: 0 },
+    skipped: { optedOut: 0, noAccount: 0 },
     updatedBy: null,
     cancelledBy: null,
     error: null,
@@ -29,9 +29,8 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
   const empty = {
     inApp: { delivered: 0, read: 0 },
     email: { queued: 0, sent: 0, failed: 0 },
-    telegram: { queued: 0, sent: 0, failed: 0 },
   };
-  const noPlan = { inApp: 0, email: 0, telegram: 0 };
+  const noPlan = { inApp: 0, email: 0 };
 
   // 1: sent two days ago to everyone.
   const sentAt = now - 2 * DAY;

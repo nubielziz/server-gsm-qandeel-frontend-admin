@@ -1,7 +1,14 @@
 // Tests for the template texts, the proof-email check and the safe preview document.
 import { describe, expect, it } from 'vitest';
 import type { NotificationTemplate } from '../types';
-import { eventLabel, isHtmlPreview, isProofEmail, previewDocument, templateMeta } from './templates';
+import {
+  channelLabel,
+  eventLabel,
+  isHtmlPreview,
+  isProofEmail,
+  previewDocument,
+  templateMeta,
+} from './templates';
 
 const template = (patch: Partial<NotificationTemplate>): NotificationTemplate => ({
   id: 1,
@@ -18,13 +25,18 @@ const template = (patch: Partial<NotificationTemplate>): NotificationTemplate =>
 describe('texts', () => {
   it('turns an event key into words', () => {
     expect(eventLabel('order.completed')).toBe('Order completed');
-    expect(eventLabel('checkout.abandoned')).toBe('Checkout abandoned');
-    expect(eventLabel('deposit_approved')).toBe('Deposit approved');
+    expect(eventLabel('payment.failed')).toBe('Payment failed');
+    expect(eventLabel('wallet_low_balance')).toBe('Wallet low balance');
   });
 
   it('describes who gets it and where', () => {
     expect(templateMeta(template({}))).toBe('Customer · Email');
-    expect(templateMeta(template({ audience: 'merchant', channel: 'telegram' }))).toBe('Merchant · Telegram');
+    expect(templateMeta(template({ audience: 'merchant' }))).toBe('Merchant · Email');
+  });
+
+  it('shows the word of a channel it does not know as it was stored', () => {
+    expect(channelLabel('email')).toBe('Email');
+    expect(channelLabel('telegram')).toBe('telegram');
   });
 });
 
@@ -33,7 +45,6 @@ describe('isProofEmail', () => {
     expect(isProofEmail(template({}))).toBe(true);
     expect(isProofEmail(template({ event: 'order.failed' }))).toBe(true);
     expect(isProofEmail(template({ event: 'support.reply' }))).toBe(false);
-    expect(isProofEmail(template({ channel: 'telegram' }))).toBe(false);
     expect(isProofEmail(template({ audience: 'merchant' }))).toBe(false);
   });
 });

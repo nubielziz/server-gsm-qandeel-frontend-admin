@@ -5,7 +5,8 @@ import type { NotificationLogEntry, NotificationStatus, NotificationTemplate } f
 
 type DemoNotif = { id: string; event: string; audience: string; on: boolean; sent: number; delay: string };
 
-// The event key, subject and text of each demo email, in the demo's order. `{{…}}` marks where the server puts sample data.
+// The event key, subject and text of each demo email, in the demo's order. `{{…}}` marks where the server puts sample data. The demo's
+// fifth email (the reminder to finish a checkout) is retired, so it has no text and no template.
 const TEXTS: Record<string, { event: string; subject: string; body: string }> = {
   nt1: {
     event: 'order.received',
@@ -27,11 +28,6 @@ const TEXTS: Record<string, { event: string; subject: string; body: string }> = 
     subject: 'Re: Where is my result?',
     body: 'Hi {{customerName}}, thanks for your patience. We checked with the carrier and… (the text of the agent’s reply). Reply to this email to keep the conversation going.',
   },
-  nt5: {
-    event: 'checkout.abandoned',
-    subject: 'You left something behind',
-    body: 'Hi, you started an unlock for an {{device}} and did not finish paying. Your basket is saved: one tap takes you back to the payment step. No account needed.',
-  },
   nt6: {
     event: 'payment.failed',
     subject: 'Your payment didn’t go through',
@@ -39,32 +35,35 @@ const TEXTS: Record<string, { event: string; subject: string; body: string }> = 
   },
 };
 
-/** The templates: the six customer emails, then a Telegram message and an email for merchants (the demo has none). */
+/** The templates: the customer emails of the demo, then two emails for merchants (the demo has none). */
 export function templateRows(rows: DemoNotif[]): NotificationTemplate[] {
   const created = toIso(Date.now() - 60 * 86_400_000);
-  const customer = rows.map((row, index): NotificationTemplate => {
-    const text = TEXTS[row.id];
-    return {
-      id: index + 1,
-      event: text.event,
-      channel: 'email',
-      audience: 'customer',
-      subject: text.subject,
-      body: text.body,
-      isActive: row.on,
-      sentLast30Days: row.sent,
-      createdAt: created,
-    };
-  });
-  const next = customer.length;
+  const customer = rows
+    .filter((row) => row.id in TEXTS)
+    .map((row): NotificationTemplate => {
+      const text = TEXTS[row.id];
+      return {
+        // The demo's own number (nt6 is 6), so a template keeps its id when another one of the demo is left out.
+        id: Number(row.id.replace(/\D/g, '')),
+        event: text.event,
+        channel: 'email',
+        audience: 'customer',
+        subject: text.subject,
+        body: text.body,
+        isActive: row.on,
+        sentLast30Days: row.sent,
+        createdAt: created,
+      };
+    });
+  const next = Math.max(...customer.map((template) => template.id));
   return [
     ...customer,
     {
       id: next + 1,
       event: 'order.completed',
-      channel: 'telegram',
+      channel: 'email',
       audience: 'merchant',
-      subject: '',
+      subject: 'Order {{orderId}} is complete',
       body: 'Order {{orderId}} is complete. The result is in your panel.',
       isActive: true,
       sentLast30Days: 214,
@@ -72,11 +71,11 @@ export function templateRows(rows: DemoNotif[]): NotificationTemplate[] {
     },
     {
       id: next + 2,
-      event: 'deposit.approved',
+      event: 'wallet.low_balance',
       channel: 'email',
       audience: 'merchant',
-      subject: 'Your deposit of {{amount}} was approved',
-      body: 'Hi {{customerName}}, your deposit was approved and your wallet is topped up.',
+      subject: 'Your wallet balance is low',
+      body: 'Hi {{customerName}}, your wallet is down to {{amount}}. Add funds to keep your orders running.',
       isActive: true,
       sentLast30Days: 38,
       createdAt: created,
@@ -106,7 +105,6 @@ export function notificationRows(templates: NotificationTemplate[]): Notificatio
     const template = templates[index % templates.length];
     const status = statusOf(index);
     const at = toIso(now - (index + 1) * HOUR_MS * 1.5);
-    const telegram = template.channel === 'telegram';
     return {
       id: 48 - index,
       recipientType: template.audience === 'customer' ? 'customer' : 'client',
@@ -117,7 +115,7 @@ export function notificationRows(templates: NotificationTemplate[]): Notificatio
       status,
       sentAt: status === 'sent' ? at : null,
       createdAt: at,
-      recipient: telegram ? `@acme_${index % 5}***` : masked(NAMES[index % NAMES.length]),
+      recipient: masked(NAMES[index % NAMES.length]),
       error: status === 'failed' ? 'The mailbox does not exist.' : null,
     };
   });

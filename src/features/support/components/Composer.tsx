@@ -1,8 +1,8 @@
 // Composer: the reply box under a thread: the reply-template picker, the "Internal note" switch, the text box, the files on the message
 // and the footer. Ports the composer of threadView and the tk-send, tk-macro and tk-internal actions (49-p-support.js). A reply or a note
 // is sent to the server; if the server refuses, its message shows under the text and the draft stays so nothing typed is lost.
-// Feature 28 adds: a throttled "I am typing" while the draft changes, files (uploaded when picked, sent as `fileIds`; a message may be
-// files only) and the warning that a colleague just replied.
+// Feature 28 adds: files (uploaded when picked, sent as `fileIds`; a message may be files only) and the warning that a colleague just
+// replied.
 import { useEffect, useRef, useState } from 'react';
 import { CheckboxField, cx, errorText, toast } from '@/components/ui';
 import { orderLabel, type Order } from '@/features/orders';
@@ -12,7 +12,6 @@ import type { ComposerState } from '../hooks/useComposerState';
 import type { SupportGrants } from '../hooks/useSupportGrants';
 import type { Collision } from '../hooks/useTicketLive';
 import { useAddTicketNote, useReplyToTicket } from '../hooks/useTicketMutations';
-import { useTypingPing } from '../hooks/useTypingPing';
 import { fillTemplate, ticketValues } from '../lib/macros';
 import { firstName, requesterLabel } from '../lib/status';
 import type { ReplyChannel, ReplyTemplate, SupportTicketDetail } from '../types';
@@ -66,8 +65,6 @@ export function Composer({
   const active = internal ? note : reply;
   const name = firstName(ticket.requester.name);
   const files = useAttachments(ticket.id);
-  // Tell the other side (at most every 3 s, only while the text changes) that a reply or a note is being written.
-  useTypingPing({ ticketId: ticket.id, mode: internal ? 'note' : 'reply', draft, enabled: !lock.disabled });
 
   // A wide screen puts the cursor in the box as soon as a ticket is chosen, like the demo.
   useEffect(() => {

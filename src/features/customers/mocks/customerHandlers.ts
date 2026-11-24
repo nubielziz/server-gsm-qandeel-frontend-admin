@@ -83,7 +83,6 @@ export const customerHandlers: HttpHandler[] = [
       hasAccount: true,
       createdBy: (await currentStaff())?.id ?? null,
       marketingOptIn: false,
-      riskLevel: 'low',
       status: 'active',
       suspendedAt: null,
       suspendedReason: null,

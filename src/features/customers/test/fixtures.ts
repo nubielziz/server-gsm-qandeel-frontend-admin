@@ -15,7 +15,6 @@ export function customer(overrides: Partial<Customer> = {}): Customer {
     hasAccount: true,
     createdBy: null,
     marketingOptIn: false,
-    riskLevel: 'low',
     status: 'active',
     suspendedAt: null,
     suspendedReason: null,

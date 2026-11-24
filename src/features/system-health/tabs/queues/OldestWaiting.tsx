@@ -1,4 +1,4 @@
-// OldestWaiting: the age of the oldest waiting item of a queue or of a webhook direction, in the Queues table and the
+// OldestWaiting: the age of the oldest waiting item of a queue or of the incoming webhooks, in the Queues table and the
 // Webhooks card of the Queues & jobs tab (route group `health`). One rule for both, so an idle line reads alike everywhere.
 import { MeasureValue } from '../../components';
 import type { Measure } from '../../types';

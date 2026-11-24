@@ -1,9 +1,9 @@
-// Types for the risk feature (`/risk`): the held-order queue, the IMEI check log, the blocklist and the risk rules.
+// Types for the risk feature (`/risk`): the held-order queue, the blocklist and the risk rules.
 // The map gives the tables and the routes but no bodies (MISMATCHES M10), so every shape below is an assumed contract,
 // built from the generated rows in `src/lib/api/schema.gen.ts` and narrowed to what the screens use.
 import type { NamedRef } from '@/features/orders';
-import type { Decimal, Id, IsoDateTime, JsonObject, Money } from '@/lib/api';
-import type { BlocklistEntryRow, ImeiCheckRow, RiskAssessmentRow } from '@/lib/api/schema.gen';
+import type { Decimal, Id, IsoDateTime, Money } from '@/lib/api';
+import type { BlocklistEntryRow, RiskAssessmentRow } from '@/lib/api/schema.gen';
 
 export type { NamedRef };
 
@@ -12,9 +12,6 @@ export type { NamedRef };
 /** How a storefront customer paid (the demo's `B2C_METHODS`). */
 export type PaymentMethod = 'card' | 'wallet' | 'crypto' | 'balance';
 
-/** The level the team gave a customer. */
-export type CustomerRisk = 'low' | 'medium' | 'high';
-
 /** What a customer did before the held order. The held order itself is not counted. */
 export type CustomerHistory = { earlierOrders: number; refunds: number; disputes: number };
 
@@ -22,7 +19,6 @@ export type CustomerHistory = { earlierOrders: number; refunds: number; disputes
 export type HeldCustomer = NamedRef & {
   email: string;
   country: string;
-  riskLevel: CustomerRisk;
   history: CustomerHistory;
 };
 
@@ -86,47 +82,6 @@ export type RiskQueue = {
  * the blocklist entries) and whether to add the customer's email and/or the device (its IMEI) to the blocklist.
  */
 export type RefundHeldBody = { reason?: string; blockEmail?: boolean; blockDevice?: boolean };
-
-// ---- IMEI checks ----
-
-/** The four kinds of lookup (the demo's `CHECK_KIND`); the column is `checkType`. */
-export type CheckKind = 'blacklist' | 'basic' | 'icloud' | 'sim_lock';
-
-/** What a lookup found. */
-export type CheckResult = 'clean' | 'blacklisted' | 'locked' | 'unknown';
-
-/** Where a check came from: the public checker, or the step before an order. */
-export type CheckSource = 'pre_order' | 'storefront_free';
-
-/**
- * One IMEI check, as `GET /admin/imei-checks` and `/:id` send it (assumed contract). `imei` is what the server keeps:
- * the digits, or a hash or a mask once the retention period has passed, so the screen shows it as it is.
- */
-export type ImeiCheck = Pick<
-  ImeiCheckRow,
-  'id' | 'brand' | 'model' | 'cost' | 'price' | 'cachedUntil' | 'createdAt'
-> & {
-  imei: string;
-  checkType: CheckKind;
-  status: CheckResult;
-  source: CheckSource;
-  country: string | null;
-  ip: string | null;
-  /** The order this check led to, when it did. */
-  orderId: Id | null;
-  customer: NamedRef | null;
-  supplier: NamedRef | null;
-  /** What the lookup returned, free-form. */
-  result: JsonObject | null;
-};
-
-/** What the log is filtered by: simple-rest field filters plus the free-text `q` (IMEI, brand or model). */
-export type ImeiCheckFilters = {
-  q?: string;
-  checkType?: CheckKind;
-  status?: CheckResult;
-  source?: CheckSource;
-};
 
 // ---- Blocklist ----
 

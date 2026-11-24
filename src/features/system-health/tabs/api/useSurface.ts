@@ -1,4 +1,4 @@
-// useSurface: the surface the API tab is focused on, kept in the address (`?surface=v1`). No parameter means all surfaces.
+// useSurface: the surface the API tab is focused on, kept in the address (`?surface=dhru`). No parameter means all surfaces.
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';
 

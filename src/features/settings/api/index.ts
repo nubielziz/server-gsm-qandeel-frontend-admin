@@ -7,4 +7,3 @@ export * from './settings';
 export * from './storefront';
 export * from './taxRates';
 export * from './templates';
-export * from './webhooks';

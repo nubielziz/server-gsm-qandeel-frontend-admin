@@ -41,7 +41,6 @@ export function row(change: Partial<SupportTicket> = {}): SupportTicket {
     slaDueAt: null,
     firstResponseAt: null,
     resolvedAt: null,
-    csatScore: null,
     createdAt: '2026-11-15T09:00:00.000Z',
     updatedAt: '2026-11-15T10:00:00.000Z',
     lastPublicAt: null,

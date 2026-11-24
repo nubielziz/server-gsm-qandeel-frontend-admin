@@ -1,5 +1,5 @@
 // CustomersPage: the storefront customers (`/customers`, the demo's `pageCustomers` in 48-p-customers.js): the people-and-accounts sentence, tabs with
-// counts (and Data requests for `customers:privacy`), a toolbar and the table. Tab, filters, page and sort live in the address (`?tab=flagged&q=…`).
+// counts (and Data requests for `customers:privacy`), a toolbar and the table. Tab, filters, page and sort live in the address (`?tab=blocked&q=…`).
 // The page only composes; the server filters, sorts and counts.
 import { useState } from 'react';
 import { Panel, SectionTabs, usePageClamp, type TabItem } from '@/components/ui';

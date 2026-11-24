@@ -18,7 +18,7 @@ import type { Client, CreateClientBody, UpdateClientBody } from '../types';
  * The merchants, one page of them, with the total in `x-total-count`. Filters: `status`, `groupId` and the free-text `q`
  * (name, email, company); sort with `_sort`/`_order`. The tab counts are this call with `_start=0&_end=1`. Other features
  * use it for merchant menus and searches.
- * Assumed contract: rows carry the joined `group` and `referredBy`, and (for staff who can read wallets) the `wallet`
+ * Assumed contract: rows carry the joined `group`, and (for staff who can read wallets) the `wallet`
  * and 30-day `stats` figures the table shows.
  * @route GET /admin/clients
  */
@@ -36,7 +36,7 @@ export function getClient(id: Id, init?: ApiInit): Promise<Client> {
 }
 
 /**
- * Invites a merchant: the server creates the account as pending and emails a sign-up link. It answers 409 `EMAIL_TAKEN`
+ * Invites a merchant: the server creates the account (active at once) and emails a link to choose a password. It answers 409 `EMAIL_TAKEN`
  * for an address that already has an account.
  * Assumed contract: body `{ name, email, country, groupId?, creditLimit?, invite: true }`, answer the new merchant.
  * @route POST /admin/clients
@@ -46,8 +46,8 @@ export function createClient(body: CreateClientBody, init?: ApiInit): Promise<Cl
 }
 
 /**
- * Changes a merchant, one kind of change per call: approve or reactivate (`status: 'active'`), suspend or decline a pending
- * application (`status: 'suspended'` with a `reason`), move to another price group (`groupId`), or edit the details (`name`,
+ * Changes a merchant, one kind of change per call: activate or reactivate (`status: 'active'`), suspend
+ * (`status: 'suspended'` with a `reason`), move to another price group (`groupId`), or edit the details (`name`,
  * `company`, `phone`, `country`, `email`, `address`, `taxId`, `internalNotes`; several at once). Mixing kinds is a
  * 422 on the first key of the second kind. Changing the email cancels open links, clears verification and mails the new address.
  * Only the fields that change are sent; the server writes the audit entry and refuses a change that is not allowed

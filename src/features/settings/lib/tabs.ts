@@ -1,7 +1,7 @@
-// The seven tabs of the Settings page and the permissions each one needs. The demo's `pageSettings` (55-p-settings.js) has four: Payment
-// methods, Tax and currency, Policies and Customer emails. The map adds Notification log, Webhook deliveries and System.
+// The six tabs of the Settings page and the permissions each one needs. The demo's `pageSettings` (55-p-settings.js) has four: Payment
+// methods, Tax and currency, Policies and Customer emails. The map adds Notification log and System.
 
-export type SettingsTab = 'payments' | 'tax' | 'policies' | 'notifications' | 'log' | 'webhooks' | 'system';
+export type SettingsTab = 'payments' | 'tax' | 'policies' | 'notifications' | 'log' | 'system';
 
 /** The tab the page opens on. It is left out of the address, as the demo's default tab is. */
 export const DEFAULT_TAB: SettingsTab = 'payments';
@@ -19,7 +19,6 @@ export const SETTINGS_TABS: readonly TabSpec[] = [
   { id: 'policies', label: 'Policies', permissions: ['settings:read'] },
   { id: 'notifications', label: 'Customer emails', permissions: ['notifications:read'] },
   { id: 'log', label: 'Notification log', permissions: ['notifications:read'] },
-  { id: 'webhooks', label: 'Webhook deliveries', permissions: ['webhooks:read'] },
   { id: 'system', label: 'System', permissions: ['settings:read'] },
 ];
 
@@ -29,7 +28,6 @@ export const PAGE_PERMISSIONS = [
   'payments:gateways',
   'tax:read',
   'notifications:read',
-  'webhooks:read',
 ] as const;
 
 /** Whether an address parameter names a tab. */

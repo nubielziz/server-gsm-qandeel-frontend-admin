@@ -17,7 +17,6 @@ import {
   listSupportTickets,
   markTicketRead,
   replyToTicket,
-  sendTicketTyping,
   supportResources,
   ticketFileUrl,
   updateReplyTemplate,
@@ -156,20 +155,6 @@ describe('what each function sends', () => {
       path: '/admin/support-tickets/7/read',
       body: { upToMessageId: 31 },
     });
-  });
-
-  it('tells the server the staff member is typing a reply or a note', async () => {
-    const typing = recording(
-      'post',
-      '*/admin/support-tickets/:id/typing',
-      () => new HttpResponse(null, { status: 204 }),
-    );
-    await sendTicketTyping(7, { mode: 'reply' });
-    await sendTicketTyping(7, { mode: 'note' });
-    expect(typing.map((call) => [call.path, call.body])).toEqual([
-      ['/admin/support-tickets/7/typing', { mode: 'reply' }],
-      ['/admin/support-tickets/7/typing', { mode: 'note' }],
-    ]);
   });
 
   it('uploads one file as multipart with the part named `file`, and gives the link of a download without asking', async () => {
@@ -420,16 +405,12 @@ describe('the live routes of the mock (feature 28)', () => {
     expect((await getSupportTicket(LATE)).staffSeenMessageId).toBe(3);
   });
 
-  it('refuses a message that is not part of the ticket, and a typing mode it does not know', async () => {
+  it('refuses a message that is not part of the ticket', async () => {
     const read = await markTicketRead(LATE, { upToMessageId: 9999 }).catch((caught: unknown) => caught);
     expect(isApiError(read) && [read.status, Object.keys(read.fieldErrors)]).toEqual([
       422,
       ['upToMessageId'],
     ]);
-    const typing = await sendTicketTyping(LATE, { mode: 'shout' as never }).catch(
-      (caught: unknown) => caught,
-    );
-    expect(isApiError(typing) && typing.fieldErrors.mode).toBeTruthy();
     const missing = await markTicketRead(9999, { upToMessageId: 1 }).catch((caught: unknown) => caught);
     expect(isApiError(missing) && missing.status).toBe(404);
   });

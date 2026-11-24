@@ -12,7 +12,6 @@ import {
   composerProblems,
   emptyForm,
   formToInput,
-  keepChannelsValid,
   type ComposerForm,
 } from '../lib/spec';
 import type { CampaignDetail } from '../types';
@@ -61,7 +60,7 @@ function ComposerSession({
   const errors = { ...placed.fields, ...live, ...(attempted ? composerProblems(form) : {}) };
 
   const change = (patch: Partial<ComposerForm>) => {
-    setForm((prev) => keepChannelsValid({ ...prev, ...patch }));
+    setForm((prev) => ({ ...prev, ...patch }));
     save.reset();
   };
 

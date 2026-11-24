@@ -1,8 +1,7 @@
-// ComposerBasics: section 1 of the composer: the campaign's name, its purpose (what the audience may be sent) and the channels. Telegram is disabled
-// unless merchants are targeted, because only merchants have a Telegram chat.
+// ComposerBasics: section 1 of the composer: the campaign's name, its purpose (what the audience may be sent) and the channels.
 import { CheckboxField, RadioGroup, TextField } from '@/components/ui';
 import { CHANNEL_LABEL } from '../lib/status';
-import { NAME_MAX, telegramAllowed, type ComposerForm, type Problems } from '../lib/spec';
+import { NAME_MAX, type ComposerForm, type Problems } from '../lib/spec';
 import { CAMPAIGN_CHANNELS, type CampaignChannel, type CampaignPurpose } from '../types';
 
 export interface ComposerBasicsProps {
@@ -27,11 +26,9 @@ const PURPOSE_OPTIONS = [
 const CHANNEL_HINT: Record<CampaignChannel, string> = {
   in_app: 'Shows in the bell of the console, the merchant portal or the customer account.',
   email: 'People who switched announcement emails off are left out.',
-  telegram: 'Merchants with a linked chat only.',
 };
 
 export function ComposerBasics({ form, onChange, errors }: ComposerBasicsProps) {
-  const telegram = telegramAllowed(form.audience);
   const toggle = (channel: CampaignChannel, on: boolean) =>
     onChange({
       channels: on
@@ -65,14 +62,9 @@ export function ComposerBasics({ form, onChange, errors }: ComposerBasicsProps) 
             <CheckboxField
               key={channel}
               label={CHANNEL_LABEL[channel]}
-              hint={
-                channel === 'telegram' && !telegram
-                  ? 'Target merchants to use Telegram.'
-                  : CHANNEL_HINT[channel]
-              }
+              hint={CHANNEL_HINT[channel]}
               align="start"
               checked={form.channels.includes(channel)}
-              disabled={channel === 'telegram' && !telegram}
               onChange={(event) => toggle(channel, event.target.checked)}
             />
           ))}

@@ -1,4 +1,4 @@
-// The notification templates: the list for the Customer emails tab (by audience and channel), the changes (add, edit, the "Send" switch,
+// The notification templates: the list for the Customer emails tab (by audience), the changes (add, edit, the "Send" switch,
 // delete) and the server's preview. Dialogs show their own failures; a failed switch shows the server's words as a toast.
 import { useList, type CrudFilters } from '@refinedev/core';
 import { useApiMutation, useApiQuery } from '@/lib/query';
@@ -14,11 +14,13 @@ import { PREVIEW_KEY, WHOLE_LIST } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
-/** The templates that match the menus above the table (an empty text means all). Needs `notifications:read`. */
-export function useTemplateList(filters: { audience: string; channel: string }, enabled = true) {
+/**
+ * The email templates that match the menu above the table (an empty text means all). A template of a channel that was retired, which
+ * an older backend may still list, is left out. Needs `notifications:read`.
+ */
+export function useTemplateList(filters: { audience: string }, enabled = true) {
   const crud: CrudFilters = [];
   if (filters.audience) crud.push({ field: 'audience', operator: 'eq', value: filters.audience });
-  if (filters.channel) crud.push({ field: 'channel', operator: 'eq', value: filters.channel });
   const { result, query } = useList<NotificationTemplate>({
     resource: 'notification-templates',
     pagination: { currentPage: 1, pageSize: WHOLE_LIST },
@@ -27,7 +29,8 @@ export function useTemplateList(filters: { audience: string; channel: string }, 
     queryOptions: { enabled },
     errorNotification: false,
   });
-  return { templates: result.data, query };
+  const templates = result.data.filter((template) => template.channel === 'email');
+  return { templates, query };
 }
 
 /** Adds a template. Needs `notifications:create`. */

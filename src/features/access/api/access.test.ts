@@ -1,7 +1,9 @@
 // Tests for the access API functions, run against the dev mock API (`mockServer`): each one reaches its route with the
 // body of its assumed contract and reads the answer the way the screens do. The mock keeps simple state, so an action
 // can be checked by reading the record again.
+import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import {
   checkIp,
@@ -311,10 +313,10 @@ describe('roles and permissions', () => {
 });
 
 describe('sessions', () => {
-  it('lists staff and merchant sessions and marks the caller’s own', async () => {
+  it('lists the sessions of staff and marks the caller’s own', async () => {
     const { data, total } = await listSessions();
-    expect(total).toBe(7);
-    expect(data.filter((session) => session.subjectType === 'client')).toHaveLength(3);
+    expect(total).toBe(4);
+    expect(data.every((session) => session.subjectType === 'staff')).toBe(true);
     const current = data.filter((session) => session.current);
     expect(current).toHaveLength(1);
     expect(current[0].subject.id).toBe(RAMI);
@@ -327,19 +329,57 @@ describe('sessions', () => {
     );
   });
 
-  it('filters by who it belongs to and pages', async () => {
-    const merchants = await listSessions({ filters: { subjectType: 'client' } });
-    expect(merchants.total).toBe(3);
-    const page = await listSessions({ start: 0, end: 5 });
-    expect(page.data).toHaveLength(5);
-    expect(page.total).toBe(7);
+  it('pages', async () => {
+    const page = await listSessions({ start: 0, end: 3 });
+    expect(page.data).toHaveLength(3);
+    expect(page.total).toBe(4);
+  });
+
+  it('asks the server for staff only, so the total and the pages leave the merchants out', async () => {
+    const { apiList } = await import('@/lib/api');
+    const merchants = await apiList('/admin/sessions', {}, { subjectType: 'client' });
+    expect(merchants.total).toBeGreaterThan(0);
+    // Without the filter the server lists both kinds, and its total counts both.
+    expect((await apiList('/admin/sessions')).total).toBe(4 + merchants.total);
+
+    const page = await listSessions({ start: 3, end: 6 });
+    expect(page.total).toBe(4);
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0].subjectType).toBe('staff');
+  });
+
+  it('sends the staff filter, and still drops a merchant row from a server that ignores it', async () => {
+    let search = '';
+    mockServer.use(
+      http.get('*/admin/sessions', ({ request }) => {
+        search = new URL(request.url).search;
+        const row = (id: number, subjectType: string, name: string) => ({
+          id,
+          subjectType,
+          subject: { id, name },
+          ip: '203.0.113.9',
+          userAgent: 'Mozilla/5.0',
+          lastSeenAt: null,
+          expiresAt: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+        });
+        return HttpResponse.json([row(1, 'staff', 'Rami K.'), row(2, 'client', 'Zain Mobile Hub')], {
+          headers: { 'x-total-count': '2' },
+        });
+      }),
+    );
+    const { data } = await listSessions({ start: 0, end: 25 });
+    expect(data.map((session) => session.subject.name)).toEqual(['Rami K.']);
+    const params = new URLSearchParams(search);
+    expect(params.getAll('subjectType')).toEqual(['staff']);
+    expect(params.has('subjectId')).toBe(false);
   });
 
   it('ends one session, which also lowers the admin’s count', async () => {
-    const { data } = await listSessions({ filters: { subjectType: 'staff' } });
+    const { data } = await listSessions();
     const ramis = data.filter((session) => session.subject.id === RAMI);
     await revokeSession(ramis[0].id);
-    expect((await listSessions()).total).toBe(6);
+    expect((await listSessions()).total).toBe(3);
     expect((await getStaff(RAMI)).activeSessions).toBe(1);
     await expect(revokeSession(ramis[0].id)).rejects.toMatchObject({ status: 404 });
   });

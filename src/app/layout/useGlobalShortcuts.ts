@@ -13,7 +13,6 @@ export const GO_SHORTCUTS: Readonly<Record<string, string>> = {
   u: 'suppliers',
   t: 'storefront',
   f: 'finance',
-  c: 'commissions',
   r: 'refunds',
   a: 'audit',
 };

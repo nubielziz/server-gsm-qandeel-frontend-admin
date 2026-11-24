@@ -48,7 +48,7 @@ describe('timelineOf', () => {
 
 describe('progressOf', () => {
   it('counts made, sent and failed messages against the planned ones', () => {
-    const detail = campaignDetail({ planned: { inApp: 10, email: 10, telegram: 0 } });
+    const detail = campaignDetail({ planned: { inApp: 10, email: 10 } });
     detail.delivery.inApp.delivered = 10;
     detail.delivery.email = { queued: 4, sent: 5, failed: 1 };
     expect(progressOf(detail)).toEqual({ done: 16, planned: 20, ratio: 0.8 });

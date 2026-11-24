@@ -1,4 +1,4 @@
-// The address-bound state of one tab: its filters, page and the open drawer (`?status=failed&page=2&delivery=7`). Filter changes replace
+// The address-bound state of one tab: its filters, page and the open drawer (`?status=failed&page=2&notification=7`). Filter changes replace
 // the history entry (Back should leave the page, not walk through every choice) and go back to page 1; opening a drawer adds one, so Back closes it.
 import { useCallback } from 'react';
 import { useSearchParams } from 'react-router';

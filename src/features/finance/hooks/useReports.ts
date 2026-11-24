@@ -1,7 +1,7 @@
-// The three report reads of the Reports tab. Each report has its own route and its own query key, so opening one asks
+// The report reads of the Reports tab. Each report has its own route and its own query key, so opening one asks
 // only for it, and the server does all the adding up. New in the console (MISMATCHES M124).
 import { useApiQuery } from '@/lib/query';
-import { getProfitReport, getVatReport, getWalletExposure } from '../api';
+import { getFunnel, getProfitReport, getVatReport, getWalletExposure } from '../api';
 import { profitDates, vatDates, type ProfitRange, type VatPeriod } from '../lib/reports';
 import type { ProfitGroup } from '../types';
 import { REFRESH_MS, REPORT_KEY } from './keys';
@@ -33,5 +33,21 @@ export function useVatReport(period: VatPeriod, enabled = true) {
     queryKey: [...REPORT_KEY, 'vat', from, to],
     queryFn: ({ signal }) => getVatReport({ from, to }, { signal }),
     enabled,
+  });
+}
+
+const ONE_MINUTE = 60_000;
+
+/**
+ * How far shop sales got in the last 7, 30 or 90 days. The report is a total, not a live queue, so it is read again at most once a
+ * minute. Needs `reports:growth`.
+ */
+export function useFunnelReport(range: ProfitRange, enabled = true) {
+  const days = Number(range);
+  return useApiQuery({
+    queryKey: [...REPORT_KEY, 'funnel', days],
+    queryFn: ({ signal }) => getFunnel({ days }, { signal }),
+    enabled,
+    staleTime: ONE_MINUTE,
   });
 }

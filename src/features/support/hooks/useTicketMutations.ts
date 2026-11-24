@@ -66,8 +66,6 @@ export function useUpdateTicket() {
     invalidates: (_ticket, { ticketId }) => staleTicket(ticketId),
     invalidateKeys: TICKET_STALE_KEYS,
     successNotification: (_ticket, { body }) =>
-      body.status === 'resolved'
-        ? { message: 'Ticket resolved', description: 'The customer gets a short satisfaction survey.' }
-        : false,
+      body.status === 'resolved' ? { message: 'Ticket resolved' } : false,
   });
 }

@@ -1,4 +1,4 @@
-// PoliciesTab: the "Policies" tab: the eight storefront rules with a switch or a number each. Ports tabPolicies, `st-pol` and `st-polv` of
+// PoliciesTab: the "Policies" tab: the five storefront rules with a switch or a number each. Ports tabPolicies, `st-pol` and `st-polv` of
 // 55-p-settings.js. Values come from `GET /admin/settings`; each change goes to `PATCH /admin/storefront/settings` alone, and the
 // server's message for a policy shows under it.
 import { useState } from 'react';

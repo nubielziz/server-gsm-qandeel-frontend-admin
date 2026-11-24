@@ -1,5 +1,6 @@
 // Tests for the old addresses inside the whole app: they redirect (the entry is replaced) before a page's permission gate answers,
-// carry their query, and leave the Shop content addresses alone. They assert addresses and gates, not what a page shows.
+// carry their query, and leave the Shop content addresses alone; the retired Commissions page lands on Finance. They assert addresses
+// and gates, not what a page shows.
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -82,6 +83,53 @@ describe('old addresses redirect to Product / Services', () => {
   });
 });
 
+describe('the retired Commissions page goes to Finance', () => {
+  it.each([
+    '/commissions',
+    '/commissions?tab=accruals&status=accrued',
+    '/commissions?tab=agents',
+    '/commissions?tab=plans',
+    '/commissions?agent=3&status=accrued&page=2',
+  ])('%s goes to /finance', async (old) => {
+    await signInAs();
+    const app = renderApp(old);
+    await waitFor(() => expect(app.location()).toBe('/finance'), { timeout: 10_000 });
+    expect(await pageTitle('Finance')).toBeInTheDocument();
+  });
+
+  it('replaces the entry, so Back does not return to the old address', async () => {
+    await signInAs();
+    render(
+      <MemoryRouter initialEntries={['/commissions?tab=plans']}>
+        <AppProviders>
+          <AppRoutes />
+          <NavigationProbe />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByTestId('navigation')).toHaveTextContent('REPLACE /finance'), {
+      timeout: 10_000,
+    });
+    await pageTitle('Finance');
+  });
+
+  it('lets a role that may open Finance follow an old commissions link, with no refusal and no error', async () => {
+    mockMe({ permissions: ['ledger:read'] });
+    const app = renderApp('/commissions?tab=accruals');
+    await waitFor(() => expect(app.location()).toBe('/finance'), { timeout: 10_000 });
+    expect(await pageTitle('Finance')).toBeInTheDocument();
+    expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1, name: 'Page not found' })).not.toBeInTheDocument();
+  });
+
+  it('does not redirect an address below the old page', async () => {
+    mockMe({ permissions: ['*'] });
+    const app = renderApp('/commissions/5');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(app.location()).toBe('/commissions/5');
+  });
+});
+
 describe('before the permission gate', () => {
   it('lets a role that may open Product / Services but not Shop content follow an old pricing link', async () => {
     // pricing:read opens Product / Services (its shop price rules) and no longer opens Shop content, where the old Retail pricing tab was.
@@ -129,6 +177,58 @@ describe('before the permission gate', () => {
     expect(
       screen.getByText('catalog:read or pricing:read or inventory:read or storefront:read'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('the old Abandoned checkouts address goes to the sales funnel', () => {
+  it.each([
+    ['/checkouts', '/finance?tab=reports&report=funnel'],
+    ['/checkouts?filter=all&q=sam&page=2', '/finance?tab=reports&report=funnel'],
+    ['/checkouts?days=90', '/finance?tab=reports&report=funnel&range=90'],
+    ['/checkouts?days=7', '/finance?tab=reports&report=funnel&range=7'],
+  ])('%s goes to %s', async (old, target) => {
+    await signInAs();
+    const app = renderApp(old);
+    await waitFor(() => expect(app.location()).toBe(target), { timeout: 10_000 });
+    await pageTitle('Finance');
+    expect(await screen.findByRole('list', { name: /^Sales funnel, last \d+ days$/ })).toBeInTheDocument();
+  });
+
+  it('replaces the entry, so Back does not return to the removed page', async () => {
+    await signInAs();
+    render(
+      <MemoryRouter initialEntries={['/checkouts?days=7']}>
+        <AppProviders>
+          <AppRoutes />
+          <NavigationProbe />
+        </AppProviders>
+      </MemoryRouter>,
+    );
+    await waitFor(
+      () =>
+        expect(screen.getByTestId('navigation')).toHaveTextContent(
+          'REPLACE /finance?tab=reports&report=funnel&range=7',
+        ),
+      { timeout: 10_000 },
+    );
+    await pageTitle('Finance');
+  });
+
+  it('lands a role with only reports:growth on the funnel, not on an error', async () => {
+    mockMe({ permissions: ['reports:growth'] });
+    const app = renderApp('/checkouts');
+    await waitFor(() => expect(app.location()).toBe('/finance?tab=reports&report=funnel'), {
+      timeout: 10_000,
+    });
+    await pageTitle('Finance');
+    expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
+  });
+
+  it('does not redirect an address below the old page', async () => {
+    mockMe({ permissions: ['*'] });
+    const app = renderApp('/checkouts/5');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(app.location()).toBe('/checkouts/5');
   });
 });
 

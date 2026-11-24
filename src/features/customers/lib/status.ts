@@ -1,7 +1,7 @@
-// How the screens name a customer's status and risk, and the lists of reasons the dialogs offer. Ports CUST_STATUS, RISK_LABEL
-// and SUSPEND_REASONS of 12-state-b2c.js and the block reasons of 48-p-customers.js.
+// How the screens name a customer's status, and the lists of reasons the dialogs offer. Ports CUST_STATUS and SUSPEND_REASONS of
+// 12-state-b2c.js and the block reasons of 48-p-customers.js.
 import type { BadgeTone, IconName } from '@/components/ui';
-import type { CustomerStatus, RiskLevel } from '../types';
+import type { CustomerStatus } from '../types';
 
 /** The badge of each status: word, tone and icon (status is never colour alone). */
 export const STATUS_BADGE: Readonly<
@@ -13,15 +13,8 @@ export const STATUS_BADGE: Readonly<
   anonymized: { label: 'Anonymised', tone: 'neutral', icon: 'user' },
 };
 
-/** The word and tone of each risk level. A low risk is plain text on the screens, only the others get a badge. */
-export const RISK_BADGE: Readonly<Record<RiskLevel, { label: string; tone: BadgeTone }>> = {
-  low: { label: 'Low', tone: 'neutral' },
-  medium: { label: 'Medium', tone: 'warn' },
-  high: { label: 'High', tone: 'crit' },
-};
-
 /**
- * A value the console does not know (a new status on the server, or the demo's `med`) shows as it is, so it is never a blank or a
+ * A value the console does not know (a new status on the server) shows as it is, so it is never a blank or a
  * crash. An empty or missing value reads "Unknown".
  */
 export function rawLabel(value: unknown): string {
@@ -33,13 +26,6 @@ export function statusBadge(status: string): { label: string; tone: BadgeTone; i
   return Object.hasOwn(STATUS_BADGE, status)
     ? STATUS_BADGE[status as CustomerStatus]
     : { label: rawLabel(status), tone: 'neutral', icon: 'info' };
-}
-
-/** The word and tone of a risk level. A level this console does not know gets a neutral tone and its raw value as the word. */
-export function riskBadge(level: string): { label: string; tone: BadgeTone } {
-  return Object.hasOwn(RISK_BADGE, level)
-    ? RISK_BADGE[level as RiskLevel]
-    : { label: rawLabel(level), tone: 'neutral' };
 }
 
 /** Why a person pauses an account; the dialog offers exactly these (SUSPEND_REASONS in the demo). */

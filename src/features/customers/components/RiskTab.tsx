@@ -1,11 +1,10 @@
-// RiskTab: the customer's risk level, status, internal notes and highest score on the left, and the signals seen on their orders
+// RiskTab: the customer's status, internal notes and highest score on the left, and the signals seen on their orders
 // (each linking to the order) on the right. Ports the Risk tab of pageCustomer in 48-p-customers.js.
 import { Link } from 'react-router';
 import { Icon, KeyValue, ScoreMeter } from '@/components/ui';
 import { orderLabel, orderPath } from '@/features/orders';
 import type { CustomerDetail } from '../types';
 import { CustomerStatusBadge } from './CustomerStatusBadge';
-import { RiskBadge } from './RiskBadge';
 
 /** Most signals the tab lists (the demo's limit); a line says how many more there are. */
 const SIGNAL_LIMIT = 8;
@@ -18,7 +17,6 @@ export function RiskTab({ customer }: { customer: CustomerDetail }) {
       <div>
         <KeyValue
           rows={[
-            ['Risk level', <RiskBadge level={customer.riskLevel} />],
             ['Status', <CustomerStatusBadge status={customer.status} />],
             ['Notes', customer.internalNotes || <span className="text-ink3">None</span>],
             ['Highest score', highestScore === null ? '–' : <ScoreMeter score={highestScore} />],

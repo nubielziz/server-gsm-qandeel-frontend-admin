@@ -1,12 +1,10 @@
 // MerchantHeader: a merchant's title, status, the line under it and the actions (Adjust wallet…, Credit limit…, group menu,
-// Approve / Decline… / Suspend… / Reactivate). Ports `head` and `actionsHtml` of pageMerchant in 42-p-merchants.js; an action the
+// Activate account / Suspend… / Reactivate). Ports `head` and `actionsHtml` of pageMerchant in 42-p-merchants.js; an action the
 // staff member lacks the permission for is disabled with that permission as its title.
-import { Link } from 'react-router';
 import { Button, Icon, PageHeader } from '@/components/ui';
-import { useApproveClient, useReactivateClient } from '../hooks/useClientMutations';
+import { useActivateClient, useReactivateClient } from '../hooks/useClientMutations';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
 import { joinedText } from '../lib/input';
-import { merchantPath } from '../lib/paths';
 import type { Client, ClientGroup } from '../types';
 import { GroupMenu } from './GroupMenu';
 import { MerchantStatusBadge } from './MerchantStatusBadge';
@@ -21,11 +19,12 @@ export interface MerchantHeaderProps {
   onAdjust: () => void;
   onCreditLimit: () => void;
   onSuspend: () => void;
-  /** Opens the suspend dialog in decline mode (a pending application). */
-  onDecline: () => void;
 }
 
-/** The title, subtitle and action buttons of a merchant's page. Approve and Reactivate act at once; the others open a dialog. */
+/**
+ * The title, subtitle and action buttons of a merchant's page. Activate account (the one action of an account that is still
+ * `pending`, made before accounts were active at once) and Reactivate act at once; the others open a dialog.
+ */
 export function MerchantHeader({
   client,
   groups,
@@ -35,9 +34,8 @@ export function MerchantHeader({
   onAdjust,
   onCreditLimit,
   onSuspend,
-  onDecline,
 }: MerchantHeaderProps) {
-  const approve = useApproveClient();
+  const activate = useActivateClient();
   const reactivate = useReactivateClient();
   const updateLock = grants.needs('clients:update');
   const adjustLock = grants.needs('wallet:adjust');
@@ -54,15 +52,6 @@ export function MerchantHeader({
         <>
           <span className="mono">{client.country}</span> · {client.email} ·{' '}
           {joinedText(client.createdAt, now)}
-          {client.referredBy && (
-            <>
-              {' '}
-              · Referred by{' '}
-              <Link className="link" to={merchantPath(client.referredBy.id)}>
-                {client.referredBy.name}
-              </Link>
-            </>
-          )}
         </>
       }
       actions={
@@ -77,25 +66,15 @@ export function MerchantHeader({
           </Button>
           <GroupMenu client={client} groups={groups} groupsLoading={groupsLoading} grants={grants} />
           {client.status === 'pending' ? (
-            <>
-              <Button
-                variant="danger"
-                disabled={updateLock.disabled}
-                title={updateLock.title}
-                onClick={onDecline}
-              >
-                Decline…
-              </Button>
-              <Button
-                variant="primary"
-                disabled={updateLock.disabled}
-                title={updateLock.title}
-                loading={approve.isPending}
-                onClick={() => approve.mutate(client)}
-              >
-                Approve account
-              </Button>
-            </>
+            <Button
+              variant="primary"
+              disabled={updateLock.disabled}
+              title={updateLock.title}
+              loading={activate.isPending}
+              onClick={() => activate.mutate(client)}
+            >
+              Activate account
+            </Button>
           ) : client.status === 'active' ? (
             <Button
               variant="danger"

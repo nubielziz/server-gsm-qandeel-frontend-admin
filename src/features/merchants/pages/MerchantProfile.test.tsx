@@ -1,14 +1,14 @@
 // Tests for the Profile tab of a merchant's page and the parts of the header that feature 20 changed, run through the whole app
 // against the dev mock API: the three cards, editing the details (only the changed fields are sent, the server's refusals show
-// under their fields), the suspended banner with the server's reason, declining a pending application, and the "Invitation
-// pending" chip in the merchants table.
+// under their fields), the suspended banner with the server's reason, and the "Invitation pending" chip in the merchants table.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { getClient } from '../api';
 import { installMerchantMocks } from '../test/installMerchantMocks';
 import { openMerchant, openMerchants, rowOf } from '../test/openMerchants';
 
@@ -34,7 +34,7 @@ async function openEdit(user: User) {
 }
 
 describe('Profile tab', () => {
-  it('shows the account, the business details and the settings in three cards', async () => {
+  it('shows the account, the business details and the notes in three cards', async () => {
     await openProfile();
     const account = card('Account');
     // The mock gives the merchant the same name and company.
@@ -44,21 +44,42 @@ describe('Profile tab', () => {
     expect(account.getByText('JO')).toBeInTheDocument();
     expect(account.queryByText('Language')).not.toBeInTheDocument();
     expect(account.getByText('zain-mobile-hub')).toBeInTheDocument();
-    expect(account.getByText('GSM0001')).toBeInTheDocument();
     expect(account.getByText('VIP')).toBeInTheDocument();
-    expect(account.getByText('Referred by').nextElementSibling).toHaveTextContent('–');
+    expect(account.queryByText('Referral code')).not.toBeInTheDocument();
+    expect(account.queryByText('Referred by')).not.toBeInTheDocument();
     expect(account.getByText('Joined')).toBeInTheDocument();
     expect(card('Business').getByText('Abdali Boulevard, Amman')).toBeInTheDocument();
     expect(card('Business').getByText('JO-1234567')).toBeInTheDocument();
-    expect(card('Settings and notes').getByText('Linked')).toBeInTheDocument();
-    expect(card('Settings and notes').getByText('Pays by bank transfer on Sundays.')).toBeInTheDocument();
+    expect(card('Notes').getByText('Pays by bank transfer on Sundays.')).toBeInTheDocument();
+    expect(screen.queryByText('Telegram')).not.toBeInTheDocument();
   });
 
   it('says a merchant who has not verified their email is not verified, and shows dashes for empty details', async () => {
     await openProfile(undefined, 20, /Accra Devices/);
     expect(card('Account').getByText('Not verified')).toBeInTheDocument();
     expect(card('Business').getByText('Address').nextElementSibling).toHaveTextContent('–');
-    expect(card('Settings and notes').getByText(/None\./)).toBeInTheDocument();
+    expect(card('Notes').getByText(/None\./)).toBeInTheDocument();
+  });
+
+  it('shows no referral code and no "Referred by" line, even when an older server still sends them', async () => {
+    await signInAs();
+    const real = await getClient(8);
+    mockServer.use(
+      http.get('*/admin/clients/8', () =>
+        HttpResponse.json({
+          ...real,
+          referralCode: 'GSM0008',
+          referredBy: { id: 1, name: 'Zain Mobile Hub' },
+        }),
+      ),
+    );
+    await openProfile(undefined, 8, /Casablanca Unlock/);
+    const heading = screen.getByRole('heading', { level: 1 });
+    expect(heading.parentElement).not.toHaveTextContent('Referred by');
+    expect(screen.queryByText('GSM0008')).not.toBeInTheDocument();
+    expect(card('Account').queryByText('Referral code')).not.toBeInTheDocument();
+    expect(card('Account').queryByText('Referred by')).not.toBeInTheDocument();
+    expect(card('Account').getByText('Joined')).toBeInTheDocument();
   });
 
   it('disables Edit details for a role without clients:update and names the permission', async () => {
@@ -192,7 +213,7 @@ describe('Edit details', () => {
   });
 });
 
-describe('the suspended banner and Decline', () => {
+describe('the suspended banner', () => {
   it('shows the server’s reason, who suspended the merchant and when', async () => {
     await openMerchant(19, /Tunis Fix Point/);
     const note = await screen.findByRole('note');
@@ -212,49 +233,11 @@ describe('the suspended banner and Decline', () => {
     const note = await screen.findByRole('note');
     expect(await within(note).findByText('Reason: Fraud review · by Rami K. · just now')).toBeInTheDocument();
   });
-
-  it('gives a pending merchant Decline… beside Approve, and declining suspends the application', async () => {
-    const user = userEvent.setup();
-    let body: unknown;
-    await openMerchant(18, /Algiers Service Plus/);
-    expect(screen.getByRole('button', { name: 'Approve account' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Decline…' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Decline Algiers Service Plus’s application' });
-    await user.click(within(dialog).getByRole('button', { name: 'Decline application' }));
-    expect(await within(dialog).findByText('Add a short reason.')).toBeInTheDocument();
-    mockServer.use(
-      http.patch(
-        '*/admin/clients/:id',
-        async ({ request }) => {
-          body = await request.json();
-          return problem(409, 'INVALID_TRANSITION', 'Not allowed', 'Cannot decline right now.');
-        },
-        { once: true },
-      ),
-    );
-    await user.type(within(dialog).getByLabelText('Reason'), 'Documents do not match');
-    await user.click(within(dialog).getByRole('button', { name: 'Decline application' }));
-    expect(await within(dialog).findByText('Cannot decline right now.')).toBeInTheDocument();
-    expect(body).toEqual({ status: 'suspended', reason: 'Documents do not match' });
-
-    await user.click(within(dialog).getByRole('button', { name: 'Decline application' }));
-    expect(await screen.findByText('Algiers Service Plus’s application declined')).toBeInTheDocument();
-    expect(within(await screen.findByRole('note')).getByText('Suspended')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Decline…' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
-  });
-
-  it('disables Decline… for a role without clients:update', async () => {
-    await openMerchant(18, /Algiers Service Plus/, '', { permissions: ['clients:read'] });
-    const decline = screen.getByRole('button', { name: 'Decline…' });
-    expect(decline).toBeDisabled();
-    expect(decline).toHaveAttribute('title', 'You need the clients:update permission');
-  });
 });
 
 describe('the merchants table', () => {
   it('marks a merchant invited by staff who has not chosen a password yet', async () => {
-    await openMerchants('/merchants?tab=pending');
+    await openMerchants();
     expect(
       (await rowOf('Merchants', 'Algiers Service Plus')).getByText('Invitation pending'),
     ).toBeInTheDocument();

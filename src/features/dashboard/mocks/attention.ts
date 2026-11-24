@@ -101,7 +101,7 @@ function floorItems(world: World): AttentionItem[] {
     : [];
 }
 
-// Merchant-side items: deposits, negative wallets, accounts waiting for approval and commission accruals.
+// Merchant-side items: deposits and negative wallets.
 function merchantItems(world: World): AttentionItem[] {
   const items: AttentionItem[] = [];
   const deposits = world.payments.filter((payment) => payment.status === 'pending');
@@ -129,27 +129,6 @@ function merchantItems(world: World): AttentionItem[] {
         name: merchant.name,
         balance: toMoney(balance),
       })),
-    });
-  }
-  const waiting = world.merchants.filter((merchant) => merchant.status === 'pending');
-  if (waiting.length) {
-    items.push({
-      id: 'pend',
-      severity: 'low',
-      kind: 'merchants_pending',
-      count: waiting.length,
-      names: waiting.map((merchant) => merchant.name),
-    });
-  }
-  const accrued = world.accruals.filter((accrual) => accrual.status === 'accrued');
-  if (accrued.length) {
-    items.push({
-      id: 'comm',
-      severity: 'low',
-      kind: 'commissions_accrued',
-      count: accrued.length,
-      total: toMoney(sumBy(accrued, (accrual) => accrual.amount)),
-      agents: new Set(accrued.map((accrual) => accrual.agent)).size,
     });
   }
   return items;

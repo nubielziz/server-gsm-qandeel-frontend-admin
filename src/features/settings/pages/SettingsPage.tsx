@@ -1,6 +1,7 @@
-// SettingsPage: "Settings" (`/settings`, the demo's `pageSettings` in 55-p-settings.js). A header and seven tabs kept in the address
-// (`?tab=`): the demo's four (Payment methods, Tax and currency, Policies, Customer emails) and three the map adds (Notification log,
-// Webhook deliveries, System). A tab whose permission the staff member lacks is hidden. The page only composes; each tab owns its data.
+// SettingsPage: "Settings" (`/settings`, the demo's `pageSettings` in 55-p-settings.js). A header and six tabs kept in the address
+// (`?tab=`): the demo's four (Payment methods, Tax and currency, Policies, Customer emails) and two the map adds (Notification log,
+// System). A tab whose permission the staff member lacks is hidden, and an address that names a tab that is gone (the retired
+// `?tab=webhooks`) opens the first tab. The page only composes; each tab owns its data.
 import { EmptyState, PageHeader, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
 import { useNow } from '@/lib/format';
 import { EmailsTab } from '../components/EmailsTab';
@@ -9,7 +10,6 @@ import { PaymentsTab } from '../components/PaymentsTab';
 import { PoliciesTab } from '../components/PoliciesTab';
 import { SystemTab } from '../components/SystemTab';
 import { TaxTab } from '../components/TaxTab';
-import { WebhooksTab } from '../components/WebhooksTab';
 import { useCurrencyList } from '../hooks/useCurrencies';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { useTabView } from '../hooks/useTabView';
@@ -47,8 +47,7 @@ export function SettingsPage() {
       ) : !current ? (
         <Panel flush>
           <EmptyState icon="lock" title="Nothing here for your role">
-            Your role cannot see payment methods, tax, policies, messages or webhooks. Ask an owner if you
-            need access.
+            Your role cannot see payment methods, tax, policies or messages. Ask an owner if you need access.
           </EmptyState>
         </Panel>
       ) : (
@@ -62,7 +61,6 @@ export function SettingsPage() {
             {current.id === 'policies' && <PoliciesTab />}
             {current.id === 'notifications' && <EmailsTab />}
             {current.id === 'log' && <NotificationLogTab />}
-            {current.id === 'webhooks' && <WebhooksTab />}
             {current.id === 'system' && <SystemTab />}
           </div>
         </>

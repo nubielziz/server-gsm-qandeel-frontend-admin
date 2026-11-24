@@ -1,23 +1,19 @@
-// MerchantsHeader: the page title with the active and waiting counts, and the Invite merchant button. Ports the `head` of
+// MerchantsHeader: the page title with the active count, and the Invite merchant button. Ports the `head` of
 // pageMerchants in 42-p-merchants.js. The demo's "held in wallets" total is left out (no aggregate route, MISMATCHES M49).
 import { Button, Icon, PageHeader } from '@/components/ui';
 import type { MerchantGrants } from '../hooks/useMerchantGrants';
 
 export interface MerchantsHeaderProps {
   grants: MerchantGrants;
-  /** Counts from the server; undefined until they arrive (or when the role cannot read merchants). */
+  /** The active count from the server; undefined until it arrives (or when the role cannot read merchants). */
   active: number | undefined;
-  pending: number | undefined;
   onInvite: () => void;
 }
 
-/** The page title, the counts under it and the Invite merchant button. */
-export function MerchantsHeader({ grants, active, pending, onInvite }: MerchantsHeaderProps) {
+/** The page title, the active count under it and the Invite merchant button. */
+export function MerchantsHeader({ grants, active, onInvite }: MerchantsHeaderProps) {
   const lock = grants.needs('clients:create');
-  const sub =
-    active === undefined
-      ? undefined
-      : `${active} active${pending ? `, ${pending} waiting for approval` : ''}.`;
+  const sub = active === undefined ? undefined : `${active} active.`;
   return (
     <PageHeader
       title="Merchants"

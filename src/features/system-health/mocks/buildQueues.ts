@@ -1,5 +1,5 @@
 // The answers about background work: `GET /admin/system/queues` (BullMQ counters, with pause and retry applied),
-// `GET /admin/system/jobs` (schedules and run history) and `GET /admin/system/webhooks` (delivery health).
+// `GET /admin/system/jobs` (schedules and run history) and `GET /admin/system/webhooks` (delivery health of gateway callbacks).
 import type {
   JobRun,
   JobsResponse,
@@ -7,7 +7,7 @@ import type {
   QueueStats,
   QueuesResponse,
   ScheduledJob,
-  WebhookDirectionHealth,
+  WebhookHealth,
   WebhooksHealth,
 } from '../types';
 import { SECOND, bucketStarts, iso, round, stepOf } from './clock';
@@ -145,26 +145,16 @@ export function buildJobs(state: HealthState, job: string | undefined, now: numb
 
 // ---- Webhooks ----
 
-type Direction = { delivered: number; failed: number; retrying: number; oldestSeconds: number | null };
+type Facts = { delivered: number; failed: number; retrying: number; oldestSeconds: number | null };
 
-const WEBHOOKS: Record<'calm' | 'slow' | 'outage', { outgoing: Direction; incoming: Direction }> = {
-  calm: {
-    outgoing: { delivered: 3214, failed: 41, retrying: 5, oldestSeconds: 40 },
-    incoming: { delivered: 884, failed: 2, retrying: 0, oldestSeconds: null },
-  },
-  // Merchants' endpoints time out while their orders are late.
-  slow: {
-    outgoing: { delivered: 2985, failed: 118, retrying: 38, oldestSeconds: 360 },
-    incoming: { delivered: 871, failed: 3, retrying: 0, oldestSeconds: null },
-  },
+const WEBHOOKS: Record<'calm' | 'slow' | 'outage', Facts> = {
+  calm: { delivered: 884, failed: 2, retrying: 0, oldestSeconds: null },
+  slow: { delivered: 871, failed: 3, retrying: 0, oldestSeconds: null },
   // The gateways' callbacks hit a service that cannot reach its database.
-  outage: {
-    outgoing: { delivered: 2410, failed: 96, retrying: 540, oldestSeconds: 840 },
-    incoming: { delivered: 612, failed: 312, retrying: 0, oldestSeconds: 840 },
-  },
+  outage: { delivered: 612, failed: 312, retrying: 0, oldestSeconds: 840 },
 };
 
-function directionOf(state: HealthState, facts: Direction, now: number): WebhookDirectionHealth {
+function healthOf(state: HealthState, facts: Facts, now: number): WebhookHealth {
   const oldestAt = facts.oldestSeconds === null ? null : state.anchor - facts.oldestSeconds * SECOND;
   const total = facts.delivered + facts.failed;
   return {
@@ -180,9 +170,5 @@ function directionOf(state: HealthState, facts: Direction, now: number): Webhook
 /** `GET /admin/system/webhooks`. */
 export function buildWebhooks(state: HealthState, now: number): WebhooksHealth {
   const story = state.profile.dbDown ? 'outage' : state.profile.slowSupplier ? 'slow' : 'calm';
-  const facts = WEBHOOKS[story];
-  return {
-    outgoing: directionOf(state, facts.outgoing, now),
-    incoming: directionOf(state, facts.incoming, now),
-  };
+  return { incoming: healthOf(state, WEBHOOKS[story], now) };
 }

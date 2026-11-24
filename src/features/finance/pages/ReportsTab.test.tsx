@@ -1,5 +1,5 @@
 // Tests for the Reports tab, run through the whole app against the dev mock API: profit by day, service, supplier and
-// merchant, wallet exposure and VAT by country, each reading its own route, and the reports a role may open.
+// merchant, wallet exposure, VAT by country and the sales funnel, each reading its own route, and the reports a role may open.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -150,6 +150,94 @@ describe('VAT', () => {
   });
 });
 
+describe('sales funnel', () => {
+  // Serves the funnel for the period asked, and returns the addresses asked so far.
+  function serveFunnel(report: (days: number) => Record<string, number>): URL[] {
+    const asked: URL[] = [];
+    mockServer.use(
+      http.get('*/admin/reports/funnel', ({ request }) => {
+        const url = new URL(request.url);
+        asked.push(url);
+        return HttpResponse.json(report(Number(url.searchParams.get('days') ?? 30)));
+      }),
+    );
+    return asked;
+  }
+  const steps = async () =>
+    within(await screen.findByRole('list', { name: /^Sales funnel, last \d+ days$/ }));
+
+  it("shows the three steps with the server's counts and the share of the step before", async () => {
+    const user = userEvent.setup();
+    serveFunnel((days) => ({ days, paymentStarted: 300, paid: 120, delivered: 108 }));
+    const app = await openFinance('/finance?tab=reports');
+    await user.click(await reportSwitch().findByRole('button', { name: 'Sales funnel' }));
+    expect(app.location()).toBe('/finance?tab=reports&report=funnel');
+    const list = await steps();
+    expect(list.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      'Started a payment300',
+      'Paid120 40% of the step before',
+      'Delivered108 90% of the step before',
+    ]);
+    expect(list.queryByText('Checked an IMEI')).not.toBeInTheDocument();
+  });
+
+  it('ignores the count of the retired IMEI-check step that an older backend still sends', async () => {
+    serveFunnel((days) => ({ days, imeiChecks: 900, paymentStarted: 300, paid: 120, delivered: 108 }));
+    await openFinance('/finance?tab=reports&report=funnel');
+    const list = await steps();
+    expect(list.getAllByRole('listitem')).toHaveLength(3);
+    expect(list.queryByText('900')).not.toBeInTheDocument();
+  });
+
+  it('asks for the period in the address and changes it with the selector', async () => {
+    const user = userEvent.setup();
+    const asked = serveFunnel((days) => ({ days, paymentStarted: days * 10, paid: days, delivered: 0 }));
+    const app = await openFinance('/finance?tab=reports&report=funnel&range=90');
+    expect(await screen.findByRole('button', { name: '90 days' })).toHaveAttribute('aria-pressed', 'true');
+    expect(asked[0].searchParams.get('days')).toBe('90');
+    expect(await screen.findByText('900')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '7 days' }));
+    expect(app.location()).toBe('/finance?tab=reports&report=funnel&range=7');
+    await waitFor(() => expect(asked.at(-1)?.searchParams.get('days')).toBe('7'));
+    expect(await screen.findByText('70')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '30 days' }));
+    expect(app.location()).toBe('/finance?tab=reports&report=funnel');
+  });
+
+  it('says so when nobody reached any step in the period', async () => {
+    serveFunnel((days) => ({ days, paymentStarted: 0, paid: 0, delivered: 0 }));
+    await openFinance('/finance?tab=reports&report=funnel');
+    expect(await screen.findByText('No activity in this period')).toBeInTheDocument();
+  });
+
+  it("shows the server's error with Retry and recovers", async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.get('*/admin/reports/funnel', () =>
+        HttpResponse.json(
+          { title: 'Not allowed', status: 403, code: 'FORBIDDEN', detail: 'Reports are off for you.' },
+          { status: 403, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+      ),
+    );
+    await openFinance('/finance?tab=reports&report=funnel');
+    expect(await screen.findByText('Could not load the sales funnel')).toBeInTheDocument();
+    expect(screen.getByText('Reports are off for you.')).toBeInTheDocument();
+    serveFunnel((days) => ({ days, paymentStarted: 5, paid: 2, delivered: 1 }));
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Started a payment')).toBeInTheDocument();
+  });
+
+  it('works out the funnel from the mock tables by default', async () => {
+    await openFinance('/finance?tab=reports&report=funnel');
+    const list = await steps();
+    expect(await list.findAllByRole('listitem')).toHaveLength(3);
+    expect(list.getByText('Paid')).toBeInTheDocument();
+  });
+});
+
 describe('permissions', () => {
   it('offers profit and wallet exposure with reports:read, and not VAT', async () => {
     await openFinance('/finance?tab=reports&report=vat', { permissions: ['reports:read'] });
@@ -169,5 +257,15 @@ describe('permissions', () => {
         .getAllByRole('button')
         .map((button) => button.textContent),
     ).toEqual(['VAT']);
+  });
+
+  it('offers only the sales funnel with reports:growth', async () => {
+    await openFinance('/finance?tab=reports', { permissions: ['reports:growth'] });
+    await screen.findByRole('list', { name: /^Sales funnel, last \d+ days$/ });
+    expect(
+      reportSwitch()
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Sales funnel']);
   });
 });

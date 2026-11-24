@@ -1,10 +1,10 @@
-// RiskPage: "Risk & checks" (`/risk`, the demo's `pageRisk` in 54-p-risk.js). Four tabs kept in the address (`?tab=`): the
-// review queue of held orders, the IMEI check log, the blocklist and the rules. The page only composes; each tab loads its own
-// data. The order drawer (`?order=<id>`) opens in place from any order number on the page. `modeGate` of the demo is dropped.
+// RiskPage: "Risk & checks" (`/risk`, the demo's `pageRisk` in 54-p-risk.js). Three tabs kept in the address (`?tab=`): the
+// review queue of held orders, the blocklist and the rules. An address that names another tab (the retired `?tab=checks`) opens
+// the review queue. The page only composes; each tab loads its own data. The order drawer (`?order=<id>`) opens in place from
+// any order number on the page. `modeGate` of the demo is dropped.
 import { PageHeader, Tabs, type TabItem } from '@/components/ui';
 import { OrderDrawerHost } from '@/features/orders';
 import { BlocklistTab } from '../components/BlocklistTab';
-import { ChecksTab } from '../components/ChecksTab';
 import { QueueTab } from '../components/QueueTab';
 import { RulesTab } from '../components/RulesTab';
 import { useBlocklistCount } from '../hooks/useBlocklist';
@@ -42,7 +42,6 @@ export function RiskPage() {
       </div>
       <div role="tabpanel" aria-label={current.label}>
         {view.tab === 'queue' && <QueueTab grants={grants} />}
-        {view.tab === 'checks' && <ChecksTab view={view} />}
         {view.tab === 'block' && <BlocklistTab view={view} grants={grants} />}
         {view.tab === 'rules' && <RulesTab grants={grants} />}
       </div>

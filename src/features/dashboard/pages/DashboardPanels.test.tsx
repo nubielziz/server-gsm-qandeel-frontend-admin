@@ -278,26 +278,23 @@ describe('top customers', () => {
 });
 
 describe('storefront funnel', () => {
-  it('shows the five steps with their share of the step before, and the six small figures', async () => {
+  it('shows the four steps with their share of the step before, and the five small figures', async () => {
     answerDashboard(dashboardFixture());
     await openDashboard();
     const panel = await panelOf('Storefront funnel');
-    expect(
-      panel.getByText('Last 30 days. Visitor numbers are estimated from IMEI checks.'),
-    ).toBeInTheDocument();
+    expect(panel.getByText('Last 30 days. Visitor numbers are estimated.')).toBeInTheDocument();
     const steps = within(await panel.findByRole('list', { name: 'Storefront funnel, last 30 days' }));
     const items = steps.getAllByRole('listitem');
     expect(items.map((item) => item.querySelector('span.text-ink2')?.textContent)).toEqual([
       'Visitors (estimated)',
-      'Checked an IMEI',
       'Started checkout',
       'Paid',
       'Delivered',
     ]);
     expect(within(items[0]).getByText('5,000')).toBeInTheDocument();
-    expect(within(items[1]).getByText('900')).toBeInTheDocument();
-    expect(within(items[1]).getByText('18% of the step before')).toBeInTheDocument();
-    expect(within(items[4]).getByText('94.2% of the step before')).toBeInTheDocument();
+    expect(within(items[1]).getByText('300')).toBeInTheDocument();
+    expect(within(items[1]).getByText('6% of the step before')).toBeInTheDocument();
+    expect(within(items[3]).getByText('94.2% of the step before')).toBeInTheDocument();
 
     const figure = (label: string) => within(panel.getByText(label).closest('div') as HTMLElement);
     expect(figure('Average order').getByText('$18.50')).toBeInTheDocument();
@@ -305,9 +302,20 @@ describe('storefront funnel', () => {
     expect(figure('Refund rate').getByText('2.4%')).toBeInTheDocument();
     expect(figure('Dispute rate').getByText('1.25%')).toBeInTheDocument();
     expect(figure('First reply').getByText('30 min')).toBeInTheDocument();
-    expect(figure('Satisfaction').getByText('4.6 / 5')).toBeInTheDocument();
-    expect(figure('Satisfaction').getByText('12 ratings')).toBeInTheDocument();
     expect(figure('Held for review').getByText('4')).toBeInTheDocument();
+    expect(panel.queryByText('Satisfaction')).not.toBeInTheDocument();
+  });
+
+  it('leaves out a satisfaction figure an older backend still sends', async () => {
+    const base = dashboardFixture().storefront!;
+    const older = { ...base, satisfaction: { average: 4.6, ratings: 12 } };
+    answerDashboard(dashboardFixture({ storefront: older }));
+    await openDashboard();
+    const panel = await panelOf('Storefront funnel');
+    expect(await panel.findByText('Average order')).toBeInTheDocument();
+    expect(panel.getByText('Held for review')).toBeInTheDocument();
+    expect(panel.queryByText('Satisfaction')).not.toBeInTheDocument();
+    expect(panel.queryByText('12 ratings')).not.toBeInTheDocument();
   });
 
   it('says so when the storefront has had no activity', async () => {
@@ -316,7 +324,7 @@ describe('storefront funnel', () => {
       dashboardFixture({
         storefront: {
           ...base,
-          funnel: { ...base.funnel, imeiChecks: 0, paid: 0, checkoutsStarted: 0, delivered: 0 },
+          funnel: { ...base.funnel, paid: 0, checkoutsStarted: 0, delivered: 0 },
         },
       }),
     );

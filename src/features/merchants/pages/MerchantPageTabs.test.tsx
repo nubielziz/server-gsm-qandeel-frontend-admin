@@ -25,7 +25,7 @@ const ZAIN = /Zain Mobile Hub/;
 type User = ReturnType<typeof userEvent.setup>;
 
 describe('tabs', () => {
-  it('shows the nine tabs, opens on Orders, and keeps the chosen tab in the address', async () => {
+  it('shows the eight tabs, opens on Orders, and keeps the chosen tab in the address', async () => {
     const user = userEvent.setup();
     const app = await openMerchant(1, ZAIN);
     expect(
@@ -40,7 +40,6 @@ describe('tabs', () => {
       'API access',
       'Profile',
       'Security',
-      'Verification',
       'Audit',
     ]);
     expect(sectionTabs().getByRole('tab', { name: 'Orders' })).toHaveAttribute('aria-selected', 'true');
@@ -54,6 +53,13 @@ describe('tabs', () => {
     await openMerchant(1, ZAIN, '?tab=pricing');
     expect(sectionTabs().getByRole('tab', { name: 'Pricing' })).toHaveAttribute('aria-selected', 'true');
     expect(await screen.findByText('Client overrides')).toBeInTheDocument();
+  });
+
+  // The Verification tab was retired (MISMATCHES M278): an old link to it opens the first tab, without an error.
+  it('opens the first tab for an old address of the retired Verification tab', async () => {
+    await openMerchant(1, ZAIN, '?tab=verification&kyc=2');
+    expect(sectionTabs().getByRole('tab', { name: 'Orders' })).toHaveAttribute('aria-selected', 'true');
+    expect(sectionTabs().queryByRole('tab', { name: 'Verification' })).not.toBeInTheDocument();
   });
 });
 
@@ -89,9 +95,15 @@ describe('Orders tab', () => {
   });
 
   it('explains an empty list by what the merchant’s state allows', async () => {
+    await openMerchant(20, /Accra Devices/);
+    expect(await screen.findByText('No orders from this merchant')).toBeInTheDocument();
+    expect(screen.getByText('Orders appear after the account is active and funded.')).toBeInTheDocument();
+  });
+
+  it('tells an active merchant who has not ordered yet that orders show here as soon as they place one', async () => {
     await openMerchant(18, /Algiers Service Plus/);
     expect(await screen.findByText('No orders from this merchant')).toBeInTheDocument();
-    expect(screen.getByText('Orders appear after the account is approved and funded.')).toBeInTheDocument();
+    expect(screen.getByText('Orders show here as soon as they place one.')).toBeInTheDocument();
   });
 });
 
@@ -460,11 +472,11 @@ describe('API access tab', () => {
     expect((await rowOf('API keys', 'Staging')).getByText('Active')).toBeInTheDocument();
   });
 
-  it('says a merchant waiting for approval has no keys yet', async () => {
-    await openApi(undefined, 18, /Algiers Service Plus/);
+  it('says a merchant whose account is not active yet has no keys yet', async () => {
+    await openApi(undefined, 20, /Accra Devices/);
     expect(await screen.findByText('No API keys yet')).toBeInTheDocument();
     expect(
-      screen.getByText('The merchant can create a key in their portal once you approve the account.'),
+      screen.getByText('The merchant can create a key in their portal once the account is active.'),
     ).toBeInTheDocument();
   });
 

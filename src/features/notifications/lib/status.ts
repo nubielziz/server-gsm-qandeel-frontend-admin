@@ -31,13 +31,11 @@ export const PURPOSE_LABEL: Record<CampaignPurpose, string> = {
 export const CHANNEL_LABEL: Record<CampaignChannel, string> = {
   in_app: 'In-app',
   email: 'Email',
-  telegram: 'Telegram',
 };
 
 export const CHANNEL_ICON: Record<CampaignChannel, IconName> = {
   in_app: 'bell',
   email: 'mail',
-  telegram: 'send',
 };
 
 /** The menus above the list. */
@@ -65,10 +63,10 @@ export const canDelete = (status: CampaignStatus) => status === 'draft';
 /** Queued or sending: the worker is still making messages, so the page keeps asking. */
 export const isInFlight = (status: CampaignStatus) => status === 'queued' || status === 'sending';
 
-/** True while the detail still shows news worth asking for: the campaign is in flight, or an email or Telegram message is still queued. */
+/** True while the detail still shows news worth asking for: the campaign is in flight, or an email message is still queued. */
 export function needsRefresh(detail: CampaignDetail | undefined): boolean {
   if (!detail) return false;
-  return isInFlight(detail.status) || detail.delivery.email.queued > 0 || detail.delivery.telegram.queued > 0;
+  return isInFlight(detail.status) || detail.delivery.email.queued > 0;
 }
 
 /** The moment the list's "When" column shows: the time of a scheduled campaign, the end of a sent one, else when it was written. */
@@ -90,7 +88,6 @@ export function recipientCount(campaign: Campaign): number | null {
 export const RECIPIENT_STATUS_BY_CHANNEL: Record<CampaignChannel, readonly RecipientStatus[]> = {
   in_app: ['delivered', 'read'],
   email: ['queued', 'sent', 'failed'],
-  telegram: ['queued', 'sent', 'failed'],
 };
 
 export const RECIPIENT_STATUS_LOOK: Record<RecipientStatus, StatusLook> = {

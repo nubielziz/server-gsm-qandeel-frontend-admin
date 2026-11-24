@@ -22,7 +22,6 @@ import type {
   SupportTicketDetail,
   TicketFileUpload,
   TicketMessage,
-  TypingBody,
   UpdateTicketBody,
 } from '../types';
 
@@ -52,7 +51,7 @@ export function getSupportTicket(id: Id, init?: ApiInit): Promise<SupportTicketD
 
 /**
  * Changes a ticket's priority, assignee or status; only the fields that change are sent. `status: 'resolved'` resolves it
- * (the customer gets a short satisfaction survey), `status: 'open'` reopens it. The server writes the change to the audit log.
+ * and `status: 'open'` reopens it. The server writes the change to the audit log.
  * Assumed contract: body `{ priority?, assigneeId?, status? }`, answer the updated list row.
  * @route PATCH /admin/support-tickets/:id
  */
@@ -90,16 +89,6 @@ export function addTicketNote(id: Id, body: NoteBody, init?: ApiInit): Promise<T
  */
 export function markTicketRead(id: Id, body: MarkReadBody, init?: ApiInit): Promise<void> {
   return apiPost<void>(pathOf('/admin/support-tickets/:id/read', { id }), body, init);
-}
-
-/**
- * Tells the server the staff member is typing a reply or a note (`body.mode`). It is ephemeral (never stored, never replayed) and
- * the server keeps only one event per 2.5 s, so callers send it at most once every 3 s. Only a typed reply reaches the requester. Backend
- * addition, B218 (feature 28). Always 204. Needs `support:reply`; it writes no audit entry.
- * @route POST /admin/support-tickets/:id/typing
- */
-export function sendTicketTyping(id: Id, body: TypingBody, init?: ApiInit): Promise<void> {
-  return apiPost<void>(pathOf('/admin/support-tickets/:id/typing', { id }), body, init);
 }
 
 /**

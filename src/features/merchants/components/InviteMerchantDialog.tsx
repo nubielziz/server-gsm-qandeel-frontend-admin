@@ -1,5 +1,6 @@
 // InviteMerchantDialog: "Invite merchant" (the demo's `m-invite` action): business name, contact email, country, price group and
-// an optional credit limit. The server emails the sign-up link and keeps the account pending until staff approve it. A duplicate
+// an optional credit limit. The server emails the link to choose a password; the account is active at once (a server not updated
+// yet may still answer `pending`, which the toast says), and the list shows "Invitation pending" until they choose it. A duplicate
 // email comes back as 409 `EMAIL_TAKEN` and shows under the email field.
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextField, dialogSubmit } from '@/components/ui';
@@ -57,7 +58,7 @@ export function InviteMerchantDialog({ groups, onClose }: InviteMerchantDialogPr
     <FormDialog
       open
       title="Invite merchant"
-      sub="They receive a sign-up link. The account stays pending until you approve it."
+      sub="They receive a link to choose a password."
       confirm="Send invitation"
       onClose={onClose}
       onSubmit={submit}

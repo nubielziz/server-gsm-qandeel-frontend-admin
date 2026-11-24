@@ -20,15 +20,15 @@ describe('the healthy scenario', () => {
     for (const name of SURFACE_NAMES) {
       expect(within(surfaces).getByRole('button', { name })).toBeInTheDocument();
     }
-    for (const key of ['v1', 'dhru', 'client', 'store', 'admin', 'hooks']) {
+    for (const key of ['dhru', 'client', 'store', 'admin', 'hooks']) {
       expect(within(surfaces).getByText(key)).toHaveClass('mono');
     }
-    expect(rowsOf(surfaces)).toHaveLength(6);
-    expect(within(surfaces).getAllByText('OK')).toHaveLength(6);
+    expect(rowsOf(surfaces)).toHaveLength(5);
+    expect(within(surfaces).getAllByText('OK')).toHaveLength(5);
     // Every figure keeps its unit.
-    expect(within(surfaces).getAllByText(/^[\d,.]+ \/min$/).length).toBeGreaterThanOrEqual(6);
-    expect(within(surfaces).getAllByText(/^[\d,.]+ ms$/).length).toBeGreaterThanOrEqual(6);
-    expect(within(surfaces).getAllByText(/^[\d,.]+ %$/).length).toBeGreaterThanOrEqual(12);
+    expect(within(surfaces).getAllByText(/^[\d,.]+ \/min$/).length).toBeGreaterThanOrEqual(5);
+    expect(within(surfaces).getAllByText(/^[\d,.]+ ms$/).length).toBeGreaterThanOrEqual(5);
+    expect(within(surfaces).getAllByText(/^[\d,.]+ %$/).length).toBeGreaterThanOrEqual(10);
     // Nothing needs attention, so there is no quiet line and no one is picked.
     expect(
       within(surfaces).queryByRole('button', { name: 'Show the healthy surfaces' }),
@@ -71,21 +71,19 @@ describe('a problem scenario', () => {
     await openHealthPage({ scenario: 'degraded', route: API_TAB });
     const surfaces = await surfacesCard();
     const rows = rowsOf(surfaces);
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveTextContent('Merchant API v1');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toHaveTextContent('Dhru Fusion API');
     expect(rows[0]).toHaveTextContent('Critical');
-    expect(rows[1]).toHaveTextContent('Dhru Fusion API');
-    expect(rows[1]).toHaveTextContent('Warn');
     expect(within(surfaces).queryByRole('button', { name: 'Client app' })).not.toBeInTheDocument();
     expect(surfaces).toHaveTextContent('4 surfaces OK');
 
     await user.click(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' }));
-    expect(rowsOf(surfaces)).toHaveLength(6);
+    expect(rowsOf(surfaces)).toHaveLength(5);
     expect(within(surfaces).getByRole('button', { name: 'Client app' })).toBeInTheDocument();
-    // The problems are still first.
-    expect(rowsOf(surfaces)[0]).toHaveTextContent('Merchant API v1');
+    // The problem is still first.
+    expect(rowsOf(surfaces)[0]).toHaveTextContent('Dhru Fusion API');
     await user.click(within(surfaces).getByRole('button', { name: 'Hide the healthy surfaces' }));
-    expect(rowsOf(surfaces)).toHaveLength(2);
+    expect(rowsOf(surfaces)).toHaveLength(1);
   });
 
   it('keeps the picked surface in view while it is picked, and puts the keyboard on the quiet line when it folds away', async () => {
@@ -95,7 +93,7 @@ describe('a problem scenario', () => {
     // Client app is fine; it shows only because it is picked, so the quiet line holds the other three.
     const client = within(surfaces).getByRole('button', { name: 'Client app' });
     expect(client).toHaveAttribute('aria-current', 'true');
-    expect(rowsOf(surfaces)).toHaveLength(3);
+    expect(rowsOf(surfaces)).toHaveLength(2);
     expect(surfaces).toHaveTextContent('3 surfaces OK');
 
     await user.click(within(surfaces).getByRole('button', { name: 'All surfaces' }));
@@ -105,20 +103,20 @@ describe('a problem scenario', () => {
       expect(within(surfaces).queryByRole('button', { name: 'Client app' })).not.toBeInTheDocument(),
     );
     expect(surfaces).toHaveTextContent('4 surfaces OK');
-    expect(rowsOf(surfaces)).toHaveLength(2);
+    expect(rowsOf(surfaces)).toHaveLength(1);
     expect(within(surfaces).getByRole('button', { name: 'Show the healthy surfaces' })).toHaveFocus();
   });
 
   it('leaves the keyboard on a surface that stays in view after All surfaces', async () => {
     const user = userEvent.setup();
-    const app = await openHealthPage({ scenario: 'degraded', route: `${API_TAB}&surface=v1` });
+    const app = await openHealthPage({ scenario: 'degraded', route: `${API_TAB}&surface=dhru` });
     const surfaces = await surfacesCard();
     await user.click(within(surfaces).getByRole('button', { name: 'All surfaces' }));
     await waitFor(() => expect(app.location()).toBe(API_TAB), SLOW);
-    // Merchant API v1 has a problem, so it is still a row and keeps the keyboard.
-    const v1 = within(surfaces).getByRole('button', { name: 'Merchant API v1' });
-    expect(v1).not.toHaveAttribute('aria-current');
-    expect(v1).toHaveFocus();
+    // The Dhru Fusion API has a problem, so it is still a row and keeps the keyboard.
+    const dhru = within(surfaces).getByRole('button', { name: 'Dhru Fusion API' });
+    expect(dhru).not.toHaveAttribute('aria-current');
+    expect(dhru).toHaveFocus();
   });
 
   it('marks the slow figures with their state word and lists the supplier timeouts first', async () => {
@@ -128,7 +126,7 @@ describe('a problem scenario', () => {
     expect(within(surfaces).getAllByText('Critical').length).toBeGreaterThanOrEqual(2);
     const slowest = await card('Slowest endpoints');
     await waitFor(() => expect(rowsOf(slowest).length).toBe(10), SLOW);
-    expect(rowsOf(slowest)[0]).toHaveTextContent('/v1/orders');
+    expect(rowsOf(slowest)[0]).toHaveTextContent('/dhru/api/index.php');
     const errors = await card('Top errors');
     await within(errors).findAllByText('SUPPLIER_TIMEOUT', undefined, SLOW);
     expect(rowsOf(errors)[0]).toHaveTextContent('SUPPLIER_TIMEOUT');
@@ -137,8 +135,8 @@ describe('a problem scenario', () => {
   it('shows every surface in the outage, where nothing is OK enough to fold', async () => {
     await openHealthPage({ scenario: 'outage', route: API_TAB });
     const surfaces = await surfacesCard();
-    expect(rowsOf(surfaces)).toHaveLength(6);
-    expect(within(surfaces).getAllByText('Critical').length).toBeGreaterThanOrEqual(6);
+    expect(rowsOf(surfaces)).toHaveLength(5);
+    expect(within(surfaces).getAllByText('Critical').length).toBeGreaterThanOrEqual(5);
     expect(
       within(surfaces).queryByRole('button', { name: 'Show the healthy surfaces' }),
     ).not.toBeInTheDocument();
@@ -150,38 +148,36 @@ describe('?surface= scoping', () => {
     const user = userEvent.setup();
     const metrics = recordRequests('get', '/admin/system/metrics');
     const errorReads = recordRequests('get', '/admin/system/errors');
-    const app = await openHealthPage({ route: `${API_TAB}&surface=v1` });
+    const app = await openHealthPage({ route: `${API_TAB}&surface=dhru` });
 
     const surfaces = await surfacesCard();
     // The table is not narrowed: any other surface can still be chosen.
-    expect(rowsOf(surfaces)).toHaveLength(6);
-    expect(within(surfaces).getByRole('button', { name: 'Merchant API v1' })).toHaveAttribute(
+    expect(rowsOf(surfaces)).toHaveLength(5);
+    expect(within(surfaces).getByRole('button', { name: 'Dhru Fusion API' })).toHaveAttribute(
       'aria-current',
       'true',
     );
-    expect(within(surfaces).getByRole('button', { name: 'Dhru Fusion API' })).not.toHaveAttribute(
-      'aria-current',
-    );
+    expect(within(surfaces).getByRole('button', { name: 'Client app' })).not.toHaveAttribute('aria-current');
 
     const latency = await card('Latency');
     expect(
-      await within(latency).findByRole('img', { name: 'p95 latency, Merchant API v1, last 24 hours' }, SLOW),
+      await within(latency).findByRole('img', { name: 'p95 latency, Dhru Fusion API, last 24 hours' }, SLOW),
     ).toBeInTheDocument();
-    expect(latency).toHaveTextContent('Merchant API v1 (v1)');
+    expect(latency).toHaveTextContent('Dhru Fusion API (dhru)');
     // Screen readers are told which surface the cards below the table now show.
-    expect(screen.getByText('Showing Merchant API v1')).toBeInTheDocument();
+    expect(screen.getByText('Showing Dhru Fusion API')).toBeInTheDocument();
     const slowest = await card('Slowest endpoints');
-    await waitFor(() => expect(rowsOf(slowest)).toHaveLength(2), SLOW);
-    for (const row of rowsOf(slowest)) expect(row).toHaveTextContent('/v1/orders');
+    await waitFor(() => expect(rowsOf(slowest)).toHaveLength(1), SLOW);
+    for (const row of rowsOf(slowest)) expect(row).toHaveTextContent('/dhru/api/index.php');
     const errors = await card('Top errors');
     await within(errors).findByText('INSUFFICIENT_FUNDS', undefined, SLOW);
-    for (const row of rowsOf(errors)) expect(row).toHaveTextContent('/v1/orders');
+    for (const row of rowsOf(errors)) expect(row).toHaveTextContent('/dhru/api/index.php');
 
     // The scoped reads ask for the surface; the table's own read asks for none.
-    expect(metrics.some((read) => read.url.searchParams.get('surface') === 'v1')).toBe(true);
+    expect(metrics.some((read) => read.url.searchParams.get('surface') === 'dhru')).toBe(true);
     expect(metrics.some((read) => !read.url.searchParams.has('surface'))).toBe(true);
     expect(errorReads.length).toBeGreaterThan(0);
-    expect(errorReads.every((read) => read.url.searchParams.get('surface') === 'v1')).toBe(true);
+    expect(errorReads.every((read) => read.url.searchParams.get('surface') === 'dhru')).toBe(true);
 
     await user.click(within(surfaces).getByRole('button', { name: 'All surfaces' }));
     await waitFor(() => expect(app.location()).toBe(API_TAB), SLOW);
@@ -190,10 +186,10 @@ describe('?surface= scoping', () => {
       await within(latency).findByRole('img', { name: 'p95 latency, All surfaces, last 24 hours' }, SLOW),
     ).toBeInTheDocument();
     expect(within(surfaces).queryByRole('button', { name: 'All surfaces' })).not.toBeInTheDocument();
-    const v1 = within(surfaces).getByRole('button', { name: 'Merchant API v1' });
-    expect(v1).not.toHaveAttribute('aria-current');
+    const dhru = within(surfaces).getByRole('button', { name: 'Dhru Fusion API' });
+    expect(dhru).not.toHaveAttribute('aria-current');
     // The button that was used is gone; the keyboard stays on the surface that had been picked.
-    expect(v1).toHaveFocus();
+    expect(dhru).toHaveFocus();
     expect(screen.getByText('Showing all surfaces')).toBeInTheDocument();
   });
 
@@ -222,7 +218,7 @@ describe('?surface= scoping', () => {
     const user = userEvent.setup();
     const app = await openHealthPage({ route: `${API_TAB}&surface=nope` });
     const surfaces = await surfacesCard();
-    expect(rowsOf(surfaces)).toHaveLength(6);
+    expect(rowsOf(surfaces)).toHaveLength(5);
 
     const latency = await card('Latency');
     expect(
@@ -265,7 +261,7 @@ describe('monitoring down', () => {
 
   it('keeps the way back to all surfaces and the server detail while monitoring is down', async () => {
     const user = userEvent.setup();
-    const app = await openHealthPage({ scenario: 'monitoring-down', route: `${API_TAB}&surface=v1` });
+    const app = await openHealthPage({ scenario: 'monitoring-down', route: `${API_TAB}&surface=dhru` });
     const surfaces = await card('Surfaces');
     expect(await within(surfaces).findByText('Monitoring unavailable', undefined, SLOW)).toBeInTheDocument();
     expect(surfaces).toHaveTextContent('Prometheus did not answer');

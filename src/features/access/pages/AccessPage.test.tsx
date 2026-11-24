@@ -749,34 +749,63 @@ describe('roles', () => {
 });
 
 describe('sessions', () => {
-  it('lists who is signed in, from where and on what, and marks your own session', async () => {
-    const user = userEvent.setup();
+  it('lists the staff who are signed in, from where and on what, and marks your own session', async () => {
     await openAccess('/access?tab=sessions');
-    const zain = await sessionRow('Zain Mobile Hub');
-    expect(zain.getByText('Merchant')).toBeInTheDocument();
-    expect(zain.getByText('203.0.113.55')).toBeInTheDocument();
+    const lina = await sessionRow('Lina S.');
+    expect(lina.getByText('203.0.113.31')).toBeInTheDocument();
     expect(await screen.findAllByText('This session')).toHaveLength(1);
-    expect(screen.getAllByText(/^(Chrome|Safari|Firefox|Edge) on /).length).toBeGreaterThan(3);
+    expect(screen.getAllByText(/^(Chrome|Safari|Firefox|Edge) on /)).toHaveLength(4);
+    expect(screen.queryByRole('button', { name: 'Merchants' })).not.toBeInTheDocument();
+    expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Merchants' }));
-    await waitFor(async () =>
-      expect((await tableNamed('Open sessions')).queryByText('Rami K.')).not.toBeInTheDocument(),
+  it('shows no merchant row, even from a server that still sends one', async () => {
+    mockServer.use(
+      http.get('*/admin/sessions', () =>
+        Response.json(
+          [
+            {
+              id: 1,
+              subjectType: 'staff',
+              subject: { id: 2, name: 'Lina S.' },
+              ip: '203.0.113.31',
+              userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0',
+              lastSeenAt: null,
+              expiresAt: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+            },
+            {
+              id: 2,
+              subjectType: 'client',
+              subject: { id: 1, name: 'Zain Mobile Hub' },
+              ip: '203.0.113.55',
+              userAgent: 'Mozilla/5.0',
+              lastSeenAt: null,
+              expiresAt: null,
+              createdAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          { headers: { 'x-total-count': '2' } },
+        ),
+      ),
     );
-    expect((await tableNamed('Open sessions')).getByText('Zain Mobile Hub')).toBeInTheDocument();
+    await openAccess('/access?tab=sessions');
+    await sessionRow('Lina S.');
+    expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument();
   });
 
   it('ends a session after a review step', async () => {
     const user = userEvent.setup();
     await openAccess('/access?tab=sessions');
-    await user.click((await sessionRow('Zain Mobile Hub')).getByRole('button', { name: 'End session' }));
-    const dialog = await screen.findByRole('dialog', { name: "End Zain Mobile Hub's session?" });
+    await user.click((await sessionRow('Omar T.')).getByRole('button', { name: 'End session' }));
+    const dialog = await screen.findByRole('dialog', { name: "End Omar T.'s session?" });
     await user.click(within(dialog).getByRole('button', { name: 'End session' }));
     expect(await screen.findByText('Session ended')).toBeInTheDocument();
-    expect(screen.getByText('Zain Mobile Hub was signed out of that device.')).toBeInTheDocument();
+    expect(screen.getByText('Omar T. was signed out of that device.')).toBeInTheDocument();
     await waitFor(async () =>
-      expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument(),
+      expect((await tableNamed('Open sessions')).queryByText('Omar T.')).not.toBeInTheDocument(),
     );
-    expect((await listSessions()).total).toBe(6);
+    expect((await listSessions()).total).toBe(3);
   });
 
   it('warns before you end your own session', async () => {

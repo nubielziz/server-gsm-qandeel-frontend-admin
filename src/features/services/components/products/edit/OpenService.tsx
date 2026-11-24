@@ -4,7 +4,7 @@
 // while it has, another part, the back link, another view or a reload asks first (UnsavedGuard). It also keeps a part from working on a
 // stale copy of the service (usePartStart): a part that fills a form from the record is not drawn while the record is being read again,
 // and starts again when the record changes while it holds nothing unsaved.
-import { EmptyState, ButtonLink, PartsLayout } from '@/components/ui';
+import { EmptyState, ButtonLink, PartsLayout, UnsavedGuard, type DirtyMark } from '@/components/ui';
 import type { ServiceType } from '@/lib/serviceTypes';
 import type { ServiceGrants } from '../../../hooks/useServiceGrants';
 import { productsPath, type ServicePartId } from '../../../lib/productsPath';
@@ -12,8 +12,6 @@ import type { ServiceDetail } from '../../../types';
 import { lastAllLink } from '../all/lastAllAddress';
 import { openPart } from './openPart';
 import { ServiceLoading } from './ServiceLoading';
-import { UnsavedGuard } from './UnsavedGuard';
-import type { DirtyMark } from './useDirtyMark';
 import { usePartStart } from './usePartStart';
 
 /**

@@ -36,7 +36,7 @@ describe('getApiErrors', () => {
   });
 
   it('narrows to one surface', async () => {
-    await getApiErrors({ range: '7d', surface: 'v1' });
-    expect(http.last().query).toEqual({ range: '7d', surface: 'v1' });
+    await getApiErrors({ range: '7d', surface: 'store' });
+    expect(http.last().query).toEqual({ range: '7d', surface: 'store' });
   });
 });

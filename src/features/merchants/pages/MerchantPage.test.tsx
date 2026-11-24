@@ -1,5 +1,5 @@
-// Tests for a merchant's page header, run through the whole app against the dev mock API: the figures, the pending and suspended
-// notes, approve / suspend / reactivate, the group menu, the credit limit, the wallet adjustment (with the server's refusals), a
+// Tests for a merchant's page header, run through the whole app against the dev mock API: the figures, the not-active-yet and
+// suspended notes, activate / suspend / reactivate, the group menu, the credit limit, the wallet adjustment (with the server's refusals), a
 // merchant that does not exist, and what a role without some permissions sees disabled.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -20,6 +20,7 @@ vi.setConfig({ testTimeout: 30_000 });
 
 const ZAIN = /Zain Mobile Hub/;
 const ALGIERS = /Algiers Service Plus/;
+const ACCRA = /Accra Devices/;
 const summary = () => within(screen.getByRole('region', { name: 'Summary' }));
 
 describe('the header and the figures', () => {
@@ -35,11 +36,6 @@ describe('the header and the figures', () => {
     expect(within(crumbs).getByRole('link', { name: 'Merchants' })).toHaveAttribute('href', '/merchants');
     expect(within(crumbs).getByText('Zain Mobile Hub')).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe(formatTitle('Zain Mobile Hub', 'Merchants')));
-  });
-
-  it('links to the merchant who referred them', async () => {
-    await openMerchant(8, /Casablanca Unlock/);
-    expect(screen.getByRole('link', { name: 'Zain Mobile Hub' })).toHaveAttribute('href', '/merchants/1');
   });
 
   it('shows the wallet, what can be spent, and the 30-day figures the server counted', async () => {
@@ -60,23 +56,59 @@ describe('the header and the figures', () => {
 });
 
 describe('status', () => {
-  it('says a pending merchant waits for approval, and approving updates the page', async () => {
-    const user = userEvent.setup();
+  it('shows an account staff invited as active, with no banner and no approval step', async () => {
     await openMerchant(18, ALGIERS);
-    const note = screen.getByRole('note');
-    expect(within(note).getByText('Waiting for approval')).toBeInTheDocument();
-    expect(
-      within(note).getByText(
-        'KYC is in review. The merchant cannot place orders until you approve the account.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Adjust wallet…' })).toBeInTheDocument();
+    expect(within(screen.getByRole('heading', { level: 1 })).getByText('Active')).toBeInTheDocument();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Suspend…' })).toBeInTheDocument();
+    for (const name of ['Approve account', 'Activate account', 'Decline…']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Approve account' }));
-    expect(await screen.findByText('Algiers Service Plus approved')).toBeInTheDocument();
+  it('says a merchant that is still pending is not active yet, with one action, and activating updates the page', async () => {
+    const user = userEvent.setup();
+    await openMerchant(20, ACCRA);
+    const note = screen.getByRole('note');
+    expect(within(note).getByText('Not active yet')).toBeInTheDocument();
+    expect(
+      within(note).getByText('The merchant cannot place orders until staff activate the account.'),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole('heading', { level: 1 })).getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Adjust wallet…' })).toBeInTheDocument();
+    // Activate account is the only status action: the account cannot be suspended, declined or approved from here.
+    for (const name of ['Approve account', 'Decline…', 'Suspend…', 'Reactivate']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Activate account' }));
+    expect(await screen.findByText('Accra Devices activated')).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('note')).not.toBeInTheDocument());
     expect(await screen.findByRole('button', { name: 'Suspend…' })).toBeInTheDocument();
     expect(within(screen.getByRole('heading', { level: 1 })).getByText('Active')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Activate account' })).not.toBeInTheDocument();
+  });
+
+  it('sends the same request the retired Approve sent, and shows the server’s refusal in a toast', async () => {
+    const user = userEvent.setup();
+    await openMerchant(20, ACCRA);
+    let body: unknown;
+    mockServer.use(
+      http.patch('*/admin/clients/:id', async ({ request }) => {
+        body = await request.json();
+        return problem(
+          409,
+          'INVALID_TRANSITION',
+          'Not allowed',
+          'This merchant was already activated by someone else.',
+        );
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Activate account' }));
+    expect(await screen.findByText('Not allowed')).toBeInTheDocument();
+    expect(screen.getByText(/This merchant was already activated by someone else\./)).toBeInTheDocument();
+    expect(body).toEqual({ status: 'active' });
+    expect(screen.getByRole('button', { name: 'Activate account' })).toBeInTheDocument();
   });
 
   it('suspends with a reason, then reactivates', async () => {
@@ -324,5 +356,12 @@ describe('permissions', () => {
     const button = screen.getByRole('button', { name: 'Group: VIP' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'You need the groups:read permission to list the groups');
+  });
+
+  it('disables Activate account of a pending merchant for a role without clients:update', async () => {
+    await openMerchant(20, ACCRA, '', { permissions: ['clients:read'] });
+    const button = screen.getByRole('button', { name: 'Activate account' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('title', 'You need the clients:update permission');
   });
 });

@@ -1,5 +1,5 @@
 // GroupsTab: the "Groups" tab, which the demo lacks and the map adds (`CRUD /admin/client-groups`, MISMATCHES M46): each price group
-// with its discount, upgrade threshold, deposit limit and merchants, plus New group, Edit and Delete. It fills the page's panel
+// with its discount, deposit limit and merchants, plus New group, Edit and Delete. It fills the page's panel
 // under the tab strip, so it draws a header row instead of a panel of its own (panels are never nested).
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -58,13 +58,6 @@ export function GroupsTab({ grants }: { grants: MerchantGrants }) {
       ),
     },
     { key: 'discount', label: 'Discount', num: true, render: (group) => percentText(group.discountPercent) },
-    {
-      key: 'threshold',
-      label: 'Upgrade threshold',
-      num: true,
-      hide: 'sm',
-      render: (group) => money0(group.earnThreshold),
-    },
     {
       key: 'deposit',
       label: 'Deposit limit',
@@ -131,9 +124,7 @@ export function GroupsTab({ grants }: { grants: MerchantGrants }) {
       <div className="panel-h">
         <div className="min-w-[13rem] flex-1">
           <h2 className="panel-t">Merchant groups</h2>
-          <p className="panel-s">
-            A group sets the discount, the upgrade threshold and the deposit limit its merchants get.
-          </p>
+          <p className="panel-s">A group sets the discount and the deposit limit its merchants get.</p>
         </div>
         {newButton()}
       </div>

@@ -1,6 +1,6 @@
 // Tests for what the Queues & jobs tab shows, run through the whole app against the dev mock API: the healthy and the
 // degraded story, the read-only staff member, a failing queues read, the Bull Board link, the quiet line that folds
-// healthy rows (queues, jobs and webhook directions) and the age of the oldest queued job. The actions have their own
+// healthy rows (queues and jobs), the card of the gateway callbacks and the age of the oldest queued job. The actions have their own
 // file (QueueActions.test.tsx), the two drawers theirs (Drawers.test.tsx).
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -30,53 +30,46 @@ const rowOf = (table: HTMLElement, text: string) => {
 };
 
 describe('a healthy platform', () => {
-  it('folds every queue, job and webhook direction into one quiet line each, with the numbers that matter', async () => {
+  it('folds every queue and job into one quiet line each, with the numbers that matter, and lists the gateway callbacks', async () => {
     const user = userEvent.setup();
     await openHealthPage({ route: ROUTE });
-    expect(await screen.findByText('All 8 queues healthy', undefined, SLOW)).toBeInTheDocument();
-    expect(await screen.findByText('All 7 jobs healthy', undefined, SLOW)).toBeInTheDocument();
-    expect(await screen.findByText('All 2 directions healthy', undefined, SLOW)).toBeInTheDocument();
+    expect(await screen.findByText('All 7 queues healthy', undefined, SLOW)).toBeInTheDocument();
+    expect(await screen.findByText('All 5 jobs healthy', undefined, SLOW)).toBeInTheDocument();
     expect(screen.queryByRole('table', { name: 'Queues' })).not.toBeInTheDocument();
     expect(screen.queryByRole('table', { name: 'Scheduled jobs' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('table', { name: 'Webhook delivery' })).not.toBeInTheDocument();
     // The queues strip keeps the one number that matters while the rows are folded, with its unit and the KPI cell's name.
     const queuesCard = screen.getByRole('region', { name: 'Queues' });
     expect(within(queuesCard).getByText(/Oldest queued job/)).toBeInTheDocument();
-    // The webhooks strip says each direction's success rate, so folding them hides no number.
-    const webhooksCard = screen.getByRole('region', { name: 'Webhooks' });
-    expect(webhooksCard).toHaveTextContent(/Outgoing\s*98\.74\s?%\s*·\s*Incoming\s*99\.77\s?%/);
-
-    await user.click(screen.getByRole('button', { name: 'Show 2 healthy directions' }));
+    // The webhooks card has one row and nothing to fold away, so its numbers are always in view.
     const webhooks = await webhooksTable();
-    expect(within(webhooks).getByText('Outgoing')).toBeInTheDocument();
-    expect(within(webhooks).getByText('to merchants')).toBeInTheDocument();
-    expect(within(webhooks).getByText(/98\.74\s?%/)).toBeInTheDocument();
-    // Nothing waits in one direction: the server's "nothing" reads plainly, not as 0s.
+    expect(within(webhooks).getAllByRole('row')).toHaveLength(2);
+    expect(within(webhooks).getByText('Payment gateways')).toBeInTheDocument();
+    expect(within(webhooks).getByText(/99\.77\s?%/)).toBeInTheDocument();
+    // Nothing waits: the server's "nothing" reads plainly, not as 0s.
     expect(within(webhooks).getByText('None waiting')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Hide 2 healthy directions' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Show 8 healthy queues' }));
+    await user.click(screen.getByRole('button', { name: 'Show 7 healthy queues' }));
     const table = await queuesTable();
-    expect(within(table).getAllByRole('row')).toHaveLength(9);
+    expect(within(table).getAllByRole('row')).toHaveLength(8);
     const row = rowOf(table, 'orders.fetch');
     expect(within(row).getByText('OK')).toBeInTheDocument();
     expect(within(row).getByText('orders.fetch')).toHaveClass('mono');
     // Units are always visible: the rate carries /min and the age its own unit.
     expect(within(row).getByText(/\/min$/)).toBeInTheDocument();
     expect(within(row).getByText(/^\d+s$|^<1s$/)).toBeInTheDocument();
-    // A queue with nothing waiting says so, as the webhook direction does.
+    // A queue with nothing waiting says so, as the webhooks row does.
     expect(within(rowOf(table, 'risk.assess')).getByText('None waiting')).toBeInTheDocument();
   });
 
   it('hides the rows again with Hide, and the button says so for assistive technology', async () => {
     const user = userEvent.setup();
     await openHealthPage({ route: ROUTE });
-    const show = await screen.findByRole('button', { name: 'Show 7 healthy jobs' }, SLOW);
+    const show = await screen.findByRole('button', { name: 'Show 5 healthy jobs' }, SLOW);
     expect(show).toHaveAttribute('aria-expanded', 'false');
     await user.click(show);
     const table = await jobsTable();
-    expect(within(table).getAllByRole('row')).toHaveLength(8);
-    const hide = screen.getByRole('button', { name: 'Hide 7 healthy jobs' });
+    expect(within(table).getAllByRole('row')).toHaveLength(6);
+    const hide = screen.getByRole('button', { name: 'Hide 5 healthy jobs' });
     expect(hide).toHaveAttribute('aria-expanded', 'true');
     await user.click(hide);
     expect(screen.queryByRole('table', { name: 'Scheduled jobs' })).not.toBeInTheDocument();
@@ -85,7 +78,7 @@ describe('a healthy platform', () => {
   it('shows each job with its cron text in mono and the server words for it, and never reads the cron itself', async () => {
     const user = userEvent.setup();
     await openHealthPage({ route: ROUTE });
-    await user.click(await screen.findByRole('button', { name: 'Show 7 healthy jobs' }, SLOW));
+    await user.click(await screen.findByRole('button', { name: 'Show 5 healthy jobs' }, SLOW));
     const table = await jobsTable();
     const row = rowOf(table, 'price_sync');
     expect(within(row).getByText('*/15 * * * *')).toHaveClass('mono');
@@ -103,9 +96,9 @@ describe('a platform in trouble', () => {
   it('shows the queue in trouble first, with the server state and its controls, and folds the rest', async () => {
     await openHealthPage({ scenario: 'degraded', route: ROUTE });
     const table = await queuesTable();
-    // Only the queue the server flags is a row; the other seven are one quiet line.
+    // Only the queue the server flags is a row; the other six are one quiet line.
     expect(within(table).getAllByRole('row')).toHaveLength(2);
-    expect(screen.getByText('7 queues healthy')).toBeInTheDocument();
+    expect(screen.getByText('6 queues healthy')).toBeInTheDocument();
     const row = rowOf(table, 'orders.dispatch');
     const cells = within(row).getAllByRole('cell');
     expect(within(cells[1]).getByText('Warn')).toBeInTheDocument();
@@ -133,13 +126,13 @@ describe('a platform in trouble', () => {
     expect(within(row).getByRole('button', { name: 'History of price_sync' })).toBeEnabled();
   });
 
-  it('puts the worse webhook direction first and marks its numbers with the server state, not with colour alone', async () => {
+  it('marks the numbers of the gateway callbacks with the server state, not with colour alone', async () => {
     await openHealthPage({ scenario: 'outage', route: ROUTE });
     const table = await webhooksTable();
     const rows = within(table).getAllByRole('row');
-    // Incoming is critical in an outage (callbacks fail), so it comes before outgoing.
-    expect(rows[1]).toHaveTextContent('Incoming');
-    expect(rows[2]).toHaveTextContent('Outgoing');
+    // The callbacks fail in an outage, so the success rate is critical.
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toHaveTextContent('Payment gateways');
     expect(within(rows[1]).getByText('Critical')).toHaveClass('sr-only');
   });
 
@@ -147,36 +140,44 @@ describe('a platform in trouble', () => {
     await openHealthPage({ scenario: 'outage', route: ROUTE });
     const table = await queuesTable();
     const rows = within(table).getAllByRole('row').slice(1);
-    // Three queues are critical, one is a warning, the rest are folded away.
+    // Three queues are critical, the rest are folded away.
     const states = rows.map(
       (row) => within(within(row).getAllByRole('cell')[1]).getByText(/^(Critical|Warn)$/).textContent,
     );
-    expect(states).toEqual(['Critical', 'Critical', 'Critical', 'Warn']);
+    expect(states).toEqual(['Critical', 'Critical', 'Critical']);
     expect(screen.getByText('4 queues healthy')).toBeInTheDocument();
   });
 });
 
-describe('webhook directions in trouble', () => {
-  it('shows only the direction the server flags as a row, and folds the healthy one into the strip with its rate', async () => {
-    const user = userEvent.setup();
+describe('the webhooks card', () => {
+  it('shows the one row of the gateway callbacks even when they are fine, with nothing to fold', async () => {
     await openHealthPage({ scenario: 'degraded', route: ROUTE });
     const table = await webhooksTable();
-    // Outgoing is slow in this story; incoming is fine.
     expect(within(table).getAllByRole('row')).toHaveLength(2);
-    expect(rowOf(table, 'Outgoing')).toHaveTextContent('to merchants');
-    expect(within(rowOf(table, 'Outgoing')).getAllByText('Warn')[0]).toHaveClass('sr-only');
     const card = screen.getByRole('region', { name: 'Webhooks' });
-    expect(card).toHaveTextContent(/Incoming\s*\d+\.\d+\s?%/);
-    expect(within(card).getByText('1 direction healthy')).toBeInTheDocument();
-
-    await user.click(within(card).getByRole('button', { name: 'Show 1 healthy direction' }));
-    expect(within(await webhooksTable()).getAllByRole('row')).toHaveLength(3);
+    expect(card).toHaveTextContent(/\d+\.\d+\s?%/);
+    expect(within(card).queryByText(/healthy/)).not.toBeInTheDocument();
   });
 
-  it('folds nothing when both directions are in trouble, so there is no strip to open', async () => {
-    await openHealthPage({ scenario: 'outage', route: ROUTE });
-    expect(within(await webhooksTable()).getAllByRole('row')).toHaveLength(3);
-    expect(screen.queryByRole('button', { name: /healthy directions?$/ })).not.toBeInTheDocument();
+  it('reads an older backend that still sends the retired part for webhooks to merchants, and does not show it', async () => {
+    const measureOf = (value: number | null, unit: string, state: string) => ({ value, unit, state });
+    const incoming = {
+      successRate: measureOf(99.5, 'percent', 'ok'),
+      delivered: 120,
+      failed: 1,
+      retrying: 0,
+      oldestUndeliveredAt: null,
+      oldestAge: measureOf(0, 's', 'ok'),
+    };
+    const outgoing = { ...incoming, successRate: measureOf(61, 'percent', 'crit'), retrying: 40 };
+    mockServer.use(http.get('*/admin/system/webhooks', () => HttpResponse.json({ outgoing, incoming })));
+    await openHealthPage({ route: ROUTE });
+    const table = await webhooksTable();
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(within(table).getByText('Payment gateways')).toBeInTheDocument();
+    expect(within(table).getByText(/99\.5/)).toBeInTheDocument();
+    expect(within(table).queryByText(/61\s?%/)).not.toBeInTheDocument();
+    expect(within(table).queryByText('Critical')).not.toBeInTheDocument();
   });
 });
 
@@ -310,8 +311,8 @@ describe('when one read fails', () => {
     ).toBeInTheDocument();
     const queuesCard = screen.getByRole('region', { name: 'Queues' });
     expect(within(queuesCard).getByRole('button', { name: 'Retry' })).toBeInTheDocument();
-    expect(await screen.findByText('All 7 jobs healthy', undefined, SLOW)).toBeInTheDocument();
-    expect(await screen.findByText('All 2 directions healthy', undefined, SLOW)).toBeInTheDocument();
+    expect(await screen.findByText('All 5 jobs healthy', undefined, SLOW)).toBeInTheDocument();
+    expect(await webhooksTable()).toBeInTheDocument();
   });
 });
 

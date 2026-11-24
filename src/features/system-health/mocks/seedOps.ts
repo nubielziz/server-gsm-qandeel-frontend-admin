@@ -25,12 +25,11 @@ const JOB_NAMES: Record<string, string> = {
   'orders.fetch': 'fetch-order-status',
   'supplier.sync': 'sync-prices',
   notifications: 'send-notification',
-  'webhooks.out': 'deliver-webhook',
   'ledger.jobs': 'post-entry',
   'risk.assess': 'assess-order',
   'reports.export': 'export-report',
 };
-const MAX_ATTEMPTS: Record<string, number> = { 'orders.dispatch': 5, 'orders.fetch': 8, 'webhooks.out': 6 };
+const MAX_ATTEMPTS: Record<string, number> = { 'orders.dispatch': 5, 'orders.fetch': 8 };
 
 /** The failed jobs of every queue, newest first. A job id grows with time, as BullMQ's do. */
 export function seedFailed(profile: Profile, anchor: number): Map<string, FailedJob[]> {
@@ -77,8 +76,6 @@ export function resultOf(job: string, processed: number, failedChecks = 0): JobR
       return { sent: processed };
     case 'fx_refresh':
       return { currencies: processed, updated: processed };
-    case 'accruals':
-      return { accruals: processed, clients: 18 };
     case 'ledger_integrity':
       return {
         entriesChecked: processed,
@@ -88,7 +85,7 @@ export function resultOf(job: string, processed: number, failedChecks = 0): JobR
         failedChecks,
       };
     default:
-      return { imeiRecordsDeleted: processed, sessionsDeleted: Math.round(processed / 3) };
+      return null;
   }
 }
 

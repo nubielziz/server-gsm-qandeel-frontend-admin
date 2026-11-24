@@ -10,7 +10,7 @@ export interface ScopeSubProps {
   range: TimeRange;
 }
 
-/** "Merchant API v1 (v1) · Last 24 hours". The key is left out when the name is the key itself. */
+/** "Dhru Fusion API (dhru) · Last 24 hours". The key is left out when the name is the key itself. */
 export function ScopeSub({ scope, surface, range }: ScopeSubProps) {
   return (
     <>

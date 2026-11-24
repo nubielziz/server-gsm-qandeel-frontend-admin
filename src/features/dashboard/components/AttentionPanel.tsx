@@ -61,7 +61,7 @@ export function AttentionPanel({ items, scope }: AttentionPanelProps) {
         </>
       ) : (
         <EmptyState icon="checkCircle" title="All clear">
-          No late orders, supplier problems or pending approvals right now.
+          No late orders, supplier problems or open reviews right now.
         </EmptyState>
       )}
     </Panel>

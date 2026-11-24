@@ -23,6 +23,7 @@ describe('visibleTabs', () => {
     expect(ids(['wallet:read'])).toEqual(['wallets']);
     expect(ids(['invoices:*'])).toEqual(['invoices']);
     expect(ids(['reports:finance'])).toEqual(['reports']);
+    expect(ids(['reports:growth'])).toEqual(['reports']);
     expect(ids(['orders:read'])).toEqual([]);
   });
 });

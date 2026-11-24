@@ -25,8 +25,9 @@ export function runJob(job: string, init?: ApiInit): Promise<JobRun> {
 }
 
 /**
- * Delivery health of outgoing webhooks to merchants and incoming ones from payment gateways: success rate, failures,
- * retries and the oldest message not delivered yet. A stuck webhook is a merchant that never hears about an order.
+ * Delivery health of the webhooks payment gateways send us: success rate, failures, retries and the oldest message not
+ * delivered yet. A stuck callback is a payment nobody hears about. The webhooks to merchants are retired: an answer that still
+ * carries an `outgoing` part is read without it.
  * Assumed contract: answer `WebhooksHealth`; no query.
  * @route GET /admin/system/webhooks
  */

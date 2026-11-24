@@ -101,18 +101,6 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
           : go('Open merchant', 'merchants', '/merchants'),
       };
     }
-    case 'merchants_pending':
-      return {
-        title: `${some(item.count, 'merchant account', 'merchant accounts')} waiting for approval`,
-        meta: item.names.join(', '),
-        action: go('Review', 'merchants', '/merchants?tab=pending'),
-      };
-    case 'commissions_accrued':
-      return {
-        title: `${some(item.count, 'commission accrual', 'commission accruals')} ready to approve`,
-        meta: `${money(item.total)} across ${some(item.agents, 'agent', 'agents')}`,
-        action: go('Review', 'commissions', '/commissions'),
-      };
     case 'orders_held':
       return {
         title: `${some(item.count, 'paid order is', 'paid orders are')} held by the risk engine`,

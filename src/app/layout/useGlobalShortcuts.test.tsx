@@ -75,12 +75,18 @@ describe('useGlobalShortcuts', () => {
     for (const page of Object.values(GO_SHORTCUTS)) expect(pages).toContain(page);
   });
 
-  it('matches the demo’s map: 13 pages, with audit on "a" and no key for settings, checkouts or admins', () => {
-    expect(Object.keys(GO_SHORTCUTS)).toHaveLength(13);
+  it('matches the demo’s map: 12 pages, with audit on "a" and no key for settings or admins', () => {
+    expect(Object.keys(GO_SHORTCUTS)).toHaveLength(12);
     expect(GO_SHORTCUTS.a).toBe('audit');
     expect(Object.values(GO_SHORTCUTS)).not.toContain('settings');
     expect(Object.values(GO_SHORTCUTS)).not.toContain('access');
-    expect(Object.values(GO_SHORTCUTS)).not.toContain('checkouts');
+  });
+
+  it('has no key for the retired Commissions page: "g" then "c" does nothing', async () => {
+    expect(GO_SHORTCUTS.c).toBeUndefined();
+    const { handlers, user } = setup();
+    await user.keyboard('gc');
+    expect(handlers.goTo).not.toHaveBeenCalled();
   });
 
   it('does nothing for a second key that is not on the map, and forgets the "g"', async () => {

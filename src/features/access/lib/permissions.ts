@@ -87,14 +87,14 @@ export const ROLE_AREAS: readonly RoleArea[] = [
   {
     name: 'Customers',
     full: 'Customers and merchants',
-    prefixes: ['customers', 'clients', 'wallet', 'groups', 'kyc', 'api_keys', 'growth'],
+    prefixes: ['customers', 'clients', 'wallet', 'groups', 'api_keys'],
   },
   { name: 'Support', full: 'Tickets and replies', prefixes: ['support'] },
   { name: 'Risk', full: 'Risk and checks', prefixes: ['risk'] },
   {
     name: 'Money',
-    full: 'Finance, commissions, refunds and disputes',
-    prefixes: ['ledger', 'payments', 'invoices', 'commissions', 'refunds', 'disputes', 'reports'],
+    full: 'Finance, refunds and disputes',
+    prefixes: ['ledger', 'payments', 'invoices', 'refunds', 'disputes', 'reports'],
   },
   {
     name: 'Catalog',
@@ -104,7 +104,7 @@ export const ROLE_AREAS: readonly RoleArea[] = [
   {
     name: 'Settings',
     full: 'System settings',
-    prefixes: ['settings', 'tax', 'currencies', 'webhooks', 'notifications'],
+    prefixes: ['settings', 'tax', 'currencies', 'notifications'],
   },
   {
     name: 'Admins',

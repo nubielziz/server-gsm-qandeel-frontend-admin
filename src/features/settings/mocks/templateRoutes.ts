@@ -7,7 +7,7 @@ import type { NotificationAudience, NotificationChannel, NotificationTemplate } 
 import { bodyOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { settingsFeatureStore } from './store';
 
-const CHANNELS: NotificationChannel[] = ['email', 'telegram'];
+const CHANNELS: NotificationChannel[] = ['email'];
 const AUDIENCES: NotificationAudience[] = ['customer', 'merchant', 'staff'];
 
 // The sample order the preview talks about, the one the demo's NOTIF_SAMPLE uses.
@@ -39,7 +39,7 @@ function applyFields(
   if ('channel' in body) {
     if (CHANNELS.includes(body.channel as NotificationChannel))
       draft.channel = body.channel as NotificationChannel;
-    else problems.push({ field: 'channel', message: 'Choose email or Telegram.' });
+    else problems.push({ field: 'channel', message: 'Choose email.' });
   }
   if ('audience' in body) {
     if (AUDIENCES.includes(body.audience as NotificationAudience))
@@ -51,8 +51,7 @@ function applyFields(
     draft.body = typeof body.body === 'string' ? body.body : '';
     if (!draft.body.trim()) problems.push({ field: 'body', message: 'Write the message.' });
   }
-  if (draft.channel === 'email' && !draft.subject)
-    problems.push({ field: 'subject', message: 'An email needs a subject.' });
+  if (!draft.subject) problems.push({ field: 'subject', message: 'An email needs a subject.' });
   if ('isActive' in body) draft.isActive = body.isActive === true;
   return draft;
 }

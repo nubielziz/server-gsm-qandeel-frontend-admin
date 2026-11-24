@@ -15,11 +15,10 @@ export interface MerchantsEmptyProps {
 }
 
 const TAB_NOTE: Partial<Record<MerchantTab, { title: string; body: string }>> = {
-  pending: {
-    title: 'Nobody is waiting for approval',
-    body: 'New sign-ups and invited merchants appear here until you approve them.',
+  active: {
+    title: 'No active merchants',
+    body: 'Merchants you invite appear here as soon as their account is active.',
   },
-  active: { title: 'No active merchants', body: 'Merchants appear here once you approve their account.' },
   suspended: {
     title: 'No suspended merchants',
     body: 'A merchant you suspend appears here until you reactivate them.',
@@ -48,7 +47,7 @@ export function MerchantsEmpty({
         }
       >
         Invite a reseller or repair shop. They get a wallet, an API key and a price group, and can start
-        ordering after you approve the account.
+        ordering as soon as they choose a password.
       </EmptyState>
     );
   }

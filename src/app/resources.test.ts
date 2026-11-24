@@ -8,11 +8,10 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
     ['dashboard', 'Dashboard', 'Operations', 'dashboard', 'dashboard:read'],
     ['orders', 'Orders', 'Operations', 'orders', 'orders:read'],
     // Any tab's read permission opens Merchants (the merchants manifest; MISMATCHES, merchants rows).
-    ['merchants', 'Merchants', 'Operations', 'users', ['clients:read', 'groups:read', 'kyc:read']],
+    ['merchants', 'Merchants', 'Operations', 'users', ['clients:read', 'groups:read']],
     ['customers', 'Customers', 'Operations', 'user', 'customers:read'],
     ['support', 'Support', 'Operations', 'life', 'support:read'],
     ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
-    ['checkouts', 'Abandoned checkouts', 'Operations', 'mail', 'growth:read'],
     // No demo page (feature 23, backend addition): campaigns and their detail.
     ['notifications', 'Notifications', 'Operations', 'bell', 'broadcasts:read'],
     // The one Product / Services page: any view's read permission opens it (the services manifest).
@@ -29,9 +28,16 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       'Finance',
       'Money',
       'wallet',
-      ['ledger:read', 'payments:read', 'wallet:read', 'invoices:read', 'reports:read', 'reports:finance'],
+      [
+        'ledger:read',
+        'payments:read',
+        'wallet:read',
+        'invoices:read',
+        'reports:read',
+        'reports:finance',
+        'reports:growth',
+      ],
     ],
-    ['commissions', 'Commissions', 'Money', 'percent', 'commissions:read'],
     ['refunds', 'Refunds & disputes', 'Money', 'undo', ['refunds:read', 'disputes:read', 'reports:finance']],
     // Any one tab permission opens Admins & access (MISMATCHES M19).
     [
@@ -46,7 +52,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       'Settings',
       'System',
       'sliders',
-      ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read', 'webhooks:read'],
+      ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read'],
     ],
     // The shop's own pages, in the System group after Settings; any tab's read permission opens it (the storefront manifest).
     ['storefront', 'Shop content', 'System', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
@@ -56,7 +62,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
   ];
 
 describe('page resources', () => {
-  it('are the console’s pages in order: Notifications after Abandoned checkouts, Shop content after Settings, System health last', () => {
+  it('are the console’s pages in order: Notifications after Risk & checks, Shop content after Settings, System health last', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
   });
 

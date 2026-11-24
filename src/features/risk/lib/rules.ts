@@ -14,10 +14,6 @@ type RuleCopy = { label: string; hint: string; unit?: string; sameAsSettings?: b
 
 /** The demo's label, hint and unit for each rule, keyed by rule id. */
 const RULE_COPY: Readonly<Record<string, RuleCopy>> = {
-  blockBlacklistedImei: {
-    label: 'Block blacklisted IMEIs before payment',
-    hint: 'Looked up in the GSMA blacklist at checkout. The customer sees why and is not charged.',
-  },
   [RULE_ID.hold]: {
     label: 'Hold orders scoring at least',
     hint: 'Held orders wait in the risk queue and are not sent to a supplier.',
@@ -52,6 +48,17 @@ const RULE_COPY: Readonly<Record<string, RuleCopy>> = {
     hint: 'Temporary mailboxes cannot receive the result reliably.',
   },
 };
+
+/**
+ * Rules the server no longer has but an older server may still send (the lookup of a blacklisted IMEI at checkout was retired).
+ * The Rules tab does not list them; a save still sends them back unchanged, because it replaces the whole set.
+ */
+const RETIRED_RULE_IDS: readonly string[] = ['blockBlacklistedImei'];
+
+/** The rules the Rules tab lists: the server's set without the retired ones. */
+export function visibleRules(rules: readonly RiskRule[]): RiskRule[] {
+  return rules.filter((rule) => !RETIRED_RULE_IDS.includes(rule.id));
+}
 
 /** What to print for a rule: the server's wording when it sent some, else the demo's, else the id. */
 export function ruleText(rule: RiskRule): {

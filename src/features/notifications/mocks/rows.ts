@@ -15,12 +15,11 @@ const DOMAIN: Record<PersonType, string> = {
 const NAME: Record<PersonType, string> = { staff: 'staff', client: 'shop', customer: 'buyer' };
 
 function recipientText(person: MockPerson, channel: CampaignChannel): string {
-  if (channel === 'telegram') return `chat •••${String(1000 + person.id).slice(-3)}`;
   if (channel === 'in_app') return `${NAME[person.type]}${person.id}`;
   return maskEmail(`${NAME[person.type]}${person.id}@${DOMAIN[person.type]}`);
 }
 
-/** The status of one message: in-app items are delivered (every third read); email and Telegram are sent, a few fail, and while sending some still wait. */
+/** The status of one message: in-app items are delivered (every third read); email messages are sent, a few fail, and while sending some still wait. */
 function statusOf(
   person: MockPerson,
   channel: CampaignChannel,
@@ -43,18 +42,16 @@ export function fanOut(
   const { people } = eligiblePeople(campaign.audience, campaign.purpose);
   const wants = (channel: CampaignChannel) => campaign.channels.includes(channel);
   const rows: CampaignRecipient[] = [];
-  const skipped = { optedOut: 0, noTelegram: 0, noAccount: 0 };
+  const skipped = { optedOut: 0, noAccount: 0 };
   const reached = new Set<string>();
   let id = firstId;
   for (const person of people) {
     const channels: Record<CampaignChannel, boolean> = {
       in_app: person.inApp,
       email: person.email,
-      telegram: person.telegram,
     };
     if (wants('in_app') && !person.inApp) skipped.noAccount += 1;
     if (wants('email') && !person.email) skipped.optedOut += 1;
-    if (wants('telegram') && !person.telegram) skipped.noTelegram += 1;
     for (const channel of campaign.channels) {
       if (!channels[channel]) continue;
       const state = statusOf(person, channel, phase);
@@ -78,7 +75,7 @@ export function fanOut(
     rows,
     recipients: reached.size,
     skipped,
-    planned: { inApp: count('in_app'), email: count('email'), telegram: count('telegram') },
+    planned: { inApp: count('in_app'), email: count('email') },
   };
 }
 
@@ -96,6 +93,5 @@ export function deliveryOf(rows: readonly CampaignRecipient[]): CampaignDetail['
       read: of('in_app').filter((row) => row.status === 'read').length,
     },
     email: counters('email'),
-    telegram: counters('telegram'),
   };
 }

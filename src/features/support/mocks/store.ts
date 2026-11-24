@@ -32,7 +32,6 @@ type DemoTicket = {
   created: number;
   updated: number;
   firstReplyAt: number | null;
-  csat: number | null;
   msgs: DemoMessage[];
 };
 
@@ -156,7 +155,6 @@ function build(demo: DemoState): SupportState {
       assignee: assigneeId !== null && ticket.assignee ? { id: assigneeId, name: ticket.assignee } : null,
       firstResponseAt: iso(ticket.firstReplyAt),
       resolvedAt: ticket.status === 'resolved' ? toIso(ticket.updated) : null,
-      csatScore: ticket.csat,
       createdAt: toIso(ticket.created),
       updatedAt: toIso(ticket.updated),
       // A ticket that came in on Telegram can be answered there too.

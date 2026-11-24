@@ -182,11 +182,6 @@ export function specToAudienceForm(spec: AudienceSpec): AudienceForm {
   return form;
 }
 
-/** Telegram reaches merchants only: it needs the merchants segment or a picked merchant. */
-export function telegramAllowed(audience: AudienceForm): boolean {
-  return audience.merchants.on || audience.include.some((p) => p.type === 'client');
-}
-
 /** The kinds of people the audience reaches, which decides which link fields the message form shows. */
 export function targetedTypes(audience: AudienceForm): PersonType[] {
   const has = (type: PersonType) => audience.include.some((p) => p.type === type);
@@ -200,12 +195,6 @@ export function targetedTypes(audience: AudienceForm): PersonType[] {
 /** Whether anyone is targeted at all: a segment is on or a person is added. */
 export function hasTarget(audience: AudienceForm): boolean {
   return audience.staff.on || audience.merchants.on || audience.customers.on || audience.include.length > 0;
-}
-
-/** Drops Telegram when the audience no longer has merchants, so the channel never stays ticked while it is disabled. */
-export function keepChannelsValid(form: ComposerForm): ComposerForm {
-  if (telegramAllowed(form.audience) || !form.channels.includes('telegram')) return form;
-  return { ...form, channels: form.channels.filter((channel) => channel !== 'telegram') };
 }
 
 const trimmed = (text: { title: string; body: string }) => ({
@@ -272,9 +261,6 @@ export function audienceProblems(form: ComposerForm): Problems {
   if (audience.include.length > MAX_PEOPLE) problems.include = `Add at most ${MAX_PEOPLE} people.`;
   if (audience.exclude.length > MAX_PEOPLE) problems.exclude = `Leave out at most ${MAX_PEOPLE} people.`;
   if (form.channels.length === 0) problems.channels = 'Choose at least one channel.';
-  if (form.channels.includes('telegram') && !telegramAllowed(audience)) {
-    problems.channels = 'Telegram reaches merchants only: target merchants or remove Telegram.';
-  }
   return problems;
 }
 

@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { invoiceKind, invoiceStatusLook } from './billing';
 
 describe('invoiceKind', () => {
-  it('names the four kinds and keeps an unknown one as written', () => {
+  it('names the kinds and keeps an unknown one as written', () => {
     expect(invoiceKind('topup')).toBe('Top-up');
     expect(invoiceKind('receipt')).toBe('Tax receipt');
     expect(invoiceKind('credit_note')).toBe('credit_note');
+    // The statement kind is retired: an old invoice that still has it shows as written.
+    expect(invoiceKind('statement')).toBe('statement');
   });
 });
 

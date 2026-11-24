@@ -1,5 +1,5 @@
-// Mock of the four live routes of the support thread (backend feature 28, B218): `POST /admin/support-tickets/:id/read` (the team's seen mark),
-// `POST …/:id/typing` (ephemeral), `POST …/:id/files` (one attachment, kept in memory) and `GET …/:id/files/:fileId` (the download). Dev and tests only.
+// Mock of the three live routes of the support thread (backend feature 28, B218): `POST /admin/support-tickets/:id/read` (the team's seen mark),
+// `POST …/:id/files` (one attachment, kept in memory) and `GET …/:id/files/:fileId` (the download). Dev and tests only.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { bodyOf, invalid, notFound } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
@@ -47,18 +47,6 @@ export const liveHandlers: HttpHandler[] = [
       ticket.staffSeenAt = at;
       pushRead(ticket, 'staff', mark.id, at);
     }
-    return new HttpResponse(null, { status: 204 });
-  }),
-
-  http.post('*/admin/support-tickets/:id/typing', async ({ request, params }) => {
-    const denied = guard(request);
-    if (denied) return denied;
-    await latency();
-    if (!(await supportState()).tickets.find(String(params.id))) return notFound('ticket', params.id);
-    const { mode } = await bodyOf(request);
-    if (mode !== 'reply' && mode !== 'note')
-      return invalid([{ field: 'mode', message: 'Choose reply or note.' }]);
-    // Nothing is stored and nothing is sent back to the sender: the real server tells the other side.
     return new HttpResponse(null, { status: 204 });
   }),
 

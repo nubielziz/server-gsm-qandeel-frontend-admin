@@ -122,10 +122,10 @@ export const INPUT_LABEL: Readonly<Record<ServiceType, string>> = {
 export function sourceLabel(source: string): string {
   const known: Record<string, string> = {
     dhru: 'Dhru API',
+    // History: orders placed before the REST API was retired still carry this source, and it keeps its words.
     v1: 'REST API',
     portal: 'Portal',
     store: 'Storefront',
-    admin: 'Admin console',
   };
   return known[source.toLowerCase()] ?? source;
 }

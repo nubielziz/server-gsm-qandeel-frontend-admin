@@ -18,8 +18,8 @@ export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 export const CAMPAIGN_PURPOSES = ['service', 'marketing'] as const;
 export type CampaignPurpose = (typeof CAMPAIGN_PURPOSES)[number];
 
-/** The ways a campaign can be delivered. Telegram reaches merchants with a linked chat only. */
-export const CAMPAIGN_CHANNELS = ['in_app', 'email', 'telegram'] as const;
+/** The ways a campaign can be delivered: in the app, or by email. */
+export const CAMPAIGN_CHANNELS = ['in_app', 'email'] as const;
 export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
 
 /** Who a person is: a staff member, a merchant (`client`) or a customer. */
@@ -73,7 +73,7 @@ export type Campaign = {
   expectedRecipients: number | null;
   /** People the fan-out made at least one message for. */
   recipients: number;
-  planned: { inApp: number; email: number; telegram: number };
+  planned: { inApp: number; email: number };
   error: string | null;
   createdBy: StaffRef;
   createdAt: IsoDateTime;
@@ -88,11 +88,10 @@ export type CampaignDetail = Campaign & {
   audience: AudienceSpec;
   content: CampaignContent;
   link: CampaignLink | null;
-  skipped: { optedOut: number; noTelegram: number; noAccount: number };
+  skipped: { optedOut: number; noAccount: number };
   delivery: {
     inApp: { delivered: number; read: number };
     email: ChannelCounters;
-    telegram: ChannelCounters;
   };
   updatedBy: StaffRef | null;
   cancelledBy: StaffRef | null;
@@ -110,8 +109,8 @@ export type AudiencePreview = {
   total: number;
   reachable: number;
   byType: { staff: number; client: number; customer: number };
-  byChannel: { inApp: number; email: number; telegram: number };
-  excluded: { noConsent: number; optedOut: number; noTelegram: number; noAccount: number };
+  byChannel: { inApp: number; email: number };
+  excluded: { noConsent: number; optedOut: number; noAccount: number };
 };
 
 /** Which audience's sample the preview renders with. */
@@ -142,7 +141,7 @@ export type SendCampaignBody = { confirmRecipients: number };
 /** Body of `POST /admin/notification-campaigns/:id/schedule`. */
 export type ScheduleCampaignBody = { scheduledAt: IsoDateTime };
 
-/** What happened to one person's message: in-app items are delivered or read; email and Telegram queued, sent or failed. */
+/** What happened to one person's message: in-app items are delivered or read; email messages are queued, sent or failed. */
 export const RECIPIENT_STATUSES = ['delivered', 'read', 'queued', 'sent', 'failed'] as const;
 export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number];
 

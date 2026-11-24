@@ -18,7 +18,7 @@ describe('entityKind', () => {
   });
 
   it('gives an unknown type back in lower case', () => {
-    expect(entityKind('Webhook-Endpoint')).toBe('webhook_endpoint');
+    expect(entityKind('Export-Job')).toBe('export_job');
   });
 });
 
@@ -31,12 +31,19 @@ describe('entityTypeLabel', () => {
   });
 
   it('writes a type it has no word for as a sentence start', () => {
-    expect(entityTypeLabel('webhook_endpoint')).toBe('Webhook endpoint');
+    expect(entityTypeLabel('export_job')).toBe('Export job');
   });
 
   it('has a word for every type the filter offers', () => {
-    expect(ENTITY_KINDS).toHaveLength(19);
+    expect(ENTITY_KINDS).toHaveLength(18);
     for (const kind of ENTITY_KINDS) expect(entityTypeLabel(kind)).not.toBe('');
+  });
+
+  it('offers no filter for the retired commission plan, and still names an old row of that type', () => {
+    expect(ENTITY_KINDS).not.toContain('plan');
+    expect(entityKind('plans')).toBe('plans');
+    expect(entityTypeLabel('plan')).toBe('Plan');
+    expect(recordText({ entityType: 'plan', entityId: 3, entityLabel: null })).toBe('Plan #3');
   });
 });
 

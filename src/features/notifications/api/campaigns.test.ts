@@ -66,6 +66,39 @@ describe('listCampaigns', () => {
   });
 });
 
+describe('a channel the console no longer has', () => {
+  // A campaign written when the backend still had another channel keeps that channel's word; the console shows only the channels it knows.
+  const OLD = ['in_app', 'telegram', 'email'];
+
+  it('is left out of the channels of a list row', async () => {
+    capture('get', '/admin/notification-campaigns', {
+      json: [{ ...campaign(), channels: OLD }],
+      headers: { 'x-total-count': '1' },
+    });
+    expect((await listCampaigns()).data[0].channels).toEqual(['in_app', 'email']);
+  });
+
+  it('is left out of the channels of one campaign, whichever call returned it', async () => {
+    capture('get', '/admin/notification-campaigns/7', { json: { ...campaignDetail(), channels: OLD } });
+    expect((await getCampaign(7)).channels).toEqual(['in_app', 'email']);
+    capture('post', '/admin/notification-campaigns/7/send', { json: { ...campaignDetail(), channels: OLD } });
+    expect((await sendCampaign(7, { confirmRecipients: 3 })).channels).toEqual(['in_app', 'email']);
+  });
+
+  it('is ignored with the counters an older backend still sends', async () => {
+    capture('get', '/admin/notification-campaigns/7', {
+      json: {
+        ...campaignDetail(),
+        planned: { inApp: 2, email: 2, telegram: 1 },
+        delivery: { ...campaignDetail().delivery, telegram: { queued: 0, sent: 1, failed: 0 } },
+      },
+    });
+    const detail = await getCampaign(7);
+    expect(detail.channels).toEqual(['in_app', 'email']);
+    expect(detail.planned.inApp).toBe(2);
+  });
+});
+
 describe('getCampaign', () => {
   it('reads one campaign by id', async () => {
     const seen = capture('get', '/admin/notification-campaigns/7', { json: campaignDetail() });
@@ -108,8 +141,8 @@ describe('the previews', () => {
       total: 3,
       reachable: 2,
       byType: { staff: 2, client: 0, customer: 0 },
-      byChannel: { inApp: 2, email: 0, telegram: 0 },
-      excluded: { noConsent: 0, optedOut: 0, noTelegram: 0, noAccount: 1 },
+      byChannel: { inApp: 2, email: 0 },
+      excluded: { noConsent: 0, optedOut: 0, noAccount: 1 },
     };
     const seen = capture('post', '/admin/notification-campaigns/audience-preview', { json: answer });
     const body = { audience: { staff: {} }, channels: ['in_app' as const], purpose: 'service' as const };

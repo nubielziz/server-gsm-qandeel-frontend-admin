@@ -12,11 +12,10 @@ export type FunnelStep = {
   width: number;
 };
 
-/** The five steps, from estimated visitors to delivered orders. */
+/** The four steps, from estimated visitors to delivered orders. */
 export function funnelSteps(funnel: StorefrontSummary['funnel']): FunnelStep[] {
   const steps: [string, number][] = [
     ['Visitors (estimated)', funnel.visitorsEstimated],
-    ['Checked an IMEI', funnel.imeiChecks],
     ['Started checkout', funnel.checkoutsStarted],
     ['Paid', funnel.paid],
     ['Delivered', funnel.delivered],
@@ -33,9 +32,9 @@ export function funnelSteps(funnel: StorefrontSummary['funnel']): FunnelStep[] {
   });
 }
 
-/** True when the storefront has had no visit-to-order activity at all: the panel then shows its empty state. */
+/** True when the storefront has had no checkout-to-order activity at all: the panel then shows its empty state. */
 export function isStorefrontIdle(funnel: StorefrontSummary['funnel']): boolean {
-  return funnel.paid === 0 && funnel.imeiChecks === 0;
+  return funnel.paid === 0 && funnel.checkoutsStarted === 0;
 }
 
 export type KpiView = { label: string; value: string; note: string };
@@ -43,7 +42,7 @@ export type KpiView = { label: string; value: string; note: string };
 // A figure with nothing to divide by.
 const NONE = '–';
 
-/** The six small figures under the funnel. */
+/** The five small figures under the funnel. */
 export function storefrontKpis(summary: StorefrontSummary): KpiView[] {
   return [
     {
@@ -65,11 +64,6 @@ export function storefrontKpis(summary: StorefrontSummary): KpiView[] {
       label: 'First reply',
       value: summary.firstReplySeconds ? dur(summary.firstReplySeconds * 1000) : NONE,
       note: 'Median, support',
-    },
-    {
-      label: 'Satisfaction',
-      value: summary.satisfaction ? `${summary.satisfaction.average.toFixed(1)} / 5` : NONE,
-      note: `${num(summary.satisfaction?.ratings ?? 0)} ratings`,
     },
     { label: 'Held for review', value: num(summary.heldForReview), note: 'Waiting for a person' },
   ];

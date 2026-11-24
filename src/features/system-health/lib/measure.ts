@@ -1,7 +1,7 @@
 // Prints a `Measure` (value + unit) and its thresholds for the System health page: "412 ms", "0.42 %", "1,240 /min",
 // "3m 12s", "1.2 GB". No demo screen; the units come from the contract in ../types/common.ts.
 import type { Measure, MeasureUnit, MetricState } from '../types';
-import { compareStatus, metricStateMeta, type StatusMeta } from './status';
+import { metricStateMeta, type StatusMeta } from './status';
 
 /** What a missing value prints. A missing number is neutral, never zero and never healthy. */
 export const NO_DATA = 'No data';
@@ -137,9 +137,4 @@ export function thresholdText(
 /** Tone, icon and word of a measure's state (ok, warn, crit, unknown). */
 export function stateMeta(state: MetricState): StatusMeta {
   return metricStateMeta(state);
-}
-
-/** Comparator for Array.sort: the worse state first (crit, warn, unknown, ok). */
-export function compareStates(a: MetricState, b: MetricState): number {
-  return compareStatus(a, b);
 }

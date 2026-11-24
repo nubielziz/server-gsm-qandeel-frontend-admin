@@ -25,9 +25,6 @@ export type RequesterType = 'customer' | 'client';
 /** The ways a reply can go out. */
 export type ReplyChannel = 'email' | 'telegram';
 
-/** What the staff member is writing: a public reply or an internal note (the live "is typing" line shows only the first to the requester). */
-export type TypingMode = 'reply' | 'note';
-
 // ---- Tickets ----
 
 /** The person or company behind a ticket, joined so the inbox needs no second request. */
@@ -66,7 +63,6 @@ export type SupportTicket = Omit<
   status: TicketStatus;
   assigneeId: Id | null;
   assignee: StaffRef | null;
-  csatScore: number | null;
   lastPublicAt: IsoDateTime | null;
   late: boolean;
   updatedAt: IsoDateTime;
@@ -139,9 +135,6 @@ export type NoteBody = { body: string; fileIds?: Id[] };
 
 /** Body of `POST /admin/support-tickets/:id/read` (backend B218): the newest requester message on screen; the team's seen mark moves up to it. */
 export type MarkReadBody = { upToMessageId: Id };
-
-/** Body of `POST /admin/support-tickets/:id/typing` (backend B218): which tab of the composer is being written in. */
-export type TypingBody = { mode: TypingMode };
 
 /** Body of `POST /admin/support-tickets/:id/files` (backend B218): one file, sent as the `multipart/form-data` part `file`. */
 export type TicketFileUpload = { file: File };

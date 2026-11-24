@@ -19,7 +19,7 @@ export interface QueuesCardProps {
 
 /**
  * The card owns only whether the healthy rows are shown. With nothing to look at it is just the strip: the oldest queued
- * job of all queues (the figure of the KPI cell, with the same name) and "All 8 queues healthy · Show". Everything on
+ * job of all queues (the figure of the KPI cell, with the same name) and "All 7 queues healthy · Show". Everything on
  * screen is a number or state the server sent.
  */
 export function QueuesCard({ query, onDialog, onOpenFailed }: QueuesCardProps) {

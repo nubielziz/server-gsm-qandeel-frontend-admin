@@ -24,13 +24,11 @@ function cellsOf(campaign: CampaignDetail): StatCell[] {
       sub: `${num(delivery.inApp.read)} read`,
     });
   }
-  for (const channel of ['email', 'telegram'] as const) {
-    if (!channels.includes(channel)) continue;
-    const counters = delivery[channel];
+  if (channels.includes('email')) {
     cells.push({
-      label: channel === 'email' ? 'Email' : 'Telegram',
-      value: `${num(counters.sent)} sent`,
-      sub: `${num(counters.queued)} waiting, ${num(counters.failed)} failed`,
+      label: 'Email',
+      value: `${num(delivery.email.sent)} sent`,
+      sub: `${num(delivery.email.queued)} waiting, ${num(delivery.email.failed)} failed`,
     });
   }
   return cells;

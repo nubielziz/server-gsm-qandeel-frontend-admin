@@ -72,7 +72,7 @@ describe('what each function sends', () => {
     );
     await listCustomers(
       toListQuery(
-        { q: 'ann', country: 'GB', hasAccount: true, ...tabFilters('flagged') },
+        { q: 'ann', country: 'GB', hasAccount: true, ...tabFilters('suspended') },
         { start: 25, end: 50, sort: ['totalSpent'], order: ['desc'] },
       ),
     );
@@ -85,7 +85,8 @@ describe('what each function sends', () => {
     expect(params.get('q')).toBe('ann');
     expect(params.get('country')).toBe('GB');
     expect(params.get('hasAccount')).toBe('true');
-    expect(params.getAll('riskLevel')).toEqual(['medium', 'high']);
+    expect(params.get('status')).toBe('suspended');
+    expect(params.has('riskLevel')).toBe(false);
   });
 
   it('reads one customer, creates one and edits one', async () => {
@@ -213,7 +214,6 @@ describe('listing customers', () => {
   it('counts every tab with a one-row call and reads the total from the header', async () => {
     expect(await total(tabFilters('all'))).toBe(31);
     expect(await total(tabFilters('active'))).toBe(29);
-    expect(await total(tabFilters('flagged'))).toBe(3);
     expect(await total(tabFilters('suspended'))).toBe(1);
     expect(await total(tabFilters('blocked'))).toBe(1);
     expect(await total({ hasAccount: true })).toBe(10);
@@ -225,13 +225,13 @@ describe('listing customers', () => {
     expect(daniel).toMatchObject({
       name: 'Daniel Whitmore',
       status: 'active',
-      riskLevel: 'low',
       hasAccount: true,
       currencyCode: 'GBP',
       ordersCount: 4,
       totalSpent: '38.3700',
     });
     expect(daniel?.lastOrderAt).toBeTruthy();
+    expect(daniel).not.toHaveProperty('riskLevel');
     // A customer who never ordered has no last order.
     const { data: sofia } = await listCustomers({ filters: { country: 'ES' } });
     expect(sofia.find((row) => row.id === SOFIA)).toMatchObject({
@@ -239,11 +239,6 @@ describe('listing customers', () => {
       lastOrderAt: null,
       totalSpent: '0.0000',
     });
-  });
-
-  it('writes the demo’s "med" risk as "medium"', async () => {
-    const { data } = await listCustomers(toListQuery(tabFilters('flagged')));
-    expect(data.map((row) => row.riskLevel).sort()).toEqual(['high', 'medium', 'medium']);
   });
 
   it('pages, sorts by spend and searches name and email on the server', async () => {
@@ -311,9 +306,9 @@ describe('creating and editing', () => {
       name: 'Pat Example',
       hasAccount: true,
       status: 'active',
-      riskLevel: 'low',
     });
     expect(created).not.toHaveProperty('temporaryPassword');
+    expect(created).not.toHaveProperty('riskLevel');
     const detail = await getCustomer(32);
     expect(detail.account).toMatchObject({ emailVerified: false, mustChangePassword: false });
     expect(detail.account?.resetSentAt).toBeTruthy();
@@ -384,15 +379,11 @@ describe('account actions', () => {
     expect(isApiError(again) && again.status).toBe(409);
   });
 
-  it('blocks as high risk with the reason as a note, and lifts the block', async () => {
+  it('blocks with the reason as a note, and lifts the block', async () => {
     await blockCustomer(DANIEL, { blocked: true, reason: 'Abuse of refunds' });
-    expect(await getCustomer(DANIEL)).toMatchObject({
-      status: 'blocked',
-      riskLevel: 'high',
-      internalNotes: 'Abuse of refunds',
-    });
+    expect(await getCustomer(DANIEL)).toMatchObject({ status: 'blocked', internalNotes: 'Abuse of refunds' });
     await blockCustomer(DANIEL, { blocked: false });
-    expect(await getCustomer(DANIEL)).toMatchObject({ status: 'active', riskLevel: 'medium' });
+    expect(await getCustomer(DANIEL)).toMatchObject({ status: 'active' });
     const error = await blockCustomer(DANIEL, { blocked: false }).catch((caught: unknown) => caught);
     expect(isApiError(error) && error.status).toBe(409);
   });

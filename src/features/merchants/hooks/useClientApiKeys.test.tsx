@@ -22,7 +22,7 @@ describe('useCreateClientApiKey', () => {
     const created = await act(() =>
       result.current.create.mutateAsync({
         client: { id: 1, name: 'Zain Mobile Hub' },
-        body: { name: 'Server', scopes: ['orders:read'] },
+        body: { name: 'Server' },
       }),
     );
     expect(created.secret).toMatch(/^gsm_[A-Za-z0-9]{44}$/);

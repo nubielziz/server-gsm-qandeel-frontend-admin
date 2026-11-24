@@ -1,5 +1,6 @@
-// The System tab: the settings keys this console knows how to edit, the ones it only shows, and what is left (shown as JSON, read-only).
-// `GET /admin/settings` is one flat object (assumed contract, M10). Policy keys belong to the Policies tab and are not repeated here.
+// The System tab: the settings keys this console knows how to edit (the customer wallet's), the ones it only shows, and what is left
+// (shown as JSON, read-only). `GET /admin/settings` is one flat object (assumed contract, M10). Policy keys belong to the Policies tab
+// and are not repeated here.
 import type { JsonValue } from '@/lib/api';
 import type { Settings } from '../types';
 import { POLICY_KEYS } from './policies';
@@ -25,19 +26,6 @@ export type BooleanSetting = { key: string; label: string; type: 'boolean'; hint
 /** A setting the tab can edit with a typed field. */
 export type SettingSpec = NumberSetting | BooleanSetting;
 
-/** The settings with a typed form. More keys are added here when the backend names them. */
-export const KNOWN_SETTINGS: readonly NumberSetting[] = [
-  {
-    key: 'imeiRetentionDays',
-    label: 'IMEI retention',
-    type: 'integer',
-    unit: 'days after the order',
-    hint: 'How long an order keeps its IMEI before it is removed. The Policies tab shows the same setting.',
-    min: 0,
-    max: 3650,
-  },
-];
-
 /** A setting this tab shows but another page edits. */
 export type LinkedSetting = { key: string; label: string; hint: string; to: string; linkLabel: string };
 
@@ -51,9 +39,15 @@ export const LINKED_SETTINGS: readonly LinkedSetting[] = [
   },
 ];
 
+/**
+ * Keys of retired features that an older server may still send and nothing reads any more (the reminder at checkout, the IMEI check
+ * before payment and how long its log was kept). They are left out of "Other settings" so the tab does not show a value nobody can use.
+ */
+const RETIRED_KEYS: readonly string[] = ['abandonedMinutes', 'imeiPrecheck', 'imeiRetentionDays'];
+
 /** Every key the console handles somewhere, so none of them is shown as unknown. */
 const HANDLED_KEYS: readonly string[] = [
-  ...KNOWN_SETTINGS.map((spec) => spec.key),
+  ...RETIRED_KEYS,
   ...LINKED_SETTINGS.map((setting) => setting.key),
   ...POLICY_KEYS,
   ...WALLET_SETTINGS.map((spec) => spec.key),

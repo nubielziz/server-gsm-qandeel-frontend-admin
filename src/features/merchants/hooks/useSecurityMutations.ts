@@ -1,6 +1,6 @@
 // The staff security tools on a merchant, each with the toast it shows and the reads it makes stale (the merchant's record, which
-// carries the Security tab's facts, and the merchant's session list). The password dialog and the two confirm dialogs show a
-// failed call themselves; "Resend verification email" acts at once, so the default error toast shows the server's refusal.
+// carries the Security tab's facts). The password dialog and the two confirm dialogs show a failed call themselves; "Resend
+// verification email" acts at once, so the default error toast shows the server's refusal.
 import { useApiMutation } from '@/lib/query';
 import {
   resendClientVerification,
@@ -9,7 +9,7 @@ import {
   setClientPassword,
 } from '../api';
 import type { Client, ClientPasswordBody } from '../types';
-import { MERCHANT_SESSIONS_KEY, staleClient } from './keys';
+import { staleClient } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
@@ -26,7 +26,6 @@ export function useSetClientPassword() {
       setClientPassword(client.id, body),
     gcTime: 0,
     invalidates: (_result, { client }) => staleClient(client.id),
-    invalidateKeys: [MERCHANT_SESSIONS_KEY],
     successNotification: (result, { client, body }) => {
       if (body.mode === 'temporary_password') {
         return {
@@ -48,7 +47,6 @@ export function useRevokeClientSessions() {
   return useApiMutation({
     mutationFn: (client: Who) => revokeClientSessions(client.id),
     invalidates: (_result, client) => staleClient(client.id),
-    invalidateKeys: [MERCHANT_SESSIONS_KEY],
     successNotification: (_result, client) => ({ message: `${client.name} signed out of every device` }),
     errorNotification: NO_ERROR_TOAST,
   });
@@ -59,7 +57,6 @@ export function useResetClientTwoFactor() {
   return useApiMutation({
     mutationFn: (client: Who) => resetClientTwoFactor(client.id),
     invalidates: (_result, client) => staleClient(client.id),
-    invalidateKeys: [MERCHANT_SESSIONS_KEY],
     successNotification: (_result, client) => ({
       message: `2FA reset for ${client.name}`,
       description: 'They set it up again from their portal.',

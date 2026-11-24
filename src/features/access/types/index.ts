@@ -112,12 +112,9 @@ export type PermissionsAnswer = readonly (string | { key: string; label?: string
 
 // ---- Sessions ----
 
-/** Staff sessions and merchant (`client`) sessions share one list. */
-export type SessionSubjectType = 'staff' | 'client';
-
 /** One open sign-in session, as `GET /admin/sessions` sends it (assumed contract). `current` marks the caller's own. */
 export type Session = Omit<SessionRow, 'subjectType' | 'subjectId' | 'revokedAt' | 'updatedAt'> & {
-  subjectType: SessionSubjectType;
+  subjectType: 'staff';
   subject: { id: Id; name: string; email?: string };
   current?: boolean;
 };

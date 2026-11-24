@@ -25,7 +25,7 @@ export function ResolverTab({ type }: ResolverTabProps) {
   const services = useServiceChoices(grants.ready, type);
   const merchants = useMerchantOptions(grants.ready && canMerchants);
 
-  // The demo listed merchants that are not waiting for approval; an unset choice falls back to the first of each list.
+  // The demo listed merchants that can order (not `pending`); an unset choice falls back to the first of each list.
   const merchantList = (merchants.data ?? []).filter((merchant) => merchant.status !== 'pending');
   const serviceList = services.data ?? [];
   const serviceId = view.serviceId ?? serviceList[0]?.id ?? null;

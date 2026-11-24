@@ -1,5 +1,5 @@
 // The TAC catalogue (`/admin/tac-catalog*`): the TAC catalogue tab, which the map adds to the demo's Storefront page (the
-// demo kept the table inside its IMEI checker). The map gives no bodies (MISMATCHES M10), so shapes are assumed contracts.
+// demo kept the table inside its own lookup code). The map gives no bodies (MISMATCHES M10), so shapes are assumed contracts.
 import {
   apiGet,
   apiList,

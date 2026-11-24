@@ -89,5 +89,7 @@ describe('labels', () => {
     expect(sourceLabel('v1')).toBe('REST API');
     expect(sourceLabel('store')).toBe('Storefront');
     expect(sourceLabel('partner-feed')).toBe('partner-feed');
+    // The staff-placed source is retired: an old order that still says it shows the word as it is.
+    expect(sourceLabel('admin')).toBe('admin');
   });
 });

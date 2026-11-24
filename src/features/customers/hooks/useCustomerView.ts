@@ -1,4 +1,4 @@
-// The customers page's tab, filters, page and sort, kept in the address (`?tab=flagged&q=…&page=2`), so a link or a reload
+// The customers page's tab, filters, page and sort, kept in the address (`?tab=blocked&q=…&page=2`), so a link or a reload
 // shows the same list. Changes replace the history entry: Back should leave the page, not walk through every keystroke.
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';

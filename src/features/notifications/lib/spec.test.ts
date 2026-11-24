@@ -12,11 +12,9 @@ import {
   emptyForm,
   formToInput,
   hasTarget,
-  keepChannelsValid,
   parseCountries,
   specToAudienceForm,
   targetedTypes,
-  telegramAllowed,
   type ComposerForm,
 } from './spec';
 
@@ -121,24 +119,6 @@ describe('countries', () => {
 });
 
 describe('channels and who is targeted', () => {
-  it('allows Telegram only with merchants: the segment or a picked merchant', () => {
-    expect(telegramAllowed(emptyForm().audience)).toBe(false);
-    expect(telegramAllowed(applyPreset(emptyForm().audience, 'merchants'))).toBe(true);
-    expect(
-      telegramAllowed({ ...emptyForm().audience, include: [{ type: 'client', id: 1, name: 'A' }] }),
-    ).toBe(true);
-  });
-
-  it('drops Telegram when the merchants go away', () => {
-    const form = filled({ channels: ['in_app', 'telegram'] });
-    expect(keepChannelsValid(form).channels).toEqual(['in_app']);
-    expect(
-      keepChannelsValid(
-        filled({ channels: ['telegram'], audience: applyPreset(emptyForm().audience, 'merchants') }),
-      ).channels,
-    ).toEqual(['telegram']);
-  });
-
   it('lists the kinds of people the audience reaches, in the server order', () => {
     expect(targetedTypes(applyPreset(emptyForm().audience, 'everyone'))).toEqual([
       'staff',
@@ -211,13 +191,12 @@ describe('the hints', () => {
     ).toEqual({});
   });
 
-  it('names a country that is not a code, and Telegram without merchants, and no channel', () => {
+  it('names a country that is not a code, and no channel', () => {
     const audience = {
       ...applyPreset(emptyForm().audience, 'customers'),
       customers: { on: true, accounts: 'all' as const, countries: 'Jordan' },
     };
     expect(audienceProblems(filled({ audience }))['audience.customers.countries']).toMatch(/JORDAN/);
-    expect(audienceProblems(filled({ channels: ['telegram'] })).channels).toMatch(/merchants only/);
     expect(audienceProblems(filled({ channels: [] })).channels).toBe('Choose at least one channel.');
   });
 

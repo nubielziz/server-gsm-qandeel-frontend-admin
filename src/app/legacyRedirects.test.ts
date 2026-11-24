@@ -1,7 +1,9 @@
 // Tests for the old addresses and where they go: one row per case of the table (the Catalog page, Services & pricing, the Storefront tabs
-// that moved to Product / Services, and the Shop content addresses that must stay), plus the checks that the answers are addresses the
-// page knows (`productsPath` writes them, its views, parts and tabs are the ones named).
+// that moved to Product / Services, the Shop content addresses that must stay, and the retired Commissions and Abandoned checkouts
+// pages), plus the checks that the answers are addresses the page knows (`productsPath` writes them, its views, parts and tabs are the
+// ones named; `financePath` writes the funnel report's).
 import { describe, expect, it } from 'vitest';
+import { financePath } from '@/features/finance';
 import { PRODUCTS_VIEWS, productsPath, RULES_TABS, SERVICE_PARTS } from '@/features/services';
 import { legacyTarget } from './legacyRedirects';
 
@@ -391,15 +393,71 @@ const STOREFRONT_STAYS: Case[] = [
   ['a page type with no tab and no list key', '/storefront', '?kind=carrier', null],
 ];
 
+// The Commissions page is gone; every old address of it, with any tab or filter it had, leads to Finance and carries nothing.
+const COMMISSIONS: Case[] = [
+  ['the bare Commissions page', '/commissions', '', '/finance'],
+  ['an empty query', '/commissions', '?', '/finance'],
+  ['a trailing slash', '/commissions/', '', '/finance'],
+  ['another letter case', '/Commissions', '', '/finance'],
+  ['the Accruals tab with its status filter', '/commissions', '?tab=accruals&status=accrued', '/finance'],
+  ['the Agents tab', '/commissions', '?tab=agents', '/finance'],
+  ['the Plans tab', '/commissions', '?tab=plans', '/finance'],
+  [
+    'one agent’s ready accruals',
+    '/commissions',
+    '?agent=3&status=accrued&page=2&sort=amount&dir=desc',
+    '/finance',
+  ],
+];
+
+const CHECKOUTS: Case[] = [
+  ['the bare Abandoned checkouts page', '/checkouts', '', '/finance?tab=reports&report=funnel'],
+  ['an empty query', '/checkouts', '?', '/finance?tab=reports&report=funnel'],
+  ['a trailing slash', '/checkouts/', '', '/finance?tab=reports&report=funnel'],
+  ['another letter case', '/Checkouts', '', '/finance?tab=reports&report=funnel'],
+  [
+    'the list’s filter, search, page and sort are dropped',
+    '/checkouts',
+    '?filter=all&q=sam&page=2&sort=grossAmount&dir=desc',
+    '/finance?tab=reports&report=funnel',
+  ],
+  ['the funnel period of 90 days', '/checkouts', '?days=90', '/finance?tab=reports&report=funnel&range=90'],
+  ['the funnel period of 7 days', '/checkouts', '?days=7', '/finance?tab=reports&report=funnel&range=7'],
+  [
+    'the default period of 30 days leaves no trace',
+    '/checkouts',
+    '?days=30',
+    '/finance?tab=reports&report=funnel',
+  ],
+  [
+    'a period the report does not offer is dropped',
+    '/checkouts',
+    '?days=5',
+    '/finance?tab=reports&report=funnel',
+  ],
+  [
+    'the period is kept and the list’s keys are not',
+    '/checkouts',
+    '?filter=all&days=90&q=x',
+    '/finance?tab=reports&report=funnel&range=90',
+  ],
+];
+
 const NOT_OLD: Case[] = [
   ['Product / Services itself', '/products', '?view=publish&run=7', null],
   ['the Suppliers page', '/suppliers', '?supplier=2', null],
   ['the start page', '/', '', null],
   ['an address below the old Services page', '/services/5', '', null],
   ['an address below the old Catalog page', '/catalog/5', '?open=7', null],
+  ['an address below the old checkouts page', '/checkouts/5', '', null],
+  ['an address that only starts with the old checkouts name', '/checkouts-old', '', null],
+  ['Finance itself', '/finance', '?tab=reports&report=funnel', null],
   ['an address that only starts with the old name', '/services-old', '', null],
   ['an address that only starts with the Catalog name', '/catalogue', '', null],
   ['a Shop content address below the page', '/storefront/5', '?tab=publish', null],
+  ['an address below the retired Commissions page', '/commissions/5', '', null],
+  ['an address that only starts with the retired name', '/commissions-old', '', null],
+  ['Finance itself', '/finance', '?tab=payments', null],
 ];
 
 const MOVED = [
@@ -421,7 +479,9 @@ describe('legacyTarget', () => {
     ['the Catalog settings', CATALOG_SETTINGS],
     ['the Catalog publish view', CATALOG_PUBLISH],
     ['the Storefront tabs that moved to Product / Services', STOREFRONT_MOVED],
+    ['the Abandoned checkouts page, which is the funnel report now', CHECKOUTS],
     ['the Shop content addresses that stay', STOREFRONT_STAYS],
+    ['the retired Commissions page', COMMISSIONS],
     ['addresses that are not old ones', NOT_OLD],
   ] as const)('%s', (_group, cases) => {
     it.each(cases)('%s: %s%s', (_name, pathname, search, target) => {
@@ -433,6 +493,7 @@ describe('legacyTarget', () => {
     expect(legacyTarget('/services')).toBe('/products?view=all');
     expect(legacyTarget('/catalog')).toBe('/products?view=all');
     expect(legacyTarget('/storefront')).toBeNull();
+    expect(legacyTarget('/commissions')).toBe('/finance');
   });
 
   it('answers with the same addresses as productsPath (the order of the keys aside)', () => {
@@ -489,8 +550,18 @@ describe('legacyTarget', () => {
     }
   });
 
+  it('builds the same funnel addresses as financePath', () => {
+    expect(legacyTarget('/checkouts')).toBe(financePath('reports', { report: 'funnel' }));
+    expect(legacyTarget('/checkouts', '?days=90')).toBe(
+      financePath('reports', { report: 'funnel', range: 90 }),
+    );
+    expect(legacyTarget('/checkouts', '?days=7')).toBe(
+      financePath('reports', { report: 'funnel', range: 7 }),
+    );
+  });
+
   it('never answers with an address that is itself an old one', () => {
-    for (const [, pathname, search] of MOVED) {
+    for (const [, pathname, search] of [...MOVED, ...COMMISSIONS, ...CHECKOUTS]) {
       const target = legacyTarget(pathname, search);
       const [path, query = ''] = (target ?? '').split('?');
       expect(legacyTarget(path, query)).toBeNull();

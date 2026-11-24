@@ -40,15 +40,9 @@ describe('tabs and counts', () => {
   it('shows the tabs with their counts, and says how many people bought and how many have an account', async () => {
     await openCustomers();
     await waitFor(() =>
-      expect(tabTexts()).toEqual([
-        'All31',
-        'Active29',
-        'Flagged3',
-        'Suspended1',
-        'Blocked1',
-        'Data requests1',
-      ]),
+      expect(tabTexts()).toEqual(['All31', 'Active29', 'Suspended1', 'Blocked1', 'Data requests1']),
     );
+    expect(screen.queryByRole('tab', { name: /Flagged/ })).not.toBeInTheDocument();
     expect(
       screen.getByText('31 customers on the storefront. 10 have an account, the rest are guests.'),
     ).toBeInTheDocument();
@@ -58,11 +52,9 @@ describe('tabs and counts', () => {
   it('keeps the chosen tab in the address and lists only its customers', async () => {
     const user = userEvent.setup();
     const app = await openCustomers();
-    await user.click(listTabs().getByRole('tab', { name: /Flagged/ }));
-    expect(app.location()).toBe('/customers?tab=flagged');
-    await waitFor(async () =>
-      expect([...(await customerNames())].sort()).toEqual(['Jack Turner', 'Kevin Doyle', 'Tyler Brooks']),
-    );
+    await user.click(listTabs().getByRole('tab', { name: /Blocked/ }));
+    expect(app.location()).toBe('/customers?tab=blocked');
+    await waitFor(async () => expect(await customerNames()).toEqual(['Jack Turner']));
     await user.click(listTabs().getByRole('tab', { name: /^All/ }));
     expect(app.location()).toBe('/customers');
   });
@@ -75,13 +67,29 @@ describe('tabs and counts', () => {
     expect(await customerNames()).toEqual(['Hannah Weber']);
   });
 
+  it('opens All for an old address of the Flagged tab, and keeps the rest of the address', async () => {
+    const user = userEvent.setup();
+    const app = await openCustomers('/customers?tab=flagged&q=whitmore');
+    expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: /Flagged/ })).not.toBeInTheDocument();
+    expect(await customerNames()).toEqual(['Daniel Whitmore']);
+    // The next change in the address drops the tab that is gone.
+    await user.click(listTabs().getByRole('tab', { name: /Suspended/ }));
+    expect(app.location()).toBe('/customers?tab=suspended&q=whitmore');
+  });
+
+  it('sorts by spend for an old address that sorts by the risk level', async () => {
+    await openCustomers('/customers?sort=riskLevel&dir=desc');
+    const table = await customersTable();
+    expect(table.getByRole('columnheader', { name: /Spent/ })).toHaveAttribute('aria-sort', 'descending');
+    expect(table.queryByRole('columnheader', { name: /Risk/ })).not.toBeInTheDocument();
+  });
+
   it('hides the Data requests tab without customers:privacy, and a link to it lands on All', async () => {
     const app = await openCustomers('/customers?tab=requests&status=all&sort=dueAt&dir=asc', {
       permissions: ['customers:read'],
     });
-    await waitFor(() =>
-      expect(tabTexts()).toEqual(['All31', 'Active29', 'Flagged3', 'Suspended1', 'Blocked1']),
-    );
+    await waitFor(() => expect(tabTexts()).toEqual(['All31', 'Active29', 'Suspended1', 'Blocked1']));
     expect(screen.getByRole('tab', { name: /^All/ })).toHaveAttribute('aria-selected', 'true');
     expect(await customerRow('Daniel Whitmore')).toBeTruthy();
     // The address is corrected, and the status and sort that only the requests offer are dropped.
@@ -115,26 +123,35 @@ describe('the table', () => {
     expect(daniel.getByText('GBP')).toBeInTheDocument();
     expect(daniel.getByText('Account')).toBeInTheDocument();
     expect(daniel.getByText('$38.37')).toBeInTheDocument();
-    expect(daniel.getByText('Low')).toBeInTheDocument();
     expect(daniel.getByText('Active')).toBeInTheDocument();
 
     const jack = await customerRow('Jack Turner');
     expect(jack.getByText('Guest')).toBeInTheDocument();
-    expect(jack.getByText('High')).toBeInTheDocument();
     expect(jack.getByText('Blocked')).toBeInTheDocument();
   });
 
-  it('shows a risk or status it does not know as it is, in a neutral badge, instead of failing', async () => {
+  it('shows no risk column, and ignores the risk level an older server still sends', async () => {
     mockServer.use(
       http.get('*/admin/customers', () =>
-        HttpResponse.json([customer({ riskLevel: 'med' as never, status: 'pending_review' as never })], {
+        HttpResponse.json([{ ...customer(), riskLevel: 'high' }], { headers: { 'x-total-count': '1' } }),
+      ),
+    );
+    await openCustomers();
+    const row = await customerRow('Daniel Whitmore');
+    expect(row.queryByText('High')).not.toBeInTheDocument();
+    expect((await customersTable()).queryByRole('columnheader', { name: /Risk/ })).not.toBeInTheDocument();
+  });
+
+  it('shows a status it does not know as it is, in a neutral badge, instead of failing', async () => {
+    mockServer.use(
+      http.get('*/admin/customers', () =>
+        HttpResponse.json([customer({ status: 'pending_review' as never })], {
           headers: { 'x-total-count': '1' },
         }),
       ),
     );
     await openCustomers();
     const row = await customerRow('Daniel Whitmore');
-    expect(row.getByText('med').closest('.badge')).toHaveClass('b-neutral');
     expect(row.getByText('pending_review').closest('.badge')).toHaveClass('b-neutral');
   });
 

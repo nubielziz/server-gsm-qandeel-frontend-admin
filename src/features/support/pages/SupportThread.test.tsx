@@ -43,7 +43,7 @@ const NEW_DELAY = 4201; // Jessica Moore, SF-20487 (processing), new, nobody ass
 const TELEGRAM = 4207; // Marco Ricci, came in on Telegram
 const MERCHANT = 4213; // Cairo GSM Lab, a merchant, no order
 const NOTE_TICKET = 4212; // Jack Turner, has an internal note
-const RESOLVED = 4209; // Kevin Doyle, rated 4 / 5
+const RESOLVED = 4209; // Kevin Doyle, resolved
 const WAITING = 4206; // Victor Silva, pending: the team wrote last (sent, not seen)
 
 /** Records the JSON bodies a route gets, then lets the mock answer. */
@@ -408,11 +408,7 @@ describe('priority, assignee and status', () => {
     await user.click(screen.getByRole('button', { name: 'Resolve' }));
     expect(await screen.findByText('Ticket resolved')).toBeInTheDocument();
     expect(bodies).toEqual([{ status: 'resolved' }]);
-    expect(
-      await screen.findByText(
-        /This ticket is resolved, the satisfaction survey is out\. Reopen it to reply\./,
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('This ticket is resolved. Reopen it to reply.')).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Reply' })).not.toBeInTheDocument();
     const log = await conversation();
     expect(log.getByText(/Marked resolved by Rami K\./)).toBeInTheDocument();
@@ -420,15 +416,26 @@ describe('priority, assignee and status', () => {
     expect(screen.queryByRole('button', { name: 'Resolve' })).not.toBeInTheDocument();
   });
 
-  it('reopens a resolved ticket and gives the composer back; the notice shows the rating', async () => {
+  it('reopens a resolved ticket and gives the composer back', async () => {
     const user = userEvent.setup();
     const bodies = recorded('patch', '*/admin/support-tickets/:id');
     await openSupport(`/support?ticket=${RESOLVED}`);
-    expect(await screen.findByText(/the customer rated it/)).toHaveTextContent('4 / 5');
+    expect(await screen.findByText('This ticket is resolved. Reopen it to reply.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Reopen' }));
     expect(await composerBox()).toBeInTheDocument();
     expect(bodies).toEqual([{ status: 'open' }]);
     expect(screen.getByRole('button', { name: 'Resolve' })).toBeInTheDocument();
+  });
+
+  it('shows no rating on a resolved ticket, even when an older backend still sends one', async () => {
+    const ticket = (await supportState()).tickets.find(String(RESOLVED));
+    if (!ticket) throw new Error('the seed has no resolved ticket 4209');
+    mockServer.use(
+      http.get('*/admin/support-tickets/:id', () => HttpResponse.json({ ...toDetail(ticket), csatScore: 4 })),
+    );
+    await openSupport(`/support?ticket=${RESOLVED}`);
+    expect(await screen.findByText('This ticket is resolved. Reopen it to reply.')).toBeInTheDocument();
+    expect(screen.queryByText(/rated it|out of 5|4 \/ 5/)).not.toBeInTheDocument();
   });
 
   it('shows the server’s refusal of a change and puts the control back', async () => {
@@ -655,112 +662,42 @@ describe('the live thread', () => {
   });
 });
 
-describe('who is typing', () => {
+describe('typing events from an older backend', () => {
   useMockStream();
-  const typing = (ticketId: number, change: Record<string, unknown> = {}) => ({
-    ticketId,
-    by: 'requester',
-    staffId: null,
-    staffName: null,
-    mode: null,
-    ...change,
-  });
 
-  it('shows the requester typing for 6 seconds after the last event, and a pencil on the row', async () => {
-    await openSupport(`/support?ticket=${LATE_HIGH}`);
-    await conversation();
-    await streamOpen();
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] });
-    push('ticket.typing', typing(LATE_HIGH));
-    expect(screen.getByText('Victor Silva is typing…')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Typing' })).toBeInTheDocument();
-    act(() => void vi.advanceTimersByTime(5_000));
-    // A second event restarts the clock: 5 + 5.9 seconds after the first is still inside 6 seconds after the second.
-    push('ticket.typing', typing(LATE_HIGH));
-    act(() => void vi.advanceTimersByTime(5_900));
-    expect(screen.getByText('Victor Silva is typing…')).toBeInTheDocument();
-    act(() => void vi.advanceTimersByTime(200));
-    expect(screen.queryByText('Victor Silva is typing…')).not.toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: 'Typing' })).not.toBeInTheDocument();
-  });
-
-  it('ends the line at once when that person’s message arrives', async () => {
+  it('ignores them: no typing line or mark anywhere, and the thread goes on with the events it knows', async () => {
     await openSupport(`/support?ticket=${LATE_HIGH}`);
     const log = await conversation();
     await streamOpen();
-    push('ticket.typing', typing(LATE_HIGH));
-    expect(screen.getByText('Victor Silva is typing…')).toBeInTheDocument();
+    push('ticket.typing', {
+      ticketId: LATE_HIGH,
+      by: 'requester',
+      staffId: null,
+      staffName: null,
+      mode: null,
+    });
+    push('ticket.typing', {
+      ticketId: LATE_HIGH,
+      by: 'staff',
+      staffId: 2,
+      staffName: 'Lina S.',
+      mode: 'reply',
+    });
+    expect(screen.queryByText(/is typing/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/is replying/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Typing' })).not.toBeInTheDocument();
     push(
       'ticket.message.created',
       messageFrame(liveMessage(LATE_HIGH, 9030, { body: 'Sorry, one more thing' })),
     );
     expect(await log.findByText('Sorry, one more thing')).toBeInTheDocument();
-    expect(screen.queryByText('Victor Silva is typing…')).not.toBeInTheDocument();
   });
 
-  it('shows a colleague replying or writing a note, never oneself, and nothing for another ticket', async () => {
-    await openSupport(`/support?ticket=${LATE_HIGH}`);
-    await conversation();
-    await streamOpen();
-    push(
-      'ticket.typing',
-      typing(LATE_HIGH, { by: 'staff', staffId: 2, staffName: 'Lina S.', mode: 'reply' }),
-    );
-    expect(screen.getByText('Lina S. is replying…')).toBeInTheDocument();
-    push('ticket.typing', typing(LATE_HIGH, { by: 'staff', staffId: 2, staffName: 'Lina S.', mode: 'note' }));
-    expect(screen.getByText('Lina S. is writing a note…')).toBeInTheDocument();
-    expect(screen.queryByText('Lina S. is replying…')).not.toBeInTheDocument();
-    // Rami (staff id 1) is the signed-in staff member: another tab of his own never shows.
-    push(
-      'ticket.typing',
-      typing(LATE_HIGH, { by: 'staff', staffId: 1, staffName: 'Rami K.', mode: 'reply' }),
-    );
-    expect(screen.queryByText('Rami K. is replying…')).not.toBeInTheDocument();
-    push(
-      'ticket.typing',
-      typing(NEW_DELAY, { by: 'staff', staffId: 3, staffName: 'Omar H.', mode: 'reply' }),
-    );
-    expect(screen.queryByText(/Omar H\. is/)).not.toBeInTheDocument();
-  });
-
-  it('tells the server at most once every 3 seconds while the draft changes, and never for an empty draft', async () => {
+  it('sends nothing to the server while the staff member writes a reply', async () => {
     const user = userEvent.setup();
     await openSupport(`/support?ticket=${LATE_HIGH}`);
     const box = await composerBox();
-    const pings = recordRequests(`/admin/support-tickets/${LATE_HIGH}/typing`);
-    // The page's clock is moved by hand from here: only the throttle reads it.
-    let clock = Date.now();
-    vi.spyOn(Date, 'now').mockImplementation(() => clock);
-    await user.type(box, 'abc');
-    await waitFor(() => expect(pings).toHaveLength(1));
-    expect(pings[0].method).toBe('POST');
-    await waitFor(() => expect(pings[0].body).toEqual({ mode: 'reply' }));
-    // More typing inside the 3 seconds sends nothing; after them the next change sends again.
-    clock += 2_900;
-    await user.type(box, 'd');
-    await settle();
-    expect(pings).toHaveLength(1);
-    clock += 200;
-    await user.type(box, 'e');
-    await waitFor(() => expect(pings).toHaveLength(2));
-    // Clearing the box sends nothing.
-    clock += 10_000;
-    await user.clear(box);
-    await settle();
-    expect(pings).toHaveLength(2);
-    // A note says so.
-    await user.click(screen.getByRole('checkbox', { name: 'Internal note, customer won’t see it' }));
-    await user.type(await composerBox('Internal note'), 'n');
-    await waitFor(() => expect(pings).toHaveLength(3));
-    await waitFor(() => expect(pings[2].body).toEqual({ mode: 'note' }));
-  });
-
-  it('sends no typing signal for a draft that was already there, or without support:reply', async () => {
-    const user = userEvent.setup();
-    await openSupport(`/support?ticket=${LATE_HIGH}`, { permissions: ['support:read'] });
     const pings = recordRequests('/typing');
-    const box = await composerBox();
-    expect(box).toBeDisabled();
     await user.type(box, 'abc');
     await settle();
     expect(pings).toHaveLength(0);
@@ -1122,7 +1059,7 @@ describe('attaching files', () => {
 describe('the dev stand-in for the customer', () => {
   useMockStream();
 
-  it('answers a reply that contains /echo: seen, typing, then a message', async () => {
+  it('answers a reply that contains /echo: seen, then a message', async () => {
     const user = userEvent.setup();
     await openSupport(`/support?ticket=${WAITING}`);
     const log = await conversation();
@@ -1131,10 +1068,6 @@ describe('the dev stand-in for the customer', () => {
     await user.click(screen.getByRole('button', { name: 'Send reply' }));
     await screen.findByText('Reply sent');
     await waitFor(() => expect(log.getByText(/^Seen \d/)).toBeInTheDocument(), { timeout: 3_000 });
-    await waitFor(() => expect(screen.getByText('Victor Silva is typing…')).toBeInTheDocument(), {
-      timeout: 3_000,
-    });
     expect(await log.findByText(/One more question/, {}, { timeout: 5_000 })).toBeInTheDocument();
-    expect(screen.queryByText('Victor Silva is typing…')).not.toBeInTheDocument();
   });
 });

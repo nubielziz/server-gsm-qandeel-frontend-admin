@@ -1,5 +1,5 @@
 // TacTable: the TAC catalogue table (TAC, brand, phone, year, source, Edit). The tab is new in the map; the demo kept the table
-// inside its IMEI checker. It only draws what it is given; the tab owns data, sort and page.
+// inside its own lookup code. It only draws what it is given; the tab owns data, sort and page.
 import type { ReactNode } from 'react';
 import {
   Button,

@@ -1,16 +1,7 @@
-// Input helpers for the API key dialogs (create a key, change its limits): the scopes a staff member may pick, reading the allowed
-// addresses (one per line) and the per-minute limit, the expiry day, and folding the server's per-entry field errors
-// (`scopes.2`, `allowedIps.0`) onto the two inputs that hold the lists. Hints only: the server validates everything (decision 008).
+// Input helpers for the API key dialogs (create a key, change its limits): reading the allowed addresses (one per line) and the
+// per-minute limit, the expiry day, and folding the server's per-entry field errors (`allowedIps.0`) onto the input that holds the
+// list. Hints only: the server validates everything (decision 008).
 import { ApiError, isApiError } from '@/lib/api';
-
-/** The scopes a merchant key may carry, as the backend's `MERCHANT_KEY_SCOPES`, with what each allows. */
-export const KEY_SCOPES: readonly { value: string; hint: string }[] = [
-  { value: 'dhru', hint: 'Dhru Fusion client calls' },
-  { value: 'account:read', hint: 'Read the account and wallet balance' },
-  { value: 'orders:read', hint: 'Read orders' },
-  { value: 'orders:write', hint: 'Place and change orders' },
-  { value: 'services:read', hint: 'Read the service list and prices' },
-];
 
 /** The per-minute limit the server accepts, and the one a new key starts with. */
 export const RATE_LIMIT = { min: 1, max: 6000, default: 60 } as const;
@@ -56,22 +47,22 @@ export function dayIsPast(day: string, now: number = Date.now()): boolean {
 }
 
 /**
- * Folds `scopes.N` onto `scopes` and `allowedIps.N` onto `allowedIps` (the form has one input for each list), with the line
- * number in front of an address message. Any other error, and anything that is not an ApiError, passes through unchanged.
+ * Folds `allowedIps.N` onto `allowedIps` (the form has one input for the list), with the line number in front of the message.
+ * Any other error, and anything that is not an ApiError, passes through unchanged.
  */
 export function foldKeyErrors(error: unknown): unknown {
   if (!isApiError(error)) return error;
   const folded: Record<string, string[]> = {};
   let changed = false;
   for (const [field, messages] of Object.entries(error.fieldErrors)) {
-    const entry = /^(scopes|allowedIps)\.(\d+)$/.exec(field);
+    const entry = /^allowedIps\.(\d+)$/.exec(field);
     if (!entry) {
       folded[field] = [...(folded[field] ?? []), ...messages];
       continue;
     }
     changed = true;
-    const prefix = entry[1] === 'allowedIps' ? `Line ${Number(entry[2]) + 1}: ` : '';
-    folded[entry[1]] = [...(folded[entry[1]] ?? []), ...messages.map((message) => `${prefix}${message}`)];
+    const prefix = `Line ${Number(entry[1]) + 1}: `;
+    folded.allowedIps = [...(folded.allowedIps ?? []), ...messages.map((message) => `${prefix}${message}`)];
   }
   if (!changed) return error;
   return new ApiError({
