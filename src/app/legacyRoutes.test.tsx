@@ -351,14 +351,46 @@ describe('the old Abandoned checkouts address goes to the sales funnel', () => {
 
 describe('Shop content addresses', () => {
   it.each([
-    ['/storefront?tab=landing', '/storefront?tab=landing'],
-    ['/storefront?tab=tac&q=3538', '/storefront?tab=tac&q=3538'],
     ['/storefront?tab=content', '/storefront?tab=content'],
+    ['/storefront?tab=help', '/storefront?tab=help'],
   ])('%s is not redirected', async (address, expected) => {
     await signInAs();
     const app = renderApp(address);
     expect(await pageTitle('Shop content')).toBeInTheDocument();
     expect(app.location()).toBe(expected);
+  });
+
+  // The Landing pages and TAC catalogue tabs are retired (decision 025). Their old addresses are not old listings links either: they stay
+  // on Shop content, which opens its first tab and writes that tab in place of the old one.
+  it.each([
+    '/storefront?tab=landing',
+    '/storefront?tab=landing&kind=carrier',
+    '/storefront?tab=landing&q=unlock&page=2',
+    '/storefront?tab=tac',
+    '/storefront?tab=tac&q=3538&page=2&sort=brand&dir=asc',
+  ])('%s opens Shop content on its first tab and never Product / Services', async (address) => {
+    await signInAs();
+    const app = renderApp(address);
+    expect(await pageTitle('Shop content')).toBeInTheDocument();
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
+    expect(screen.getByRole('tab', { name: 'Content and legal' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: /^Landing|^TAC/ })).not.toBeInTheDocument();
+  });
+
+  it('opens the first tab a role may read for an old Landing pages address', async () => {
+    await signInAs();
+    mockMe({ permissions: ['legal:read'] });
+    const app = renderApp('/storefront?tab=landing&q=unlock');
+    expect(await pageTitle('Shop content')).toBeInTheDocument();
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
+  });
+
+  it('keeps the Search tab for an old address of one of its sections', async () => {
+    await signInAs();
+    const app = renderApp('/storefront?tab=search&section=pins');
+    expect(await pageTitle('Shop content')).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Search' })).toHaveAttribute('aria-selected', 'true');
+    expect(app.location()).toMatch(/^\/storefront\?tab=search/);
   });
 
   it('opens the bare page as Shop content and does not send it to Product / Services', async () => {

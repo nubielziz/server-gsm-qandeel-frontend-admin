@@ -97,7 +97,7 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/products?view=inventory` | the code stock (`service`, `status`, `page` in the same address) |
 | `/products?view=publish[&run=<id>]` | Shop Publish: start, earlier runs, or one run |
 | `/products?view=edit-group&id=<id>` | Product / Services: one group, as the label-left form of +Add Group with Save |
-| `/storefront?tab=landing\|content\|help\|tac\|search` | Shop content on that tab |
+| `/storefront?tab=content\|help\|search` | Shop content on that tab (the retired `tab=landing` and `tab=tac` open its first tab, decision 025) |
 | `/finance?tab=payments` | Finance on the pending deposits |
 | `/accounts[?view=all\|add\|ranks\|add-rank\|edit-rank\|requests&chip=retail\|merchants\|guests&status=…&rank=<id>&country=…&q=…&sort=…&dir=…&page=…&size=…]` | the Accounts page: the list of accounts (the default view), a new account, the ranks, a new rank, one rank (`id`), the data requests (`request`). `accountsListPath` and `ranksPath` in `@/features/accounts` write every address; the keys a view does not use are never written |
 | `/accounts/<id>?tab=overview\|wallet\|profile\|invoices\|payments\|api\|security\|prices\|orders\|support\|statement\|privacy\|audit[&order=<orderId>]` | one account, on one part of its record (`accountPath`; `order` opens the order drawer of the Orders part) |
@@ -109,7 +109,7 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/settings?tab=tax` | tax and exchange rates |
 | `/access?tab=…` | an Admins and access tab |
 
-Old addresses keep working for good: `/catalog…`, `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Product / Services addresses above, and `/merchants`, `/merchants/<id>`, `/customers` and `/customers/<id>` to the Accounts addresses above (an old customer record carries `from=customer`, because a customer number is not an account number), by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decisions 019, 022 and 023; the table of cases for the catalog is in MISMATCHES M270, the one for accounts in decision 023). The backend's mail about shop price changes still links to `/catalog?view=settings&tab=shop-prices`. Links inside the app use the new addresses.
+Old addresses keep working for good: `/catalog…`, `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Product / Services addresses above (a `/storefront` that names any tab, the retired `landing` and `tac` too, is never redirected: Shop content opens its first tab and rewrites the address), and `/merchants`, `/merchants/<id>`, `/customers` and `/customers/<id>` to the Accounts addresses above (an old customer record carries `from=customer`, because a customer number is not an account number), by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decisions 019, 022 and 023; the table of cases for the catalog is in MISMATCHES M270, the one for accounts in decision 023). The backend's mail about shop price changes still links to `/catalog?view=settings&tab=shop-prices`. Links inside the app use the new addresses.
 
 ### 5.3 A feature with a record of many parts: Accounts (decision 023)
 

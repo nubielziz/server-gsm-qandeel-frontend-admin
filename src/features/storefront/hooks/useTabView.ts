@@ -1,4 +1,4 @@
-// The open tab, kept in the address (`?tab=landing`). A tab change starts the new tab clean: the search text and page of one tab
+// The open tab, kept in the address (`?tab=help`). A tab change starts the new tab clean: the search text and page of one tab
 // mean nothing to another, so they are dropped. Every tab is written, the default one too: a list tab keeps its search, page and sort
 // in the same address, and an address with those and no tab would read as one of the old listing links.
 import { useCallback, useEffect } from 'react';
@@ -18,22 +18,16 @@ export function useTabView() {
 }
 
 /**
- * Writes the tab the page shows into the address when the address does not name it (a bare `/storefront`, an unknown tab, a tab
- * the role may not open). The entry is replaced, so Back does not land on the unnamed address. `open` is undefined when there is
- * no tab to show.
+ * Writes the tab the page shows into the address when the address does not name it (a bare `/storefront`, an unknown or retired tab
+ * such as `landing` or `tac`, a tab the role may not open). The entry is replaced, so Back does not land on the unnamed address.
+ * Whatever else the old address carried (`kind`, `q`, `page`) belonged to another tab, so the new tab starts clean. `open` is
+ * undefined when there is no tab to show.
  */
 export function usePinTab(open: StorefrontTab | undefined) {
   const [params, setParams] = useSearchParams();
   const missing = open !== undefined && params.get('tab') !== open;
   useEffect(() => {
     if (!missing || open === undefined) return;
-    setParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('tab', open);
-        return next;
-      },
-      { replace: true },
-    );
+    setParams({ tab: open }, { replace: true });
   }, [missing, open, setParams]);
 }

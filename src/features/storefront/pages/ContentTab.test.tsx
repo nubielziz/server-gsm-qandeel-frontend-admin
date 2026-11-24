@@ -32,7 +32,7 @@ async function retype(user: User, box: HTMLElement, text: string) {
 }
 
 describe('pages and blog', () => {
-  it('lists the static pages and blog posts, not the landing pages', async () => {
+  it('lists the static pages and blog posts', async () => {
     const user = userEvent.setup();
     const app = await openContent(user);
     expect(app.location()).toBe('/storefront?tab=content');
@@ -45,7 +45,6 @@ describe('pages and blog', () => {
     expect(blog.getByText('Blog post')).toBeInTheDocument();
     expect((await rowOf(PAGES, 'Unlocking vs jailbreaking')).getByText('Draft')).toBeInTheDocument();
     const table = await tableNamed(PAGES);
-    expect(table.queryByText('Unlock iPhone on AT&T')).not.toBeInTheDocument();
     expect(table.getAllByRole('row')).toHaveLength(7);
   });
 

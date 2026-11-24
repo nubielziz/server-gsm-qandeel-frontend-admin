@@ -1,12 +1,12 @@
-// Tests for the content page API functions (list, read, create, change, publish, generate), run against the dev mock API: each one
-// reaches its route with the body of its assumed contract and reads the answer the way the Landing pages and Content tabs do.
+// Tests for the content page API functions (list, read, create, change, publish), run against the dev mock API: each one reaches its
+// route with the body of its assumed contract and reads the answer the way the Content tab does. The draft generator and the landing
+// kinds were retired (decision 025): the mock knows static pages and blog posts only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ApiError } from '@/lib/api';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { recordRequests } from '../test/requests';
 import {
   createContentPage,
-  generateContentPages,
   getContentPage,
   listContentPages,
   publishContentPage,
@@ -19,11 +19,10 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
-// Records of the mock seed: landing pages are ids 1 to 14, then the six static pages and blog posts.
-const ATT = 1; // Unlock iPhone on AT&T: published, carrier
-const DRAFT_LANDING = 11; // Samsung KG lock fix: draft, brand
-const HIDDEN = 12; // Unlock Redmi Note 12: noindex, model
-const ABOUT = 15; // About us: static, published
+// Records of the mock seed: the six static pages and blog posts, ids 1 to 6.
+const ABOUT = 1; // About us: static, published
+const BLOG = 4; // How to know if your iPhone is locked: blog, published
+const DRAFT = 6; // Unlocking vs jailbreaking: blog, draft
 
 describe('listContentPages', () => {
   it('repeats the kind key to ask for several kinds and reads the total from the header', async () => {
@@ -45,20 +44,19 @@ describe('listContentPages', () => {
   });
 
   it('filters by status and searches the title', async () => {
-    const hidden = await listContentPages({ filters: { status: 'noindex' } });
-    expect(hidden.data.map((p) => p.id)).toEqual([HIDDEN]);
-    const search = await listContentPages({ q: 'AT&T' });
-    expect(search.data.map((p) => p.id)).toEqual([ATT]);
+    const drafts = await listContentPages({ filters: { status: 'draft' } });
+    expect(drafts.data.map((p) => p.id)).toEqual([DRAFT]);
+    const search = await listContentPages({ q: 'locked' });
+    expect(search.data.map((p) => p.id)).toEqual([BLOG]);
   });
 
-  it('gives the visits and orders of a landing page and none for a static page', async () => {
-    expect(await getContentPage(ATT)).toMatchObject({
-      kind: 'carrier',
+  it('reads one page with its body and no landing figures', async () => {
+    expect(await getContentPage(ABOUT)).toMatchObject({
+      kind: 'static',
       status: 'published',
-      visits30d: 5480,
-      orders30d: 21,
+      visits30d: null,
+      orders30d: null,
     });
-    expect(await getContentPage(ABOUT)).toMatchObject({ kind: 'static', visits30d: null });
   });
 });
 
@@ -66,12 +64,12 @@ describe('createContentPage and updateContentPage', () => {
   it('creates a draft with a slug made from the title and sends no empty optional field', async () => {
     const requests = recordRequests();
     const created = await createContentPage({
-      kind: 'country',
+      kind: 'blog',
       title: 'Unlock phones in Spain',
       bodyMd: '# Spain',
     });
     expect(requests.last().body).toEqual({
-      kind: 'country',
+      kind: 'blog',
       title: 'Unlock phones in Spain',
       bodyMd: '# Spain',
     });
@@ -89,20 +87,30 @@ describe('createContentPage and updateContentPage', () => {
     expect((error as ApiError).fieldErrors.slug?.[0]).toContain('already used');
   });
 
+  it('refuses a landing kind that was retired, and names the field', async () => {
+    const error = await createContentPage({
+      kind: 'carrier' as 'static',
+      title: 'Unlock on AT&T',
+      bodyMd: '',
+    }).catch((e: unknown) => e);
+    expect((error as ApiError).status).toBe(422);
+    expect((error as ApiError).fieldErrors.kind?.[0]).toBe('Choose a type.');
+  });
+
   it('changes only the fields it is given', async () => {
     const requests = recordRequests();
-    const updated = await updateContentPage(DRAFT_LANDING, {
-      title: 'Samsung KG lock fix guide',
+    const updated = await updateContentPage(DRAFT, {
+      title: 'Unlocking vs jailbreaking: a guide',
       bodyMd: '# Guide',
     });
     expect(requests.last()).toMatchObject({
       method: 'PATCH',
-      body: { title: 'Samsung KG lock fix guide', bodyMd: '# Guide' },
+      body: { title: 'Unlocking vs jailbreaking: a guide', bodyMd: '# Guide' },
     });
     expect(updated).toMatchObject({
-      title: 'Samsung KG lock fix guide',
+      title: 'Unlocking vs jailbreaking: a guide',
       status: 'draft',
-      slug: 'samsung-kg-lock-fix',
+      slug: 'unlock-vs-jailbreak',
     });
   });
 });
@@ -110,43 +118,11 @@ describe('createContentPage and updateContentPage', () => {
 describe('publishContentPage', () => {
   it('publishes a draft and hides it again with { published }', async () => {
     const requests = recordRequests();
-    const published = await publishContentPage(DRAFT_LANDING, { published: true });
+    const published = await publishContentPage(DRAFT, { published: true });
     expect(requests.last()).toMatchObject({ method: 'POST', body: { published: true } });
-    expect(requests.last().url.pathname).toBe(`/admin/content-pages/${DRAFT_LANDING}/publish`);
+    expect(requests.last().url.pathname).toBe(`/admin/content-pages/${DRAFT}/publish`);
     expect(published.status).toBe('published');
     expect(published.publishedAt).not.toBeNull();
-    expect((await publishContentPage(DRAFT_LANDING, { published: false })).status).toBe('draft');
-  });
-});
-
-describe('generateContentPages', () => {
-  it('makes a draft for each brand, model and network and sends the lists as typed', async () => {
-    const requests = recordRequests();
-    const result = await generateContentPages({
-      brands: ['Apple'],
-      models: ['iPhone 13'],
-      networks: ['AT&T', 'Vodafone'],
-    });
-    expect(requests.last()).toMatchObject({
-      method: 'POST',
-      body: { brands: ['Apple'], models: ['iPhone 13'], networks: ['AT&T', 'Vodafone'] },
-    });
-    expect(requests.last().url.pathname).toBe('/admin/content-pages/generate');
-    expect(result.created.map((p) => p.title)).toEqual([
-      'Unlock iPhone 13 on AT&T',
-      'Unlock iPhone 13 on Vodafone',
-    ]);
-    expect(result.created.every((p) => p.status === 'draft')).toBe(true);
-    expect(result.skipped).toBe(0);
-  });
-
-  it('skips a combination that already has a page', async () => {
-    await generateContentPages({ brands: ['Apple'], models: ['iPhone 13'], networks: ['AT&T'] });
-    const again = await generateContentPages({
-      brands: ['Apple'],
-      models: ['iPhone 13'],
-      networks: ['AT&T'],
-    });
-    expect(again).toMatchObject({ created: [], skipped: 1 });
+    expect((await publishContentPage(DRAFT, { published: false })).status).toBe('draft');
   });
 });

@@ -1,35 +1,26 @@
-// Addresses of the pages this feature links to. Shop content (`/storefront?tab=landing&kind=carrier`) is built with
+// Addresses of the pages this feature links to. Shop content (`/storefront?tab=help&q=refund`) is built with
 // `storefrontListPath`; the page reads the same parameters. The publish, pricing and on-the-shop addresses are the Product / Services
 // page's (`/products?view=publish&run=12`, `/products?view=rules&tab=shop`, `/products?view=all`), written by its own `productsPath`.
 import { productsPath } from '@/features/services';
-import { LANDING_KINDS, type LandingKind } from '../types';
 import { DEFAULT_TAB, type StorefrontTab } from './tabs';
 
 /** What a link into the Shop content page can set. */
 export type StorefrontLink = {
   tab?: StorefrontTab;
-  /** Landing pages tab: the page type. */
-  kind?: LandingKind;
   /** The search text of a list tab. */
   q?: string;
 };
 
-/** Whether an address parameter names a landing page type. */
-export function isLandingKind(value: string | null): value is LandingKind {
-  return LANDING_KINDS.some((kind) => kind === value);
-}
-
 /**
- * The address of the Shop content page with some state set: `storefrontListPath({ tab: 'landing', kind: 'carrier' })` is the
- * carrier landing pages, `storefrontListPath({ tab: 'tac', q: '3538' })` searches the TAC catalogue. The tab is always written
- * when the link sets any state (a page type or a search text means the Landing pages tab when no tab is named), so an address
- * with a search or a page number never reads as one of the old listing links. `storefrontListPath()` is the bare page.
+ * The address of the Shop content page with some state set: `storefrontListPath({ tab: 'help', q: 'refund' })` searches the help
+ * articles. The tab is always written when the link sets any state (a search text means the default tab when no tab is named), so an
+ * address with a search or a page number never reads as one of the old listing links. `storefrontListPath()` is the bare page. The
+ * retired tabs (`landing`, `tac`) cannot be named any more; their old addresses still open the first tab (decision 025).
  */
 export function storefrontListPath(link: StorefrontLink = {}): string {
-  const tab = link.tab ?? (link.kind || link.q ? DEFAULT_TAB : undefined);
+  const tab = link.tab ?? (link.q ? DEFAULT_TAB : undefined);
   const params = new URLSearchParams();
   if (tab) params.set('tab', tab);
-  if (link.kind) params.set('kind', link.kind);
   if (link.q) params.set('q', link.q);
   const query = params.toString();
   return query ? `/storefront?${query}` : '/storefront';

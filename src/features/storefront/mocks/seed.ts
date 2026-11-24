@@ -1,9 +1,10 @@
-// Builds the mock stores from the demo's own seed (`S.services`, `S.retail`, `S.listings`, `S.orders`, `S.landing`, `S.pages`,
-// `S.legal`, `S.help`, `S.tac`), mapped to the API's shapes. The demo has no page text, answers or legal text, so short texts
-// are made up, and it has no draft legal version, so one is added (a Refund policy v1.5) for the Publish button to work on.
+// Builds the mock stores from the demo's own seed (`S.services`, `S.retail`, `S.listings`, `S.orders`, `S.pages`, `S.legal`,
+// `S.help`), mapped to the API's shapes. The demo has no page text, answers or legal text, so short texts are made up, and it has no
+// draft legal version, so one is added (a Refund policy v1.5) for the Publish button to work on. Its landing pages and TAC catalogue
+// (`S.landing`, `S.tac`) were retired (decision 025) and are not read.
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
-import type { ContentPage, HelpArticle, LegalDocument, PageKind, PageStatus, TacEntry } from '../types';
+import type { ContentPage, HelpArticle, LegalDocument, PageKind, PageStatus } from '../types';
 import { buildPricingStores } from './pricingSeed';
 import { buildPublishStores } from './publishSeed';
 import { buildSearchStores } from './searchSeed';
@@ -31,15 +32,6 @@ type DemoListing = {
   featured: boolean;
 };
 type DemoOrder = { sid: string; cid?: string; status: string; created: number; price: number };
-type DemoLanding = {
-  title: string;
-  slug: string;
-  kind: PageKind;
-  status: PageStatus;
-  views: number;
-  orders: number;
-  updated: number;
-};
 type DemoPage = { title: string; slug: string; kind: PageKind; status: PageStatus; updated: number };
 type DemoLegal = {
   type: string;
@@ -50,7 +42,6 @@ type DemoLegal = {
   needs: boolean;
 };
 type DemoHelp = { cat: string; q: string; yes: number; no: number; status: 'published' | 'draft' };
-type DemoTac = { tac: string; brand: string; model: string; code: string; year: number };
 
 // The demo's document names as the API's type words.
 const LEGAL_TYPE: Record<string, string> = {
@@ -122,14 +113,10 @@ function listingStores(state: DemoState, now: number) {
 
 const bodyFor = (title: string) => `# ${title}\n\nText for ${title} goes here.`;
 
-/** Landing pages first (ids 1 to 14), then the static pages and blog posts (ids 15 to 20): one table in the API. */
+/** The static pages and blog posts (ids 1 to 6). */
 function pageRows(state: DemoState): ContentPage[] {
-  const row = (
-    id: number,
-    p: DemoLanding | DemoPage,
-    figures: { visits30d: number | null; orders30d: number | null },
-  ): ContentPage => ({
-    id,
+  return demoRows<DemoPage>(state, 'pages').map((p, i) => ({
+    id: i + 1,
     kind: p.kind,
     slug: p.slug,
     title: p.title,
@@ -140,15 +127,9 @@ function pageRows(state: DemoState): ContentPage[] {
     publishedAt: p.status === 'published' ? toIso(p.updated) : null,
     createdAt: toIso(p.updated - 30 * DAY),
     updatedAt: toIso(p.updated),
-    ...figures,
-  });
-  const landing = demoRows<DemoLanding>(state, 'landing').map((p, i) =>
-    row(i + 1, p, { visits30d: p.views, orders30d: p.orders }),
-  );
-  const pages = demoRows<DemoPage>(state, 'pages').map((p, i) =>
-    row(landing.length + i + 1, p, { visits30d: null, orders30d: null }),
-  );
-  return [...landing, ...pages];
+    visits30d: null,
+    orders30d: null,
+  }));
 }
 
 /** The demo's legal documents plus one draft version, so a Publish is possible. */
@@ -195,18 +176,6 @@ function helpRows(state: DemoState, now: number): HelpArticle[] {
   }));
 }
 
-function tacRows(state: DemoState): TacEntry[] {
-  return demoRows<DemoTac>(state, 'tac').map((t, i) => ({
-    id: i + 1,
-    tac: t.tac,
-    brand: t.brand,
-    model: t.code,
-    marketingName: t.model,
-    releaseYear: t.year,
-    source: 'import',
-  }));
-}
-
 /** The stores for a fresh demo state. */
 export function buildStores(state: DemoState): Stores {
   const now = Date.now();
@@ -219,8 +188,7 @@ export function buildStores(state: DemoState): Stores {
     pages: new Collection(pageRows(state)),
     help: new Collection(helpRows(state, now)),
     legal: new Collection(legalRows(state, now)),
-    tac: new Collection(tacRows(state)),
-    search: buildSearchStores(listings.list(), now),
+    search: buildSearchStores(now),
     pricing: buildPricingStores(services, categories, now),
     publish: buildPublishStores(
       services,

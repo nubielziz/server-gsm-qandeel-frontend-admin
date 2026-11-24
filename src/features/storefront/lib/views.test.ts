@@ -4,37 +4,45 @@ import {
   clearView,
   hasActiveFilters,
   HELP_VIEW,
-  LANDING_VIEW,
   PUBLISH_ITEMS_VIEW,
   parseView,
   resetView,
   toRefineFilters,
   writeView,
+  type ViewSpec,
 } from './views';
 
 const params = (query: string) => new URLSearchParams(query);
 
+// A tab with a filter, the most recently changed first: the shape the parsing and writing rules are tested on (the page types
+// of the retired landing tab were such a filter).
+const FILTERED_VIEW: ViewSpec = {
+  sortFields: ['title', 'status', 'updatedAt'],
+  defaultSort: { field: 'updatedAt', order: 'desc' },
+  filters: { kind: ['static', 'blog'] },
+};
+
 describe('parseView', () => {
   it('reads the search, page, sort and filter', () => {
     expect(
-      parseView(params('tab=landing&q=att&page=3&sort=title&dir=desc&kind=carrier'), LANDING_VIEW),
+      parseView(params('tab=content&q=att&page=3&sort=title&dir=desc&kind=blog'), FILTERED_VIEW),
     ).toEqual({
       q: 'att',
       page: 3,
       sort: { field: 'title', order: 'desc' },
-      filters: { kind: 'carrier' },
+      filters: { kind: 'blog' },
     });
   });
 
   it('falls back to the default sort and an empty filter for anything unknown or malformed', () => {
-    const view = parseView(params('sort=bogus&dir=desc&page=0x&kind=planet'), LANDING_VIEW);
+    const view = parseView(params('sort=bogus&dir=desc&page=0x&kind=planet'), FILTERED_VIEW);
     expect(view.sort).toEqual({ field: 'updatedAt', order: 'desc' });
     expect(view.page).toBe(1);
     expect(view.filters).toEqual({ kind: '' });
   });
 
   it('knows the sorts of each tab', () => {
-    expect(parseView(params('sort=title'), LANDING_VIEW).sort).toEqual({ field: 'title', order: 'asc' });
+    expect(parseView(params('sort=title'), FILTERED_VIEW).sort).toEqual({ field: 'title', order: 'asc' });
     expect(parseView(params('sort=isPublished&dir=desc'), HELP_VIEW).sort).toEqual({
       field: 'isPublished',
       order: 'desc',
@@ -56,13 +64,13 @@ describe('writeView', () => {
 
   it('writes a filter, a page and a non-default sort', () => {
     const next = writeView(
-      params('tab=landing'),
-      { filters: { kind: 'tool' }, page: 2, sort: { field: 'title', order: 'asc' } },
-      LANDING_VIEW,
+      params('tab=content'),
+      { filters: { kind: 'blog' }, page: 2, sort: { field: 'title', order: 'asc' } },
+      FILTERED_VIEW,
     );
     expect(Object.fromEntries(next)).toEqual({
-      tab: 'landing',
-      kind: 'tool',
+      tab: 'content',
+      kind: 'blog',
       page: '2',
       sort: 'title',
       dir: 'asc',
@@ -72,10 +80,10 @@ describe('writeView', () => {
 
 describe('hasActiveFilters and clearView', () => {
   it('is on for a search or a filter, and clearing keeps the sort and the tab', () => {
-    const base = params('tab=landing&q=att&kind=carrier&page=2&sort=title&dir=asc');
-    expect(hasActiveFilters(parseView(base, LANDING_VIEW))).toBe(true);
-    expect(hasActiveFilters(parseView(params('tab=landing'), LANDING_VIEW))).toBe(false);
-    expect(clearView(base, LANDING_VIEW).toString()).toBe('tab=landing&sort=title&dir=asc');
+    const base = params('tab=content&q=att&kind=static&page=2&sort=title&dir=asc');
+    expect(hasActiveFilters(parseView(base, FILTERED_VIEW))).toBe(true);
+    expect(hasActiveFilters(parseView(params('tab=content'), FILTERED_VIEW))).toBe(false);
+    expect(clearView(base, FILTERED_VIEW).toString()).toBe('tab=content&sort=title&dir=asc');
   });
 });
 

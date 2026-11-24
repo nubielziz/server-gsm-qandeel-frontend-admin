@@ -907,7 +907,7 @@ export interface ServiceListingRow {
   updatedAt?: IsoDateTime;
 }
 
-/** Landing pages, static pages and the blog. Table `content_pages`. */
+/** Static pages and the blog. Table `content_pages`. */
 export interface ContentPageRow {
   id: Id;
   kind: string;

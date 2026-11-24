@@ -11,6 +11,17 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-25): Shop content trimmed (decision 025)
+
+The owner asked to remove the Landing pages tab and the TAC catalogue tab of Shop content and to keep only the index section of its
+Search tab. The page now has three tabs: Content and legal (the default), Help centre and Search (the index status and "Rebuild index").
+Gone with their API functions, hooks, mocks, seed rows and tests: landing pages and "Generate drafts", the TAC catalogue, synonyms,
+pinned results, "Test a search", the search report and the hidden terms. Old addresses (`?tab=landing`, `?tab=tac`,
+`?tab=search&section=pins`) still open Shop content. The page opens for `storefront:read` or `legal:read` (not `catalog:read`).
+Built by two Sonnet agents in parallel worktrees, merged and reviewed by the lead and an Opus reviewer (plan:
+`/home/saifi/gsm-project/.shop-content-trim/PLAN.md`). **Checks:** typecheck, lint, build and the whole suite (7,661 tests) pass.
+**Release:** the console goes first, then the backend (its decision 068, migration 0069), then the shop's regenerated types.
+
 ## Status (2026-11-24): one Name per custom field (decision 024)
 
 The backend's decision 065 gives every custom field of a service one Name (what a supplier receives), with a hidden key the server makes and a flag for the

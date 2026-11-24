@@ -85,13 +85,12 @@ describe('sidebar', () => {
     mockMe({ permissions: ['clients:read', 'catalog:*', 'staff:read'] });
     renderApp('/accounts');
     const nav = await primaryNav();
+    // catalog:* does not open Shop content: the TAC catalogue was the one tab it opened there (decision 025), so the page takes
+    // storefront:read or legal:read only.
     expect(nav.getAllByRole('link').map(labelOf)).toEqual([
       'Accounts',
       'Product / Services',
       'Admins & access',
-      // catalog:* opens Shop content too (its TAC catalogue tab; the page takes any of three permissions). It is in the System
-      // group, after Settings.
-      'Shop content',
     ]);
   });
 

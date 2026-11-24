@@ -145,7 +145,9 @@ function fromCatalog(old: URLSearchParams): string {
 }
 
 // `/storefront`: the publish and pricing tabs and the list of services on the shop moved; the page's own tabs stay. The list was the default
-// tab, so it has no `tab` in its address and is told by its keys; an address that names a tab is Shop content.
+// tab, so it has no `tab` in its address and is told by its keys; an address that names a tab is Shop content. That includes the two
+// retired tabs (`landing`, `tac`, decision 025), with any `kind`, `q`, `page` or sort they carry: the page itself opens its first tab
+// and rewrites the address, and they are never read as the old list of services on the shop.
 function fromStorefront(old: URLSearchParams): string | null {
   const tab = old.get('tab') || null;
   if (tab === 'publish') return viewPath('publish', null, old);
@@ -288,7 +290,8 @@ const RECORD_PATH = /^\/(merchants|customers)\/([^/]+)$/;
  * - `/services` follows its tabs the same way (`tab=categories|rules|resolver|inventory`).
  * - `/storefront?tab=publish` is `view=publish`; `tab=pricing` is `view=rules&tab=shop`; `tab=listings`, or no tab and one of `q`,
  *   `page`, `sort`, `dir`, is `view=all` with `q` and `page`.
- * - A bare `/storefront` and a `/storefront` that names one of the Shop content tabs stay where they are (null).
+ * - A bare `/storefront` and a `/storefront` that names a tab stay where they are (null): one of the Shop content tabs, a retired one
+ *   (`tab=landing`, `tab=tac`, with `kind`, `q`, `page`, `sort` or `dir` too), or one that is not known. The page opens its first tab.
  * - `/commissions` is `/finance` whatever its query: the page is gone, and Finance still lists the old commission entries in its
  *   ledger. Nothing of the old query (tab, status, agent) means anything there, so none of it is carried.
  * - `/checkouts` is `/finance?tab=reports&report=funnel`; `days=7` or `days=90` is `range=7` or `range=90`, any other key is dropped.

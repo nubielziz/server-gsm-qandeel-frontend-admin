@@ -62,7 +62,7 @@ describe('the committed demo state', () => {
 
   it('has no language: no customer locale, no language list, no legal language', () => {
     expect(state.customers.length).toBeGreaterThan(0);
-    for (const key of ['listings', 'landing', 'pages']) {
+    for (const key of ['listings', 'pages']) {
       expect(state[key].length).toBeGreaterThan(0);
       expect(
         state[key].some((row) => 'langs' in row),

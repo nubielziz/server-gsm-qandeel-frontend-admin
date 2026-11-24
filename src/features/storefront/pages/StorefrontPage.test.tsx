@@ -13,51 +13,52 @@ vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.unstubAllEnvs());
 
 describe('the tab strip', () => {
-  it('shows the demo’s Landing pages, Content and legal and Help centre, the TAC catalogue and Search, and no Live preview tab', async () => {
+  it('shows Content and legal, Help centre and Search, with no Landing pages, TAC catalogue or Live preview tab', async () => {
     await openStorefront();
-    await waitFor(() =>
-      expect(tabTexts()).toEqual([
-        'Landing pages',
-        'Content and legal',
-        'Help centre',
-        'TAC catalogue',
-        'Search',
-      ]),
-    );
-    expect(screen.queryByRole('tab', { name: /preview/i })).not.toBeInTheDocument();
+    await waitFor(() => expect(tabTexts()).toEqual(['Content and legal', 'Help centre', 'Search']));
+    for (const name of [/preview/i, /^Landing/, /^TAC/]) {
+      expect(screen.queryByRole('tab', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  it('names what is left in the header, and no retired part', async () => {
+    await openStorefront();
+    const sub = await screen.findByText(/What the public site says/);
+    expect(sub).toHaveTextContent('content and legal documents, help articles and the search index');
+    expect(sub.textContent).not.toMatch(/landing|TAC/i);
   });
 
   it('has no tab for the services on sale, the publishing or the retail pricing: they live on the Product / Services page', async () => {
     await openStorefront();
-    await screen.findByRole('tab', { name: 'Landing pages' });
+    await screen.findByRole('tab', { name: 'Content and legal' });
     for (const name of [/^Services on sale/, /^Publish/, /^Retail pricing/]) {
       expect(screen.queryByRole('tab', { name })).not.toBeInTheDocument();
     }
   });
 
-  it('opens on Landing pages and writes that tab in the address', async () => {
+  it('opens on Content and legal and writes that tab in the address', async () => {
     const app = await openStorefront();
-    expect(await screen.findByRole('tab', { name: 'Landing pages' })).toHaveAttribute(
+    expect(await screen.findByRole('tab', { name: 'Content and legal' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    expect(screen.getByRole('tabpanel', { name: 'Landing pages' })).toBeInTheDocument();
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=landing'));
+    expect(screen.getByRole('tabpanel', { name: 'Content and legal' })).toBeInTheDocument();
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
   });
 
   it('keeps the open tab in the address, the first tab too, and starts the new tab clean', async () => {
     const user = userEvent.setup();
-    const app = await openStorefront('/storefront?tab=landing&q=vodafone');
-    await user.click(await screen.findByRole('tab', { name: 'Help centre' }));
+    const app = await openStorefront('/storefront?tab=help&q=refund');
+    await user.click(await screen.findByRole('tab', { name: 'Content and legal' }));
+    expect(app.location()).toBe('/storefront?tab=content');
+    await user.click(screen.getByRole('tab', { name: 'Help centre' }));
     expect(app.location()).toBe('/storefront?tab=help');
-    await user.click(screen.getByRole('tab', { name: 'Landing pages' }));
-    expect(app.location()).toBe('/storefront?tab=landing');
   });
 
-  it('names the tab in an address that has a page type but no tab', async () => {
+  it('names the tab in an address that has a page type but no tab, and drops the page type', async () => {
     // A search, a page or a sort with no tab is the old list of services on the shop: the shell sends it to the list of services.
     const app = await openStorefront('/storefront?kind=carrier');
-    await waitFor(() => expect(app.location()).toBe('/storefront?kind=carrier&tab=landing'));
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
   });
 
   it('opens the tab the address names', async () => {
@@ -68,16 +69,44 @@ describe('the tab strip', () => {
 
   // The old tabs that moved to the Product / Services page (listings, publish, pricing) never reach the page: the shell redirects them first.
   it.each(['preview', 'nothing'])(
-    'falls back to Landing pages, and says so in the address, for the tab "%s" that is not here',
+    'falls back to Content and legal, and says so in the address, for the tab "%s" that is not here',
     async (old) => {
       const app = await openStorefront(`/storefront?tab=${old}`);
-      expect(await screen.findByRole('tab', { name: 'Landing pages' })).toHaveAttribute(
+      expect(await screen.findByRole('tab', { name: 'Content and legal' })).toHaveAttribute(
         'aria-selected',
         'true',
       );
-      await waitFor(() => expect(app.location()).toBe('/storefront?tab=landing'));
+      await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
     },
   );
+
+  // The two retired tabs (decision 025): an old bookmark or link still opens Shop content, on the first tab the role may read, with what
+  // the old address carried (a page type, a search, a page number) dropped. The shell never sends these to Product / Services.
+  it.each([
+    ['/storefront?tab=landing'],
+    ['/storefront?tab=landing&kind=carrier'],
+    ['/storefront?tab=landing&q=unlock&page=2&sort=title&dir=asc'],
+    ['/storefront?tab=tac'],
+    ['/storefront?tab=tac&q=3538&page=2'],
+  ])('opens Content and legal for the old address %s, and rewrites it', async (old) => {
+    const app = await openStorefront(old);
+    expect(await screen.findByRole('tab', { name: 'Content and legal' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(await screen.findByRole('table', { name: 'Pages and blog posts' })).toBeInTheDocument();
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
+  });
+
+  it('opens the first tab a legal reader may read for the old Landing pages address', async () => {
+    const app = await openStorefront('/storefront?tab=landing', { permissions: ['legal:read'] });
+    expect(await screen.findByRole('tab', { name: 'Content and legal' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(tabTexts()).toEqual(['Content and legal']);
+    await waitFor(() => expect(app.location()).toBe('/storefront?tab=content'));
+  });
 });
 
 describe('Open the storefront', () => {
@@ -101,28 +130,18 @@ describe('Open the storefront', () => {
 describe('a reader of the storefront', () => {
   const READER = ['storefront:read'];
 
-  it('sees four tabs, Search, and no TAC catalogue', async () => {
+  it('sees the three tabs', async () => {
     await openStorefront('/storefront', { permissions: READER });
-    await waitFor(() =>
-      expect(tabTexts()).toEqual(['Landing pages', 'Content and legal', 'Help centre', 'Search']),
-    );
+    await waitFor(() => expect(tabTexts()).toEqual(['Content and legal', 'Help centre', 'Search']));
   });
 
-  it('has landing page menu items disabled, with the permission in the item', async () => {
-    const user = userEvent.setup();
-    await openStorefront('/storefront?tab=landing', { permissions: READER });
-    await user.click(await screen.findByRole('button', { name: 'Actions for Samsung KG lock fix' }));
-    const edit = await screen.findByRole('menuitem', { name: /^Edit/ });
-    expect(edit).toBeDisabled();
-    expect(edit).toHaveAttribute('title', 'You need the storefront:update permission');
-    const publish = screen.getByRole('menuitem', { name: /^Publish/ });
-    expect(publish).toBeDisabled();
-    expect(publish).toHaveAttribute('title', 'You need the storefront:publish permission');
-    expect(screen.getByRole('button', { name: 'New page…' })).toHaveAttribute(
+  it('has the New page button asking for storefront:create, and no generator', async () => {
+    await openStorefront('/storefront?tab=content', { permissions: READER });
+    expect(await screen.findByRole('button', { name: 'New page…' })).toHaveAttribute(
       'title',
       'You need the storefront:create permission',
     );
-    expect(screen.getByRole('button', { name: 'Generate drafts…' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Generate drafts…' })).not.toBeInTheDocument();
   });
 
   it('can publish a page with storefront:publish alone, and the page toggles and article buttons follow their permissions', async () => {
@@ -178,35 +197,6 @@ describe('a role with a different part of the page', () => {
     await user.click(await screen.findByRole('button', { name: 'Publish Refund policy v1.5' }));
     expect(dialogOf('Publish a new version?')).toBeTruthy();
   });
-
-  it('opens on the TAC catalogue for catalog:read alone, with Add and Edit asking for catalog:create and catalog:update', async () => {
-    const app = await openStorefront('/storefront', { permissions: ['catalog:read'] });
-    expect(await screen.findByRole('tab', { name: 'TAC catalogue' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(tabTexts()).toEqual(['TAC catalogue']);
-    // The address names the tab this role opened on, not the default one it may not see.
-    await waitFor(() => expect(app.location()).toBe('/storefront?tab=tac'));
-    const row = await rowOf('TAC catalogue', '35389011');
-    expect(row.getByRole('button', { name: 'Edit TAC 35389011' })).toHaveAttribute(
-      'title',
-      'You need the catalog:update permission',
-    );
-    expect(screen.getByRole('button', { name: 'Add TAC…' })).toHaveAttribute(
-      'title',
-      'You need the catalog:create permission',
-    );
-  });
-
-  it('can add and edit TACs with catalog:create and catalog:update', async () => {
-    await openStorefront('/storefront', {
-      permissions: ['catalog:read', 'catalog:create', 'catalog:update'],
-    });
-    const row = await rowOf('TAC catalogue', '35389011');
-    expect(row.getByRole('button', { name: 'Edit TAC 35389011' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Add TAC…' })).toBeEnabled();
-  });
 });
 
 describe('the page gate', () => {
@@ -219,16 +209,22 @@ describe('the page gate', () => {
     ).toBeInTheDocument();
   }
 
-  it('shows the no-access page to a role with none of the three read permissions', async () => {
+  it('shows the no-access page to a role with none of the two read permissions', async () => {
     await openAs(['orders:read']);
-    expect(screen.getByText('storefront:read or legal:read or catalog:read')).toBeInTheDocument();
+    expect(screen.getByText('storefront:read or legal:read')).toBeInTheDocument();
+  });
+
+  it('does not let in a role that only reads the catalog: the TAC catalogue was the one tab it opened here', async () => {
+    await openAs(['catalog:read']);
+    expect(screen.queryByRole('tablist', { name: 'Shop content sections' })).not.toBeInTheDocument();
+    expect(screen.getByText('storefront:read or legal:read')).toBeInTheDocument();
   });
 
   it('does not let in a role that only reads the retail pricing: that part moved to the Product / Services page', async () => {
     await openAs(['pricing:read']);
     // The refusal is headed with the page's label, so the page itself is told by its tab strip.
     expect(screen.queryByRole('tablist', { name: 'Shop content sections' })).not.toBeInTheDocument();
-    expect(screen.getByText('storefront:read or legal:read or catalog:read')).toBeInTheDocument();
+    expect(screen.getByText('storefront:read or legal:read')).toBeInTheDocument();
   });
 
   it('does not let in a role that only creates on the storefront: publishing moved to the Product / Services page', async () => {

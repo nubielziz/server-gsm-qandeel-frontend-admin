@@ -10,7 +10,7 @@ export function StorefrontHeader() {
   return (
     <PageHeader
       title="Shop content"
-      sub="What the public site says: landing pages, content and legal documents, help articles, the TAC catalogue and the search tools. The services it sells and their prices are in Product / Services."
+      sub="What the public site says: content and legal documents, help articles and the search index. The services it sells and their prices are in Product / Services."
       actions={
         url && (
           <ButtonLink to={url} target="_blank" rel="noopener noreferrer">

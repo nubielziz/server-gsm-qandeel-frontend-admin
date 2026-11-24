@@ -1,6 +1,6 @@
-// The content pages (`/admin/content-pages*`): the Landing pages tab and the pages half of the Content and legal tab. Ports
-// `tabLanding`, `tabContent`, `setLanding`, `setPageStatus` (50-p-storefront.js, 12-state-b2c.js) and adds the draft generator
-// the map gives. The map gives no bodies (MISMATCHES M10), so shapes are assumed contracts.
+// The content pages (`/admin/content-pages*`): the pages half of the Content and legal tab. Ports `tabContent` and `setPageStatus`
+// (50-p-storefront.js, 12-state-b2c.js). The landing pages and the draft generator (`POST /admin/content-pages/generate`) were retired
+// (decision 025). The map gives no bodies (MISMATCHES M10), so shapes are assumed contracts.
 import {
   apiGet,
   apiList,
@@ -12,20 +12,12 @@ import {
   type ListQuery,
   type ListResult,
 } from '@/lib/api';
-import type {
-  ContentPage,
-  CreatePageBody,
-  GeneratePagesBody,
-  GeneratePagesResult,
-  PublishPageBody,
-  UpdatePageBody,
-} from '../types';
+import type { ContentPage, CreatePageBody, PublishPageBody, UpdatePageBody } from '../types';
 
 /**
- * The landing, static and blog pages, one page of them. Filters: `q`, `kind` (repeat it for several kinds) and `status`;
+ * The static pages and blog posts, one page of them. Filters: `q`, `kind` (repeat it for several kinds) and `status`;
  * sort with `_sort`/`_order` on `title`, `status` or `updatedAt`.
- * Assumed contract: rows carry `kind`, `status` (`draft`, `published`, `noindex`) and, for landing pages, `visits30d` and
- * `orders30d`.
+ * Assumed contract: rows carry `kind` and `status` (`draft`, `published`, `noindex`).
  * @route GET /admin/content-pages
  */
 export function listContentPages(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<ContentPage>> {
@@ -67,15 +59,4 @@ export function updateContentPage(id: Id, body: UpdatePageBody, init?: ApiInit):
  */
 export function publishContentPage(id: Id, body: PublishPageBody, init?: ApiInit): Promise<ContentPage> {
   return apiPost<ContentPage>(pathOf('/admin/content-pages/:id/publish', { id }), body, init);
-}
-
-/**
- * The landing-page generator: makes a draft for each brand, model and network combination, for a person to review. It
- * publishes nothing.
- * Assumed contract: body `{ brands, models, networks }` (a list left empty means every one the catalogue knows), answer
- * `{ created, skipped }`.
- * @route POST /admin/content-pages/generate
- */
-export function generateContentPages(body: GeneratePagesBody, init?: ApiInit): Promise<GeneratePagesResult> {
-  return apiPost<GeneratePagesResult>('/admin/content-pages/generate', body, init);
 }

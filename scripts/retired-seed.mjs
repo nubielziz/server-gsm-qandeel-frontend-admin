@@ -2,9 +2,10 @@
 // state. The demo (reference/gsm-admin, read-only) still gives each merchant a "Verified" or "In review" word for the documents check
 // that was retired, a status "pending" to the merchants that waited for approval, commission plans, accruals, agents and referrals,
 // each ticket a customer rating for the survey that was retired, and the reminder e-mail of an abandoned checkout with its policy
-// and the recovery word of each checkout; the console's mock layer must carry none of them. `extract-demo-seed.mjs` applies
-// `dropMerchantVerification`, `dropMerchantApproval`, `dropCommissions`, `dropTicketRatings` and `dropCheckoutReminders` before
-// it writes, so a later extract cannot bring them back. Run this file itself to normalise the committed
+// and the recovery word of each checkout; the landing pages and the TAC catalogue of the Shop content page were retired too (decision
+// 025). The console's mock layer must carry none of them. `extract-demo-seed.mjs` applies `dropMerchantVerification`,
+// `dropMerchantApproval`, `dropCommissions`, `dropTicketRatings`, `dropCheckoutReminders` and `dropLandingAndTac` before it writes,
+// so a later extract cannot bring them back. Run this file itself to normalise the committed
 // `src/mocks/seed/demo-state.json` in place: `node scripts/retired-seed.mjs`.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -88,6 +89,17 @@ export function dropCheckoutReminders(state) {
   return state;
 }
 
+/**
+ * Removes the landing pages and the TAC catalogue from the demo state, in place: the `landing` and `tac` tables (the Landing pages and
+ * TAC catalogue tabs of Shop content were retired, decision 025). The static pages and blog posts (`pages`) stay. Returns the state.
+ * @param {Record<string, unknown>} state the demo's `S` object, or `state` of the captured file
+ */
+export function dropLandingAndTac(state) {
+  delete state.landing;
+  delete state.tac;
+  return state;
+}
+
 // Run directly: normalise the committed file.
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const captured = JSON.parse(readFileSync(stateFile, 'utf8'));
@@ -95,8 +107,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     stateFile,
     formatDemoState(
       captured.capturedAt,
-      dropCheckoutReminders(
-        dropTicketRatings(dropCommissions(dropMerchantApproval(dropMerchantVerification(captured.state)))),
+      dropLandingAndTac(
+        dropCheckoutReminders(
+          dropTicketRatings(dropCommissions(dropMerchantApproval(dropMerchantVerification(captured.state)))),
+        ),
       ),
     ),
   );

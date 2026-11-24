@@ -1,10 +1,9 @@
-// The actions on content pages, each with the toast the demo showed and the reads it makes stale. Ports the toasts of the
-// landing menu (`lp-menu`), `pg-toggle` and the generator the map adds. The publish toggles leave a failed call to the default
-// error toast; the hooks used from a dialog leave it to that dialog.
+// The actions on content pages, each with the toast the demo showed and the reads it makes stale. Ports the toasts of `pg-toggle`.
+// The publish toggles leave a failed call to the default error toast; the hooks used from a dialog leave it to that dialog.
 import { toast } from '@/components/ui';
 import { useApiMutation } from '@/lib/query';
-import { createContentPage, generateContentPages, publishContentPage, updateContentPage } from '../api';
-import type { ContentPage, CreatePageBody, GeneratePagesBody, UpdatePageBody } from '../types';
+import { createContentPage, publishContentPage, updateContentPage } from '../api';
+import type { ContentPage, CreatePageBody, UpdatePageBody } from '../types';
 import { STOREFRONT_STALE_KEYS, staleResource } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
@@ -51,16 +50,6 @@ export function useUpdatePage() {
     onSuccess: (updated) => {
       toast({ kind: 'success', title: 'Page saved', body: updated.title, ttl: 2600 });
     },
-    errorNotification: NO_ERROR_TOAST,
-  });
-}
-
-/** Runs the draft generator. The dialog shows the drafts it made (or a refusal). */
-export function useGeneratePages() {
-  return useApiMutation({
-    mutationFn: (body: GeneratePagesBody) => generateContentPages(body),
-    invalidates: staleResource(RESOURCE),
-    invalidateKeys: STOREFRONT_STALE_KEYS,
     errorNotification: NO_ERROR_TOAST,
   });
 }

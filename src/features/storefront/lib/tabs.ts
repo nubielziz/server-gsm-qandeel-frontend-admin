@@ -1,12 +1,12 @@
-// The five tabs of the Shop content page and the permissions each one needs. Ports the `tabs` of pageStorefront in
-// 50-p-storefront.js (Landing pages, Content and legal, Help centre), swaps the demo's Live preview for the TAC catalogue the map
-// adds (MISMATCHES M4 has the preview) and ends with the Search tab of the shop's search engine. The listings, publish and retail
-// pricing parts of the old Storefront page moved to the Product / Services page; their components stay in this feature.
+// The three tabs of the Shop content page and the permissions each one needs. Ports the Content and legal and Help centre tabs of
+// pageStorefront in 50-p-storefront.js and adds the Search tab of the shop's search engine. The demo's Live preview is a link (MISMATCHES M4)
+// and its Landing pages tab and the TAC catalogue tab the map added were retired (decision 025). The listings, publish and retail pricing
+// parts of the old Storefront page moved to the Product / Services page; their components stay in this feature.
 
-export type StorefrontTab = 'landing' | 'content' | 'help' | 'tac' | 'search';
+export type StorefrontTab = 'content' | 'help' | 'search';
 
-/** The tab the page opens on. Its links and the page itself write it into the address (`?tab=landing`), never leave it out. */
-export const DEFAULT_TAB: StorefrontTab = 'landing';
+/** The tab the page opens on. Its links and the page itself write it into the address (`?tab=content`), never leave it out. */
+export const DEFAULT_TAB: StorefrontTab = 'content';
 
 /**
  * One tab. `anyOf` lists the permissions that open it: one is enough, and the tab then shows only the parts the role may
@@ -16,16 +16,14 @@ export type TabSpec = { id: StorefrontTab; label: string; anyOf: readonly string
 
 /** The tabs in the order the page shows them. */
 export const STOREFRONT_TABS: readonly TabSpec[] = [
-  { id: 'landing', label: 'Landing pages', anyOf: ['storefront:read'] },
   { id: 'content', label: 'Content and legal', anyOf: ['storefront:read', 'legal:read'] },
   { id: 'help', label: 'Help centre', anyOf: ['storefront:read'] },
-  { id: 'tac', label: 'TAC catalogue', anyOf: ['catalog:read'] },
-  // Backend feature 29 (no demo tab): synonyms, pinned results, the report and the index of the shop's search.
+  // Backend feature 29 (no demo tab): the shop's search index.
   { id: 'search', label: 'Search', anyOf: ['storefront:read'] },
 ];
 
 /** Any one of these opens the page; each tab then shows only what the role may read (MISMATCHES M19 has the same shape). */
-export const PAGE_PERMISSIONS = ['storefront:read', 'legal:read', 'catalog:read'] as const;
+export const PAGE_PERMISSIONS = ['storefront:read', 'legal:read'] as const;
 
 /** Whether an address parameter names a tab. */
 export function isStorefrontTab(value: string | null): value is StorefrontTab {

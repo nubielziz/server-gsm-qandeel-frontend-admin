@@ -23,6 +23,10 @@ const RETIRED_CHECKOUTS =
   'Retired (decision 021): the Abandoned checkouts page and its recovery email were removed, so the console no longer calls this route.';
 const RETIRED_IMEI_CHECK =
   'Retired (decision 021): the free IMEI check was retired, so the console no longer calls this route.';
+const RETIRED_TAC_CATALOG =
+  'Retired (decision 025): the TAC catalogue tab was removed from Shop content, so the console no longer calls this route.';
+const RETIRED_LANDING_GENERATOR =
+  'Retired (decision 025): landing pages and their draft generator were removed from Shop content, so the console no longer calls this route.';
 const EXCLUSIONS = {
   'GET /admin/webhook-deliveries': RETIRED_WEBHOOKS,
   'GET /admin/webhook-deliveries/:id': RETIRED_WEBHOOKS,
@@ -47,6 +51,11 @@ const EXCLUSIONS = {
   'GET /admin/commission-accruals': RETIRED_COMMISSIONS,
   'GET /admin/commission-accruals/:id': RETIRED_COMMISSIONS,
   'POST /admin/commission-accruals/approve': RETIRED_COMMISSIONS,
+  'GET /admin/tac-catalog': RETIRED_TAC_CATALOG,
+  'GET /admin/tac-catalog/:id': RETIRED_TAC_CATALOG,
+  'POST /admin/tac-catalog': RETIRED_TAC_CATALOG,
+  'PATCH /admin/tac-catalog/:id': RETIRED_TAC_CATALOG,
+  'POST /admin/content-pages/generate': RETIRED_LANDING_GENERATOR,
 };
 
 /** Finds every .ts/.tsx file under a folder (no dependency on glob libraries). */

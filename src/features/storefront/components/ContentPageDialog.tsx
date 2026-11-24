@@ -1,6 +1,6 @@
-// ContentPageDialog: "New page" and "Edit page" (`POST` and `PATCH /admin/content-pages`) for landing pages, static pages and blog
-// posts. The demo had no editor (its pages were seed rows); the map adds the routes. The body is plain Markdown in a textarea (no
-// rich-text editor). A new page is a draft; publishing is its own step. Only what changed is sent on an edit.
+// ContentPageDialog: "New page" and "Edit page" (`POST` and `PATCH /admin/content-pages`) for static pages and blog posts. The demo
+// had no editor (its pages were seed rows); the map adds the routes. The body is plain Markdown in a textarea (no rich-text editor). A
+// new page is a draft; publishing is its own step. Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, SelectField, TextareaField, TextField, toast } from '@/components/ui';
 import { useCreatePage, useUpdatePage } from '../hooks/usePageMutations';
@@ -19,7 +19,7 @@ type Values = {
 export interface ContentPageDialogProps {
   /** The page to edit; leave out to create one. */
   page?: ContentPage;
-  /** The kinds a new page may have (the landing kinds on the Landing pages tab, page and blog post on the Content tab). */
+  /** The kinds a new page may have (page and blog post on the Content tab). */
   kinds: readonly PageKind[];
   onClose: () => void;
 }

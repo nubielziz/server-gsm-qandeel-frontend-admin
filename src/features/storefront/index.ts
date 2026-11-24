@@ -1,5 +1,5 @@
 // Public surface of the storefront feature: the `/admin/service-listings`, publish-runs, retail-price-rules and -changes, content-pages,
-// help-articles, legal-documents and tac-catalog API functions, their types, the data-provider registry, the link builders
+// help-articles and legal-documents API functions, their types, the data-provider registry, the link builders
 // (`storefrontListPath` for Shop content; `storefrontPublishPath` and `storefrontPricingPath` for the Product / Services page's views) and the components that page mounts: the
 // shop price rules (`RetailPricingTab`, with `useWaitingCount` for the count on its tab) and the publish start and run view
 // (`PublishStart`, `PublishRunView`), with `useStartPublish` for the screens that start a run, and the edit view's Retail Purchase part

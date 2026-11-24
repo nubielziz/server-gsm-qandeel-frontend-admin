@@ -1,4 +1,4 @@
-// Tests for the Index section of the Search tab: the engine and index figures, a damaged state, the Rebuild index button behind a
+// Tests for the Search tab, which is the index panel alone: the engine and index figures, a damaged state, the Rebuild index button behind a
 // confirmation, the running state read from the status (and refreshed every 5 seconds), the server's refusals, and the
 // permissions (storefront:publish rebuilds, storefront:read reads).
 import { screen, waitFor, within } from '@testing-library/react';
@@ -31,9 +31,42 @@ async function statusWith(change: (status: SearchIndexStatus) => void): Promise<
   return status;
 }
 
+describe('the tab', () => {
+  it('shows the index alone, with no section switch', async () => {
+    await openSearch();
+    expect(await screen.findByRole('region', { name: 'Search index figures' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rebuild index…' })).toBeInTheDocument();
+    expect(screen.queryByRole('tablist', { name: 'Search tools' })).toBeNull();
+    for (const retired of ['Synonyms', 'Pinned results', 'Report', 'Test a search']) {
+      expect(screen.queryByText(retired)).toBeNull();
+    }
+  });
+
+  it.each([
+    '?tab=search&section=pins&state=on',
+    '?tab=search&section=synonyms',
+    '?tab=search&section=nonsense',
+  ])('shows the index for an old address %s', async (query) => {
+    await openSearch({ route: `/storefront${query}` });
+    expect(await screen.findByRole('region', { name: 'Search index figures' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rebuild index…' })).toBeInTheDocument();
+  });
+
+  it('never asks for the retired routes', async () => {
+    const requests = recordRequests();
+    await openSearch({ route: '/storefront?tab=search&section=report' });
+    await screen.findByRole('region', { name: 'Search index figures' });
+    const paths = requests.sent().map((r) => r.url.pathname);
+    expect(paths).toContain('/admin/search/index');
+    expect(
+      paths.filter((path) => path.startsWith('/admin/search') && path !== '/admin/search/index'),
+    ).toEqual([]);
+  });
+});
+
 describe('the status', () => {
   it('shows a healthy engine, a complete index, the last runs and no error', async () => {
-    await openSearch('index');
+    await openSearch();
     const figures = within(await screen.findByRole('region', { name: 'Search index figures' }));
     expect(figures.getByText('Running')).toBeInTheDocument();
     expect(figures.getByText('Typesense 30.2')).toBeInTheDocument();
@@ -54,7 +87,7 @@ describe('the status', () => {
       status.lastError = 'Import of 3 documents failed: field in_stock must be a bool.';
     });
     mockServer.use(http.get('*/admin/search/index', () => HttpResponse.json(sick)));
-    await openSearch('index');
+    await openSearch();
     const figures = within(await screen.findByRole('region', { name: 'Search index figures' }));
     expect(figures.getByText('Not answering')).toBeInTheDocument();
     expect(figures.getByText('11 of 14')).toBeInTheDocument();
@@ -72,7 +105,7 @@ describe('the status', () => {
       status.lastError = 'Rejecting write: running out of resource type: OUT_OF_DISK';
     });
     mockServer.use(http.get('*/admin/search/index', () => HttpResponse.json(full)));
-    await openSearch('index');
+    await openSearch();
     expect(
       await screen.findByText('Rejecting write: running out of resource type: OUT_OF_DISK'),
     ).toBeInTheDocument();
@@ -84,7 +117,7 @@ describe('the status', () => {
       status.engine = { status: 'disabled', version: null, memoryBytes: null };
     });
     mockServer.use(http.get('*/admin/search/index', () => HttpResponse.json(off)));
-    await openSearch('index');
+    await openSearch();
     expect(await screen.findByText('Switched off')).toBeInTheDocument();
     const button = screen.getByRole('button', { name: 'Rebuild index…' });
     expect(button).toBeDisabled();
@@ -95,7 +128,7 @@ describe('the status', () => {
 describe('Rebuild index', () => {
   it('asks first, says what happens, starts the rebuild and shows it running', async () => {
     const user = userEvent.setup();
-    await openSearch('index');
+    await openSearch();
     await user.click(await screen.findByRole('button', { name: 'Rebuild index…' }));
     const dialog = dialogOf('Rebuild the search index?');
     expect(dialog.getByText(/Search keeps working while it builds/)).toBeInTheDocument();
@@ -120,7 +153,7 @@ describe('Rebuild index', () => {
       status.rebuild = { running: true, startedAt: new Date().toISOString() };
     });
     mockServer.use(http.get('*/admin/search/index', () => HttpResponse.json(busy)));
-    await openSearch('index');
+    await openSearch();
     expect(await screen.findByText(/Rebuild running since/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Rebuilding/ })).toBeDisabled();
   });
@@ -137,7 +170,7 @@ describe('Rebuild index', () => {
       ),
     );
     const user = userEvent.setup();
-    await openSearch('index');
+    await openSearch();
     await user.click(await screen.findByRole('button', { name: 'Rebuild index…' }));
     await user.click(dialogOf('Rebuild the search index?').getByRole('button', { name: 'Rebuild index' }));
     expect(
@@ -154,7 +187,7 @@ describe('Rebuild index', () => {
       ),
     );
     const user = userEvent.setup();
-    await openSearch('index');
+    await openSearch();
     await user.click(await screen.findByRole('button', { name: 'Rebuild index…' }));
     await user.click(dialogOf('Rebuild the search index?').getByRole('button', { name: 'Rebuild index' }));
     expect(
@@ -178,7 +211,7 @@ describe('the running state is read every 5 seconds', () => {
       }),
     );
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'], shouldAdvanceTime: false });
-    await openSearch('index');
+    await openSearch();
     expect(await screen.findByText(/Rebuild running since/)).toBeInTheDocument();
     expect(reads).toBe(1);
     await vi.advanceTimersByTimeAsync(5_000);
@@ -194,7 +227,7 @@ describe('the running state is read every 5 seconds', () => {
 
 describe('permissions', () => {
   it('lets a reader see the status but not rebuild, and names the permission', async () => {
-    await openSearch('index', { permissions: READER });
+    await openSearch({ permissions: READER });
     const button = await screen.findByRole('button', { name: 'Rebuild index…' });
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute('title', 'You need the storefront:publish permission');
@@ -202,7 +235,7 @@ describe('permissions', () => {
   });
 
   it('lets storefront:publish rebuild', async () => {
-    await openSearch('index', { permissions: PUBLISHER });
+    await openSearch({ permissions: PUBLISHER });
     expect(await screen.findByRole('button', { name: 'Rebuild index…' })).toBeEnabled();
   });
 });

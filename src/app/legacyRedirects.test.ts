@@ -390,15 +390,26 @@ const STOREFRONT_MOVED: Case[] = [
 const STOREFRONT_STAYS: Case[] = [
   ['the bare Shop content page', '/storefront', '', null],
   ['an empty query', '/storefront', '?', null],
-  ['the Landing pages tab', '/storefront', '?tab=landing', null],
-  ['the Landing pages tab on a page type', '/storefront', '?tab=landing&kind=carrier', null],
-  ['the Landing pages tab with a search', '/storefront', '?tab=landing&q=unlock', null],
+  // The Landing pages and TAC catalogue tabs are retired (decision 025): their addresses still name a tab, so they stay on Shop content,
+  // which opens its first tab. None of them is the old list of services on the shop, whatever list keys it carries.
+  ['the retired Landing pages tab', '/storefront', '?tab=landing', null],
+  ['the retired Landing pages tab on a page type', '/storefront', '?tab=landing&kind=carrier', null],
+  ['the retired Landing pages tab with a search', '/storefront', '?tab=landing&q=unlock', null],
+  [
+    'the retired Landing pages tab with a search, a page and a sort',
+    '/storefront',
+    '?tab=landing&kind=model&q=unlock&page=2&sort=title&dir=asc',
+    null,
+  ],
+  ['the retired TAC catalogue tab', '/storefront', '?tab=tac', null],
+  ['the retired TAC catalogue tab with a search and a page', '/storefront', '?tab=tac&q=3538&page=2', null],
+  ['the retired TAC catalogue tab with a sort', '/storefront', '?tab=tac&sort=brand&dir=asc', null],
   ['the Content and legal tab', '/storefront', '?tab=content', null],
   ['the Help centre tab', '/storefront', '?tab=help', null],
-  ['the TAC catalogue tab with a search and a page', '/storefront', '?tab=tac&q=3538&page=2', null],
   ['the Search tab', '/storefront', '?tab=search&section=pins&state=on', null],
   ['a tab that is not known names a tab', '/storefront', '?tab=nothing&q=x', null],
   ['a page type with no tab and no list key', '/storefront', '?kind=carrier', null],
+  ['an empty tab with a page type and no list key', '/storefront', '?tab=&kind=carrier', null],
 ];
 
 // The Commissions page is gone; every old address of it, with any tab or filter it had, leads to Finance and carries nothing.
@@ -727,6 +738,22 @@ describe('legacyTarget', () => {
       expect(legacyTarget(pathname, search)).toBe(target);
     });
   });
+
+  it.each(['landing', 'tac'])(
+    'never reads the retired Shop content tab %s as an old link to the list of services, whatever else the address says',
+    (tab) => {
+      for (const more of [
+        '',
+        '&q=x',
+        '&page=2',
+        '&sort=title&dir=asc',
+        '&kind=carrier',
+        '&q=x&page=3&sort=tac&dir=desc',
+      ]) {
+        expect(legacyTarget('/storefront', `?tab=${tab}${more}`)).toBeNull();
+      }
+    },
+  );
 
   it('works without a search argument', () => {
     expect(legacyTarget('/services')).toBe('/products?view=all');

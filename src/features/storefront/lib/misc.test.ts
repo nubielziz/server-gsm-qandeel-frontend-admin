@@ -1,7 +1,6 @@
-// Tests for the small helpers: money text for the price form, the names box of the generator, the TAC checks, the storefront
-// link from the Vite env and the addresses other pages link to.
+// Tests for the small helpers: money text for the price form, the storefront link from the Vite env and the addresses other pages
+// link to.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { namesOf } from './names';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
 import {
   storefrontListPath,
@@ -9,7 +8,6 @@ import {
   storefrontPricingPath,
   storefrontPublishPath,
 } from './paths';
-import { isTacPrefix, isYear } from './tac';
 import { storefrontUrl } from './url';
 
 afterEach(() => vi.unstubAllEnvs());
@@ -31,23 +29,6 @@ describe('money text', () => {
   });
 });
 
-describe('namesOf', () => {
-  it('splits on commas and new lines, trims and drops empty items', () => {
-    expect(namesOf('Apple, Samsung\n\n  Google ,')).toEqual(['Apple', 'Samsung', 'Google']);
-    expect(namesOf('  ')).toEqual([]);
-  });
-});
-
-describe('TAC checks', () => {
-  it('wants 8 digits and a 4-digit year', () => {
-    expect(isTacPrefix('35389011')).toBe(true);
-    expect(isTacPrefix('3538901')).toBe(false);
-    expect(isTacPrefix('3538901a')).toBe(false);
-    expect(isYear('2021')).toBe(true);
-    expect(isYear('21')).toBe(false);
-  });
-});
-
 describe('storefrontUrl', () => {
   it('is undefined without the env variable and drops a trailing slash with it', () => {
     vi.stubEnv('VITE_STOREFRONT_URL', '');
@@ -58,18 +39,14 @@ describe('storefrontUrl', () => {
 });
 
 describe('storefrontListPath', () => {
-  it('is the bare page with no state, and writes the tab, kind and search otherwise', () => {
+  it('is the bare page with no state, and writes the tab and the search otherwise', () => {
     expect(storefrontListPath()).toBe('/storefront');
-    expect(storefrontListPath({ tab: 'landing' })).toBe('/storefront?tab=landing');
-    expect(storefrontListPath({ tab: 'landing', kind: 'carrier' })).toBe(
-      '/storefront?tab=landing&kind=carrier',
-    );
-    expect(storefrontListPath({ tab: 'tac', q: '3538' })).toBe('/storefront?tab=tac&q=3538');
+    expect(storefrontListPath({ tab: 'content' })).toBe('/storefront?tab=content');
+    expect(storefrontListPath({ tab: 'help', q: 'refund' })).toBe('/storefront?tab=help&q=refund');
   });
 
-  it('names the Landing pages tab explicitly when a page type or a search comes without a tab', () => {
-    expect(storefrontListPath({ kind: 'carrier' })).toBe('/storefront?tab=landing&kind=carrier');
-    expect(storefrontListPath({ q: 'vodafone' })).toBe('/storefront?tab=landing&q=vodafone');
+  it('names the default tab explicitly when a search comes without a tab', () => {
+    expect(storefrontListPath({ q: 'refund' })).toBe('/storefront?tab=content&q=refund');
   });
 });
 

@@ -1,19 +1,15 @@
 // Mock of the content page routes (`/admin/content-pages*`): list with the kind, status and search filters, one page, create (a
-// draft), change, publish or hide, and the draft generator. The mock plays the server: a slug belongs to one page, a new page is
-// a draft, and the generator skips a combination that already has a page.
+// draft), change, and publish or hide. The mock plays the server: a slug belongs to one page and a new page is a draft. Only the
+// static and blog kinds exist; the landing kinds and the draft generator were retired (decision 025).
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toIso } from '@/mocks/seed';
-import { CONTENT_KINDS, LANDING_KINDS, type ContentPage, type PageKind } from '../types';
+import { CONTENT_KINDS, type ContentPage, type PageKind } from '../types';
 import { bodyOf, conflict, invalid, listAnswer, notFound, rawTextOf, signedIn, slugOf, textOf } from './http';
 import { storefrontStore } from './store';
 import type { Stores } from './types';
 
 const SEARCH_FIELDS = ['title', 'slug'];
-const KINDS: readonly string[] = [...LANDING_KINDS, ...CONTENT_KINDS];
-/** The networks the generator uses when none are given. */
-const DEFAULT_NETWORKS = ['AT&T', 'T-Mobile', 'Vodafone'];
-/** The most drafts one generator run makes: "a handful". */
-const GENERATE_CAP = 6;
+const KINDS: readonly string[] = CONTENT_KINDS;
 
 /** The page with this slug, other than `exceptId`. */
 function slugTaken(stores: Stores, slug: string, exceptId?: number): ContentPage | undefined {
@@ -45,46 +41,8 @@ function draftPage(
   });
 }
 
-/** The page routes. `generate` comes before `:id` routes of the same method only matter for GET, which it has none of. */
+/** The page routes. */
 export const pageRoutes: HttpHandler[] = [
-  http.post('*/admin/content-pages/generate', ({ request }) =>
-    signedIn(request, async () => {
-      const stores = await storefrontStore();
-      const body = await bodyOf(request);
-      const list = (value: unknown) => (Array.isArray(value) ? value.map(textOf).filter(Boolean) : []);
-      const tac = stores.tac.list();
-      const brands = list(body.brands).length > 0 ? list(body.brands) : [...new Set(tac.map((t) => t.brand))];
-      const wantedModels = list(body.models);
-      const models = tac
-        .filter((t) => brands.includes(t.brand))
-        .map((t) => t.marketingName || t.model)
-        .filter((name) => wantedModels.length === 0 || wantedModels.includes(name));
-      // A model that is not in the catalogue is still generated when it was typed by hand.
-      const allModels = [...new Set([...models, ...wantedModels])];
-      const networks = list(body.networks).length > 0 ? list(body.networks) : DEFAULT_NETWORKS;
-      const created: ContentPage[] = [];
-      let skipped = 0;
-      for (const model of allModels) {
-        for (const network of networks) {
-          const title = `Unlock ${model} on ${network}`;
-          const slug = slugOf(title);
-          if (slugTaken(stores, slug)) skipped += 1;
-          else if (created.length < GENERATE_CAP) {
-            created.push(
-              draftPage(stores, {
-                kind: 'model',
-                title,
-                slug,
-                bodyMd: `# ${title}\n\nDraft for review.`,
-              }),
-            );
-          }
-        }
-      }
-      return HttpResponse.json({ created, skipped });
-    }),
-  ),
-
   http.post('*/admin/content-pages/:id/publish', ({ request, params }) =>
     signedIn(request, async () => {
       const stores = await storefrontStore();

@@ -34,7 +34,7 @@ export async function openProductsView(route: string, options: { permissions?: s
 /** The tab strip of the page. */
 export const pageTabs = () => within(screen.getByRole('tablist', { name: 'Shop content sections' }));
 
-/** The text of every tab, such as "Landing pages". */
+/** The text of every tab, such as "Content and legal". */
 export const tabTexts = () =>
   pageTabs()
     .getAllByRole('tab')

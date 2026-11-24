@@ -1,4 +1,4 @@
-// IndexStatusPanel: the Index section of the Search tab: the engine's state, how complete the index is, the last run of each job,
+// IndexStatusPanel: the whole Search tab: the engine's state, how complete the index is, the last run of each job,
 // the queues, the last error, and the Rebuild index button behind a confirmation. While a rebuild runs the status is read every
 // 5 seconds and the button waits. Reads need storefront:read; the rebuild needs storefront:publish.
 import { useState } from 'react';

@@ -223,16 +223,14 @@
       "demo": ["50-p-storefront.js"],
       "folders": ["src/features/storefront"],
       "rows": [
-        "CRUD /admin/tac-catalog",
         "CRUD /admin/service-listings",
         "CRUD /admin/content-pages",
         "POST /admin/content-pages/:id/publish",
-        "POST /admin/content-pages/generate",
         "CRUD /admin/help-articles",
         "CRUD /admin/legal-documents",
         "POST /admin/legal-documents/:id/publish"
       ],
-      "notes": "Listings, landing pages, help, legal, TAC catalogue. The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES."
+      "notes": "Listings, static pages and blog, help, legal, search. Landing pages, their generator and the TAC catalogue were retired (decision 025). The demo's checkout preview tab needs the store API (out of scope): see MISMATCHES."
     },
     {
       "id": "settings",

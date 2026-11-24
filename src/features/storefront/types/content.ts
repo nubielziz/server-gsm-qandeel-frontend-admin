@@ -1,24 +1,21 @@
-// Types of the Landing pages and Content tabs: a content page as `GET /admin/content-pages` sends it, the bodies of the
-// page endpoints and of the draft generator. The map gives the table (`content_pages`) but no bodies, so the shapes beyond
-// the generated row are assumed contracts (listed in HANDOFF.md).
+// Types of the Content tab: a content page (a static page or a blog post) as `GET /admin/content-pages` sends it and the bodies
+// of the page endpoints. The map gives the table (`content_pages`) but no bodies, so the shapes beyond the generated row are
+// assumed contracts (listed in HANDOFF.md). The landing page kinds and the draft generator were retired (decision 025).
 import type { ContentPageRow } from '@/lib/api/schema.gen';
-
-/** The landing page kinds of the demo (`LP_KINDS`): one page per carrier, phone model, free tool, brand or country. */
-export const LANDING_KINDS = ['carrier', 'model', 'tool', 'brand', 'country'] as const;
-export type LandingKind = (typeof LANDING_KINDS)[number];
 
 /** The kinds of the Content tab: the About, contact and how-it-works pages, and the blog. */
 export const CONTENT_KINDS = ['static', 'blog'] as const;
 export type ContentKind = (typeof CONTENT_KINDS)[number];
 
-export type PageKind = LandingKind | ContentKind;
+/** The kinds of page the console makes and shows. A row of an old landing kind that an older backend still sends is never listed. */
+export type PageKind = ContentKind;
 
 /** `noindex` is a live page kept out of search results (the demo's "Hidden from Google"). */
 export type PageStatus = 'draft' | 'published' | 'noindex';
 
 /**
- * One page (assumed contract). `visits30d` and `orders30d` are the landing-page figures of the last 30 days, `null`
- * when the server has none for the page.
+ * One page (assumed contract). `visits30d` and `orders30d` were the landing-page figures of the last 30 days; the console
+ * ignores them now (the server sends `null` and the Pages panel has no such column).
  */
 export type ContentPage = Pick<
   ContentPageRow,
@@ -53,22 +50,6 @@ export type UpdatePageBody = Partial<Omit<CreatePageBody, 'kind'>>;
 
 /** Body of `POST /admin/content-pages/:id/publish` (assumed contract): `true` publishes, `false` hides the page. */
 export type PublishPageBody = { published: boolean };
-
-/**
- * Body of `POST /admin/content-pages/generate` (assumed contract): the lists to combine, brand by model by network.
- * An empty list means "all the catalogue knows" for that part.
- */
-export type GeneratePagesBody = {
-  brands: string[];
-  models: string[];
-  networks: string[];
-};
-
-/** What the generator answers (assumed contract): the drafts it created and how many combinations already had a page. */
-export type GeneratePagesResult = {
-  created: ContentPage[];
-  skipped: number;
-};
 
 /** What `GET /admin/content-pages` filters by: `q`, a `kind` (one or several) and `status`. */
 export type PageListFilters = {

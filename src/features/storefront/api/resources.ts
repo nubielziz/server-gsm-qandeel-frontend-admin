@@ -6,12 +6,10 @@ import { createHelpArticle, getHelpArticle, listHelpArticles, updateHelpArticle 
 import { createLegalDocument, getLegalDocument, listLegalDocuments } from './legalDocuments';
 import { createListing, getListing, listListings, updateListing } from './listings';
 import { listRetailPriceChanges, listRetailPriceRules } from './retailPricing';
-import { listHiddenTerms, listSearchPins, listSearchSynonyms } from './search';
-import { createTacEntry, getTacEntry, listTacEntries, updateTacEntry } from './tacCatalog';
 
 /**
  * Each resource lists only the operations its endpoints offer: legal documents are written and published, never edited or
- * deleted, and the search rules are listed here and written through their own functions.
+ * deleted.
  */
 export const storefrontResources: ResourceRegistry = {
   // The retail pricing tab's lists; its writes go through the typed functions and `useApiMutation`.
@@ -31,9 +29,4 @@ export const storefrontResources: ResourceRegistry = {
     update: updateHelpArticle,
   },
   'legal-documents': { list: listLegalDocuments, show: getLegalDocument, create: createLegalDocument },
-  'tac-catalog': { list: listTacEntries, show: getTacEntry, create: createTacEntry, update: updateTacEntry },
-  // The search tools are lists only for Refine; their writes go through the typed functions and `useApiMutation`.
-  'search-synonyms': { list: listSearchSynonyms },
-  'search-pins': { list: listSearchPins },
-  'search-hidden-terms': { list: listHiddenTerms },
 };

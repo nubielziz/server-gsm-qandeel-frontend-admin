@@ -54,7 +54,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       ['settings:read', 'payments:gateways', 'tax:read', 'notifications:read'],
     ],
     // The shop's own pages, in the System group after Settings; any tab's read permission opens it (the storefront manifest).
-    ['storefront', 'Shop content', 'System', 'store', ['storefront:read', 'legal:read', 'catalog:read']],
+    ['storefront', 'Shop content', 'System', 'store', ['storefront:read', 'legal:read']],
     ['audit', 'Audit log', 'System', 'history', 'audit:read'],
     // No demo page; any one of the three read permissions opens it (docs/system-health-design.md).
     ['system-health', 'System health', 'System', 'pulse', ['system:read', 'alerts:read', 'incidents:read']],

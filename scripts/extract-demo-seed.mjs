@@ -9,6 +9,7 @@ import { dropLanguages, formatDemoState } from './english-only-seed.mjs';
 import {
   dropCheckoutReminders,
   dropCommissions,
+  dropLandingAndTac,
   dropMerchantApproval,
   dropMerchantVerification,
   dropTicketRatings,
@@ -101,13 +102,14 @@ vm.runInContext(code, context, { filename: 'demo-bundle.js' });
 // waited for approval: staff-made accounts are active at once, so only the one legacy row stays pending. The commission plans,
 // accruals, agents and referrals were retired too, and the seed has none of them; nor the risk data of the free IMEI check and the
 // customer risk level (see retired-seed-risk.mjs), nor the customer rating of a ticket (the survey was retired), nor the reminder of
-// an abandoned checkout.
+// an abandoned checkout, nor the landing pages and the TAC catalogue of Shop content (decision 025).
 const RETIRED_STEPS = [
   dropMerchantVerification,
   dropMerchantApproval,
   dropCommissions,
   dropTicketRatings,
   dropCheckoutReminders,
+  dropLandingAndTac,
   dropRetiredRisk,
 ];
 const state = RETIRED_STEPS.reduce(

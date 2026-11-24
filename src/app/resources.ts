@@ -75,7 +75,7 @@ export const resources: ResourceProps[] = [
   // The access feature's manifest widens this to any tab's read permission (MISMATCHES M19).
   page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),
   page('settings', { label: 'Settings', group: 'System', icon: 'sliders', permission: 'settings:read' }),
-  // The shop's own pages (landing, legal, help, TAC catalogue, search); its manifest widens this to any tab's read permission.
+  // The shop's own pages (content and legal, help, search); its manifest widens this to any tab's read permission.
   page('storefront', {
     label: 'Shop content',
     group: 'System',

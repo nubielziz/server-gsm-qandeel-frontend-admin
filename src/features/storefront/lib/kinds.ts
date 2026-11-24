@@ -1,24 +1,13 @@
-// Words for the page kinds and statuses, and the rows' small display helpers. Ports `LP_KINDS` and `LP_STATUS` of
-// 50-p-storefront.js. The server owns the values; these only name them.
+// Words for the page kinds and statuses, and the rows' small display helpers. Ports `LP_STATUS` of 50-p-storefront.js. The server owns
+// the values; these only name them. The landing kinds of `LP_KINDS` were retired (decision 025).
 import type { BadgeTone, IconName } from '@/components/ui';
-import { LANDING_KINDS, type PageKind, type PageStatus } from '../types';
+import type { PageKind, PageStatus } from '../types';
 
-/** The page type names (the demo's `LP_KINDS`), plus the two content kinds. */
+/** The page type names: the two content kinds. */
 export const KIND_LABEL: Record<PageKind, string> = {
-  carrier: 'Carrier',
-  model: 'Phone model',
-  tool: 'Free tool',
-  brand: 'Brand',
-  country: 'Country',
   static: 'Page',
   blog: 'Blog post',
 };
-
-/** The type filter above the landing pages: "All" first, then the five kinds (`sf-kind`). */
-export const KIND_FILTER_ITEMS: readonly { value: string; label: string }[] = [
-  { value: '', label: 'All' },
-  ...LANDING_KINDS.map((kind) => ({ value: kind, label: KIND_LABEL[kind] })),
-];
 
 /** The name of a kind, or the raw text when the server sends one this console does not know. */
 export function kindLabel(kind: string): string {
@@ -39,7 +28,5 @@ export function pageStatus(status: string) {
 
 /** The public path the demo shows under a page's title; the slug is the one the server sent. */
 export function pagePath(kind: string, slug: string): string {
-  if (kind === 'blog') return `/blog/${slug}`;
-  if (kind === 'static') return `/${slug}`;
-  return `/unlock/${slug}`;
+  return kind === 'blog' ? `/blog/${slug}` : `/${slug}`;
 }

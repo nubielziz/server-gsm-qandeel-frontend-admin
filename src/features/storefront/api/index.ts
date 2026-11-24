@@ -8,4 +8,3 @@ export * from './publish';
 export * from './resources';
 export * from './retailPricing';
 export * from './search';
-export * from './tacCatalog';

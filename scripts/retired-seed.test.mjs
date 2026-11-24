@@ -1,7 +1,7 @@
 // Tests for the retired-data step of the demo seed: the merchants' verification word (decision 020), the status of the merchants
 // that waited for approval, the commissions (plans, accruals, plan, agent flag and referrer of a merchant), the customer rating of a
-// ticket and the reminder of an abandoned checkout are taken out of the captured state, and the committed file has none of them, so
-// `seed:extract` and the mock layer agree.
+// ticket, the reminder of an abandoned checkout and the landing pages and TAC catalogue of Shop content (decision 025) are taken out of
+// the captured state, and the committed file has none of them, so `seed:extract` and the mock layer agree.
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 import {
   dropCheckoutReminders,
   dropCommissions,
+  dropLandingAndTac,
   dropMerchantApproval,
   dropMerchantVerification,
   dropTicketRatings,
@@ -147,6 +148,25 @@ describe('dropCheckoutReminders', () => {
   });
 });
 
+describe('dropLandingAndTac', () => {
+  it('removes the landing and TAC tables and keeps the static pages and blog posts', () => {
+    const state = {
+      landing: [{ id: 'lp1', kind: 'carrier' }],
+      tac: [{ tac: '35389011' }],
+      pages: [{ id: 'pg1', kind: 'static' }],
+      help: [{ id: 'h1' }],
+    };
+    expect(dropLandingAndTac(state)).toEqual({
+      pages: [{ id: 'pg1', kind: 'static' }],
+      help: [{ id: 'h1' }],
+    });
+  });
+
+  it('accepts a state that has neither table', () => {
+    expect(dropLandingAndTac({ pages: [] })).toEqual({ pages: [] });
+  });
+});
+
 describe('the committed demo state', () => {
   const { state } = JSON.parse(readFileSync(resolve(root, 'src/mocks/seed/demo-state.json'), 'utf8'));
 
@@ -176,6 +196,19 @@ describe('the committed demo state', () => {
   it('has no rating on any ticket', () => {
     expect(state.tickets.length).toBeGreaterThan(0);
     expect(state.tickets.some((row) => 'csat' in row)).toBe(false);
+  });
+
+  it('has no landing pages and no TAC catalogue, and keeps the static pages and the blog posts', () => {
+    expect(state).not.toHaveProperty('landing');
+    expect(state).not.toHaveProperty('tac');
+    expect(state.pages.map((row) => row.kind).sort()).toEqual([
+      'blog',
+      'blog',
+      'blog',
+      'static',
+      'static',
+      'static',
+    ]);
   });
 
   it('has no checkout reminder, no reminder policy and no recovery word, and keeps the checkouts', () => {

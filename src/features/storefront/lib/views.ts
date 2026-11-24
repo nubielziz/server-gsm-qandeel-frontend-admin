@@ -3,7 +3,7 @@
 // in-memory array, the console asks the server (MISMATCHES M22 has the same reasoning for orders).
 import type { CrudFilters } from '@refinedev/core';
 import type { SortState } from '@/components/ui';
-import { LANDING_KINDS, PUBLISH_FLAGS } from '../types';
+import { PUBLISH_FLAGS } from '../types';
 
 /** Rows per page (the demo's PAGE, as on the Orders page). */
 export const PAGE_SIZE = 25;
@@ -52,39 +52,11 @@ export const PUBLISH_ITEMS_VIEW: ViewSpec = {
   },
 };
 
-/** The landing pages tab: the most recently changed first, filtered by page type (`sf-kind`). */
-export const LANDING_VIEW: ViewSpec = {
-  sortFields: ['title', 'status', 'updatedAt'],
-  defaultSort: { field: 'updatedAt', order: 'desc' },
-  filters: { kind: LANDING_KINDS },
-};
-
 /** The help centre tab: in the order the articles show on the site. */
 export const HELP_VIEW: ViewSpec = {
   sortFields: ['sort', 'question', 'category', 'isPublished'],
   defaultSort: { field: 'sort', order: 'asc' },
   filters: {},
-};
-
-/** The TAC catalogue tab: by prefix. */
-export const TAC_VIEW: ViewSpec = {
-  sortFields: ['tac', 'brand', 'model', 'releaseYear'],
-  defaultSort: { field: 'tac', order: 'asc' },
-  filters: {},
-};
-
-/** The search tab's synonyms: the most recently changed first, filtered by on or off (`state`). */
-export const SYNONYM_VIEW: ViewSpec = {
-  sortFields: ['updatedAt'],
-  defaultSort: { field: 'updatedAt', order: 'desc' },
-  filters: { state: ['on', 'off'] },
-};
-
-/** The search tab's pinned results: the most recently changed first, or by query, filtered by on or off (`state`). */
-export const PIN_VIEW: ViewSpec = {
-  sortFields: ['updatedAt', 'query'],
-  defaultSort: { field: 'updatedAt', order: 'desc' },
-  filters: { state: ['on', 'off'] },
 };
 
 /** A tab's search text, filters, page and sort, as read from the address. */
