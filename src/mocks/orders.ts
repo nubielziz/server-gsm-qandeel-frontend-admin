@@ -8,11 +8,12 @@ import type {
   EventActorType,
   Order,
   OrderAccount,
+  OrderAnswer,
   OrderEvent,
   ServiceType,
   SupplierOption,
 } from '@/features/orders';
-import type { JsonObject } from '@/lib/api';
+import type { JsonObject, JsonValue } from '@/lib/api';
 import { Collection } from './db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from './seed';
 import { customerAccountId, merchantAccountId } from './seed/accountIds';
@@ -85,6 +86,30 @@ export type MockOrder = Order & { events: OrderEvent[] };
 export function toOrder(row: MockOrder): Order {
   const { events: _events, ...order } = row;
   return order;
+}
+
+// The labels of the custom fields the demo's orders have an answer for; any other stored key keeps its own text as its label, as the
+// server does for a field the service no longer has.
+const ANSWER_LABELS: Record<string, string> = { device: 'Device' };
+
+/** A stored answer as text, as the server writes it: a string as it is, a number or a flag spelled out, anything nested as JSON; `null` when it holds nothing. */
+function answerText(value: JsonValue | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  const text =
+    typeof value === 'string' ? value : typeof value === 'object' ? JSON.stringify(value) : String(value);
+  return text.trim() === '' ? null : text;
+}
+
+/**
+ * The `answers` of the single-order read: each stored answer of the order's `inputs` that holds something, as text, with the label
+ * the buyer read, in stored order. The demo's orders have no field definitions to put them in form order by, so every key is treated as
+ * the server treats a key its service no longer has. The list rows do not carry answers.
+ */
+export function answersOf(row: MockOrder): OrderAnswer[] {
+  return Object.entries(row.inputs ?? {}).flatMap(([key, value]) => {
+    const text = answerText(value);
+    return text === null ? [] : [{ key, label: ANSWER_LABELS[key] ?? key, value: text }];
+  });
 }
 
 const SYSTEM_ACTORS = new Set(['System', 'Risk engine', 'Payment gateway']);

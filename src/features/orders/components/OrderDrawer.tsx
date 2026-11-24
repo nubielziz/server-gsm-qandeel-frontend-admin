@@ -30,7 +30,7 @@ export interface OrderDrawerProps {
 export function OrderDrawer({ id, row, onClose, onDialog }: OrderDrawerProps) {
   const grants = useOrderGrants();
   const now = useNow();
-  const { order, query } = useOrder(id, row);
+  const { order, answers, query } = useOrder(id, row);
   const events = useOrderEvents(id);
   // The reply the footer's Complete sends; `null` until the operator edits it, so it follows the order's default.
   const [draft, setDraft] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function OrderDrawer({ id, row, onClose, onDialog }: OrderDrawerProps) {
       }
     >
       <OrderBanner order={order} />
-      <OrderDetails order={order} now={now} grants={grants} />
+      <OrderDetails order={order} answers={answers} now={now} grants={grants} />
       <OrderMoney
         order={order}
         grants={grants}

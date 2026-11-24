@@ -140,7 +140,8 @@ export function buildStores(state: DemoState): Stores {
         required: true,
         options: [],
         regex: '',
-        supplierKey: 'user',
+        name: 'user',
+        isMainInput: false,
       },
     ];
   }

@@ -3,19 +3,24 @@
 import { useOne } from '@refinedev/core';
 import { useApiQuery } from '@/lib/query';
 import { listOrderEvents } from '../api';
-import type { Order } from '../types';
+import type { Order, OrderAnswer, OrderDetail } from '../types';
 import { ORDER_EVENTS_KEY } from './keys';
 
-/** `row` is the list row when the drawer opens from the table; a deep link has none, so `order` is undefined until the read answers. */
+/**
+ * `row` is the list row when the drawer opens from the table; a deep link has none, so `order` is undefined until the read answers.
+ * `answers` are the buyer's answers to the service's custom fields: only the single-order read carries them, so they are empty until
+ * that read has arrived (the list row stands in for the order meanwhile).
+ */
 export function useOrder(id: number, row?: Order) {
-  const { result, query } = useOne<Order>({
+  const { result, query } = useOne<OrderDetail>({
     resource: 'orders',
     id,
-    queryOptions: { placeholderData: row ? { data: row } : undefined },
+    queryOptions: { placeholderData: row ? { data: { ...row, answers: [] } } : undefined },
     // The drawer shows its own error state, so Refine's default error toast would only repeat it.
     errorNotification: false,
   });
-  return { order: result ?? row, query };
+  const answers: OrderAnswer[] = result?.answers ?? [];
+  return { order: result ?? row, answers, query };
 }
 
 /** The timeline of the order, newest events included after every action. */

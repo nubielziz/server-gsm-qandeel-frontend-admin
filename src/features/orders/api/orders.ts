@@ -12,7 +12,7 @@ import {
   type ListQuery,
   type ListResult,
 } from '@/lib/api';
-import type { Order, OrderEvent } from '../types';
+import type { Order, OrderDetail, OrderEvent } from '../types';
 
 /**
  * Orders and their queues, one page of them, with the total in `x-total-count`. Filters: `status`, `queue`, `q`,
@@ -29,11 +29,12 @@ export function listOrders(query: ListQuery = {}, init?: ApiInit): Promise<ListR
 /**
  * One order, to refresh the open drawer after an action (the list row can be a moment older) and to open an order
  * from a link or the command palette that has no row yet.
- * Assumed contract: same shape as a list row.
+ * Assumed contract: the shape of a list row plus `answers`, what the buyer typed into the service's custom fields, each with the label
+ * the buyer read (the list rows do not carry them).
  * @route GET /admin/orders/:id
  */
-export function getOrder(id: Id, init?: ApiInit): Promise<Order> {
-  return apiGet<Order>(pathOf('/admin/orders/:id', { id }), undefined, init);
+export function getOrder(id: Id, init?: ApiInit): Promise<OrderDetail> {
+  return apiGet<OrderDetail>(pathOf('/admin/orders/:id', { id }), undefined, init);
 }
 
 /**

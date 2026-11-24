@@ -5,7 +5,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import type { BulkReplyLine, BulkReplyLineStatus } from '@/features/orders';
 import { applyListQuery } from '../crud';
 import { latency } from '../latency';
-import { orderStore, toOrder, type MockOrder } from '../orders';
+import { answersOf, orderStore, toOrder, type MockOrder } from '../orders';
 import { completeMock } from '../ordersActions';
 import { guard } from '../session';
 import { bodyOf, invalid, notFound, textOf } from './accessShared';
@@ -171,7 +171,9 @@ export const ordersHandlers: HttpHandler[] = [
     if (denied) return denied;
     await latency();
     const order = (await orderStore()).find(String(params.id));
-    return order ? HttpResponse.json(toOrder(order)) : notFound('order', params.id);
+    return order
+      ? HttpResponse.json({ ...toOrder(order), answers: answersOf(order) })
+      : notFound('order', params.id);
   }),
 
   http.get('*/admin/orders/:id/events', async ({ request, params }) => {

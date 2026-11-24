@@ -80,6 +80,20 @@ export type Order = Pick<
   completedAt: IsoDateTime | null;
 };
 
+/**
+ * One answer the buyer gave to a custom field of the service, as `GET /admin/orders/:id` lists it: the field's hidden `key` (the one
+ * the answer is stored under), its `label` (what the buyer read; the key itself for a field the service no longer has) and the
+ * `value` as text. The server lists the service's fields in form order that have a value, then stored keys no field has any more.
+ * Buyer text, so it may be in any script (MISMATCHES M369).
+ */
+export type OrderAnswer = { key: string; label: string; value: string };
+
+/**
+ * One order as `GET /admin/orders/:id` sends it: the list row plus the answers. A separate type, so the list route is not said to
+ * carry them (assumed contract).
+ */
+export type OrderDetail = Order & { answers: OrderAnswer[] };
+
 // ---- Timeline ----
 
 /** Who did something to the order. `client` and `customer` are the words of rows written before the accounts merged; new rows say `account`. */

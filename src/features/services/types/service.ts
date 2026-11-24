@@ -4,12 +4,7 @@
 import type { NamedRef, ServiceType } from '@/features/orders';
 import type { RetailPriceSource } from '@/features/storefront';
 import type { Decimal, Id, IsoDateTime, Money } from '@/lib/api';
-import type {
-  ServiceFieldRow,
-  ServiceGroupPriceRow,
-  ServiceOptionRow,
-  ServiceRow,
-} from '@/lib/api/schema.gen';
+import type { ServiceGroupPriceRow, ServiceOptionRow, ServiceRow } from '@/lib/api/schema.gen';
 
 // The orders feature's id-and-name join and service type, re-exported so this feature's types read as one set.
 export type { NamedRef, ServiceType };
@@ -108,11 +103,40 @@ export type Service = Pick<
 /** The kinds of custom field a buyer fills in. The list is an assumption; the map only has the column. */
 export type ServiceFieldType = 'text' | 'number' | 'select' | 'textarea';
 
-/** One custom field of a service (`service_fields`). Its position in the list is its `sort`. */
-export type ServiceField = Pick<
-  ServiceFieldRow,
-  'key' | 'label' | 'options' | 'required' | 'regex' | 'supplierKey'
-> & { fieldType: ServiceFieldType };
+/**
+ * One custom field of a service (`service_fields`), as the server sends it. Its position in the list is its `sort`. `name` is the
+ * field's one visible name: what a supplier receives, unique in the service without regard to letter case. `key` is a hidden
+ * identifier the server makes from the name when the field is created; nobody types it and it never changes (the shop and merchant
+ * forms send their answers under it). `label` is the text buyers read. `isMainInput` marks the one box that travels as the
+ * order's own input (an IMEI, an account, a serial number); a service has at most one. The wire is not in the generated map rows
+ * (they come from the read-only map), so this type is an assumed contract (MISMATCHES M368).
+ */
+export type ServiceField = {
+  key: string;
+  name: string;
+  label: string;
+  fieldType: ServiceFieldType;
+  required: boolean;
+  options: string[];
+  regex: string;
+  isMainInput: boolean;
+};
+
+/**
+ * One row of the body of `PUT /admin/services/:id/fields`. A row with the `key` of a saved field is that field; a row without a
+ * key is a new field and the server makes its key from the name. `label` left out keeps the saved label of a saved field (a new
+ * field gets its name), an empty text stores the name. `isMainInput` left out keeps the saved value (false for a new field).
+ */
+export type ServiceFieldInput = {
+  key?: string;
+  name: string;
+  label?: string;
+  fieldType: ServiceFieldType;
+  required: boolean;
+  options: string[];
+  regex: string;
+  isMainInput?: boolean;
+};
 
 /** The three option lists of a service: device models, networks (carriers) and MEP values. */
 export type ServiceOptionList = 'model' | 'network' | 'mep';
@@ -166,7 +190,7 @@ export type UpdateServiceBody = Partial<CreateServiceBody> & {
 };
 
 /** Body of `PUT /admin/services/:id/fields` (assumed contract): the whole list, in order. */
-export type ReplaceFieldsBody = { fields: ServiceField[] };
+export type ReplaceFieldsBody = { fields: ServiceFieldInput[] };
 
 /** Body of `PUT /admin/services/:id/options` (assumed contract): all three lists together. */
 export type ReplaceOptionsBody = { options: ServiceOption[] };

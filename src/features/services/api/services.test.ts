@@ -303,46 +303,128 @@ describe('deleteService', () => {
 });
 
 describe('the parts of a service', () => {
-  it('replaces the custom fields, in order', async () => {
+  it('replaces the custom fields, in order, and the server makes the key of a new one from its name', async () => {
     const requests = recordRequests();
     const fields = [
       {
-        key: 'a',
-        label: 'A',
+        key: 'account',
+        name: 'user',
+        label: 'Z3X account',
         fieldType: 'text' as const,
         required: true,
         options: [],
         regex: '^\\d+$',
-        supplierKey: 'x',
+        isMainInput: false,
       },
       {
-        key: 'b',
-        label: 'B',
+        name: 'Plan',
+        label: '',
         fieldType: 'select' as const,
         required: false,
         options: ['1', '2'],
         regex: '',
-        supplierKey: '',
+        isMainInput: true,
       },
     ];
-    expect(await replaceServiceFields(Z3X, { fields })).toEqual(fields);
+    const saved = await replaceServiceFields(Z3X, { fields });
+    expect(saved).toEqual([{ ...fields[0] }, { ...fields[1], key: 'plan', label: 'Plan' }]);
     expect(requests.last()).toMatchObject({ method: 'PUT', body: { fields } });
     expect(requests.last().url.pathname).toBe('/admin/services/15/fields');
-    expect((await getService(Z3X)).fields).toEqual(fields);
+    expect((await getService(Z3X)).fields).toEqual(saved);
   });
 
-  it('refuses a field without a key, naming it by position', async () => {
-    const field = {
-      key: '',
-      label: 'A',
-      fieldType: 'text' as const,
-      required: false,
-      options: [],
-      regex: '',
-      supplierKey: '',
-    };
-    const error = await replaceServiceFields(Z3X, { fields: [field] }).catch((e: unknown) => e);
-    expect((error as ApiError).fieldErrors['fields.0.key']).toEqual(['Enter a key.']);
+  it('gives a new field with a taken key base the next free key, and keeps the saved key when the name changes', async () => {
+    const saved = await replaceServiceFields(Z3X, {
+      fields: [
+        { key: 'account', name: 'Account name', fieldType: 'text', required: false, options: [], regex: '' },
+        { name: 'account', fieldType: 'text', required: false, options: [], regex: '' },
+        { name: '!!!', fieldType: 'text', required: false, options: [], regex: '' },
+      ],
+    });
+    expect(saved.map((field) => [field.key, field.name, field.label])).toEqual([
+      ['account', 'Account name', 'Z3X account'],
+      ['account_2', 'account', 'account'],
+      ['field', '!!!', '!!!'],
+    ]);
+  });
+
+  it('refuses a field without a name, an unknown key, a repeated name and a second main input, naming each by position', async () => {
+    const row = { fieldType: 'text' as const, required: false, options: [], regex: '' };
+    const error = await replaceServiceFields(Z3X, {
+      fields: [
+        { ...row, name: '', isMainInput: true },
+        { ...row, key: 'gone', name: 'B', isMainInput: true },
+        { ...row, name: 'Email' },
+        { ...row, name: ' email ' },
+      ],
+    }).catch((e: unknown) => e);
+    const fieldErrors = (error as ApiError).fieldErrors;
+    expect(fieldErrors['fields.0.name']).toEqual(['Enter a name.']);
+    expect(fieldErrors['fields.1.key']).toEqual(['This field no longer exists. Reload the page.']);
+    expect(fieldErrors['fields.1.isMainInput']).toEqual(['Only one field can be the main input.']);
+    expect(fieldErrors['fields.3.name']).toEqual(['The name email is used by an earlier field.']);
+    expect((await getService(Z3X)).fields).toHaveLength(1);
+  });
+
+  it('refuses a name over 120 characters and keeps a key within 60, with the number cut in when a base repeats', async () => {
+    const row = { fieldType: 'text' as const, required: false, options: [], regex: '' };
+    const error = await replaceServiceFields(Z3X, { fields: [{ ...row, name: 'n'.repeat(121) }] }).catch(
+      (e: unknown) => e,
+    );
+    expect((error as ApiError).fieldErrors['fields.0.name']).toEqual(['Use at most 120 characters.']);
+    const saved = await replaceServiceFields(Z3X, {
+      fields: [
+        { ...row, name: 'a'.repeat(120) },
+        { ...row, name: 'a'.repeat(65) },
+      ],
+    });
+    expect(saved.map((field) => field.key)).toEqual(['a'.repeat(60), `${'a'.repeat(58)}_2`]);
+  });
+
+  it('makes a field named IMEI the main input of an IMEI service when no row is flagged', async () => {
+    const row = { fieldType: 'text' as const, required: true, options: [], regex: '' };
+    const saved = await replaceServiceFields(ATT, {
+      fields: [
+        { ...row, name: 'Model' },
+        { ...row, name: ' imei ' },
+      ],
+    });
+    expect(saved.map((field) => field.isMainInput)).toEqual([false, true]);
+    expect((await getService(ATT)).fields.map((field) => field.isMainInput)).toEqual([false, true]);
+  });
+
+  it('leaves the flag alone when a row is flagged already, and on a service that is not an IMEI service', async () => {
+    const row = { fieldType: 'text' as const, required: true, options: [], regex: '' };
+    const flagged = await replaceServiceFields(ATT, {
+      fields: [
+        { ...row, name: 'Serial', isMainInput: true },
+        { ...row, name: 'IMEI' },
+      ],
+    });
+    expect(flagged.map((field) => field.isMainInput)).toEqual([true, false]);
+    const server = await replaceServiceFields(Z3X, { fields: [{ ...row, name: 'IMEI' }] });
+    expect(server.map((field) => field.isMainInput)).toEqual([false]);
+  });
+
+  it('keeps the saved label and main input of a field when the row leaves them out', async () => {
+    await replaceServiceFields(Z3X, {
+      fields: [
+        {
+          key: 'account',
+          name: 'user',
+          label: 'Z3X account',
+          fieldType: 'text',
+          required: true,
+          options: [],
+          regex: '',
+          isMainInput: true,
+        },
+      ],
+    });
+    const [kept] = await replaceServiceFields(Z3X, {
+      fields: [{ key: 'account', name: 'user', fieldType: 'text', required: true, options: [], regex: '' }],
+    });
+    expect(kept).toMatchObject({ key: 'account', label: 'Z3X account', isMainInput: true });
   });
 
   it('replaces the option lists', async () => {

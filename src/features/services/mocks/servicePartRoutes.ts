@@ -1,5 +1,8 @@
 // Mock of the three "replace the whole list" routes of a service: custom fields, option lists and group prices
 // (`PUT /admin/services/:id/fields|options|group-prices`). Each checks its list the way a server would and answers with the saved list.
+// The fields route plays the server's naming rules: a row with the key of a saved field is that field, a row without a key is new and
+// gets a key made from its name, an unknown key is refused, a name may be used once in a service whatever its letter case, and on an
+// IMEI service a field named IMEI is the main input when no row is flagged.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toMoney } from '@/mocks/seed';
 import { bodyOf, idOf, invalid, notFound, signedIn } from './http';
@@ -9,8 +12,32 @@ import { RETAIL_GROUP_KIND } from '../lib/groupPrices';
 
 const FIELD_TYPES = ['text', 'number', 'select', 'textarea'];
 const OPTION_LISTS = ['model', 'network', 'mep'];
+/** The longest hidden key and the longest name a field may have (the server's limits). */
+const KEY_MAX = 60;
+const NAME_MAX = 120;
 /** Money on the wire: a decimal with exactly four fraction digits. */
 const MONEY_WIRE = /^-?\d+\.\d{4}$/;
+
+/** The hidden key the server makes from a name: lower snake case, 60 characters at most, `field` when nothing is left. */
+function keyBase(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, KEY_MAX) || 'field'
+  );
+}
+
+/** The first of `base`, `base_2`, `base_3`... that `used` does not hold, the base cut so the key stays within the limit. */
+function freeKey(base: string, used: ReadonlySet<string>): string {
+  let key = base.slice(0, KEY_MAX);
+  for (let n = 2; used.has(key); n += 1) {
+    const suffix = `_${n}`;
+    key = `${base.slice(0, KEY_MAX - suffix.length)}${suffix}`;
+  }
+  return key;
+}
 
 const rowsOf = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value)
@@ -44,32 +71,73 @@ export const servicePartRoutes: HttpHandler[] = [
       const service = stores.services.find(String(params.id));
       if (!service) return notFound('service', params.id);
       const rows = rowsOf((await bodyOf(request)).fields);
+      const saved = new Map(service.fields.map((field) => [field.key, field]));
       const problems: { field: string; message: string }[] = [];
-      const seen = new Set<string>();
+      const seenKeys = new Set<string>();
+      const seenNames = new Set<string>();
+      // Every saved key stays taken, kept or not, so a key never comes back for another field.
+      const usedKeys = new Set(saved.keys());
+      let mainInputs = 0;
       const fields: ServiceField[] = rows.map((row, index) => {
-        const key = String(row.key ?? '').trim();
-        if (!key) problems.push({ field: `fields.${index}.key`, message: 'Enter a key.' });
-        else if (seen.has(key))
-          problems.push({ field: `fields.${index}.key`, message: `The key ${key} is used twice.` });
-        seen.add(key);
-        if (!String(row.label ?? '').trim())
-          problems.push({ field: `fields.${index}.label`, message: 'Enter a label.' });
+        const name = String(row.name ?? '').trim();
+        const given = typeof row.key === 'string' ? row.key.trim() : '';
+        const before = given ? saved.get(given) : undefined;
+        if (given && !before) {
+          problems.push({
+            field: `fields.${index}.key`,
+            message: 'This field no longer exists. Reload the page.',
+          });
+        } else if (given && seenKeys.has(given)) {
+          problems.push({ field: `fields.${index}.key`, message: `The key ${given} is used twice.` });
+        }
+        seenKeys.add(given);
+        if (!name) problems.push({ field: `fields.${index}.name`, message: 'Enter a name.' });
+        else if (name.length > NAME_MAX) {
+          problems.push({ field: `fields.${index}.name`, message: `Use at most ${NAME_MAX} characters.` });
+        } else if (seenNames.has(name.toLowerCase())) {
+          problems.push({
+            field: `fields.${index}.name`,
+            message: `The name ${name} is used by an earlier field.`,
+          });
+        }
+        seenNames.add(name.toLowerCase());
         if (!FIELD_TYPES.includes(String(row.fieldType))) {
           problems.push({ field: `fields.${index}.fieldType`, message: 'Choose a type.' });
         }
+        const isMainInput =
+          typeof row.isMainInput === 'boolean' ? row.isMainInput : (before?.isMainInput ?? false);
+        if (isMainInput) {
+          mainInputs += 1;
+          if (mainInputs > 1) {
+            problems.push({
+              field: `fields.${index}.isMainInput`,
+              message: 'Only one field can be the main input.',
+            });
+          }
+        }
+        // The label: typed wins, an empty text is the name, a label left out keeps the saved one.
+        const label = typeof row.label === 'string' ? row.label.trim() || name : (before?.label ?? name);
+        const key = before ? given : freeKey(keyBase(name), usedKeys);
+        usedKeys.add(key);
         return {
           key,
-          label: String(row.label ?? '').trim(),
+          name,
+          label,
           fieldType: row.fieldType as ServiceField['fieldType'],
           required: row.required === true,
           options: Array.isArray(row.options) ? row.options.map(String) : [],
           regex: String(row.regex ?? ''),
-          supplierKey: String(row.supplierKey ?? ''),
+          isMainInput,
         };
       });
       if (problems.length > 0) return invalid(problems);
-      service.fields = fields;
-      return HttpResponse.json(fields);
+      // On an IMEI service a field named IMEI (any letter case) is the IMEI itself: it is the main input when no row is flagged.
+      const imeiRow =
+        service.type === 'imei' && !fields.some((field) => field.isMainInput)
+          ? fields.find((field) => field.name.toLowerCase() === 'imei')
+          : undefined;
+      service.fields = fields.map((field) => (field === imeiRow ? { ...field, isMainInput: true } : field));
+      return HttpResponse.json(service.fields);
     }),
   ),
 

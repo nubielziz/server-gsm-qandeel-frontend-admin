@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { listLedgerTransactions } from '@/features/finance';
 import { mockServer } from '@/mocks/node';
-import { orderStore } from '@/mocks/orders';
+import { answersOf, orderStore } from '@/mocks/orders';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { toListQuery } from '../lib/filters';
 import { ORDER_TABS, tabFilters } from '../lib/status';
@@ -149,6 +149,31 @@ describe('getOrder and listOrderEvents', () => {
     const order = await getOrder(NORMAL);
     expect(order).not.toHaveProperty('client');
     expect(order).not.toHaveProperty('customer');
+  });
+
+  it('reads the answers to the custom fields with their labels, and an empty list for an order without any', async () => {
+    const rows = (await orderStore()).list();
+    const answered = rows.find((row) => typeof row.inputs?.device === 'string');
+    expect(answered).toBeDefined();
+    expect((await getOrder(answered?.id ?? 0)).answers).toEqual([
+      { key: 'device', label: 'Device', value: answered?.inputs.device },
+    ]);
+    const plain = rows.find((row) => Object.keys(row.inputs ?? {}).length === 0);
+    expect((await getOrder(plain?.id ?? 0)).answers).toEqual([]);
+    // The list rows do not carry them.
+    const page = await listOrders({ start: 0, end: 1 });
+    expect(page.data[0]).not.toHaveProperty('answers');
+  });
+
+  it('lists every stored answer that holds something as text, and leaves the empty ones out', async () => {
+    const [row] = (await orderStore()).list();
+    const inputs = { device: 'iPhone', count: 3, flag: false, nested: { a: 1 }, blank: '  ', none: null };
+    expect(answersOf({ ...row, inputs })).toEqual([
+      { key: 'device', label: 'Device', value: 'iPhone' },
+      { key: 'count', label: 'count', value: '3' },
+      { key: 'flag', label: 'flag', value: 'false' },
+      { key: 'nested', label: 'nested', value: '{"a":1}' },
+    ]);
   });
 
   it('reads a storefront order with the buyer account, its retail rank and whether it is a guest', async () => {

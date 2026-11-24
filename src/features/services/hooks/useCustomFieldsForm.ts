@@ -6,17 +6,19 @@ import { dialogSubmit } from '@/components/ui';
 import {
   fieldDraft,
   fieldErrorTargets,
-  repeatedKeyIndex,
+  repeatedNameIndex,
   toServiceField,
+  withMainInput,
   type FieldsFormValues,
 } from '../lib/fields';
 import type { ServiceDetail } from '../types';
 import { useReplaceFields } from './useServicePartMutations';
 
 /**
- * The form, its row list (`list`: append, move, remove) and its `submit` (plug it into a SectionForm). A key used by two rows is refused
- * here with the row's message; any other refusal of the server lands under the input it names (the server calls the choices `options`)
- * and the rest in the section's failure line.
+ * The form, its row list (`list`: append, move, remove), its `submit` (plug it into a SectionForm) and `setMainInput` (turns the main
+ * input of a row on or off; a service has at most one, so turning one on turns the others off). A name used by two rows, without regard
+ * to letter case, is refused here with the row's message; any other refusal of the server lands under the input it names (the server
+ * calls the choices `options`) and the rest in the section's failure line.
  */
 export function useCustomFieldsForm(service: ServiceDetail) {
   const replace = useReplaceFields();
@@ -24,14 +26,23 @@ export function useCustomFieldsForm(service: ServiceDetail) {
   const list = useFieldArray({ control: form.control, name: 'fields' });
   const targets = fieldErrorTargets(form.getValues('fields'));
 
+  const setMainInput = (index: number, on: boolean) => {
+    const current = form.getValues('fields');
+    withMainInput(current, index, on).forEach((draft, row) => {
+      if (draft.isMainInput !== current[row]?.isMainInput) {
+        form.setValue(`fields.${row}.isMainInput`, draft.isMainInput, { shouldDirty: true });
+      }
+    });
+  };
+
   const submit = dialogSubmit(
     form,
     async ({ fields: drafts }) => {
-      const repeated = repeatedKeyIndex(drafts);
+      const repeated = repeatedNameIndex(drafts);
       if (repeated >= 0) {
         form.setError(
-          `fields.${repeated}.key`,
-          { type: 'validate', message: 'This key is used by an earlier field.' },
+          `fields.${repeated}.name`,
+          { type: 'validate', message: 'This name is used by an earlier field.' },
           { shouldFocus: true },
         );
         return false;
@@ -43,5 +54,5 @@ export function useCustomFieldsForm(service: ServiceDetail) {
     { fields: targets.names, aliases: targets.aliases },
   );
 
-  return { form, list, submit };
+  return { form, list, submit, setMainInput };
 }

@@ -1,8 +1,9 @@
 // customFieldColumns: the columns of the Custom Fields table of the edit view's Field part. Every cell is an input of the section's form
 // (registered under `fields.<row>.<name>`, so the server's field messages find their input), with its error line under it in the cell.
-// The accessible names are "Key of field 2", "Field 2 is required" and so on, numbered from 1 in the buyer's order.
+// The accessible names are "Name of field 2", "Field 2 is required" and so on, numbered from 1 in the buyer's order. A field has one
+// visible name: the hidden key of a saved field lives in the form's values and has no cell.
 import type { UseFormReturn } from 'react-hook-form';
-import { Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
+import { Badge, Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
 import type { FieldsFormValues } from '../../../../../lib/fields';
 import { FIELD_TYPE_OPTIONS } from '../../../../../lib/options';
 import type { ServiceFieldType } from '../../../../../types';
@@ -11,6 +12,10 @@ import { TextCell } from './TextCell';
 
 const INVALID = 'aria-[invalid=true]:border-crit-dot';
 
+// What the switch of a row's main input says when nothing locks it.
+const MAIN_INPUT_HINT =
+  'The main input is the box the order itself is about, such as the IMEI. A service has at most one.';
+
 /** A row of the table: the id React keys it by (the form's row id) and its place in the form's list. */
 export type FieldRowRef = { id: string; index: number };
 
@@ -18,24 +23,30 @@ export interface CustomFieldColumnsArgs {
   form: UseFormReturn<FieldsFormValues>;
   /** The type each row has now, by position: only a choice list shows its choices box. */
   types: readonly (ServiceFieldType | undefined)[];
+  /** Whether each row is the main input now, by position: that row shows the badge and its switch is pressed. */
+  mainInputs: readonly (boolean | undefined)[];
   /** How many rows there are, so the last one cannot move down. */
   count: number;
   lock: PermissionLock;
   onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
+  /** Turns the main input of a row on or off; turning it on turns it off for the others. */
+  onMainInput: (index: number, on: boolean) => void;
 }
 
 /**
- * The eight columns, left to right: the number, the key, the label, the type (a choice list shows its choices under it), required, the
- * pattern, the supplier key and the row's buttons.
+ * The seven columns, left to right: the number, the name (the main input shows a badge beside it), the label, the type (a choice list
+ * shows its choices under it), required, the pattern and the row's buttons (the main input switch, up, down, remove).
  */
 export function customFieldColumns({
   form,
   types,
+  mainInputs,
   count,
   lock,
   onMove,
   onRemove,
+  onMainInput,
 }: CustomFieldColumnsArgs): DataTableColumn<FieldRowRef>[] {
   const { register } = form;
   const rowErrors = form.formState.errors.fields;
@@ -46,17 +57,17 @@ export function customFieldColumns({
       render: ({ index }) => <span className="text-xs tabular-nums text-ink3">{index + 1}</span>,
     },
     {
-      key: 'key',
-      label: 'Key',
+      key: 'name',
+      label: 'Name',
       render: ({ index }) => (
         <TextCell
           n={index + 1}
-          label="Key"
-          mono
+          label="Name"
           lock={lock}
-          error={rowErrors?.[index]?.key?.message}
-          field={register(`fields.${index}.key`, {
-            validate: (value) => value.trim() !== '' || 'Enter a key.',
+          error={rowErrors?.[index]?.name?.message}
+          trailing={mainInputs[index] ? <Badge tone="accent">Main input</Badge> : undefined}
+          field={register(`fields.${index}.name`, {
+            validate: (value) => value.trim() !== '' || 'Enter a name.',
           })}
         />
       ),
@@ -69,10 +80,9 @@ export function customFieldColumns({
           n={index + 1}
           label="Label"
           lock={lock}
+          placeholder="Same as the name"
           error={rowErrors?.[index]?.label?.message}
-          field={register(`fields.${index}.label`, {
-            validate: (value) => value.trim() !== '' || 'Enter a label.',
-          })}
+          field={register(`fields.${index}.label`)}
         />
       ),
     },
@@ -146,24 +156,22 @@ export function customFieldColumns({
       ),
     },
     {
-      key: 'supplierKey',
-      label: 'Supplier key',
-      render: ({ index }) => (
-        <TextCell
-          n={index + 1}
-          label="Supplier key"
-          mono
-          lock={lock}
-          error={rowErrors?.[index]?.supplierKey?.message}
-          field={register(`fields.${index}.supplierKey`)}
-        />
-      ),
-    },
-    {
       key: 'actions',
       label: 'Actions',
       render: ({ index }) => (
         <span className="inline-flex items-center">
+          <Button
+            size="sm"
+            variant="ghost"
+            icon
+            aria-label={`Main input of field ${index + 1}`}
+            aria-pressed={mainInputs[index] === true}
+            title={lock.title ?? MAIN_INPUT_HINT}
+            disabled={lock.disabled}
+            onClick={() => onMainInput(index, mainInputs[index] !== true)}
+          >
+            <Icon name="inbox" className="ic-sm" />
+          </Button>
           <Button
             size="sm"
             variant="ghost"

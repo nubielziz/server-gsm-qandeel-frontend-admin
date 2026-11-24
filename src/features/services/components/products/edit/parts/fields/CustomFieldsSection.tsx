@@ -8,18 +8,21 @@ import type { FieldsSectionProps } from './sectionProps';
 
 /** The section: a note, the table (or the line saying there are none), and the buttons. */
 export function CustomFieldsSection({ service, lock, onDirtyChange }: FieldsSectionProps) {
-  const { form, list, submit } = useCustomFieldsForm(service);
+  const { form, list, submit, setMainInput } = useCustomFieldsForm(service);
   const { isDirty } = form.formState;
   useReportDirty(isDirty, onDirtyChange);
 
   const rows = list.fields.map((field, index) => ({ id: field.id, index }));
+  const drafts = form.watch('fields');
   const columns = customFieldColumns({
     form,
-    types: form.watch('fields').map((draft) => draft.fieldType),
+    types: drafts.map((draft) => draft.fieldType),
+    mainInputs: drafts.map((draft) => draft.isMainInput),
     count: rows.length,
     lock,
     onMove: list.move,
     onRemove: (index) => list.remove(index),
+    onMainInput: setMainInput,
   });
 
   return (
@@ -44,8 +47,9 @@ export function CustomFieldsSection({ service, lock, onDirtyChange }: FieldsSect
         }
       >
         <p className="mb-3 text-sm text-ink2">
-          What the buyer fills in when ordering, in this order. A pattern is a regular expression the answer
-          must match; the supplier key is the name the supplier uses for the field. Both are optional.
+          What the buyer fills in when ordering, in this order. The name is what the supplier receives; the
+          label is what buyers read (it is the name when left empty). A pattern is a regular expression the
+          answer must match; it is optional.
         </p>
         <DataTable
           skin="list"

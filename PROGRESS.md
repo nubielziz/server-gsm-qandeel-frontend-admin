@@ -11,6 +11,21 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-24): one Name per custom field (decision 024)
+
+The backend's decision 065 gives every custom field of a service one Name (what a supplier receives), with a hidden key the server makes and a flag for the
+main input. The console follows and shows the buyer's answers on the order.
+
+- **The Custom Fields table** (Product / Services, Field part): the columns are No., Name, Label, Type, Required, Pattern and Actions; the Key and Supplier key
+  columns are gone. A saved field's hidden key goes back unchanged, a new row sends none, and a repeated Name is refused in the browser and by the server. The
+  flagged row shows a "Main input" badge and each row has a switch in its Actions (a service has at most one main input).
+- **The order drawer** lists the buyer's answers to the service's custom fields (label, then value) from `GET /admin/orders/:id` (`answers`). The label and the
+  value each read in their own direction, a multi-line answer keeps its line breaks, and an answer that is the order's input is not shown a second time.
+- **The mock layer** plays the server's rules for the fields route (key from the Name within 60 characters, Name within 120, unknown key, repeated Name, one main
+  input, an IMEI service's field named IMEI is the main input when none is flagged) and the order answers as text.
+- **Backend needed** (its decision 065): the wire is in MISMATCHES M368 and M369. The console is released together with that change; an older console cannot save
+  fields against it. The route files made from the backend's contract (`npm run mocks:live`) are made again once the backend carries it.
+
 ## Status (2026-11-24): one Accounts page (decision 023), merged
 
 The backend's decision 064 makes merchants and customers one account type, told apart by a rank. The console follows: the Merchants and Customers
