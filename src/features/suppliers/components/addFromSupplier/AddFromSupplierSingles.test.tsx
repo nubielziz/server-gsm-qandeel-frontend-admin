@@ -95,7 +95,10 @@ describe('the picker', () => {
     const found = () => requests.sent().some((request) => request.url.searchParams.get('q') === 'Telstra');
     await user.type(screen.getByRole('searchbox', { name: 'Search service from any group' }), 'Telstra');
     expect(found()).toBe(false);
-    await user.click(screen.getByRole('button', { name: 'Search' }));
+    // The top bar has a Search button too (on a phone), so the one in the Quick Search box is asked for.
+    await user.click(
+      within(screen.getByRole('group', { name: 'Quick Search' })).getByRole('button', { name: 'Search' }),
+    );
     await waitFor(() => expect(found()).toBe(true));
     expect(await table.findByText('Telstra Australia Unlock')).toBeInTheDocument();
     await waitFor(() => expect(table.queryByText('Sprint USA Premium Unlock')).not.toBeInTheDocument());

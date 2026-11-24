@@ -32,7 +32,12 @@ they used); `/catalog`, `/services` and the older Storefront tabs redirect to th
 - **Group / +Add Group**: the groups of a kind with their order, status and visibility.
 - **Backend needed** (its decision 063): `GET /admin/services/price-grid`, `POST /admin/services/order` with the stored order of
   services, and the optional `status` and `categoryId` of the supplier import. The two repositories are released together.
-- **Checks**: typecheck, lint and the production build pass. The tests were written and are run by the checks on GitHub, not locally.
+- **Checks**: typecheck, lint, the production build and the whole test suite (6,896 tests) pass. The first run on GitHub (2026-11-23)
+  failed 30 tests. Most were expectations left behind by the last fix round (the footer pager's words, the place of a tooltip, a query
+  that now finds two elements); five were defects of the screens and were fixed: a part of the editor was started again after its own
+  save and lost its "Saved" note; the list never settled when the address named a page past the end; the Inventory part drew before
+  the permissions were known; the supplier form said "not among your connected suppliers" for a moment before the list was read; and
+  an address wrote the sub-view of a view (`tab`) after the list's keys.
   Three reviews (the layout against the reference, behaviour, tests and contract), a fix round, and a look at every view in a browser.
 - **Not in this version**: the purchase cost cannot be typed (it comes from the supplier connection); the bulk price change and the
   editors of the price rules, publish runs and code imports are still dialogs.

@@ -56,8 +56,9 @@ export function useAddFromSupplier({ type, initial, onDone }: AddFromSupplierArg
 
   const named = suppliers.suppliers.find((candidate) => candidate.id === supplierId);
   const supplier = named && supplierBlock(named) === undefined ? named : undefined;
+  // Only once the list has been read: before that every supplier would be "not among the connected ones" for a moment.
   const notice =
-    suppliers.status === 'ready' && supplierId !== null && !supplier
+    suppliers.query.isSuccess && supplierId !== null && !supplier
       ? startNotice(supplierId, suppliers.suppliers)
       : undefined;
 

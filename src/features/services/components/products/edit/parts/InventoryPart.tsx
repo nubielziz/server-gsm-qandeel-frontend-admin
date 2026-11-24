@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { EmptyState, FooterPager, SectionHeading, WithSelected, Button, Icon } from '@/components/ui';
 import { VoidCodesDialog } from '../../../VoidCodesDialog';
 import type { ServicePartProps } from '../../types';
+import { ServiceLoading } from '../ServiceLoading';
 import { ImportCodesForm } from './inventory/ImportCodesForm';
 import { StockCounts } from './inventory/StockCounts';
 import { StockTable } from './inventory/StockTable';
@@ -24,6 +25,8 @@ export function InventoryPart({ service, grants, onDirtyChange }: ServicePartPro
   const { selection, codes } = stock;
   // Only unsold codes can be voided; the server skips the others and says so.
   const unsold = codes.filter((code) => selection.has(code.id) && code.status === 'available');
+  // Until the permissions are known the reads wait, so the sections would show a stock that was never read and locks that may be wrong.
+  if (!ready) return <ServiceLoading />;
 
   return (
     <div className="view-frame">

@@ -1,5 +1,6 @@
 // ServiceEditor: reads the service the edit view names and says what the view shows while it cannot draw it: a loading line, the server's
-// refusal (a service that does not exist is told apart from a failed read), or a move to the service's own kind on the strip.
+// refusal (a service that does not exist is told apart from a failed read), or a move to the service's own kind on the strip. It also holds
+// the unsaved mark of the open part, beside the read (see below).
 import { Navigate } from 'react-router';
 import { ButtonLink, EmptyState, ErrorState } from '@/components/ui';
 import { isApiError, type Id } from '@/lib/api';
@@ -8,7 +9,9 @@ import { productsPath, type ServicePartId } from '../../../lib/productsPath';
 import { lastAllLink } from '../all/lastAllAddress';
 import type { ProductsViewProps } from '../types';
 import { OpenService } from './OpenService';
+import { openPart } from './openPart';
 import { ServiceLoading } from './ServiceLoading';
+import { useDirtyMark } from './useDirtyMark';
 
 type EditorProps = ProductsViewProps & { id: Id; part: ServicePartId | null };
 
@@ -17,6 +20,10 @@ export function ServiceEditor({ id, part, type, grants }: EditorProps) {
   const { detail: read, query } = useServiceDetail(id);
   // The app keeps the previous answer while the next one loads: the record of the service before this one is not this service's.
   const service = read?.id === id ? read : undefined;
+  // The open part's unsaved mark lives here and not in OpenService, so a part's report draws this component again and the record is taken
+  // afresh from the cache in that same draw. A save resolves only once the record has been read again, so "nothing unsaved" and the record
+  // the save brought reach usePartStart together: the part adopts that record instead of starting again, which would wipe its "Saved".
+  const mark = useDirtyMark(service ? openPart(service, part, grants).scope : '');
   if (!service) {
     if (query.isError && isApiError(query.error) && query.error.status === 404) {
       return (
@@ -49,6 +56,13 @@ export function ServiceEditor({ id, part, type, grants }: EditorProps) {
     );
   }
   return (
-    <OpenService service={service} part={part} type={type} grants={grants} refreshing={query.isFetching} />
+    <OpenService
+      service={service}
+      part={part}
+      type={type}
+      grants={grants}
+      refreshing={query.isFetching}
+      mark={mark}
+    />
   );
 }

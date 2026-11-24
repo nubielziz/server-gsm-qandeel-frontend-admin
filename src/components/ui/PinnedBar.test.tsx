@@ -1,9 +1,13 @@
 // Tests for PinnedBar: the pinned class, the alignment and the caller classes; and the rules of index.css that keep a short view at the
 // window's height (the frame the bar sits at the foot of), which jsdom cannot lay out.
+import { readFileSync } from 'node:fs';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import styles from '../../styles/index.css?raw';
 import { PinnedBar } from './PinnedBar';
+
+// The style sheet as text, read from the disk (the tests run from the project's folder): the test runner hands a test an empty text for
+// a CSS file it imports, with `?raw` too.
+const styles = readFileSync('src/styles/index.css', 'utf8');
 
 /** What index.css declares for one selector (the rule that starts a line with exactly this selector). */
 function declared(selector: string): string {

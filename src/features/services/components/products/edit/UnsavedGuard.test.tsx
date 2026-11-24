@@ -38,8 +38,11 @@ function open(active: boolean, stays?: string) {
   );
 }
 
-// jsdom cannot open a page: a click that no handler stopped would log "not implemented". Stop it after every other listener has seen it.
-const stopNavigation = (event: MouseEvent) => event.preventDefault();
+// jsdom cannot open a page: a click on a link that no handler stopped would log "not implemented". Stop it after every other listener has
+// seen it. Only a link's click: stopping every click would also stop the submit of the question's "Discard changes".
+const stopNavigation = (event: MouseEvent) => {
+  if (event.target instanceof Element && event.target.closest('a[href]')) event.preventDefault();
+};
 beforeEach(() => document.addEventListener('click', stopNavigation));
 afterEach(() => document.removeEventListener('click', stopNavigation));
 

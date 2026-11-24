@@ -3,7 +3,7 @@
 // square, a Shop square, the edit link), the "With selected" strip under it and the pinned footer with the page and the page size.
 // Every filter, the page and the page size live in the address; every figure and word is the server's. It reads the services with
 // catalog:read (the registry's gate); each control keeps its own permission lock.
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { DataTable, FooterPager, RefreshTool, usePageClamp, useRowSelection } from '@/components/ui';
 import { useCategories, useSupplierChoices } from '../../../hooks/useChoices';
 import { usePutOnShop } from '../../../hooks/usePutOnShop';
@@ -33,17 +33,17 @@ export function AllView({ type, grants }: ProductsViewProps) {
 
   // A change of the list leaves the ticks behind: they were about other rows.
   const { clear } = selection;
-  const go = (patch: Partial<AllAddress>) => {
-    clear();
-    change(patch);
-  };
-  usePageClamp({
-    page: address.page,
-    pageSize: address.size,
-    total,
-    settled,
-    setPage: (page) => go({ page }),
-  });
+  const go = useCallback(
+    (patch: Partial<AllAddress>) => {
+      clear();
+      change(patch);
+    },
+    [clear, change],
+  );
+  // Stable until the address moves: clearing the ticks draws the view again, and a new function would run the clamp again and
+  // restart its move to the last page before it lands.
+  const setPage = useCallback((page: number) => go({ page }), [go]);
+  usePageClamp({ page: address.page, pageSize: address.size, total, settled, setPage });
 
   const columns = serviceColumns({ type, grants, shop: storefront, status: statusSwitch, shopSwitch });
 

@@ -24,11 +24,14 @@ afterEach(() => vi.restoreAllMocks());
 const ADD = '/products?view=add';
 const SERVER_ADD = '/products?view=add&type=server';
 
-/** Opens the view and waits until its menus hold their names (the groups of the kind and the services to copy from). */
-async function openForm(route = ADD) {
+/**
+ * Opens the view and waits until its group menu holds the groups of the kind on the strip: `group` is one of them (Apple is an IMEI
+ * group, Credits a Server one; the menu never offers a group of another kind).
+ */
+async function openForm(route = ADD, group = 'Apple') {
   const app = await openProducts(route);
   await screen.findByRole('textbox', { name: 'Service Name' }, { timeout: 10_000 });
-  await screen.findByRole('option', { name: 'Apple' });
+  await within(menu('Service Listed In Group')).findByRole('option', { name: group });
   return { app, user: userEvent.setup() };
 }
 
@@ -97,7 +100,7 @@ describe('the form', () => {
   });
 
   it('offers only the groups of the kind on the strip, and links "Add New Group" with the kind', async () => {
-    await openForm(SERVER_ADD);
+    await openForm(SERVER_ADD, 'Credits');
     const group = menu('Service Listed In Group');
     await within(group).findByRole('option', { name: 'Credits' });
     const names = within(group)
@@ -158,7 +161,7 @@ describe('adding a service', () => {
   });
 
   it('adds a service of the kind on the strip', async () => {
-    const { user } = await openForm(SERVER_ADD);
+    const { user } = await openForm(SERVER_ADD, 'Credits');
     await user.type(box('Service Name'), 'Credits x5');
     await user.type(box('Code'), 'SRV-CR-5');
     await user.selectOptions(menu('Service Listed In Group'), 'Credits');
@@ -344,7 +347,7 @@ describe('"- Select -"', () => {
   });
 
   it('lists the services of the kind on the strip only', async () => {
-    await openForm(SERVER_ADD);
+    await openForm(SERVER_ADD, 'Credits');
     await screen.findByRole('option', { name: 'Z3X Credits x10' });
     const names = within(menu('Copy settings from'))
       .getAllByRole('option')

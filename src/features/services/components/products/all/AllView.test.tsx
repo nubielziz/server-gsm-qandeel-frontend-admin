@@ -438,7 +438,9 @@ describe('the Status square', () => {
     const table = await servicesTable();
     const square = await table.findByRole('button', { name: 'Z3X Credits x10 active' });
     await user.click(square);
-    expect(await screen.findByText('It has open orders being sent.')).toBeInTheDocument();
+    // The error toast gives the server's title, then its words with the request id after them.
+    expect(await screen.findByText('Service in use')).toBeInTheDocument();
+    expect(screen.getByText(/^It has open orders being sent./)).toBeInTheDocument();
     await waitFor(() => expect(square).toBeEnabled());
     expect(square).toHaveAttribute('aria-pressed', 'true');
   });

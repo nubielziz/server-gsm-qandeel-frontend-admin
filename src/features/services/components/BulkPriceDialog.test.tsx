@@ -18,12 +18,13 @@ vi.setConfig({ testTimeout: 20_000 });
 
 type User = ReturnType<typeof userEvent.setup>;
 
-/** Opens the dialog (on a category, or on the ticked services given) and waits for its categories. */
+/** Opens the dialog (on a category, or on the ticked services given) and waits for its categories when it shows their menu. */
 async function openBulk(selectedIds: readonly number[] = [], onApplied: () => void = () => undefined) {
   await signInAs();
   mountDialog((close) => <BulkPriceDialog selectedIds={selectedIds} onClose={close} onApplied={onApplied} />);
   const dialog = within(await screen.findByRole('dialog', { name: 'Bulk price change' }));
-  await dialog.findByRole('option', { name: 'Credits' });
+  // With ticked services the scope is those services and the category menu is not on screen.
+  if (selectedIds.length === 0) await dialog.findByRole('option', { name: 'Credits' });
   return dialog;
 }
 

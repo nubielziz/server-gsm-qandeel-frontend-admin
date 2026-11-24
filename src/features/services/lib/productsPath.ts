@@ -87,6 +87,7 @@ export function productsPath(link: ProductsLink = {}): string {
   put(params, 'type', link.type);
   put(params, 'id', link.id);
   put(params, 'part', link.part);
+  put(params, 'tab', link.tab);
   put(params, 'group', link.group);
   put(params, 'q', link.q);
   put(params, 'api', link.api);
@@ -97,7 +98,6 @@ export function productsPath(link: ProductsLink = {}): string {
   put(params, 'from', link.from);
   put(params, 'return', link.return);
   put(params, 'run', link.run);
-  put(params, 'tab', link.tab);
   const query = params.toString();
   return query ? `${PRODUCTS_PATH}?${query}` : PRODUCTS_PATH;
 }

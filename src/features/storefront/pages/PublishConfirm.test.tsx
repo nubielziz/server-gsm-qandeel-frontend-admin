@@ -155,13 +155,13 @@ describe('the dialog behind Publish', () => {
     await user.click(await screen.findByRole('button', { name: 'Next page' }));
     await waitFor(() => expect(app.location()).toContain('page=2'));
     expect(app.location()).toContain('sort=cost');
-    expect(await screen.findByText('51–60 of 60')).toBeInTheDocument();
+    expect(await screen.findByText('Results: 51 - 60 of 60')).toBeInTheDocument();
     const dialog = await openConfirm(user);
     await user.click(dialog.getByRole('button', { name: 'Publish 30 services' }));
     await waitFor(() => expect(app.location()).toBe('/products?view=publish&run=5'));
     // The result of the run shows its first rows in the order of the run, not page 2 of the preview's sort.
     expect(await screen.findByText('29 services are on the shop', {}, POLL)).toBeInTheDocument();
-    expect(await screen.findByText('1–50 of 60')).toBeInTheDocument();
+    expect(await screen.findByText('Results: 1 - 50 of 60')).toBeInTheDocument();
     expect(app.location()).toBe('/products?view=publish&run=5');
   });
 

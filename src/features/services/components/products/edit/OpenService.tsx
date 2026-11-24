@@ -1,19 +1,19 @@
 // OpenService: a service that has been read, drawn as the layout of a record with many parts. The parts come from the registry
 // (lib/serviceParts), narrowed to what the role may see; the part the address names is shown, or the first one when it names none (or one
-// the role may not see). The editor holds the unsaved-changes question: a part says it has unsaved changes, and while it has, another
-// part, the back link, another view or a reload asks first (UnsavedGuard). It also keeps a part from working on a stale copy of the service
-// (usePartStart): a part that fills a form from the record is not drawn while the record is being read again, and starts again when the
-// record changes while it holds nothing unsaved.
+// the role may not see). It asks the unsaved-changes question: a part says it has unsaved changes (the mark ServiceEditor holds), and
+// while it has, another part, the back link, another view or a reload asks first (UnsavedGuard). It also keeps a part from working on a
+// stale copy of the service (usePartStart): a part that fills a form from the record is not drawn while the record is being read again,
+// and starts again when the record changes while it holds nothing unsaved.
 import { EmptyState, ButtonLink, PartsLayout } from '@/components/ui';
 import type { ServiceType } from '@/lib/serviceTypes';
 import type { ServiceGrants } from '../../../hooks/useServiceGrants';
 import { productsPath, type ServicePartId } from '../../../lib/productsPath';
-import { visibleParts } from '../../../lib/serviceParts';
 import type { ServiceDetail } from '../../../types';
 import { lastAllLink } from '../all/lastAllAddress';
+import { openPart } from './openPart';
 import { ServiceLoading } from './ServiceLoading';
 import { UnsavedGuard } from './UnsavedGuard';
-import { useDirtyMark } from './useDirtyMark';
+import type { DirtyMark } from './useDirtyMark';
 import { usePartStart } from './usePartStart';
 
 /**
@@ -30,15 +30,15 @@ export interface OpenServiceProps {
   grants: ServiceGrants;
   /** The record is being read again (a save marked it stale): a part that fills a form from it is not drawn until the new copy is here. */
   refreshing: boolean;
+  /** The unsaved mark of the open part (useDirtyMark on the scope of openPart), held by the caller beside its read of the record. */
+  mark: DirtyMark;
 }
 
 /** The menu of parts, the part that is open and the question asked before its unsaved changes are left. */
-export function OpenService({ service, part, type, grants, refreshing }: OpenServiceProps) {
-  const parts = visibleParts(grants, service);
-  const current = parts.find((candidate) => candidate.id === part) ?? parts[0];
-  const scope = `${service.id}:${current?.id ?? ''}`;
+export function OpenService({ service, part, type, grants, refreshing, mark }: OpenServiceProps) {
+  const { parts, current, scope } = openPart(service, part, grants);
   // One mark per part of one service: a part that has been closed cannot mark the next one.
-  const { dirty, report } = useDirtyMark(scope);
+  const { dirty, report } = mark;
   const { waiting, version } = usePartStart(scope, service, {
     fromRecord: current !== undefined && STARTS_FROM_RECORD.includes(current.id),
     dirty,

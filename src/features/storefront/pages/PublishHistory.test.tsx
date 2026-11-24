@@ -9,7 +9,7 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import type { PublishRun } from '../types';
 import { recordRequests } from '../test/requests';
-import { lastOf, openPublishStart, PUBLISH_PERMISSIONS } from '../test/publishPage';
+import { lastOf, openPublishStart } from '../test/publishPage';
 import { tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
@@ -183,15 +183,5 @@ describe('paging, and the states of the table', () => {
     expect(await rowOfRun(1)).toBeTruthy();
   });
 
-  it('is hidden, with the permission named, and asks nothing for a role without storefront:read', async () => {
-    const requests = recordRequests();
-    await openPublishStart({ permissions: PUBLISH_PERMISSIONS.filter((one) => one !== 'storefront:read') });
-    expect(await screen.findByText('Earlier runs are hidden')).toBeInTheDocument();
-    expect(screen.getByText('You need the storefront:read permission to see them.')).toBeInTheDocument();
-    expect(
-      requests
-        .sent()
-        .some((sent) => /\/admin\/publish-runs$/.test(sent.url.pathname) && sent.method === 'GET'),
-    ).toBe(false);
-  });
+  // A role without storefront:read never reaches this list: the Shop Publish view itself needs that permission (lib/productsViews.tsx).
 });

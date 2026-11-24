@@ -268,7 +268,7 @@ describe('the status of each flag and blocking reason the mock shows on page one
     async (id, mark, tip) => {
       await openPreview();
       const row = await previewRow(codeOf(id));
-      expect(row.getByText(mark).parentElement).toHaveAttribute('title', tip);
+      expect(row.getByTitle(tip)).toHaveTextContent(mark);
       expect(row.queryByText('Cannot publish')).not.toBeInTheDocument();
     },
   );

@@ -14,7 +14,8 @@ describe('the command palette', () => {
     const user = userEvent.setup();
     const app = await openProducts('/products?view=groups');
     await user.keyboard('{Control>}k{/Control}');
-    await user.type(await screen.findByRole('combobox'), 'chimera');
+    // By its name: the list behind the palette ends in a page size menu, which is a combobox too.
+    await user.type(await screen.findByRole('combobox', { name: /^Search orders, IMEIs/ }), 'chimera');
     // Orders of that service are found too (labelled with their number), so pick the service by its own label.
     const hit = await screen.findByRole('option', { name: /^Chimera Tool 1 Month/ });
     expect(within(hit).getByText('SRV-CHM-1M')).toBeInTheDocument();

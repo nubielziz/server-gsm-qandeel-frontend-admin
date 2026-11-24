@@ -39,7 +39,8 @@ export function useRowSelection<K extends RowKey = RowKey>(): RowSelection<K> {
     });
   }, []);
 
-  const clear = useCallback(() => setSelected(new Set()), []);
+  // Nothing ticked stays the same set: a caller that clears on every change of its list does not draw the page again for nothing.
+  const clear = useCallback(() => setSelected((prev) => (prev.size === 0 ? prev : new Set())), []);
 
   return useMemo(
     () => ({ selected, has: (key: K) => selected.has(key), toggle, setMany, clear }),

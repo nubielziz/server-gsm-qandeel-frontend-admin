@@ -352,7 +352,8 @@ describe('with selected', () => {
     expect(
       await summary.findByText(/Apple still has 4 services\. Move them to another category first\./),
     ).toBeInTheDocument();
-    await user.click(summary.getByRole('button', { name: 'Close' }));
+    // The summary has two: the header's X, then the footer's button.
+    await user.click(summary.getAllByRole('button', { name: 'Close' }).at(-1) as HTMLElement);
     await waitFor(async () => expect(await groupNames()).toEqual(IMEI_GROUPS));
     expect((await listCategories()).data.some((category) => category.name === 'Spare')).toBe(false);
   });

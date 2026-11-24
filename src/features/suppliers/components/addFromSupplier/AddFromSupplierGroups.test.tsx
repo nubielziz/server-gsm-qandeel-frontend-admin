@@ -283,7 +283,11 @@ describe('what Add sends', () => {
       'title',
       'No shop price rule is active. Make one first, then put them on the shop.',
     );
-    expect(screen.getByRole('link', { name: 'Open the shop price rules' })).toHaveAttribute(
+    // The review list below the groups has the same link, so the one that sits with the reason is found through the reason.
+    const reason = screen.getByText(
+      'No shop price rule is active. Make one first, then put them on the shop.',
+    );
+    expect(within(reason).getByRole('link', { name: 'Open the shop price rules' })).toHaveAttribute(
       'href',
       '/products?view=rules&tab=shop',
     );
