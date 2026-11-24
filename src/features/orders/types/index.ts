@@ -1,6 +1,7 @@
 // Types for the orders feature (`/orders`): the order and its timeline, the action bodies and the filters of the list.
 // The map gives the order's table and one example but no bodies (MISMATCHES M10), so every shape below is an assumed
 // contract, built from the generated rows in `src/lib/api/schema.gen.ts` and narrowed to what the screens use.
+import type { RankKind } from '@/features/accounts';
 import type { Id, IsoDateTime } from '@/lib/api';
 import type { OrderEventRow, OrderRow } from '@/lib/api/schema.gen';
 import type { ServiceType } from '@/lib/serviceTypes';
@@ -13,7 +14,7 @@ export type OrderStatus = 'pending' | 'processing' | 'completed' | 'rejected';
 /** The staff queue an order waits in. `null` means nobody has to act on it. */
 export type OrderQueue = 'pending' | 'manual' | 'needs_attention' | 'verification' | 'review';
 
-/** Merchant orders (API and portal) or storefront orders (customers who paid by card or crypto). */
+/** The door an order came through: merchant orders (API and portal) or storefront orders (paid by card, crypto or store balance). */
 export type OrderChannel = 'b2b' | 'b2c';
 
 /** The four kinds of service (the map's order example), shown as IMEI, Server, Remote and File. Kept in the shared layer. */
@@ -21,6 +22,15 @@ export type { ServiceType };
 
 /** A record named in a join. */
 export type NamedRef = { id: Id; name: string };
+
+/** The rank of the buyer, named in a join. The wire says `merchant` and `retail`. */
+export type OrderRank = NamedRef & { kind: RankKind };
+
+/**
+ * The buyer of an order: one account type carries merchants and shop customers, told apart by `rank`. A guest is an account made by
+ * a checkout, with no login. `email` is masked by the server for staff without `clients:read`.
+ */
+export type OrderAccount = NamedRef & { email: string; rank: OrderRank; guest: boolean };
 
 /** The ordered service. `slaMinutes` is the target time; `category` names the service's category when sent. */
 export type OrderService = NamedRef & { type: ServiceType; slaMinutes: number; category?: string | null };
@@ -57,10 +67,8 @@ export type Order = Pick<
   /** How it arrived (`dhru`, `portal`, `store`; `v1` on an order from before the REST API was retired). */
   source: string;
   service: OrderService;
-  /** The merchant, for `b2b` orders. */
-  client: NamedRef | null;
-  /** The customer, for `b2c` orders. */
-  customer: (NamedRef & { email: string }) | null;
+  /** The buyer, whatever the door: merchant ranks order from the portal and the API, retail ranks from the shop. */
+  account: OrderAccount;
   supplier: NamedRef | null;
   supplierRef: string | null;
   attempts: number;
@@ -74,13 +82,14 @@ export type Order = Pick<
 
 // ---- Timeline ----
 
-/** Who did something to the order. */
-export type EventActorType = 'staff' | 'client' | 'customer' | 'system' | 'supplier';
+/** Who did something to the order. `client` and `customer` are the words of rows written before the accounts merged; new rows say `account`. */
+export type EventActorType = 'staff' | 'account' | 'client' | 'customer' | 'system' | 'supplier';
 
 /**
  * One line of the order's history (`GET /admin/orders/:id/events`, assumed contract). `data` is free-form; when it
  * has a `message` the console shows that sentence, else it builds one from the event type and the other fields
- * (`reason`, `body`…).
+ * (`reason`, `body`…). `account` is the account the actor is: the server resolves an old `client` or `customer` row through the
+ * legacy map, so the console never guesses; `null` for staff, supplier and system rows.
  */
 export type OrderEvent = Omit<
   OrderEventRow,
@@ -89,6 +98,7 @@ export type OrderEvent = Omit<
   fromStatus: string | null;
   toStatus: string | null;
   actor: { type: EventActorType; id: Id | null; name: string | null };
+  account: { id: Id } | null;
 };
 
 // ---- Action bodies ----
@@ -151,7 +161,9 @@ export type BulkReplyResult = { applied: number; failed: { orderId: Id; title: s
 
 /**
  * What the list endpoint filters by (simple-rest field filters plus `q`, `GET /admin/orders`): an array repeats the
- * key. `pastSla` asks for the open orders that are late; the server decides which ones those are.
+ * key. `accountId` is the buyer (a merchant number is an account number) and `rankId` the buyer's rank; `clientId` and
+ * `customerId` are not sent any more (`customerId` answers 422). `pastSla` asks for the open orders that are late; the server
+ * decides which ones those are.
  */
 export type OrderListFilters = {
   status?: OrderStatus | OrderStatus[];
@@ -159,8 +171,8 @@ export type OrderListFilters = {
   q?: string;
   type?: ServiceType;
   supplierId?: Id;
-  clientId?: Id;
-  customerId?: Id;
+  accountId?: Id;
+  rankId?: Id;
   channel?: OrderChannel;
   pastSla?: boolean;
 };
@@ -173,5 +185,8 @@ export type OrderListFilters = {
  */
 export type SupplierOption = NamedRef & { status?: string; enabled?: boolean };
 
-/** A merchant as the merchant filter needs it (assumed contract; the merchants feature owns the route). */
-export type ClientOption = NamedRef;
+/** An account as the merchant filter needs it (the accounts feature owns `GET /admin/clients`). */
+export type AccountOption = NamedRef;
+
+/** A rank as the rank filter needs it (the accounts feature owns `GET /admin/client-groups`). */
+export type RankOption = NamedRef;

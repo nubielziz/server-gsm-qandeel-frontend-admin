@@ -10,8 +10,7 @@ import { RevenuePanel } from './RevenuePanel';
 import { StatStrip } from './StatStrip';
 import { StorefrontPanel } from './StorefrontPanel';
 import { SupplierPanel } from './SupplierPanel';
-import { TopCustomersPanel } from './TopCustomersPanel';
-import { TopMerchantsPanel } from './TopMerchantsPanel';
+import { TopAccountsPanel } from './TopAccountsPanel';
 
 export interface DashboardBodyProps {
   data: Dashboard | undefined;
@@ -21,7 +20,7 @@ export interface DashboardBodyProps {
   chartView: ChartView;
   onRange: (range: ChartRange) => void;
   onChartView: (view: ChartView) => void;
-  /** Whether the staff member has `reports:read`, which the top merchants list needs. */
+  /** Whether the staff member has `reports:read`, which the top accounts list needs. */
   canSeeReports: boolean;
   /**
    * `data` is the last answer, kept while the one for a new channel or period loads. A panel the old channel did not
@@ -67,10 +66,7 @@ export function DashboardBody({
         <div className="min-w-0 space-y-4">
           <QueuePanel queues={data?.queues} scope={scope} />
           <SupplierPanel suppliers={data?.suppliers} />
-          {scope !== 'b2c' && canSeeReports && <TopMerchantsPanel days={days} />}
-          {scope !== 'b2b' && (
-            <TopCustomersPanel customers={data ? part(data.topCustomers) : undefined} days={days} />
-          )}
+          {canSeeReports && <TopAccountsPanel days={days} scope={scope} />}
         </div>
       </div>
     </>

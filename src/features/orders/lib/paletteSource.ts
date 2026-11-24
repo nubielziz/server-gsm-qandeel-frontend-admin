@@ -6,7 +6,7 @@ import { listOrders } from '../api';
 import { orderPath } from '../hooks/useOrderDrawer';
 import { normalizeSearch } from './filters';
 import { orderLabel } from './status';
-import { maskedCustomerLabel } from '@/lib/format';
+import { maskedAccountLabel } from '@/lib/format';
 
 /** Most orders the palette lists (the demo's limit). */
 export const PALETTE_ORDER_LIMIT = 5;
@@ -23,7 +23,7 @@ export const ordersPaletteSource: PaletteSource = {
     return data.map((order) => ({
       id: `order:${order.id}`,
       label: `${orderLabel(order)}  ${order.service.name}`,
-      hint: order.customer ? maskedCustomerLabel(order.customer) : order.client?.name,
+      hint: maskedAccountLabel(order.account),
       icon: 'orders' as const,
       run: () => go(orderPath(order.id)),
     }));

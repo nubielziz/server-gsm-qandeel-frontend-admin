@@ -27,8 +27,8 @@ export type RefundStatus = 'requested' | 'processing' | 'completed' | 'failed' |
 /** `original` goes back to the same payment method; `manual` is paid out by hand (a crypto payment the gateway cannot reverse). */
 export type RefundMethod = 'original' | 'manual';
 
-/** Who opened a refund: the customer, a staff member, or the system (a failed unlock is refunded by itself). */
-export type RefundRequester = { type: 'customer' | 'staff' | 'system'; name: string | null };
+/** Who opened a refund: the buyer's account, a staff member, or the system (a failed unlock is refunded by itself). */
+export type RefundRequester = { type: 'account' | 'staff' | 'system'; name: string | null };
 
 /** The order a refund is for: what the approve dialog says about delivery and the supplier cost. */
 export type RefundOrder = {
@@ -71,6 +71,7 @@ export type Refund = Pick<RefundRow, 'id' | 'orderId' | 'amount' | 'reason' | 'c
   requestedBy: RefundRequester;
   /** The staff member who decided it, once someone has. */
   approvedBy: NamedRef | null;
+  /** The buyer: an account (its number is an account number). The key keeps the word the screens use. */
   customer: NamedRef | null;
   order: RefundOrder;
   payment: RefundPayment;
@@ -122,6 +123,7 @@ export type Dispute = Pick<
   fx: Decimal;
   /** What the bank or the customer said, in a sentence. */
   note: string | null;
+  /** The buyer: an account number, with the account's name. */
   customer: NamedRef | null;
   strength?: EvidenceStrength | null;
   evidence?: EvidenceItem[];
@@ -139,6 +141,7 @@ export type PaymentLine = Pick<PaymentRow, 'id' | 'orderId' | 'amount' | 'feeAmo
   status: PaymentStatus;
   currency: string;
   fx: Decimal;
+  /** The buyer: an account number, with the account's name. */
   customer: NamedRef | null;
 };
 

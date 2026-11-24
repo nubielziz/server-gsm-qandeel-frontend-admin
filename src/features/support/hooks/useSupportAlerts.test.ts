@@ -89,7 +89,7 @@ afterEach(() => {
   hidden(false);
 });
 
-describe('the alert for a customer or merchant message', () => {
+describe('the alert for a message of an account', () => {
   it('plays the sound when the requester writes and the row that follows says the ticket is unassigned or mine', () => {
     mount();
     stream.emit('ticket.message.created', wrote(5));
@@ -125,12 +125,12 @@ describe('the alert for a customer or merchant message', () => {
     expect(sound.play).toHaveBeenCalledTimes(1);
   });
 
-  it('alerts for a merchant’s message as for a customer’s', () => {
+  it('alerts for the message of an account of a merchant rank as for a retail one', () => {
     mount();
-    stream.emit('ticket.message.created', wrote(5, { authorType: 'client' }));
+    stream.emit('ticket.message.created', wrote(5, { authorType: 'account', authorId: 5 }));
     stream.emit(
       'ticket.updated',
-      updated({ requesterType: 'client', requester: { name: 'Cairo GSM Lab', email: null } }),
+      updated({ requesterId: 5, requester: { name: 'Cairo GSM Lab', email: null, rankKind: 'merchant' } }),
     );
     expect(sound.play).toHaveBeenCalledTimes(1);
   });

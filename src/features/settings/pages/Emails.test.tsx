@@ -75,6 +75,35 @@ describe('the list', () => {
     expect(screen.getByText('1 template')).toBeInTheDocument();
   });
 
+  it('never shows the staff alert templates of the Telegram channel, whatever audience the menu holds', async () => {
+    const user = userEvent.setup();
+    const staffEmail = {
+      id: 5,
+      event: 'staff.invited',
+      channel: 'email',
+      audience: 'staff',
+      subject: 'You were added to the console',
+      body: 'Welcome.',
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const alert = { ...staffEmail, id: 6, event: 'system.alert', channel: 'telegram', subject: '' };
+    mockServer.use(
+      http.get('*/admin/notification-templates', () =>
+        HttpResponse.json([staffEmail, alert], { headers: { 'x-total-count': '2' } }),
+      ),
+    );
+    await openSettings(`${EMAILS}&audience=staff`);
+    expect(await screen.findByText('Staff invited')).toBeInTheDocument();
+    expect(screen.queryByText('System alert')).not.toBeInTheDocument();
+    expect(screen.getByText('1 template')).toBeInTheDocument();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Who receives it' }), 'all');
+    expect(await screen.findByRole('heading', { name: 'All messages' })).toBeInTheDocument();
+    expect(screen.getByText('Staff invited')).toBeInTheDocument();
+    expect(screen.queryByText('System alert')).not.toBeInTheDocument();
+    expect(screen.getByText('1 template')).toBeInTheDocument();
+  });
+
   it('shows an empty state with a way to add one', async () => {
     mockServer.use(
       http.get('*/admin/notification-templates', () =>

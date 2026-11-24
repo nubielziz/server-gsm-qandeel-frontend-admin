@@ -32,7 +32,7 @@ describe('loading', () => {
     await openDashboard();
     expect(control('Channel').getByRole('button', { name: 'All' })).toBeInTheDocument();
     await waitFor(() => expect(panelTitles()).toContain('Supplier health'));
-    // The key figures, the attention list, the storefront funnel, the queue, the suppliers and the customers.
+    // The key figures, the attention list, the storefront funnel, the queue and the suppliers.
     expect(mainArea().getAllByRole('status', { name: 'Loading' }).length).toBeGreaterThanOrEqual(5);
     expect(mainArea().queryByText('$1,500')).not.toBeInTheDocument();
 

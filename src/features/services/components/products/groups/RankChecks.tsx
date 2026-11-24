@@ -1,4 +1,4 @@
-// RankChecks: the "Visible to" choice of a group: "All ranks" and one box per rank (merchant group). None ticked means every rank, so "All ranks"
+// RankChecks: the "Visible to" choice of a group: "All ranks" and one box per rank. None ticked means every rank, so "All ranks"
 // is the state of an empty list: ticking a rank turns it off and ticking it again clears the ranks.
 import { CheckboxField } from '@/components/ui';
 import type { Id } from '@/lib/api';

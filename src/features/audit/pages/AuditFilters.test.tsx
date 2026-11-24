@@ -48,32 +48,65 @@ describe('the filters', () => {
     await entries();
     const type = screen.getByRole('combobox', { name: 'Filter by record type' });
     expect(within(type).getAllByRole('option')[0]).toHaveTextContent('All records');
-    await user.selectOptions(type, 'Merchant');
-    await waitFor(() => expect(app.location()).toBe('/audit?type=merchant'));
-    await waitFor(() => expect(countText()).toBe('6 entries'));
+    await user.selectOptions(type, 'Account');
+    await waitFor(() => expect(app.location()).toBe('/audit?type=account'));
+    // The one filter lists the rows that say merchant, customer or account.
+    await waitFor(() => expect(countText()).toBe('7 entries'));
+  });
+
+  it('offers one record type for accounts and none for the old words', async () => {
+    await openAudit();
+    await entries();
+    const type = screen.getByRole('combobox', { name: 'Filter by record type' });
+    const names = within(type)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(names).toContain('Account');
+    expect(names).not.toContain('Merchant');
+    expect(names).not.toContain('Customer');
   });
 
   it('filters to one record when the address names its type and id, with a chip that removes it', async () => {
     const user = userEvent.setup();
-    const app = await openAudit('/audit?type=merchant&record=5');
+    const app = await openAudit('/audit?type=account&record=5');
     await waitFor(() => expect(countText()).toBe('2 entries'));
     for (const row of await entries()) expect(row).toHaveTextContent('Cairo GSM Lab');
     expect(screen.getByText('Record #5')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Remove the filter on record #5' }));
-    await waitFor(() => expect(app.location()).toBe('/audit?type=merchant'));
-    await waitFor(() => expect(countText()).toBe('6 entries'));
+    await waitFor(() => expect(app.location()).toBe('/audit?type=account'));
+    await waitFor(() => expect(countText()).toBe('7 entries'));
     expect(screen.queryByText('Record #5')).not.toBeInTheDocument();
+  });
+
+  it('finds the old customer rows of an account by its new number', async () => {
+    await openAudit('/audit?type=account&record=119');
+    await waitFor(() => expect(countText()).toBe('1 entry'));
+    expect(await entries()).toHaveLength(1);
+    expect((await entries())[0]).toHaveTextContent('Jack Turner');
+  });
+
+  it('reads an old address that says merchant as the account filter', async () => {
+    await openAudit('/audit?type=merchant&record=5');
+    await waitFor(() => expect(countText()).toBe('2 entries'));
+    expect(screen.getByRole('combobox', { name: 'Filter by record type' })).toHaveValue('account');
+  });
+
+  it('reads an old address that says customer as the account filter without the old number', async () => {
+    await openAudit('/audit?type=customer&record=19');
+    await waitFor(() => expect(countText()).toBe('7 entries'));
+    expect(screen.getByRole('combobox', { name: 'Filter by record type' })).toHaveValue('account');
+    expect(screen.queryByText('Record #19')).not.toBeInTheDocument();
   });
 
   it('drops the record when the record type changes, and Clear filters removes it too', async () => {
     const user = userEvent.setup();
-    const app = await openAudit('/audit?type=merchant&record=5');
+    const app = await openAudit('/audit?type=account&record=5');
     await waitFor(() => expect(countText()).toBe('2 entries'));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by record type' }), 'Order');
     await waitFor(() => expect(app.location()).toBe('/audit?type=order'));
     expect(screen.queryByText(/^Record #/)).not.toBeInTheDocument();
     app.unmount();
-    const again = await openAudit('/audit?type=merchant&record=5');
+    const again = await openAudit('/audit?type=account&record=5');
     await waitFor(() => expect(countText()).toBe('2 entries'));
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     await waitFor(() => expect(again.location()).toBe('/audit'));

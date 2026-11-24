@@ -2,4 +2,5 @@
 // and the entry-number helper. The page itself is not re-exported here: it loads lazily from `./pages`.
 export * from './api';
 export { auditCode } from './lib/verb';
+export { auditAccountPath } from './lib/paths';
 export * from './types';

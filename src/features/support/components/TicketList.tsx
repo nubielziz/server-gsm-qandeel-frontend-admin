@@ -48,7 +48,7 @@ export function TicketList({
       <TicketToolbar
         filters={filters}
         onChange={onFiltersChange}
-        customerName={filters.customerId === null || !tickets[0] ? undefined : requesterLabel(tickets[0])}
+        accountName={filters.accountId === null || !tickets[0] ? undefined : requesterLabel(tickets[0])}
       />
       <QueryState
         isLoading={state.isLoading}

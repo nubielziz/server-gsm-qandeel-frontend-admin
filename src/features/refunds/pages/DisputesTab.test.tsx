@@ -43,7 +43,7 @@ describe('the disputes table', () => {
     await openRefunds(DISPUTES);
     const soon = await rowWith('Card disputes', 'DP-2004');
     expect(soon.getByRole('button', { name: 'SF-20405' })).toBeInTheDocument();
-    expect(soon.getByRole('link', { name: 'Olivia Grant' })).toHaveAttribute('href', '/customers/25');
+    expect(soon.getByRole('link', { name: 'Olivia Grant' })).toHaveAttribute('href', '/accounts/125');
     expect(soon.getByText('Fraudulent (10.4)')).toBeInTheDocument();
     expect(soon.getByText('Customer says they did not make this purchase')).toBeInTheDocument();
     expect(soon.getByText('$11.99')).toBeInTheDocument();

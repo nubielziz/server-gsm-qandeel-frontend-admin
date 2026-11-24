@@ -17,12 +17,12 @@ describe('the trial balance', () => {
     const table = await tableNamed('Trial balance');
     const names = (await table.findAllByRole('row')).map((row) => row.textContent ?? '');
     expect(names[1]).toMatch(/^Bank/);
-    expect(names.findIndex((text) => text.startsWith('Client wallets'))).toBeGreaterThan(1);
+    expect(names.findIndex((text) => text.startsWith('Merchant wallets'))).toBeGreaterThan(1);
     const bank = await rowWith('Trial balance', 'Bank');
     expect(bank.getByText('Asset')).toBeInTheDocument();
     expect(bank.getByText('bank')).toBeInTheDocument();
     expect(bank.getByText(/^\$\d/)).toBeInTheDocument();
-    const wallets = await rowWith('Trial balance', 'Client wallets');
+    const wallets = await rowWith('Trial balance', 'Merchant wallets');
     expect(wallets.getByText('Liability')).toBeInTheDocument();
     // A liability is a credit: the debit cell holds a dash.
     expect(wallets.getAllByText('–')).toHaveLength(1);

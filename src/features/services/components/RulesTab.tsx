@@ -1,4 +1,4 @@
-// RulesTab: the Merchant price rules view (the old "Rules and groups" tab): the merchant groups (read-only, managed on the merchants page), the
+// RulesTab: the Merchant price rules view (the old "Rules and groups" tab): the ranks (read-only, managed on the Accounts page), the
 // pricing rules, a note on where fixed prices are set, and the floor policy. The view's one primary button, New rule, sits in the pinned bar.
 // Ports `rulesTab` of 43-p-services.js.
 import { useState } from 'react';

@@ -31,6 +31,20 @@ describe('featureManifests', () => {
     );
   });
 
+  // The accounts feature's manifest holds the Accounts page, and the merchants and customers features are gone.
+  it('fills the Accounts page with one feature, and no feature fills the pages of Merchants or Customers', () => {
+    const pages = featureManifests.flatMap((manifest) => (manifest.page ? [manifest.page.name] : []));
+    expect(pages.filter((name) => name === 'accounts')).toHaveLength(1);
+    expect(pages).not.toContain('merchants');
+    expect(pages).not.toContain('customers');
+    const accounts = featureManifests.find((manifest) => manifest.id === 'accounts');
+    expect(accounts?.page).toMatchObject({ name: 'accounts', heading: 'Accounts' });
+    expect(accounts?.page?.list).toBeTypeOf('function');
+    expect(accounts?.page?.detail).toBeTypeOf('function');
+    // The same any-of permission as the page resource, so a role that holds only `groups:read` still opens the page.
+    expect(accounts?.page?.permission).toEqual(['clients:read', 'groups:read']);
+  });
+
   it('gives the Notifications page a list and a detail view, and the staff bell to the top bar', () => {
     const notifications = featureManifests.find((manifest) => manifest.id === 'notifications');
     expect(notifications?.page).toMatchObject({ name: 'notifications', heading: 'Notifications' });

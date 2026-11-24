@@ -11,7 +11,7 @@ import {
 import { lm, money0 } from '@/lib/format';
 import { badgeFor, DISPUTE_BADGE, disputeLabel } from '../lib/labels';
 import type { Dispute } from '../types';
-import { CustomerLink } from './CustomerLink';
+import { AccountLink } from './AccountLink';
 import { EvidenceDue } from './EvidenceDue';
 import { OrderLink } from './OrderLink';
 import { StatusBadge } from './StatusBadge';
@@ -65,7 +65,7 @@ export function DisputesTable({
       key: 'who',
       label: 'Customer',
       hide: 'md',
-      render: (dispute) => <CustomerLink customer={dispute.customer} />,
+      render: (dispute) => <AccountLink account={dispute.customer} />,
     },
     {
       key: 'reason',

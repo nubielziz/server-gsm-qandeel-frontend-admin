@@ -89,7 +89,7 @@ export function seedCampaigns(now: number): { items: SeedCampaign[]; nextRowId: 
     updatedAt: iso(now - DAY),
   };
 
-  // 3: a draft for merchants.
+  // 3: a draft for the accounts of merchant ranks.
   const third: CampaignDetail = {
     ...base,
     id: 3,

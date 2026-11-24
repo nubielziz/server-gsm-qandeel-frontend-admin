@@ -22,7 +22,7 @@ describe('SidebarNav', () => {
     renderNav({
       orders: { count: 43, late: 17 },
       support: { count: 10, late: 3, lateLabel: 'past the reply target' },
-      merchants: { count: 2 },
+      refunds: { count: 2 },
     });
     const orders = screen.getByRole('link', { name: /^Orders/ });
     expect(within(orders).getByText('43')).toHaveClass('count');
@@ -33,9 +33,35 @@ describe('SidebarNav', () => {
       within(screen.getByRole('link', { name: /^Support/ })).getByText('3 past the reply target'),
     ).toBeInTheDocument();
 
-    const merchants = screen.getByRole('link', { name: /^Merchants/ });
-    expect(within(merchants).getByText('2')).toBeInTheDocument();
-    expect(merchants.querySelector('.dot')).toBeNull();
+    const refunds = screen.getByRole('link', { name: /^Refunds/ });
+    expect(within(refunds).getByText('2')).toBeInTheDocument();
+    expect(refunds.querySelector('.dot')).toBeNull();
+  });
+
+  it('lists one Accounts entry in Operations, after Orders, in the place of Merchants and Customers', () => {
+    renderNav({});
+    const operations = PAGES.filter((page) => page.meta.group === 'Operations').map(
+      (page) => page.meta.label,
+    );
+    expect(operations.slice(0, 3)).toEqual(['Dashboard', 'Orders', 'Accounts']);
+    expect(screen.getAllByRole('link', { name: 'Accounts' })).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Accounts' })).toHaveAttribute('href', '/accounts');
+    expect(screen.queryByRole('link', { name: /^Merchants/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Customers/ })).not.toBeInTheDocument();
+  });
+
+  it('shows no count chip beside Accounts when no count is given for it', () => {
+    renderNav({ orders: { count: 4 } });
+    const accounts = screen.getByRole('link', { name: 'Accounts' });
+    expect(accounts.querySelector('.count')).toBeNull();
+    expect(accounts.querySelector('.dot')).toBeNull();
+  });
+
+  it('shows Accounts alone for a role that may open only that page', () => {
+    const accounts = PAGES.filter((page) => page.name === 'accounts');
+    renderNav({}, accounts);
+    expect(screen.getByText('Operations')).toBeInTheDocument();
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Accounts']);
   });
 
   it('shows nothing for a zero count or an unknown page', () => {

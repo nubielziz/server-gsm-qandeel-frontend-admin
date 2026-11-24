@@ -140,7 +140,7 @@ describe('the previews', () => {
     const answer = {
       total: 3,
       reachable: 2,
-      byType: { staff: 2, client: 0, customer: 0 },
+      byType: { staff: 2, merchant: 0, retail: 0 },
       byChannel: { inApp: 2, email: 0 },
       excluded: { noConsent: 0, optedOut: 0, noAccount: 1 },
     };

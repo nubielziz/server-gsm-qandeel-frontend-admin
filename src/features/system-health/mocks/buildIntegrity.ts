@@ -1,4 +1,4 @@
-// The answer of `GET /admin/system/integrity`: the four ledger checks of the last finished run, and whether a run is
+// The answer of `GET /admin/system/integrity`: the ledger checks of the last finished run, and whether a run is
 // working now. The check only reads the ledger; the mock never changes a balance.
 import type { IntegrityReport } from '../types';
 import { runningRun } from './runs';

@@ -24,42 +24,57 @@ const params = (query: string) => new URLSearchParams(query);
 
 describe('parseSupportFilters', () => {
   it('opens on the open tickets, everyone, no search', () => {
-    expect(parseSupportFilters(params(''))).toEqual({ filter: 'open', who: 'all', q: '', customerId: null });
+    expect(parseSupportFilters(params(''))).toEqual({ filter: 'open', who: 'all', q: '', accountId: null });
   });
 
   it('reads each parameter', () => {
-    expect(parseSupportFilters(params('filter=late&who=merchants&q=refund&customerId=28'))).toEqual({
+    expect(parseSupportFilters(params('filter=late&who=merchants&q=refund&accountId=128'))).toEqual({
       filter: 'late',
       who: 'merchants',
       q: 'refund',
-      customerId: 28,
+      accountId: 128,
     });
   });
 
-  it('opens one customer’s tickets on All unless the address says otherwise', () => {
-    expect(parseSupportFilters(params('customerId=28')).filter).toBe('all');
-    expect(parseSupportFilters(params('customerId=28&filter=resolved')).filter).toBe('resolved');
-    expect(defaultFilter(28)).toBe('all');
+  it('opens one account’s tickets on All unless the address says otherwise', () => {
+    expect(parseSupportFilters(params('accountId=128')).filter).toBe('all');
+    expect(parseSupportFilters(params('accountId=128&filter=resolved')).filter).toBe('resolved');
+    expect(defaultFilter(128)).toBe('all');
     expect(defaultFilter(null)).toBe('open');
   });
 
   it('drops anything unknown or malformed', () => {
-    expect(parseSupportFilters(params('filter=zzz&who=nobody&customerId=abc'))).toEqual({
+    expect(parseSupportFilters(params('filter=zzz&who=nobody&accountId=abc'))).toEqual({
       filter: 'open',
       who: 'all',
       q: '',
-      customerId: null,
+      accountId: null,
     });
-    expect(parseSupportFilters(params('customerId=0')).customerId).toBeNull();
-    expect(parseSupportFilters(params('customerId=-4')).customerId).toBeNull();
+    expect(parseSupportFilters(params('accountId=0')).accountId).toBeNull();
+    expect(parseSupportFilters(params('accountId=-4')).accountId).toBeNull();
+  });
+
+  it('ignores the customer number of an address written before the merge, because it names another account now', () => {
+    expect(parseSupportFilters(params('customerId=28'))).toEqual({
+      filter: 'open',
+      who: 'all',
+      q: '',
+      accountId: null,
+    });
+  });
+
+  it('reads the old word of the Who control as the retail side', () => {
+    expect(parseSupportFilters(params('who=customers')).who).toBe('retail');
+    expect(parseSupportFilters(params('who=retail')).who).toBe('retail');
   });
 });
 
 describe('writeSupportFilters', () => {
   it('leaves defaults out, so a clean address means open tickets for everyone', () => {
     expect(writeSupportFilters(params('filter=late'), { filter: 'open' }).toString()).toBe('');
-    expect(writeSupportFilters(params(''), { who: 'customers' }).toString()).toBe('who=customers');
-    expect(writeSupportFilters(params('who=customers'), { who: 'all' }).toString()).toBe('');
+    expect(writeSupportFilters(params(''), { who: 'retail' }).toString()).toBe('who=retail');
+    expect(writeSupportFilters(params('who=retail'), { who: 'all' }).toString()).toBe('');
+    expect(writeSupportFilters(params('who=customers'), { q: 'x' }).toString()).toBe('who=retail&q=x');
   });
 
   it('drops the open thread and the page, so the list starts again', () => {
@@ -74,25 +89,31 @@ describe('writeSupportFilters', () => {
     );
   });
 
-  it('keeps the filter that follows a customer’s default out of the address', () => {
-    expect(writeSupportFilters(params(''), { customerId: 28 }).toString()).toBe('customerId=28');
-    expect(writeSupportFilters(params('customerId=28'), { filter: 'open' }).toString()).toBe(
-      'customerId=28&filter=open',
+  it('keeps the filter that follows an account’s default out of the address', () => {
+    expect(writeSupportFilters(params(''), { accountId: 128 }).toString()).toBe('accountId=128');
+    expect(writeSupportFilters(params('accountId=128'), { filter: 'open' }).toString()).toBe(
+      'accountId=128&filter=open',
     );
   });
 
-  it('writes the filter it keeps when the customer goes, so the list does not jump to Open', () => {
-    expect(writeSupportFilters(params('customerId=28'), { customerId: null, filter: 'all' }).toString()).toBe(
+  it('writes the filter it keeps when the account goes, so the list does not jump to Open', () => {
+    expect(writeSupportFilters(params('accountId=128'), { accountId: null, filter: 'all' }).toString()).toBe(
       'filter=all',
     );
   });
 
-  it('keeps an explicit filter when a customer is added or removed', () => {
-    expect(writeSupportFilters(params('filter=late'), { customerId: 28 }).toString()).toBe(
-      'filter=late&customerId=28',
+  it('keeps an explicit filter when an account is added or removed', () => {
+    expect(writeSupportFilters(params('filter=late'), { accountId: 128 }).toString()).toBe(
+      'filter=late&accountId=128',
     );
-    expect(writeSupportFilters(params('filter=late&customerId=28'), { customerId: null }).toString()).toBe(
+    expect(writeSupportFilters(params('filter=late&accountId=128'), { accountId: null }).toString()).toBe(
       'filter=late',
+    );
+  });
+
+  it('never writes the customer number of an old address back', () => {
+    expect(writeSupportFilters(params('customerId=28&filter=late'), { q: 'x' }).toString()).toBe(
+      'filter=late&q=x',
     );
   });
 });
@@ -128,19 +149,19 @@ describe('the thread, the page and the view', () => {
 describe('hasActiveFilters', () => {
   it('is false for the defaults and true for any change', () => {
     expect(hasActiveFilters(parseSupportFilters(params('')))).toBe(false);
-    expect(hasActiveFilters(parseSupportFilters(params('customerId=28')))).toBe(false);
+    expect(hasActiveFilters(parseSupportFilters(params('accountId=128')))).toBe(false);
     expect(hasActiveFilters(parseSupportFilters(params('filter=late')))).toBe(true);
-    expect(hasActiveFilters(parseSupportFilters(params('who=customers')))).toBe(true);
+    expect(hasActiveFilters(parseSupportFilters(params('who=retail')))).toBe(true);
     expect(hasActiveFilters(parseSupportFilters(params('q=%20x')))).toBe(true);
     expect(hasActiveFilters(parseSupportFilters(params('q=%20')))).toBe(false);
   });
 });
 
 describe('links to the page', () => {
-  it('builds the overdue link and a customer’s link', () => {
+  it('builds the overdue link and an account’s link', () => {
     expect(supportListPath()).toBe('/support');
     expect(supportListPath({ filter: 'late' })).toBe('/support?filter=late');
-    expect(supportListPath({ customerId: 28 })).toBe('/support?customerId=28');
+    expect(supportListPath({ accountId: 128 })).toBe('/support?accountId=128');
   });
 
   it('builds the link to one ticket, optionally on All', () => {
@@ -162,18 +183,15 @@ describe('to the API', () => {
   });
 
   it('adds who wrote and the trimmed search', () => {
-    expect(toListFilters(filters('filter=all&who=customers'))).toEqual({ requesterType: 'customer' });
+    expect(toListFilters(filters('filter=all&who=retail'))).toEqual({ rankKind: 'retail' });
     expect(toListFilters(filters('filter=all&who=merchants&q=%20cairo%20'))).toEqual({
-      requesterType: 'client',
+      rankKind: 'merchant',
       q: 'cairo',
     });
   });
 
-  it('asks for one customer’s tickets whatever Who says', () => {
-    expect(toListFilters(filters('customerId=28&who=merchants'))).toEqual({
-      requesterType: 'customer',
-      requesterId: 28,
-    });
+  it('asks for one account’s tickets by its id alone, whatever Who says', () => {
+    expect(toListFilters(filters('accountId=128&who=merchants'))).toEqual({ requesterId: 128 });
   });
 
   it('sorts late tickets first, except under Resolved', () => {

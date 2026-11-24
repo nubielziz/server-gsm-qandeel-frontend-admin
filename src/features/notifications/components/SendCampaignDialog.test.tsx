@@ -18,7 +18,7 @@ afterEach(() => mockServer.events.removeAllListeners());
 const PREVIEW = (reachable: number) => ({
   total: reachable + 2,
   reachable,
-  byType: { staff: 0, client: reachable, customer: 0 },
+  byType: { staff: 0, merchant: reachable, retail: 0 },
   byChannel: { inApp: reachable, email: 0 },
   excluded: { noConsent: 0, optedOut: 0, noAccount: 2 },
 });
@@ -46,7 +46,7 @@ describe('the count', () => {
 
   it('says who is left out and when it replaces a scheduled time', async () => {
     const { dialog } = await openSend(2, 'Ramadan offer');
-    expect(await dialog.findByText(/customers did not agree to marketing/)).toBeInTheDocument();
+    expect(await dialog.findByText(/retail accounts did not agree to marketing/)).toBeInTheDocument();
     expect(dialog.getByText(/This sends it now instead of at /)).toBeInTheDocument();
   });
 });

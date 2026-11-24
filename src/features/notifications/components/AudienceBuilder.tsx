@@ -1,4 +1,4 @@
-// AudienceBuilder: section 2 of the composer: who gets the message. Preset buttons fill the segments (Everyone, Staff, Merchants, Customers, Specific
+// AudienceBuilder: section 2 of the composer: who gets the message. Preset buttons fill the segments (Everyone, Staff, Merchants, Retail, Specific
 // people); each group then has a switch and its filters; people can be added or left out one by one. The server checks the rules again and its field
 // errors show under the builder.
 import { useState } from 'react';
@@ -29,16 +29,14 @@ export interface AudienceBuilderProps {
   errors: Problems;
 }
 
-const PERSON_TYPES: readonly PersonType[] = ['staff', 'client', 'customer'];
+const PERSON_TYPES: readonly PersonType[] = ['staff', 'account'];
 
 export function AudienceBuilder({ audience, onChange, grants, errors }: AudienceBuilderProps) {
   const [picker, setPicker] = useState<'include' | 'exclude' | null>(null);
   // A tab of the picker is hidden when the role cannot read that list.
   const types = PERSON_TYPES.filter((type) => grants.can(PEOPLE_PERMISSION[type]));
   const blocked =
-    types.length === 0
-      ? 'You need the staff:read, clients:read or customers:read permission to pick people.'
-      : undefined;
+    types.length === 0 ? 'You need the staff:read or clients:read permission to pick people.' : undefined;
   const segment = { audience, onChange, grants, errors };
   const remove = (mode: 'include' | 'exclude') => (person: PickedPerson) =>
     onChange({
@@ -58,8 +56,8 @@ export function AudienceBuilder({ audience, onChange, grants, errors }: Audience
           onChange={(preset) => preset && onChange(applyPreset(audience, preset))}
         />
         <p className="hint">
-          Everyone means active staff, active merchants and customers with an account. Switch groups on or off
-          below to change it.
+          Everyone means active staff, active merchants and retail accounts with a login. Switch groups on or
+          off below to change it.
         </p>
       </div>
       <StaffSegment {...segment} />

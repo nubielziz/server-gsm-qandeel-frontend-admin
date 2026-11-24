@@ -6,14 +6,18 @@ import type { LedgerAccountRow, LedgerEntryRow, LedgerTransactionRow } from '@/l
 
 /**
  * What a journal entry is about (`ref_type`): an order, a deposit, an invoice, a refund, a dispute, a commission
- * accrual, a supplier top-up or the system itself (an opening balance, a gateway settlement). The console only reads it
- * to filter (an order's money trail, a deposit's entries) and to link back to the record.
+ * accrual, a supplier top-up, an account (a wallet move or a rank change) or the system itself (an opening balance, a
+ * gateway settlement). The console only reads it to filter (an order's money trail, a deposit's entries) and to link back
+ * to the record.
  */
 export type LedgerRefType =
-  'order' | 'payment' | 'invoice' | 'refund' | 'dispute' | 'accrual' | 'supplier' | 'system';
+  'order' | 'payment' | 'invoice' | 'refund' | 'dispute' | 'accrual' | 'supplier' | 'account' | 'system';
 
-/** Who owns a ledger account. Platform accounts (revenue, VAT payable…) have no owner. */
-export type LedgerOwnerType = 'client' | 'supplier' | 'customer';
+/**
+ * Who owns a ledger account: an account of the one accounts table (a merchant wallet, its hold and a store balance all belong
+ * to `account` with the account's id) or a supplier. Platform accounts (revenue, VAT payable…) have no owner.
+ */
+export type LedgerOwnerType = 'account' | 'supplier';
 
 /** The account behind one line: its kind (`client_wallet`, `revenue`…) and, when it has one, the owner's name. */
 export type LedgerAccountRef = Pick<LedgerAccountRow, 'id' | 'kind'> & {
@@ -30,9 +34,13 @@ export type LedgerEntry = Pick<LedgerEntryRow, 'id' | 'amount' | 'balanceAfter'>
   account: LedgerAccountRef;
 };
 
-/** Who posted the entry: a staff member, the system, or the merchant or customer whose action caused it. */
+/**
+ * Who posted the entry: a staff member, the system, or the account whose action caused it. A journal is never changed, so an
+ * old entry keeps the words of the old model (`client` carries a merchant number, which is its account id; `customer` carries
+ * the old customer number, not an account id).
+ */
 export type LedgerActor = {
-  type: 'staff' | 'system' | 'client' | 'customer';
+  type: 'staff' | 'system' | 'account' | 'client' | 'customer';
   id: Id | null;
   name: string | null;
 };

@@ -59,8 +59,10 @@ export function eventText(event: Pick<OrderEvent, 'type' | 'data'>): string {
   return label ? label(event.data ?? {}) : humanize(event.type);
 }
 
+// `client` and `customer` are the words of rows written before the accounts merged; they keep the words they were read with.
 const ACTOR_LABEL: Record<EventActorType, string> = {
   staff: 'Team member',
+  account: 'Account',
   client: 'Merchant',
   customer: 'Customer',
   system: 'System',

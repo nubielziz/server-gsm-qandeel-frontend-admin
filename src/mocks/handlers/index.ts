@@ -2,7 +2,7 @@
 // `src/features/<name>/mocks/index.ts` (export `mocks: FeatureMocks`). Most specific routes first: a generic `/:id`
 // handler would otherwise answer `/export` or `/check`.
 import type { RequestHandler } from 'msw';
-import type { FeatureMocks } from '../featureMocks';
+import { isRetiredFeatureMock, type FeatureMocks } from '../featureMocks';
 import { resetIpRuleStore } from '../ipRules';
 import { resetLedgerStore } from '../ledger';
 import { resetOrderStore } from '../orders';
@@ -18,13 +18,19 @@ import { ordersHandlers } from './orders';
 import { settingsHandlers } from './settings';
 import { systemHandlers } from './system';
 
-// Mocks that live in the feature folders (features built in parallel keep everything inside their folder).
-const featureMocks: FeatureMocks[] = Object.entries(
+// Mocks that live in the feature folders (features built in parallel keep everything inside their folder). The merchants and
+// customers mocks serve no route any more: the accounts mocks serve theirs (and answer 410 for the retired customer routes). Their
+// stores are still put back to the seed between tests, because the finance mocks still read the old customer top-ups.
+const loaded = Object.entries(
   import.meta.glob<{ mocks?: FeatureMocks }>('../../features/*/mocks/index.ts', { eager: true }),
 ).map(([file, module]) => {
   if (!module.mocks) throw new Error(`${file} must export \`mocks\``);
-  return module.mocks;
+  return { file, mocks: module.mocks };
 });
+const featureMocks: FeatureMocks[] = loaded.map((feature) => feature.mocks);
+const featureHandlers: RequestHandler[] = loaded
+  .filter((feature) => !isRetiredFeatureMock(feature.file))
+  .flatMap((feature) => feature.mocks.handlers);
 
 export const handlers: RequestHandler[] = [
   ...sessionHandlers,
@@ -33,7 +39,7 @@ export const handlers: RequestHandler[] = [
   ...ordersHandlers,
   ...ledgerHandlers,
   ...settingsHandlers,
-  ...featureMocks.flatMap((feature) => feature.handlers),
+  ...featureHandlers,
 ];
 
 /** Puts all stateful mock stores back to their seed. For tests; add each feature's reset here. */

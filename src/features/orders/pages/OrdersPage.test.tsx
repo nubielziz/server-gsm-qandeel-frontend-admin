@@ -77,10 +77,10 @@ describe('the table', () => {
     expect(rows).toHaveLength(26); // the header and 25 orders
   });
 
-  it('marks a storefront order with its tag, the masked email and what the customer paid', async () => {
+  it('names the buyer account with its rank, and a storefront order with the masked email and what the customer paid', async () => {
     await openOrders('/orders?tab=all&channel=b2c');
     const row = await orderRow('SF-20503');
-    expect(row.getByText('Storefront')).toBeInTheDocument();
+    expect(row.getByText('Storefront retail')).toBeInTheDocument();
     expect(row.getByText(/paid /)).toBeInTheDocument();
     expect(row.getByText(/•••@/)).toBeInTheDocument();
   });
@@ -157,6 +157,14 @@ describe('filters', () => {
     expect(app.location()).toContain('pastSla=true');
   });
 
+  it('shows the rank of a merchant order under its name, with the way it arrived', async () => {
+    await openOrders('/orders?tab=all');
+    const row = await orderRow('ORD-48859');
+    expect(row.getByText('Muscat Mobile Clinic')).toBeInTheDocument();
+    expect(row.getByText(/^(Standard|Wholesale|VIP)$/)).toBeInTheDocument();
+    expect(row.getByText('Dhru API')).toBeInTheDocument();
+  });
+
   it('filters by supplier and merchant from the menus the server fills', async () => {
     const user = userEvent.setup();
     const app = await openOrders();
@@ -171,7 +179,36 @@ describe('filters', () => {
       expect(within(merchants).getByRole('option', { name: 'Muscat Mobile Clinic' })).toBeInTheDocument(),
     );
     await user.selectOptions(merchants, 'Muscat Mobile Clinic');
-    expect(app.location()).toBe('/orders?supplierId=1&clientId=13');
+    expect(app.location()).toBe('/orders?supplierId=1&accountId=13');
+  });
+
+  it('lists only merchants in the merchant menu, and every rank in the rank menu', async () => {
+    const user = userEvent.setup();
+    const app = await openOrders();
+    const merchants = await screen.findByRole('combobox', { name: 'Filter by merchant' });
+    await waitFor(() =>
+      expect(within(merchants).getByRole('option', { name: 'Muscat Mobile Clinic' })).toBeInTheDocument(),
+    );
+    // A shop buyer is an account too, but not a merchant: it is not in that menu.
+    expect(within(merchants).queryByRole('option', { name: 'Priya Nair' })).not.toBeInTheDocument();
+    const ranks = screen.getByRole('combobox', { name: 'Filter by rank' });
+    await waitFor(() =>
+      expect(within(ranks).getByRole('option', { name: 'Storefront retail' })).toBeInTheDocument(),
+    );
+    expect(within(ranks).getByRole('option', { name: 'All ranks' })).toBeInTheDocument();
+    await user.selectOptions(ranks, 'Storefront retail');
+    expect(app.location()).toBe('/orders?rankId=4');
+    expect(await screen.findByText(/^\d+ orders?$/)).toBeInTheDocument();
+  });
+
+  it('reads an address saved with clientId as the same account', async () => {
+    const app = await openOrders('/orders?tab=all&clientId=13');
+    const merchants = await screen.findByRole('combobox', { name: 'Filter by merchant' });
+    await waitFor(() =>
+      expect(within(merchants).getByRole('option', { name: 'Muscat Mobile Clinic' })).toBeInTheDocument(),
+    );
+    expect(merchants).toHaveValue('13');
+    expect(app.location()).toBe('/orders?tab=all&clientId=13');
   });
 
   it('says so when nothing matches, and offers to clear the filters', async () => {
@@ -191,6 +228,7 @@ describe('filters', () => {
     expect(screen.getByRole('combobox', { name: 'Filter by type' })).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Filter by supplier' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Filter by merchant' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Filter by rank' })).not.toBeInTheDocument();
   });
 });
 

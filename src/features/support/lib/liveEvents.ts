@@ -51,10 +51,10 @@ const isNullable = (value: unknown, check: (v: unknown) => boolean): boolean =>
 const oneOf = <T extends string>(value: unknown, words: readonly T[]): value is T =>
   isText(value) && (words as readonly string[]).includes(value);
 
-const AUTHORS: readonly MessageAuthorType[] = ['customer', 'client', 'staff', 'system'];
+const AUTHORS: readonly MessageAuthorType[] = ['account', 'staff', 'system'];
 const STATUSES: readonly TicketStatus[] = ['new', 'open', 'pending', 'resolved'];
 const PRIORITIES: readonly TicketPriority[] = ['high', 'normal', 'low'];
-const REQUESTERS: readonly RequesterType[] = ['customer', 'client'];
+const REQUESTERS: readonly RequesterType[] = ['account'];
 const CHANNELS: readonly TicketChannel[] = ['email', 'web', 'chat', 'telegram'];
 const CATEGORIES: readonly TicketCategory[] = [
   'delay',
@@ -130,6 +130,11 @@ export function parseTicketRow(value: unknown): SupportTicket | null {
   const timeOrNull = (time: unknown): string | null => (isText(time) ? time : null);
   return {
     ...(value as unknown as SupportTicket),
+    // Fail closed: only an explicit `merchant` is a merchant, so an unknown word never shows a merchant's address in full.
+    requester: {
+      ...(value.requester as unknown as SupportTicket['requester']),
+      rankKind: value.requester.rankKind === 'merchant' ? 'merchant' : 'retail',
+    },
     assigneeId: markOrNull(value.assigneeId),
     assignee: isObject(value.assignee) ? (value.assignee as SupportTicket['assignee']) : null,
     hasUnread: value.hasUnread === true,
@@ -170,7 +175,7 @@ export function parseTicketRead(data: unknown): TicketRead | null {
     : null;
 }
 
-/** True for a message the requester wrote (a customer or a merchant); a reply, a note and a system line are not. */
+/** True for a message the requester's account wrote; a reply, a note and a system line are not. */
 export function isRequesterMessage(message: Pick<TicketMessage, 'authorType'>): boolean {
-  return message.authorType === 'customer' || message.authorType === 'client';
+  return message.authorType === 'account';
 }

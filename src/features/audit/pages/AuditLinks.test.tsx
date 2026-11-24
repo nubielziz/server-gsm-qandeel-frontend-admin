@@ -28,12 +28,12 @@ describe('the links', () => {
     expect(await screen.findByRole('dialog', { name: 'ORD-48792' })).toBeInTheDocument();
   });
 
-  it('links a merchant, a supplier and a customer to their pages', async () => {
+  it('links an old merchant row to its account and a supplier to its page', async () => {
     await openAudit();
     const merchant = await entryWith('Cairo GSM Lab, AT&T USA Premier');
     expect(merchant.getByRole('link', { name: 'Cairo GSM Lab, AT&T USA Premier' })).toHaveAttribute(
       'href',
-      '/merchants/5',
+      '/accounts/5',
     );
     const supplier = await entryWith('Gulf Server Hub');
     expect(supplier.getByRole('link', { name: 'Gulf Server Hub' })).toHaveAttribute(
@@ -42,7 +42,7 @@ describe('the links', () => {
     );
   });
 
-  it('links a customer, a service, the blocklist and a refund', async () => {
+  it('links an old customer row to its account, and a service, the blocklist and a refund to their pages', async () => {
     const link = async (query: string, name: string) => {
       const view = await openAudit(`/audit?type=${query}`);
       const found = await screen.findByRole('link', { name });
@@ -50,10 +50,26 @@ describe('the links', () => {
       view.unmount();
       return href;
     };
-    expect(await link('customer', 'Jack Turner')).toBe('/customers/19');
+    // The server resolves the old customer number to the account it became (119), so the link needs no lookup.
+    expect(await link('account', 'Jack Turner')).toBe('/accounts/119');
     expect(await link('service', 'T-Mobile USA Unlock')).toBe('/products?view=edit&id=6');
     expect(await link('blocklist', 'IMEI 35 389011 884201 9')).toBe('/risk?tab=block');
     expect(await link('refund', 'Goodwill refund on a delayed unlock')).toBe('/refunds');
+  });
+
+  it('sends an old customer row the server could not resolve through the lookup of the Accounts page', async () => {
+    answerWith([
+      entry({ id: 5, entityType: 'customer', entityId: 19, entityLabel: 'Jack Turner', account: null }),
+      entry({ id: 6, entityType: 'account', entityId: 7, entityLabel: 'Cairo GSM Lab', action: 'renamed' }),
+    ]);
+    await openAudit();
+    const customer = await entryWith('Jack Turner');
+    expect(customer.getByRole('link', { name: 'Jack Turner' })).toHaveAttribute(
+      'href',
+      '/accounts/19?from=customer',
+    );
+    const account = await entryWith('Cairo GSM Lab');
+    expect(account.getByRole('link', { name: 'Cairo GSM Lab' })).toHaveAttribute('href', '/accounts/7');
   });
 
   it('sends an admin account to the Admin accounts tab', async () => {
@@ -92,7 +108,7 @@ describe('the links', () => {
   });
 
   it('keeps an entry without an id as text', async () => {
-    answerWith([entry({ id: 4, entityType: 'merchant', entityId: 0, entityLabel: 'Gone Ltd' })]);
+    answerWith([entry({ id: 4, entityType: 'account', entityId: 0, entityLabel: 'Gone Ltd' })]);
     await openAudit();
     const row = await entryWith('Gone Ltd');
     expect(row.queryByRole('link')).not.toBeInTheDocument();
@@ -139,10 +155,10 @@ describe('permissions', () => {
     expect(row.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('offers a merchant link with the merchants permission', async () => {
+  it('offers an account link with the accounts permission', async () => {
     await openAudit('/audit', { permissions: [...AUDIT_ONLY, 'clients:read'] });
     const merchant = await entryWith('Cairo GSM Lab, AT&T USA Premier');
-    await waitFor(() => expect(merchant.getByRole('link')).toHaveAttribute('href', '/merchants/5'));
+    await waitFor(() => expect(merchant.getByRole('link')).toHaveAttribute('href', '/accounts/5'));
   });
 
   it('lets a staff member without the staff permission filter by Everyone and System only', async () => {

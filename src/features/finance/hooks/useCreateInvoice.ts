@@ -1,4 +1,4 @@
-// "Issue manual invoice": bills a merchant for an amount. The dialog shows a failed call itself (under the field the server
+// "Issue manual invoice": bills an account of a merchant rank for an amount. The dialog shows a failed call itself (under the field the server
 // named, or in its error slot), so this toasts only the success.
 import { useApiMutation } from '@/lib/query';
 import { money } from '@/lib/format';

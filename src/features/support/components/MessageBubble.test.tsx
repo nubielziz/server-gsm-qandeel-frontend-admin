@@ -1,5 +1,5 @@
 // Tests for MessageBubble: a message typed by a person keeps its own text direction. The console is English only (decision 039),
-// but a customer may write in Arabic, and the bubble must show that text the way it was written (group C: Arabic text is data).
+// but an account may write in Arabic, and the bubble must show that text the way it was written (group C: Arabic text is data).
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { TicketMessage } from '../types';
@@ -12,8 +12,8 @@ function message(patch: Partial<TicketMessage>): TicketMessage {
   return {
     id: 1,
     ticketId: 9,
-    authorType: 'customer',
-    authorId: 3,
+    authorType: 'account',
+    authorId: 103,
     authorName: 'Layla Hassan',
     body: 'Where is my order?',
     isInternal: false,
@@ -25,7 +25,7 @@ function message(patch: Partial<TicketMessage>): TicketMessage {
 }
 
 describe('MessageBubble text direction', () => {
-  it('lets the browser pick the direction of a customer message from its own text', () => {
+  it('lets the browser pick the direction of a message of an account from its own text', () => {
     render(<MessageBubble message={message({ body: ARABIC_BODY })} />);
     const text = screen.getByText(ARABIC_BODY);
     expect(text).toHaveAttribute('dir', 'auto');

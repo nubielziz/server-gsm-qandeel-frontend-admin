@@ -1,6 +1,7 @@
-// Mock deposits: the demo's `S.payments` as the API's payment DTO (a merchant, a method, an amount, a fee, a status), kept in
-// memory so approving and rejecting in the dev layer changes what the Deposits tab shows. Mock data only (decision 014).
-import { customerTopUps, walletOf, type MockTopUp } from '@/features/customers/mocks';
+// Mock deposits: the demo's `S.payments` as the API's payment DTO (a merchant account, a method, an amount, a fee, a status), plus the
+// top-ups of store balances from the accounts mock, kept in memory so approving and rejecting in the dev layer changes what the
+// Deposits tab shows. Mock data only (decision 014).
+import { accountTopUps, walletOfAccount, type MockTopUp } from '@/features/accounts/mocks';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
 import { walletsOf } from './books';
@@ -72,8 +73,8 @@ function toPayment(demo: DemoPayment, merchants: Map<string, DemoMerchant>): Pay
   };
 }
 
-// A customer's top-up of their store balance (feature 21): the customer instead of a merchant, no fee, a bank transfer by CliQ.
-function toCustomerPayment(topUp: MockTopUp): Payment {
+// The top-up of an account's store balance: the account (as `customer`) instead of a merchant, no fee, a bank transfer by CliQ.
+function toStorePayment(topUp: MockTopUp): Payment {
   const paid = topUp.status === 'approved';
   return {
     id: topUp.id,
@@ -90,12 +91,12 @@ function toCustomerPayment(topUp: MockTopUp): Payment {
     invoiceId: topUp.invoiceId,
     receiptFileId: topUp.receiptFileId,
     client: null,
-    customer: { ...topUp.customer, walletBalance: null },
+    customer: { ...topUp.account, walletBalance: null },
     dispute: null,
     gateway: topUp.gateway,
     reviewedBy: paid ? { id: null, name: 'System' } : null,
     reviewedAt: paid ? topUp.createdAt : null,
-    note: topUp.status === 'pending' ? 'First top-up of this customer.' : null,
+    note: topUp.status === 'pending' ? 'First top-up of this account.' : null,
   };
 }
 
@@ -103,26 +104,26 @@ let store: Promise<Collection<Payment>> | undefined;
 
 /** The deposits, seeded from the demo on first use. Handlers change them in place. */
 export function paymentStore(): Promise<Collection<Payment>> {
-  store ??= Promise.all([loadDemoState(), customerTopUps()]).then(([state, topUps]) => {
+  store ??= Promise.all([loadDemoState(), accountTopUps()]).then(([state, topUps]) => {
     const merchants = new Map(demoRows<DemoMerchant>(state, 'merchants').map((m) => [m.id, m]));
     return new Collection([
       ...demoRows<DemoPayment>(state, 'payments').map((p) => toPayment(p, merchants)),
-      ...topUps.map(toCustomerPayment),
+      ...topUps.map(toStorePayment),
     ]);
   });
   return store;
 }
 
 /**
- * The payments as the API sends them: each merchant's wallet is read from the books now (once for all of them), and each
- * customer's balance from the customers mock, so both follow every approval.
+ * The payments as the API sends them: each merchant wallet is read from the books now (once for all of them), and each
+ * store balance from the accounts mock, so both follow every approval.
  */
 export async function withWallets(payments: readonly Payment[]): Promise<Payment[]> {
   const wallets = await walletsOf();
   return Promise.all(
     payments.map(async (payment) => {
       if (payment.customer) {
-        const balance = (await walletOf(payment.customer.id)).balance;
+        const balance = (await walletOfAccount(payment.customer.id))?.balance ?? null;
         return { ...payment, customer: { ...payment.customer, walletBalance: balance } };
       }
       if (!payment.client) return payment;

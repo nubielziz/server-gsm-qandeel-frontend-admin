@@ -17,6 +17,7 @@ import {
   reconcileLedger,
   rejectPayment,
 } from '.';
+import type { PaymentFilters } from '../types';
 import { listMerchantOptions } from './lookups';
 
 setupMockApi();
@@ -56,6 +57,36 @@ describe('payments', () => {
     const all = await listPayments({ filters: { purpose: 'topup' }, start: 0, end: 1 });
     expect(all.data).toHaveLength(1);
     expect(all.total).toBe(56);
+  });
+
+  it('filters by buyer with accountId, for a merchant wallet and a store balance alike, and takes clientId as an alias', async () => {
+    const merchant = await listPayments({ filters: { accountId: 3 } });
+    expect(merchant.total).toBeGreaterThan(0);
+    expect(merchant.data.every((payment) => payment.client?.id === 3 && payment.customer === null)).toBe(
+      true,
+    );
+    const alias = await listPayments({ filters: { clientId: 3 } });
+    expect(alias.data.map((payment) => payment.id)).toEqual(merchant.data.map((payment) => payment.id));
+
+    // The store balance's top-ups name the account (a number above the merchants' ones), under the same filter.
+    const topUps = await listPayments({ filters: { owner: 'customer', status: 'pending' } });
+    const buyer = topUps.data[0].customer?.id as number;
+    expect(buyer).toBeGreaterThan(100);
+    const store = await listPayments({ filters: { accountId: buyer } });
+    expect(store.total).toBeGreaterThan(0);
+    expect(store.data.every((payment) => payment.customer?.id === buyer && payment.client === null)).toBe(
+      true,
+    );
+  });
+
+  it('answers 422 to customerId and names accountId, and the typed filter has no customerId', async () => {
+    // The type refuses it too: a buyer is an account now.
+    // @ts-expect-error customerId is not a payment filter any more
+    const refused: PaymentFilters = { customerId: 1 };
+    await expect(listPayments({ filters: { ...refused } })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { customerId: [expect.stringContaining('accountId')] },
+    });
   });
 
   it('reads one deposit with its merchant, fee and net amount, and answers 404 for one that does not exist', async () => {
@@ -135,6 +166,33 @@ describe('invoices', () => {
     expect(await getInvoice(created.id)).toMatchObject({ number: created.number });
   });
 
+  it('offers only merchant-rank accounts for a manual invoice, by name', async () => {
+    const { data, total } = await listMerchantOptions();
+    expect(total).toBe(20);
+    expect(data).toHaveLength(20);
+    // A retail account has a number above the merchants' ones and a store balance: it is never offered.
+    expect(data.every((option) => option.id <= 100)).toBe(true);
+    expect(data.map((option) => option.name)).toEqual(
+      [...data.map((option) => option.name)].sort((a, b) => a.localeCompare(b)),
+    );
+    expect(data.find((option) => option.id === 3)?.name).toBe('Phone Doctor FZE');
+  });
+
+  it('refuses a retail account with 422 on clientId and the code not_merchant, and lists invoices by accountId', async () => {
+    await expect(
+      createInvoice({ clientId: 103, amount: '10.0000', description: 'Setup fee' }),
+    ).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { clientId: [expect.any(String)] },
+      fieldCodes: { clientId: ['not_merchant'] },
+    });
+    const mine = await listInvoices({ filters: { accountId: 3 } });
+    expect(mine.total).toBeGreaterThan(0);
+    expect(mine.data.every((invoice) => invoice.client?.id === 3)).toBe(true);
+    const alias = await listInvoices({ filters: { clientId: 3 } });
+    expect(alias.total).toBe(mine.total);
+  });
+
   it('shows the server’s message under the field it names', async () => {
     await expect(
       createInvoice({ clientId: 99999, amount: '0.0000', description: ' ' }),
@@ -177,6 +235,14 @@ describe('reports', () => {
   it('reports the wallets: balances, reserved and overdraft', async () => {
     const exposure = await getWalletExposure();
     expect(exposure.totals.clients).toBeGreaterThan(5);
+    // The store balances are totalled beside the merchant wallets, never inside them.
+    expect(exposure.storeBalances).toEqual({
+      accounts: 1,
+      balance: expect.stringMatching(MONEY),
+      negative: 0,
+      frozen: 0,
+    });
+    expect(exposure.storeBalances.balance).toBe('50.0000');
     expect(exposure.rows[0]).toMatchObject({
       balance: expect.stringMatching(MONEY),
       reserved: expect.stringMatching(MONEY),

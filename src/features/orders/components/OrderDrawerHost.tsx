@@ -1,5 +1,5 @@
 // OrderDrawerHost: shows the drawer of the order named by `?order=<id>` in the address, with the dialogs it opens. Mount it on any
-// page that lists orders (the Orders page, a merchant's or customer's page) and `useOrderDrawer().open(id)` or a link to
+// page that lists orders (the Orders page, an account's page) and `useOrderDrawer().open(id)` or a link to
 // `orderPath(id)` opens the drawer there. `rows` lets the drawer show a row the page already has before it loads the order.
 import { useState } from 'react';
 import { useOrderDrawer } from '../hooks/useOrderDrawer';

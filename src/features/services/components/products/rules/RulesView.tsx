@@ -1,4 +1,4 @@
-// RulesView: the Price Rules view of the Product / Services page: the merchant price rules (with the merchant groups), the shop price rules
+// RulesView: the Price Rules view of the Product / Services page: the merchant price rules (with the ranks), the shop price rules
 // (the storefront feature's retail pricing, with the proposals that wait counted on its link) and the price check. The three sub-views are
 // plain text links under the page's own (the kit's ViewLinks, the way the reference draws "By Admin | By User"), each a full view with an
 // address of its own; there is no card, no tab strip and no count chip. A sub-view the role may not open has no link.

@@ -18,13 +18,16 @@ describe('the list', () => {
     const table = await tableNamed('Invoices');
     expect(await table.findAllByRole('row')).toHaveLength(26);
     expect(await screen.findByText('71 invoices')).toBeInTheDocument();
-    // The customers' top-up invoices (feature 21) push the oldest manual invoice off the first page: find it by kind.
+    // The top-up invoices of store balances push the oldest manual invoice off the first page: find it by kind.
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by kind' }), 'manual');
     const manual = await rowWith('Invoices', '$900.00');
     expect(manual.getByText('Manual')).toBeInTheDocument();
     expect(manual.getByText('$900.00')).toBeInTheDocument();
     expect(manual.getByText('Open')).toBeInTheDocument();
-    expect(manual.getByRole('link', { name: 'Istanbul GSM Care' })).toHaveAttribute('href', '/merchants/11');
+    expect(manual.getByRole('link', { name: 'Istanbul GSM Care' })).toHaveAttribute(
+      'href',
+      '/accounts/11?tab=wallet',
+    );
   });
 
   it('masks the email of a storefront customer on a tax receipt', async () => {
@@ -53,7 +56,7 @@ describe('the list', () => {
     const user = userEvent.setup();
     const app = await openFinance('/finance?tab=invoices');
     await screen.findByText('71 invoices');
-    const box = screen.getByRole('searchbox', { name: 'Search number or merchant' });
+    const box = screen.getByRole('searchbox', { name: 'Search number or account' });
     await user.type(box, 'Istanbul');
     await waitFor(() => expect(app.location()).toBe('/finance?tab=invoices&q=Istanbul'));
     await waitFor(() => expect(screen.queryByText('71 invoices')).not.toBeInTheDocument());
@@ -121,6 +124,61 @@ describe('Issue manual invoice', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog', { name: 'Issue manual invoice' })).not.toBeInTheDocument(),
     );
+  });
+
+  it('offers only the accounts of a merchant rank, asked of the accounts list', async () => {
+    const user = userEvent.setup();
+    let asked: URL | undefined;
+    mockServer.use(
+      http.get('*/admin/clients', ({ request }) => {
+        asked ??= new URL(request.url);
+        return undefined;
+      }),
+    );
+    await openFinance('/finance?tab=invoices');
+    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
+    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
+    expect(asked?.searchParams.get('rankKind')).toBe('merchant');
+    const names = dialog.getAllByRole('option').map((option) => option.textContent);
+    expect(names).toHaveLength(21); // the prompt and the twenty merchant-rank accounts
+    expect(names).not.toContain('Lukas Brandt');
+  });
+
+  it('shows the refusal of a retail account under the merchant field', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/invoices', () =>
+        HttpResponse.json(
+          {
+            title: 'Check the form',
+            status: 422,
+            code: 'VALIDATION_FAILED',
+            detail: 'Some fields need attention.',
+            errors: [
+              {
+                field: 'clientId',
+                code: 'not_merchant',
+                message: 'Only an account with a merchant rank can be billed.',
+              },
+            ],
+          },
+          { status: 422, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+      ),
+    );
+    await openFinance('/finance?tab=invoices');
+    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
+    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
+    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
+    await user.type(dialog.getByLabelText('Amount (USD)'), '10');
+    await user.type(dialog.getByLabelText('What it is for'), 'Setup fee');
+    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
+    expect(
+      await dialog.findByText('Only an account with a merchant rank can be billed.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Issue manual invoice' })).toBeInTheDocument();
   });
 
   it('checks the fields before it asks the server', async () => {

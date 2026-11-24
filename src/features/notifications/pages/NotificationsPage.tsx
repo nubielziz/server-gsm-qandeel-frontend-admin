@@ -34,7 +34,7 @@ export function NotificationsPage() {
     <>
       <PageHeader
         title="Notifications"
-        sub="Messages you write once and send to staff, merchants or customers, in the app or by email."
+        sub="Messages you write once and send to staff, merchants or retail accounts, in the app or by email."
         actions={
           grants.canSend && (
             <Button variant="primary" onClick={() => setComposing(true)} {...create}>

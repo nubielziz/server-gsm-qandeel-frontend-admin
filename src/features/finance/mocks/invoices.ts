@@ -1,7 +1,8 @@
 // Mock invoices. The demo has none, so they are made up from its data (MISMATCHES M123): a top-up invoice for every deposit, three
 // manual invoices and the tax receipts of the latest delivered storefront orders. Kept in memory so issuing one in the dev
 // layer adds it to the list. Mock data only (decision 014).
-import { customerTopUps, type MockTopUp } from '@/features/customers/mocks';
+import { accountTopUps, type MockTopUp } from '@/features/accounts/mocks';
+import { accountIdOfDemo } from '@/mocks/seed/accountIds';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
 import type { Invoice } from '../types';
@@ -135,7 +136,7 @@ function receipts(firstId: number, orders: DemoOrder[], customers: Map<string, D
         total: toMoney(order.gross ?? order.price),
         currency: 'USD',
         client: null,
-        customer: { id: demoNumericId(customer.id), name: customer.name, email: customer.email },
+        customer: { id: accountIdOfDemo(customer.id), name: customer.name, email: customer.email },
         orderId: demoNumericId(order.id),
         pdfFileId: 9500 + id,
         description: null,
@@ -147,7 +148,7 @@ function receipts(firstId: number, orders: DemoOrder[], customers: Map<string, D
   });
 }
 
-// The top-up invoice of a customer's store balance (feature 21): no fee, no tax and no PDF (stored value carries no tax document).
+// The top-up invoice of an account's store balance: no fee, no tax and no PDF (stored value carries no tax document).
 function customerTopup(topUp: MockTopUp): Invoice {
   return {
     id: topUp.invoiceId,
@@ -164,7 +165,7 @@ function customerTopup(topUp: MockTopUp): Invoice {
     total: toMoney(topUp.amount),
     currency: 'USD',
     client: null,
-    customer: topUp.customer,
+    customer: topUp.account,
     orderId: null,
     pdfFileId: null,
     description: null,
@@ -178,7 +179,7 @@ let store: Promise<Collection<Invoice>> | undefined;
 
 /** The invoices, seeded on first use. Handlers change them in place. */
 export function invoiceStore(): Promise<Collection<Invoice>> {
-  store ??= Promise.all([loadDemoState(), customerTopUps()]).then(([state, topUps]) => {
+  store ??= Promise.all([loadDemoState(), accountTopUps()]).then(([state, topUps]) => {
     const merchants = new Map(demoRows<DemoMerchant>(state, 'merchants').map((m) => [m.id, m]));
     const customers = new Map(demoRows<DemoCustomer>(state, 'customers').map((c) => [c.id, c]));
     const payments = demoRows<DemoPayment>(state, 'payments').map((payment) => topup(payment, merchants));

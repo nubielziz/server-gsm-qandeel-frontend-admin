@@ -1,5 +1,6 @@
 // The composer's form model and how it becomes the API body: the audience as switches and filters (`AudienceForm`), the message (one title and one text),
 // the client-side hints (the server checks everything again and its field errors are shown too) and the presets of the audience builder.
+import type { RankKind } from '@/features/accounts';
 import type { Id } from '@/lib/api';
 import type {
   AudiencePreviewBody,
@@ -12,15 +13,26 @@ import type {
   PersonType,
 } from '../types';
 
-export type MerchantStatus = 'active' | 'pending';
+/** The retail segment (the wire's `customers`): every retail account and guest, only those with a login, or only guests. */
 export type CustomerAccounts = 'all' | 'accounts' | 'guests';
 
-/** A person added to or left out of the audience. The name is only for the list on screen; the API takes the type and id. */
-export type PickedPerson = PersonRef & { name: string; detail?: string };
+/**
+ * A person added to or left out of the audience. The name is only for the list on screen; the API takes the type and id. `rank` is
+ * known only for a person picked in this session (a stored audience keeps ids alone): it decides which link field the message shows.
+ */
+export type PickedPerson = PersonRef & {
+  name: string;
+  detail?: string;
+  rank?: { name: string; kind: RankKind };
+};
 
+/**
+ * The audience as the composer edits it. `merchants` is the accounts of the merchant ranks in `groupIds` (every merchant rank when
+ * empty; only active accounts are reached, there is no status choice any more) and `customers` is the retail accounts and guests.
+ */
 export type AudienceForm = {
   staff: { on: boolean; roleIds: Id[] };
-  merchants: { on: boolean; statuses: MerchantStatus[]; groupIds: Id[]; countries: string };
+  merchants: { on: boolean; groupIds: Id[]; countries: string };
   customers: { on: boolean; accounts: CustomerAccounts; countries: string };
   include: PickedPerson[];
   exclude: PickedPerson[];
@@ -42,7 +54,7 @@ export const PRESET_ITEMS: readonly { value: AudiencePreset; label: string }[] =
   { value: 'everyone', label: 'Everyone' },
   { value: 'staff', label: 'Staff' },
   { value: 'merchants', label: 'Merchants' },
-  { value: 'customers', label: 'Customers' },
+  { value: 'customers', label: 'Retail' },
   { value: 'people', label: 'Specific people' },
 ];
 
@@ -57,7 +69,7 @@ const COUNTRY = /^[A-Z]{2}$/;
 
 const noSegments = (): Pick<AudienceForm, 'staff' | 'merchants' | 'customers'> => ({
   staff: { on: false, roleIds: [] },
-  merchants: { on: false, statuses: ['active'], groupIds: [], countries: '' },
+  merchants: { on: false, groupIds: [], countries: '' },
   customers: { on: false, accounts: 'all', countries: '' },
 });
 
@@ -120,11 +132,10 @@ export function audienceToSpec(form: AudienceForm): AudienceSpec {
   const spec: AudienceSpec = {};
   if (form.staff.on) spec.staff = form.staff.roleIds.length > 0 ? { roleIds: form.staff.roleIds } : {};
   if (form.merchants.on) {
-    const { statuses, groupIds, countries } = form.merchants;
+    const { groupIds, countries } = form.merchants;
     const codes = parseCountries(countries).codes;
     spec.merchants = {
-      // The server's default is active merchants only, so the plain case sends nothing.
-      ...(statuses.length > 0 && !(statuses.length === 1 && statuses[0] === 'active') ? { statuses } : {}),
+      // Only active accounts are reached, so no status is sent.
       ...(groupIds.length > 0 ? { groupIds } : {}),
       ...(codes.length > 0 ? { countries: codes } : {}),
     };
@@ -151,8 +162,7 @@ const unnamed = (ref: PersonRef): PickedPerson => ({ ...ref, name: `${PERSON_WOR
 /** The word for a kind of person, in the singular. */
 export const PERSON_WORD: Record<PersonType, string> = {
   staff: 'Staff member',
-  client: 'Merchant',
-  customer: 'Customer',
+  account: 'Account',
 };
 
 /** A stored audience as the form shows it (the people have no names: the spec keeps only their ids). */
@@ -166,7 +176,6 @@ export function specToAudienceForm(spec: AudienceSpec): AudienceForm {
   if (spec.merchants) {
     form.merchants = {
       on: true,
-      statuses: spec.merchants.statuses ?? ['active'],
       groupIds: spec.merchants.groupIds ?? [],
       countries: (spec.merchants.countries ?? []).join(', '),
     };
@@ -182,14 +191,24 @@ export function specToAudienceForm(spec: AudienceSpec): AudienceForm {
   return form;
 }
 
-/** The kinds of people the audience reaches, which decides which link fields the message form shows. */
-export function targetedTypes(audience: AudienceForm): PersonType[] {
-  const has = (type: PersonType) => audience.include.some((p) => p.type === type);
-  const types: PersonType[] = [];
-  if (audience.staff.on || has('staff')) types.push('staff');
-  if (audience.merchants.on || has('client')) types.push('client');
-  if (audience.customers.on || has('customer')) types.push('customer');
-  return types;
+/** The key of a link field of the message: `merchant` and `customer` are the links for accounts of a merchant and of a retail rank. */
+export type LinkKey = 'staff' | 'merchant' | 'customer';
+
+/**
+ * The link fields the message form shows: one for each kind of person the audience reaches. A person added to the audience by name
+ * counts by the rank they hold; one the composer knows only by id (a stored audience) may hold either, so both account links show.
+ */
+export function targetedLinks(audience: AudienceForm): LinkKey[] {
+  const people = audience.include;
+  const accounts = people.filter((person) => person.type === 'account');
+  const kinds = new Set<RankKind>(
+    accounts.flatMap((person) => (person.rank ? [person.rank.kind] : (['merchant', 'retail'] as const))),
+  );
+  const links: LinkKey[] = [];
+  if (audience.staff.on || people.some((person) => person.type === 'staff')) links.push('staff');
+  if (audience.merchants.on || kinds.has('merchant')) links.push('merchant');
+  if (audience.customers.on || kinds.has('retail')) links.push('customer');
+  return links;
 }
 
 /** Whether anyone is targeted at all: a segment is on or a person is added. */
@@ -246,9 +265,6 @@ export function audienceProblems(form: ComposerForm): Problems {
   const problems: Problems = {};
   const { audience } = form;
   if (!hasTarget(audience)) problems.audience = 'Choose at least one group of people, or add people.';
-  if (audience.merchants.on && audience.merchants.statuses.length === 0) {
-    problems['audience.merchants.statuses'] = 'Choose at least one merchant status.';
-  }
   for (const [key, text] of [
     ['audience.merchants.countries', audience.merchants.on ? audience.merchants.countries : ''],
     ['audience.customers.countries', audience.customers.on ? audience.customers.countries : ''],

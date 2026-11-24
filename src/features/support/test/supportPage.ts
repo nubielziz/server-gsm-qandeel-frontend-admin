@@ -156,8 +156,8 @@ export function liveMessage(
   return {
     id,
     ticketId,
-    authorType: 'customer',
-    authorId: 28,
+    authorType: 'account',
+    authorId: 128,
     authorName: 'Victor Silva',
     body: `Message ${id}`,
     isInternal: false,

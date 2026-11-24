@@ -4,10 +4,10 @@ import type { PaymentGateway } from '../types';
 import {
   customersCanPay,
   feeText,
-  groupsText,
   isLastStorefrontMethod,
   limitsText,
   modeLabel,
+  ranksText,
   servesStorefront,
 } from './gateways';
 
@@ -42,7 +42,7 @@ describe('feeText', () => {
   });
 });
 
-describe('limitsText and groupsText', () => {
+describe('limitsText and ranksText', () => {
   it('treats a zero limit as none', () => {
     expect(limitsText(gateway({ minAmount: '1.0000', maxAmount: '2000.0000' }))).toBe('$1.00 to $2,000.00');
     expect(limitsText(gateway({ minAmount: '50.0000' }))).toBe('From $50.00');
@@ -50,11 +50,11 @@ describe('limitsText and groupsText', () => {
     expect(limitsText(gateway({}))).toBe('No limits');
   });
 
-  it('names the groups, or says all', () => {
-    const groups = [{ id: 2, name: 'Wholesale' }];
-    expect(groupsText([], groups)).toBe('All groups');
-    expect(groupsText([2, 9], groups)).toBe('Wholesale, Group 9');
-    expect(groupsText([2], undefined)).toBe('Group 2');
+  it('names the ranks, or says all', () => {
+    const ranks = [{ id: 2, name: 'Wholesale' }];
+    expect(ranksText([], ranks)).toBe('All ranks');
+    expect(ranksText([2, 9], ranks)).toBe('Wholesale, Rank 9');
+    expect(ranksText([2], undefined)).toBe('Rank 2');
   });
 });
 

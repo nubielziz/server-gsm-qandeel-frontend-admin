@@ -3,7 +3,7 @@
 // The server decides what a switch may do; a refusal shows as a toast.
 import { useState } from 'react';
 import { Button, EmptyState, Icon, Panel, QueryState, SkeletonTable } from '@/components/ui';
-import { useGatewayList, useGroupNames, useToggleGateway } from '../hooks/useGateways';
+import { useGatewayList, useRankNames, useToggleGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { customersCanPay, isLastStorefrontMethod } from '../lib/gateways';
 import { freeCode } from '../lib/gatewayPresets';
@@ -16,7 +16,7 @@ export function PaymentsTab() {
   const grants = useSettingsGrants();
   const allowed = grants.can('payments:gateways');
   const { gateways, query } = useGatewayList(grants.ready && allowed);
-  const groups = useGroupNames(grants.can('groups:read'));
+  const ranks = useRankNames(grants.can('groups:read'));
   const toggle = useToggleGateway();
   const [dialog, setDialog] = useState<PaymentDialogState | null>(null);
   const lock = grants.needs('payments:gateways');
@@ -90,7 +90,7 @@ export function PaymentsTab() {
             <GatewayCard
               key={gateway.id}
               gateway={gateway}
-              groups={groups.data}
+              ranks={ranks.data}
               locks={{ update: lock, remove: lock }}
               saving={toggle.isPending && toggle.variables?.gateway.id === gateway.id}
               onToggle={(on) => flip(gateway, on)}

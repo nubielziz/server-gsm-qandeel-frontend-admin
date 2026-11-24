@@ -1,6 +1,5 @@
-// Re-exports the services API functions and the data-provider registry. The merchant-group and merchant lookups
-// (`./lookups`) stay private to the feature: they borrow routes the merchants feature owns, and go away when that feature
-// exports its own.
+// Re-exports the services API functions and the data-provider registry. The rank and merchant lookups
+// (`./lookups`) stay private to the feature: they borrow routes the accounts feature owns.
 export * from './categories';
 export * from './inventory';
 export * from './pricing';

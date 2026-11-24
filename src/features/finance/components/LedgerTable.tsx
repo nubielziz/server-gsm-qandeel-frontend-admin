@@ -1,4 +1,4 @@
-// LedgerTable: the journal list with the demo's columns (time, journal, type, memo, merchant, amount, by). Ports the `cols`
+// LedgerTable: the journal list with the demo's columns (time, journal, type, memo, account, amount, by). Ports the `cols`
 // of ledgerTab in 45-p-finance.js. It only draws what it is given: the tab owns the data, the sort and the page.
 import type { ReactNode } from 'react';
 import {
@@ -9,7 +9,9 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { fmtDate, money, sum, toAmount } from '@/lib/format';
+import { Link } from 'react-router';
+import { accountPath } from '@/features/accounts';
+import { accountLabel, fmtDate, money, sum, toAmount } from '@/lib/format';
 import { journalLabel, ledgerKindLabel, postedBy } from '../lib/kinds';
 import type { LedgerTransaction } from '../types';
 
@@ -26,9 +28,15 @@ export interface LedgerTableProps {
   empty: ReactNode;
 }
 
-// The merchant an entry is about: the owner of its wallet line. Display only, picked from the lines the server sent.
-function merchantOf(entry: LedgerTransaction): string | null {
-  return entry.entries.find((line) => line.account.ownerType === 'client')?.account.ownerName ?? null;
+// The account an entry is about: the owner of its wallet line (a merchant wallet, its hold or a store balance). Display only, picked
+// from the lines the server sent.
+function accountOf(entry: LedgerTransaction): { id: number; name: string } | null {
+  const owner = entry.entries.find(
+    (line) => line.account.ownerType === 'account' && line.account.ownerId !== null,
+  )?.account;
+  return owner && owner.ownerId !== null
+    ? { id: owner.ownerId, name: accountLabel({ id: owner.ownerId, name: owner.ownerName }) }
+    : null;
 }
 
 // The entry's amount: its debit lines added up, which equals its credit lines because the server balances every entry.
@@ -81,10 +89,19 @@ export function LedgerTable({
       render: (entry) => <span className="block max-w-[360px] truncate text-ink2">{entry.memo}</span>,
     },
     {
-      key: 'merchant',
-      label: 'Merchant',
+      key: 'account',
+      label: 'Account',
       hide: 'lg',
-      render: (entry) => merchantOf(entry) ?? <span className="text-ink3">–</span>,
+      render: (entry) => {
+        const owner = accountOf(entry);
+        return owner ? (
+          <Link className="link" to={accountPath(owner.id, 'wallet')}>
+            {owner.name}
+          </Link>
+        ) : (
+          <span className="text-ink3">–</span>
+        );
+      },
     },
     { key: 'amount', label: 'Amount', num: true, render: (entry) => money(amountOf(entry)) },
     {

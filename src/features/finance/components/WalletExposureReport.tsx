@@ -1,6 +1,8 @@
-// WalletExposureReport: what the merchants' wallets hold, what is reserved for open orders and the overdraft allowed and used,
-// with the largest wallets first. New (MISMATCHES M124). The server adds the wallets up; each merchant links to its page.
+// WalletExposureReport: what the merchant wallets hold, what is reserved for open orders and the overdraft allowed and used,
+// with the largest wallets first, and beside them the totals of the store balances. New (MISMATCHES M124). The server adds the
+// wallets up; each merchant links to the Financial part of its account.
 import { Link } from 'react-router';
+import { accountPath } from '@/features/accounts';
 import { EmptyState, QueryState, SkeletonTable } from '@/components/ui';
 import { money, money0, num, toAmount } from '@/lib/format';
 import { useWalletExposure } from '../hooks/useReports';
@@ -18,7 +20,7 @@ export function WalletExposureReport() {
         onRetry={() => void report.refetch()}
         errorTitle="Could not load the wallet exposure"
         skeleton={<SkeletonTable cols={5} rows={8} />}
-        isEmpty={!data || data.rows.length === 0}
+        isEmpty={!data || (data.rows.length === 0 && data.storeBalances.accounts === 0)}
         empty={
           <EmptyState icon="wallet" title="No merchant wallets yet">
             Wallets appear here once a merchant tops up.
@@ -45,6 +47,27 @@ export function WalletExposureReport() {
                 },
               ]}
             />
+            <ReportStats
+              label="Store balance totals"
+              stats={[
+                {
+                  label: 'Store balances',
+                  value: money0(data.storeBalances.balance),
+                  sub: `${num(data.storeBalances.accounts)} ${data.storeBalances.accounts === 1 ? 'account' : 'accounts'}`,
+                  className: toAmount(data.storeBalances.balance) < 0 ? 'text-crit-fg' : undefined,
+                },
+                {
+                  label: 'Below zero',
+                  value: num(data.storeBalances.negative),
+                  className: data.storeBalances.negative > 0 ? 'text-warn-fg' : undefined,
+                },
+                {
+                  label: 'On hold',
+                  value: num(data.storeBalances.frozen),
+                  className: data.storeBalances.frozen > 0 ? 'text-warn-fg' : undefined,
+                },
+              ]}
+            />
             <div className="tbl-wrap max-h-[420px]">
               <table className="tbl" aria-label="Wallets by merchant">
                 <thead>
@@ -68,7 +91,7 @@ export function WalletExposureReport() {
                   {data.rows.map((row) => (
                     <tr key={row.clientId}>
                       <td className="font-medium">
-                        <Link className="link" to={`/merchants/${row.clientId}`}>
+                        <Link className="link" to={accountPath(row.clientId, 'wallet')}>
                           {row.name}
                         </Link>
                       </td>

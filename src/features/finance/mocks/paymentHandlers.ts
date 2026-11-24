@@ -1,9 +1,9 @@
 // Mock of the payment routes (`/admin/payments*`): the deposit list, one deposit, and the approve and reject decisions. An
 // approval posts the deposit's ledger entry and settles its invoice, so the trial balance, the ledger and the invoices follow.
-// A customer's top-up (feature 21) is credited to their store balance by the customers mock.
+// The top-up of a store balance is credited by the accounts mock.
 // Mocks fake answers only (decision 014): the one rule kept is that a deposit is decided once.
 import { http, HttpResponse, type HttpHandler } from 'msw';
-import { creditTopUp, markTopUp } from '@/features/customers/mocks';
+import { creditTopUp, markTopUp } from '@/features/accounts/mocks';
 import { applyListQuery } from '@/mocks/crud';
 import { bodyOf, invalid, notFound, textOf } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
@@ -17,22 +17,27 @@ import { paymentStore, withWallets } from './paymentStore';
 
 const TOTAL_HEADERS = { 'access-control-expose-headers': 'x-total-count' };
 
-// The list filters the generic mock cannot read: `owner` (merchant or customer) is not a field of the row, and `customerId` is
-// the row's `customer.id`.
+// The list filters the generic mock cannot read: `owner` (merchant or customer, the kind of wallet) is not a field of the row, and the
+// buyer is `accountId` (`clientId` is its alias): the id of the row's `client` or `customer`, which are both account ids.
 function listFor(rows: Payment[], params: URLSearchParams): { rows: Payment[]; params: URLSearchParams } {
   const next = new URLSearchParams(params);
   const owner = next.get('owner');
   next.delete('owner');
-  const customerId = next.get('customerId');
-  next.delete('customerId');
-  if (customerId) next.set('customer.id', customerId);
+  const account = next.get('accountId') ?? next.get('clientId');
+  next.delete('accountId');
+  next.delete('clientId');
   return {
     rows: rows
       .filter((row) => owner !== 'customer' || row.customer !== null)
-      .filter((row) => owner !== 'merchant' || row.client !== null),
+      .filter((row) => owner !== 'merchant' || row.client !== null)
+      .filter((row) => !account || String((row.client ?? row.customer)?.id) === account),
     params: next,
   };
 }
+
+// `customerId` is not a filter any more: the server answers 422 and names the one to use (decision 023).
+const customerIdRefused = () =>
+  invalid([{ field: 'customerId', message: 'Filter by accountId: a buyer is an account now.' }]);
 
 // The deposit's journal: the money in (the bank, or the gateway for card and USDT), the wallet credit and the fee income.
 async function postDeposit(payment: Payment, by: string): Promise<void> {
@@ -40,7 +45,7 @@ async function postDeposit(payment: Payment, by: string): Promise<void> {
   const net = Number(payment.netAmount);
   const fee = Math.round((gross - net) * 10_000) / 10_000;
   const owner = payment.client
-    ? { ownerType: 'client' as const, ownerId: payment.client.id, ownerName: payment.client.name }
+    ? { ownerType: 'account' as const, ownerId: payment.client.id, ownerName: payment.client.name }
     : {};
   const lines: LedgerLine[] = [
     {
@@ -80,8 +85,10 @@ export const paymentHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
+    const query = new URL(request.url).searchParams;
+    if (query.has('customerId')) return customerIdRefused();
     const all = await withWallets((await paymentStore()).list());
-    const { rows, params } = listFor(all, new URL(request.url).searchParams);
+    const { rows, params } = listFor(all, query);
     const { page, total } = applyListQuery(rows, params, [
       'gatewayTxnId',
       'client.name',
@@ -114,7 +121,7 @@ export const paymentHandlers: HttpHandler[] = [
       reviewedAt: now,
       reviewedBy: { id: staff?.id ?? null, name: by },
     }) as Payment;
-    // A customer's top-up goes to their store balance (feature 21); a merchant's deposit posts its own journal.
+    // The top-up of a store balance is credited by the accounts mock; a merchant wallet's deposit posts its own journal.
     if (updated.customer) await creditTopUp(updated.id, by);
     else await postDeposit(updated, by);
     if (updated.invoiceId !== null) {

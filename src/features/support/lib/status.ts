@@ -1,7 +1,7 @@
 // How the screen names a ticket: status badges, categories, channels and priorities. Ports TICKET_STATUS, TICKET_CATS and
 // CHANNEL_LABEL of 12-state-b2c.js / 49-p-support.js. These are words only; the server owns every state change.
 import type { BadgeTone, IconName, SelectOption } from '@/components/ui';
-import { maskedCustomerLabel } from '@/lib/format';
+import { maskedAccountLabel } from '@/lib/format';
 import type {
   ReplyChannel,
   SupportTicket,
@@ -64,14 +64,16 @@ export function firstName(name: string): string {
   return name.trim().split(/\s+/)[0] ?? '';
 }
 
+/** Whether the requester holds a merchant rank. Only an explicit `merchant` counts: anything else has retail rights and is masked as such. */
+export function isMerchantRequester(ticket: Pick<SupportTicket, 'requester'>): boolean {
+  return ticket.requester.rankKind === 'merchant';
+}
+
 /**
- * Who wrote the ticket, as the inbox shows them. A merchant is its company name; a customer can have an empty name, so
- * the label falls back to the masked email (the inbox masks customer emails) and then to `Customer #id`.
+ * Who wrote the ticket, as the inbox shows them. An account can have an empty name (a guest, a sign-in link), so the label
+ * falls back to the masked email (the inbox masks addresses) and then to `Account #id`.
  */
-export function requesterLabel(
-  ticket: Pick<SupportTicket, 'requesterType' | 'requesterId' | 'requester'>,
-): string {
+export function requesterLabel(ticket: Pick<SupportTicket, 'requesterId' | 'requester'>): string {
   const { requester } = ticket;
-  if (ticket.requesterType === 'client') return requester.name;
-  return maskedCustomerLabel({ id: ticket.requesterId, name: requester.name, email: requester.email });
+  return maskedAccountLabel({ id: ticket.requesterId, name: requester.name, email: requester.email });
 }

@@ -1,4 +1,4 @@
-// The console's alerts for the support inbox (feature 28, plan §2 rule 5). When a customer or a merchant writes, or a ticket is opened, and the ticket is
+// The console's alerts for the support inbox (feature 28, plan §2 rule 5). When an account writes, or a ticket is opened, and the ticket is
 // assigned to me or to nobody: a short sound (Web Audio, after the first click or key press on the page) and, when the tab is hidden and the staff member
 // allowed it, a desktop notification "New message on T-1042" with the requester's name and no text. It runs on every page (the manifest's top bar slot)
 // and only in the tab that holds the stream: a tab that gets the event relayed from another tab stays quiet, so one message is one alert for the browser.

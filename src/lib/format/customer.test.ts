@@ -1,6 +1,6 @@
-// customerLabel / hasCustomerName: the fallback order name, email, id, "Unknown customer".
+// customerLabel and accountLabel / hasAccountName / maskedAccountLabel: the fallback order name, email, id, "Unknown customer" or "Unknown account".
 import { describe, expect, it } from 'vitest';
-import { customerLabel, hasCustomerName, maskedCustomerLabel } from '.';
+import { accountLabel, customerLabel, hasAccountName, maskedAccountLabel } from '.';
 
 describe('customerLabel', () => {
   it('prints the trimmed name when there is one', () => {
@@ -29,27 +29,41 @@ describe('customerLabel', () => {
   });
 });
 
-describe('hasCustomerName', () => {
-  it('is true only for a name with visible text', () => {
-    expect(hasCustomerName({ name: 'Maya' })).toBe(true);
-    expect(hasCustomerName({ name: '' })).toBe(false);
-    expect(hasCustomerName({ name: '  ' })).toBe(false);
-    expect(hasCustomerName({ name: null })).toBe(false);
-    expect(hasCustomerName(undefined)).toBe(false);
+describe('accountLabel', () => {
+  it('prints the trimmed name, then the email, then the number', () => {
+    expect(accountLabel({ name: '  Zain Mobile Hub ', email: 'ops@zain.example', id: 1 })).toBe(
+      'Zain Mobile Hub',
+    );
+    expect(accountLabel({ name: '  ', email: ' ops@zain.example ', id: 1 })).toBe('ops@zain.example');
+    expect(accountLabel({ name: '', email: '', id: 7 })).toBe('Account #7');
+    expect(accountLabel({ id: 0 })).toBe('Account #0');
+  });
+
+  it('says Unknown account when there is nothing at all', () => {
+    expect(accountLabel({})).toBe('Unknown account');
+    expect(accountLabel({ name: ' ', email: ' ', id: null })).toBe('Unknown account');
+    expect(accountLabel(null)).toBe('Unknown account');
+    expect(accountLabel(undefined)).toBe('Unknown account');
+  });
+
+  it('names an anonymized account "Deleted account" whatever its row still says', () => {
+    expect(
+      accountLabel({ name: 'Deleted account', email: 'x@redacted.invalid', id: 3, status: 'anonymized' }),
+    ).toBe('Deleted account');
+    expect(accountLabel({ name: 'Maya', id: 3, status: 'active' })).toBe('Maya');
   });
 });
 
-describe('maskedCustomerLabel', () => {
-  it('prints the name as it is and masks only the email fallback', () => {
-    expect(maskedCustomerLabel({ name: 'Maya Haddad', email: 'maya@example.com', id: 7 })).toBe(
-      'Maya Haddad',
-    );
-    expect(maskedCustomerLabel({ name: '', email: 'maya@example.com', id: 7 })).toBe('ma•••@example.com');
+describe('hasAccountName and maskedAccountLabel', () => {
+  it('is true only for a name with visible text', () => {
+    expect(hasAccountName({ name: 'Maya' })).toBe(true);
+    expect(hasAccountName({ name: '  ' })).toBe(false);
+    expect(hasAccountName(undefined)).toBe(false);
   });
 
-  it('falls back to the id and then to Unknown customer when there is no email', () => {
-    expect(maskedCustomerLabel({ name: '', email: '', id: 7 })).toBe('Customer #7');
-    expect(maskedCustomerLabel({ id: 9 })).toBe('Customer #9');
-    expect(maskedCustomerLabel(undefined)).toBe('Unknown customer');
+  it('masks only the email fallback', () => {
+    expect(maskedAccountLabel({ name: 'Maya Haddad', email: 'maya@example.com', id: 7 })).toBe('Maya Haddad');
+    expect(maskedAccountLabel({ name: '', email: 'maya@example.com', id: 7 })).toBe('ma•••@example.com');
+    expect(maskedAccountLabel({ id: 9 })).toBe('Account #9');
   });
 });

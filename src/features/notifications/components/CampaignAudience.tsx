@@ -1,7 +1,7 @@
 // CampaignAudience: who the campaign is for, in words (one line per group, roles and groups by name when the staff member may read them), the link of
 // the notification, and the people the fan-out skipped and why.
 import { KeyValue, Panel } from '@/components/ui';
-import { namesOf, useGroupOptions, useRoleOptions } from '../hooks/useAudienceOptions';
+import { namesOf, useRankOptions, useRoleOptions } from '../hooks/useAudienceOptions';
 import type { BroadcastGrants } from '../hooks/useBroadcastGrants';
 import { audienceLines, skippedLines } from '../lib/audienceText';
 import type { CampaignDetail } from '../types';
@@ -15,15 +15,15 @@ export function CampaignAudience({
 }) {
   const { audience } = campaign;
   const roles = useRoleOptions(Boolean(audience.staff?.roleIds?.length) && grants.can('roles:read'));
-  const groups = useGroupOptions(Boolean(audience.merchants?.groupIds?.length) && grants.can('groups:read'));
-  const lines = audienceLines(audience, { roles: namesOf(roles.options), groups: namesOf(groups.options) });
+  const ranks = useRankOptions(Boolean(audience.merchants?.groupIds?.length) && grants.can('groups:read'));
+  const lines = audienceLines(audience, { roles: namesOf(roles.options), groups: namesOf(ranks.options) });
   const skipped = skippedLines(campaign.skipped);
   const links = (['staff', 'merchant', 'customer'] as const)
     .filter((key) => campaign.link?.[key])
     .map(
       (key) =>
         [
-          `Link for ${key === 'merchant' ? 'merchants' : key === 'staff' ? 'staff' : 'customers'}`,
+          `Link for ${key === 'merchant' ? 'merchants' : key === 'staff' ? 'staff' : 'retail accounts'}`,
           <span key={key} className="mono">
             {campaign.link?.[key]}
           </span>,

@@ -58,6 +58,24 @@ describe('parseTicketRow and parseTicketUpdated', () => {
     expect(parseTicketRow({ ...row(), id: 0 })).toBeNull();
     expect(parseTicketUpdated({})).toBeNull();
   });
+
+  it('skips a row that names a requester type of the old model', () => {
+    expect(parseTicketRow({ ...row(), requesterType: 'customer' })).toBeNull();
+    expect(parseTicketRow({ ...row(), requesterType: 'client' })).toBeNull();
+  });
+
+  it('reads the rank kind of the requester, and an unknown or missing one as retail', () => {
+    expect(
+      parseTicketRow(row({ requester: { name: 'Zain', email: null, rankKind: 'merchant' } }))?.requester
+        .rankKind,
+    ).toBe('merchant');
+    const bare = { ...row(), requester: { name: 'Zain', email: null } };
+    expect(parseTicketRow(bare)?.requester.rankKind).toBe('retail');
+    expect(
+      parseTicketRow({ ...row(), requester: { name: 'Zain', email: null, rankKind: 'vip' } })?.requester
+        .rankKind,
+    ).toBe('retail');
+  });
 });
 
 describe('parseTicketRead', () => {
@@ -77,9 +95,9 @@ describe('parseTicketRead', () => {
 });
 
 describe('parseMessage and isRequesterMessage', () => {
-  it('knows a customer and a merchant from the team and the system', () => {
+  it('knows the requester’s account from the team and the system', () => {
     expect(isRequesterMessage(message(1))).toBe(true);
-    expect(isRequesterMessage(message(1, { authorType: 'client' }))).toBe(true);
+    expect(isRequesterMessage(message(1, { authorType: 'account', authorId: 5 }))).toBe(true);
     expect(isRequesterMessage(reply(2))).toBe(false);
     expect(isRequesterMessage(message(3, { authorType: 'system' }))).toBe(false);
     expect(parseMessage(reply(2))?.authorType).toBe('staff');

@@ -1,12 +1,21 @@
 // Mock orders, taken from the demo's orders with their services, merchants, customers, suppliers and events, mapped to the
-// order DTO of the orders feature (decision 014). The demo's five states become the API's `status` + `queue` (MISMATCHES M20),
-// and ids lose their prefix (`ORD-48100` is 48100). A few orders are changed on purpose so every screen of the drawer has
-// something to show: one queued merchant order becomes a manual order and the two newest completed merchant orders wait for
-// a verification decision (the demo has neither).
-import type { EventActorType, Order, OrderEvent, ServiceType, SupplierOption } from '@/features/orders';
+// order DTO of the orders feature (decision 014). The buyer is one `account` with its rank: a demo merchant keeps its number
+// and a demo customer `cN` is account `100 + N` (`seed/accountIds.ts`). The demo's five states become the API's `status` +
+// `queue` (MISMATCHES M20), and ids lose their prefix (`ORD-48100` is 48100). A few orders are changed on purpose so every
+// screen of the drawer has something to show: one queued merchant order becomes a manual order and the two newest completed
+// merchant orders wait for a verification decision (the demo has neither).
+import type {
+  EventActorType,
+  Order,
+  OrderAccount,
+  OrderEvent,
+  ServiceType,
+  SupplierOption,
+} from '@/features/orders';
 import type { JsonObject } from '@/lib/api';
 import { Collection } from './db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from './seed';
+import { customerAccountId, merchantAccountId } from './seed/accountIds';
 
 type DemoEvent = { ts: number; k: string; text: string; by: string };
 
@@ -52,8 +61,18 @@ type DemoService = {
   sla: number;
 };
 type DemoNamed = { id: string; name: string };
-type DemoCustomer = DemoNamed & { email: string };
+type DemoMerchant = DemoNamed & { email: string; group: 'std' | 'whl' | 'vip' };
+type DemoCustomer = DemoNamed & { email: string; hasAccount: boolean };
 type DemoSupplier = DemoNamed & { status: string; enabled: boolean };
+
+// The ranks of the accounts mock (its seed's four ranks): the merchant ranks by the demo's group code, and the one retail rank. The ids
+// and names must stay equal to `features/accounts/mocks/seed.ts`, which a feature may not import from here.
+const MERCHANT_RANKS = {
+  std: { id: 1, name: 'Standard' },
+  whl: { id: 2, name: 'Wholesale' },
+  vip: { id: 3, name: 'VIP' },
+} as const;
+const RETAIL_RANK = { id: 4, name: 'Storefront retail' } as const;
 
 /** The reason text of a manual order (REVIEW_REASONS.manual in 10-data.js). */
 export const MANUAL_REASON = 'Manual service: operator dispatch required';
@@ -78,6 +97,11 @@ const SOURCES: Record<string, string> = {
 
 let eventSeq = 0;
 
+/** The `account` of an event row: the actor's own number when it is an account, null for staff, supplier and system. */
+function accountOfActor(actor: OrderEvent['actor']): OrderEvent['account'] {
+  return actor.type === 'account' && actor.id !== null ? { id: actor.id } : null;
+}
+
 /** Adds one line to an order's timeline. */
 export function addEvent(
   order: MockOrder,
@@ -93,6 +117,8 @@ export function addEvent(
     fromStatus: null,
     toStatus: order.status,
     actor,
+    // The server resolves the account of an account actor (and of an old client or customer row) itself.
+    account: accountOfActor(actor),
     data: { message, ...data },
     createdAt: new Date().toISOString(),
   });
@@ -100,7 +126,7 @@ export function addEvent(
 
 type Context = {
   services: Map<string, DemoService>;
-  merchants: Map<string, DemoNamed>;
+  merchants: Map<string, DemoMerchant>;
   customers: Map<string, DemoCustomer>;
   suppliers: Map<string, DemoSupplier>;
   staff: Set<string>;
@@ -198,19 +224,41 @@ function snapshotOf(order: DemoOrder, service: DemoService): JsonObject {
   };
 }
 
+// The buyer of a demo order: a merchant of the demo (a merchant rank) or a customer of it (the retail rank; a guest has no login).
+function accountOf(demo: DemoOrder, ctx: Context): OrderAccount {
+  const merchant = demo.mid ? ctx.merchants.get(demo.mid) : undefined;
+  if (merchant) {
+    return {
+      id: merchantAccountId(demoNumericId(merchant.id)),
+      name: merchant.name,
+      email: merchant.email,
+      rank: { ...MERCHANT_RANKS[merchant.group], kind: 'merchant' },
+      guest: false,
+    };
+  }
+  const customer = demo.cid ? ctx.customers.get(demo.cid) : undefined;
+  if (!customer) throw new Error(`Demo order ${demo.id} has neither a merchant nor a customer.`);
+  return {
+    id: customerAccountId(demoNumericId(customer.id)),
+    name: customer.name,
+    email: customer.email,
+    rank: { ...RETAIL_RANK, kind: 'retail' },
+    guest: !customer.hasAccount,
+  };
+}
+
 function mapOrder(demo: DemoOrder, ctx: Context): MockOrder {
   const service = ctx.services.get(demo.sid) as DemoService;
   const b2c = Boolean(demo.cid);
-  const merchant = demo.mid ? ctx.merchants.get(demo.mid) : undefined;
-  const customer = demo.cid ? ctx.customers.get(demo.cid) : undefined;
+  const account = accountOf(demo, ctx);
   const supplier = ctx.suppliers.get(demo.sup);
   const state = stateOf(demo);
   const actorOf = (by: string): OrderEvent['actor'] => {
-    let type: EventActorType = b2c ? 'customer' : 'client';
+    let type: EventActorType = 'account';
     if (SYSTEM_ACTORS.has(by)) type = 'system';
     else if ([...ctx.suppliers.values()].some((s) => s.name === by)) type = 'supplier';
     else if (ctx.staff.has(by)) type = 'staff';
-    return { type, id: null, name: by };
+    return { type, id: type === 'account' ? account.id : null, name: by };
   };
   const dispatched = demo.events.find((event) => event.k === 'dispatch');
 
@@ -226,10 +274,7 @@ function mapOrder(demo: DemoOrder, ctx: Context): MockOrder {
       slaMinutes: service.sla,
       category: service.category,
     },
-    client: merchant ? { id: demoNumericId(merchant.id), name: merchant.name } : null,
-    customer: customer
-      ? { id: demoNumericId(customer.id), name: customer.name, email: customer.email }
-      : null,
+    account,
     imei: demo.input,
     quantity: demo.qty,
     inputs: demo.device ? { device: demo.device } : {},
@@ -255,15 +300,19 @@ function mapOrder(demo: DemoOrder, ctx: Context): MockOrder {
     createdAt: toIso(demo.created),
     sentAt: dispatched ? toIso(dispatched.ts) : null,
     completedAt: demo.doneAt ? toIso(Math.round(demo.doneAt)) : null,
-    events: demo.events.map((event) => ({
-      id: ++eventSeq,
-      type: event.k,
-      fromStatus: null,
-      toStatus: null,
-      actor: actorOf(event.by),
-      data: { message: event.text },
-      createdAt: toIso(event.ts),
-    })),
+    events: demo.events.map((event) => {
+      const actor = actorOf(event.by);
+      return {
+        id: ++eventSeq,
+        type: event.k,
+        fromStatus: null,
+        toStatus: null,
+        actor,
+        account: accountOfActor(actor),
+        data: { message: event.text },
+        createdAt: toIso(event.ts),
+      };
+    }),
   };
 }
 
@@ -291,9 +340,9 @@ function enrich(rows: MockOrder[]): void {
     row.verificationStatus = 'requested';
     row.reviewReason = VERIFICATION_REASON;
     addEvent(row, 'verification', 'Verification requested by the merchant', {
-      type: 'client',
-      id: row.client?.id ?? null,
-      name: row.client?.name ?? null,
+      type: 'account',
+      id: row.account.id,
+      name: row.account.name,
     });
   }
 }
@@ -307,7 +356,7 @@ export function orderStore(): Promise<Collection<MockOrder>> {
       new Map(demoRows<T>(state, key).map((row) => [row.id, row]));
     const context: Context = {
       services: by<DemoService>('services'),
-      merchants: by('merchants'),
+      merchants: by<DemoMerchant>('merchants'),
       customers: by<DemoCustomer>('customers'),
       suppliers: by<DemoSupplier>('suppliers'),
       staff: new Set(demoRows<DemoNamed>(state, 'admins').map((admin) => admin.name)),

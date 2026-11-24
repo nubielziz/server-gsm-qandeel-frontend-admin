@@ -3,7 +3,7 @@
 // here and sends storefront refunds to the Refunds page (MISMATCHES M25).
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, Icon, TextField } from '@/components/ui';
-import { money } from '@/lib/format';
+import { maskedAccountLabel, money } from '@/lib/format';
 import { useRefundOrder } from '../hooks/useOrderMutations';
 import { orderLabel } from '../lib/status';
 import type { Order } from '../types';
@@ -36,7 +36,7 @@ export function RefundDialog({ order, onClose, onViewLedger }: RefundDialogProps
     <FormDialog
       open
       title={`Refund ${orderLabel(order)}`}
-      sub={`${order.client?.name ?? 'The merchant'} · charged ${money(order.totalPrice)}`}
+      sub={`${maskedAccountLabel(order.account)} · charged ${money(order.totalPrice)}`}
       confirm="Refund"
       kind="danger"
       onClose={onClose}

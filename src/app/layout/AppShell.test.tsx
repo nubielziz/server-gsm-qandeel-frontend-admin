@@ -17,8 +17,7 @@ afterEach(() => vi.restoreAllMocks());
 const OWNER_PAGES = [
   'Dashboard',
   'Orders',
-  'Merchants',
-  'Customers',
+  'Accounts',
   'Support',
   'Risk & checks',
   'Notifications',
@@ -42,7 +41,7 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 16 pages (the demo’s, with Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
+  it('lists the 15 pages (the demo’s, with Accounts in the place of Merchants and Customers, Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
@@ -82,18 +81,35 @@ describe('sidebar', () => {
   });
 
   it('follows the permission each page declares, not its name', async () => {
-    // Merchants are `clients:read`, Product / Services `catalog:read`, Admins `staff:read` in the map.
+    // Accounts are `clients:read`, Product / Services `catalog:read`, Admins `staff:read` in the map.
     mockMe({ permissions: ['clients:read', 'catalog:*', 'staff:read'] });
-    renderApp('/merchants');
+    renderApp('/accounts');
     const nav = await primaryNav();
     expect(nav.getAllByRole('link').map(labelOf)).toEqual([
-      'Merchants',
+      'Accounts',
       'Product / Services',
       'Admins & access',
       // catalog:* opens Shop content too (its TAC catalogue tab; the page takes any of three permissions). It is in the System
       // group, after Settings.
       'Shop content',
     ]);
+  });
+
+  it.each(['clients:read', 'groups:read'])(
+    'opens Accounts, once and under no old name, for a role that holds only %s',
+    async (permission) => {
+      mockMe({ permissions: ['dashboard:read', permission] });
+      renderApp('/dashboard');
+      const labels = (await primaryNav()).getAllByRole('link').map(labelOf);
+      expect(labels).toEqual(['Dashboard', 'Accounts']);
+    },
+  );
+
+  it('keeps Accounts from a role that holds neither accounts permission, whatever else it holds', async () => {
+    // `customers:read` was the Customers page; it opens nothing now. `customers:privacy` is a part of the Accounts page, not a way in.
+    mockMe({ permissions: ['dashboard:read', 'customers:read', 'customers:privacy', 'wallet:read'] });
+    renderApp('/dashboard');
+    expect((await primaryNav()).getAllByRole('link').map(labelOf)).not.toContain('Accounts');
   });
 
   it.each(['pricing:read', 'inventory:read', 'storefront:read'])(
@@ -156,11 +172,11 @@ describe('top bar slots', () => {
 
 describe('start page', () => {
   it('sends a role without the dashboard to the first page it may open', async () => {
-    mockMe({ permissions: ['support:*', 'customers:read'] });
+    mockMe({ permissions: ['support:*', 'clients:read'] });
     const app = renderApp('/');
-    // Customers is a lazy chunk now (mockMe starts the mock session its data calls need).
-    await screen.findByRole('heading', { level: 1, name: 'Customers' }, { timeout: 10_000 });
-    expect(app.location()).toBe('/customers');
+    // Accounts is a lazy chunk (mockMe starts the mock session its data calls need).
+    await screen.findByRole('heading', { level: 1, name: 'Accounts' }, { timeout: 10_000 });
+    expect(app.location()).toBe('/accounts');
   });
 
   it('says so when the role opens no page at all', async () => {
@@ -190,18 +206,27 @@ describe('page gate and unknown addresses', () => {
     expect(screen.getByRole('link', { name: 'Go to Dashboard' })).toHaveAttribute('href', '/dashboard');
   });
 
-  it('opens the detail view of a merchant with the merchants permission', async () => {
+  it('opens the detail view of an account with the accounts permission', async () => {
     mockMe({ permissions: ['clients:read'] });
-    renderApp('/merchants/12');
-    // The merchant page (a lazy chunk) shows its own heading: the merchant's name or "Merchant not found".
+    renderApp('/accounts/12');
+    // The account page (a lazy chunk) shows its own heading: the account's name or its not-found words.
     expect(await screen.findByRole('heading', { level: 1 }, { timeout: 10_000 })).toBeInTheDocument();
     expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
   });
 
-  it('refuses the detail view of a customer without the customers permission', async () => {
-    mockMe({ permissions: ['clients:read'] });
-    renderApp('/customers/5');
+  it('refuses the detail view of an account to a role without either accounts permission, naming both', async () => {
+    mockMe({ permissions: ['orders:read', 'customers:read'] });
+    renderApp('/accounts/5');
     expect(await screen.findByText('You do not have access to this page')).toBeInTheDocument();
+    expect(screen.getByText('clients:read or groups:read')).toBeInTheDocument();
+  });
+
+  it('refuses an old customer address, once it is sent to Accounts, to a role that holds only customers:read', async () => {
+    mockMe({ permissions: ['customers:read'] });
+    const app = renderApp('/customers/5');
+    // The old address is redirected before the gate; the gate then asks the Accounts page's permission.
+    expect(await screen.findByText('You do not have access to this page')).toBeInTheDocument();
+    expect(app.location()).toBe('/accounts/5?from=customer');
   });
 
   it('shows a not-found page inside the shell for an address no page matches', async () => {
@@ -234,21 +259,22 @@ describe('breadcrumb and tab title', () => {
     mockMe({ permissions: ['*'] });
     const user = userEvent.setup();
     renderShell(
-      '/merchants/12',
+      '/accounts/12',
       <>
-        <Route path="/merchants/:id" element={<RecordPage />} />
-        <Route path="/merchants" element={<p>merchant list</p>} />
+        <Route path="/accounts/:id" element={<RecordPage />} />
+        <Route path="/accounts" element={<p>account list</p>} />
       </>,
     );
     const crumb = await screen.findByRole('navigation', { name: 'Breadcrumb' });
-    expect(within(crumb).getByRole('link', { name: 'Merchants' })).toHaveAttribute('href', '/merchants');
+    expect(within(crumb).getByText('Operations')).toBeInTheDocument();
+    expect(within(crumb).getByRole('link', { name: 'Accounts' })).toHaveAttribute('href', '/accounts');
     expect(within(crumb).getByText('Acme Ltd')).toHaveAttribute('aria-current', 'page');
-    expect(document.title).toBe('Acme Ltd · Merchants · IMEI-HUB');
+    expect(document.title).toBe('Acme Ltd · Accounts · IMEI-HUB');
 
-    await user.click(within(crumb).getByRole('link', { name: 'Merchants' }));
-    expect(await screen.findByText('merchant list')).toBeInTheDocument();
+    await user.click(within(crumb).getByRole('link', { name: 'Accounts' }));
+    expect(await screen.findByText('account list')).toBeInTheDocument();
     expect(screen.queryByText('Acme Ltd')).not.toBeInTheDocument();
-    expect(document.title).toBe('Merchants · IMEI-HUB');
+    expect(document.title).toBe('Accounts · IMEI-HUB');
   });
 });
 
@@ -267,12 +293,36 @@ describe('keyboard shortcuts in the shell', () => {
     expect(app.location()).toBe('/orders');
   }, 20_000);
 
+  it('"g" then "m" opens the accounts page', async () => {
+    await signInAs();
+    mockMe({ permissions: ['*'] });
+    const user = userEvent.setup();
+    const app = renderApp('/dashboard');
+    await primaryNav();
+    await user.keyboard('gm');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Accounts' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
+    expect(app.location()).toBe('/accounts');
+  }, 20_000);
+
+  it('"g" then "k" opens nothing: Customers is retired', async () => {
+    mockMe({ permissions: ['*'] });
+    const user = userEvent.setup();
+    const app = renderApp('/dashboard');
+    await primaryNav();
+    await user.keyboard('gk');
+    expect(app.location()).toBe('/dashboard');
+  });
+
   it('does not jump to a page the staff member may not open', async () => {
     mockMe({ permissions: ['dashboard:read'] });
     const user = userEvent.setup();
     const app = renderApp('/dashboard');
     await primaryNav();
     await user.keyboard('ga');
+    expect(app.location()).toBe('/dashboard');
+    await user.keyboard('gm');
     expect(app.location()).toBe('/dashboard');
   });
 
@@ -300,6 +350,13 @@ describe('keyboard shortcuts in the shell', () => {
     await user.keyboard('?');
     expect(await screen.findByRole('heading', { name: 'Keyboard shortcuts' })).toBeInTheDocument();
     expect(screen.getByText('g then d / o / m')).toBeInTheDocument();
+    expect(screen.getByText('Go to dashboard / orders / accounts')).toBeInTheDocument();
+    // The Customers key is retired, so the list names neither Customers nor its key.
+    expect(screen.getByText('g then s / i')).toBeInTheDocument();
+    const shortcuts = screen
+      .getByRole('heading', { name: 'Keyboard shortcuts' })
+      .closest('dialog') as HTMLElement;
+    expect(within(shortcuts).queryByText(/customers/i)).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('heading', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument();
 
@@ -559,7 +616,7 @@ describe('account menu', () => {
     await signInAs();
     const user = userEvent.setup();
     renderApp('/dashboard');
-    expect((await primaryNav()).getAllByRole('link')).toHaveLength(16);
+    expect((await primaryNav()).getAllByRole('link')).toHaveLength(15);
     expect(await screen.findByRole('button', { name: 'Account menu for Rami K.' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Account menu for/ }));

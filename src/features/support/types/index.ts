@@ -1,6 +1,7 @@
 // Types for the support feature (`/support`: the inbox, the thread and the reply templates). The map names the routes but gives
 // no bodies (MISMATCHES M10), so every shape below is an assumed contract, built from the generated rows in
 // `src/lib/api/schema.gen.ts` (`SupportTicketRow`, `TicketMessageRow`, `ReplyTemplateRow`) and narrowed to what the screens use.
+import type { RankKind } from '@/features/accounts';
 import type { Id, IsoDateTime } from '@/lib/api';
 import type { ReplyTemplateRow, SupportTicketRow, TicketMessageRow } from '@/lib/api/schema.gen';
 
@@ -19,16 +20,23 @@ export type TicketChannel = 'email' | 'web' | 'chat' | 'telegram';
 export type TicketCategory =
   'delay' | 'failed_unlock' | 'refund' | 'billing' | 'wrong_imei' | 'howto' | 'presale' | 'other';
 
-/** Who wrote the ticket: a storefront customer or a merchant (`client`) on the API. */
-export type RequesterType = 'customer' | 'client';
+/**
+ * What the ticket's requester is: always an account (decision 023). A merchant, a shop buyer and a guest are told apart by the
+ * rank of the requester (`TicketRequester.rankKind`), never by this word; `requesterId` is the account's id.
+ */
+export type RequesterType = 'account';
 
 /** The ways a reply can go out. */
 export type ReplyChannel = 'email' | 'telegram';
 
 // ---- Tickets ----
 
-/** The person or company behind a ticket, joined so the inbox needs no second request. */
-export type TicketRequester = { name: string; email: string | null };
+/**
+ * The account behind a ticket, joined so the inbox needs no second request. `rankKind` is the kind of the rank the account holds now
+ * (the server decides it; a word the console does not know reads as `retail`, the fail-closed side). `email` is masked by the server
+ * for a caller without `clients:read` (decision 047), whatever the rank.
+ */
+export type TicketRequester = { name: string; email: string | null; rankKind: RankKind };
 
 /** A staff member as the ticket names them. */
 export type StaffRef = { id: Id; name: string };
@@ -73,8 +81,8 @@ export type SupportTicket = Omit<
   staffSeenAt: IsoDateTime | null;
 };
 
-/** Who wrote a message. `client` is a merchant; both sit on the customer's side of the thread. */
-export type MessageAuthorType = 'customer' | 'client' | 'staff' | 'system';
+/** Who wrote a message: the requester's account, a staff member, or the system. The account sits on the requester's side of the thread. */
+export type MessageAuthorType = 'account' | 'staff' | 'system';
 
 /**
  * A file on a message (feature 28, backend B218): PDF, JPEG or PNG, at most 5 MiB. Staff download it through
@@ -112,13 +120,16 @@ export type SupportTicketDetail = SupportTicket & {
   replyChannels: ReplyChannel[];
 };
 
-/** The filters of the inbox list; `status` as an array repeats the key (any of them). */
+/**
+ * The filters of the inbox list; `status` as an array repeats the key (any of them). `requesterId` is an account id and needs no type
+ * (the server refuses `requesterType` words of the old model). `rankKind` keeps the tickets of merchants or of retail accounts.
+ */
 export type TicketListFilters = {
   status?: TicketStatus | TicketStatus[];
   late?: boolean;
   assigneeId?: Id;
-  requesterType?: RequesterType;
   requesterId?: Id;
+  rankKind?: RankKind;
   q?: string;
 };
 

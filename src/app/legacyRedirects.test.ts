@@ -1,8 +1,16 @@
 // Tests for the old addresses and where they go: one row per case of the table (the Catalog page, Services & pricing, the Storefront tabs
-// that moved to Product / Services, the Shop content addresses that must stay, and the retired Commissions and Abandoned checkouts
-// pages), plus the checks that the answers are addresses the page knows (`productsPath` writes them, its views, parts and tabs are the
-// ones named; `financePath` writes the funnel report's).
+// that moved to Product / Services, the Shop content addresses that must stay, the retired Commissions and Abandoned checkouts pages, and
+// the Merchants and Customers pages that became Accounts: one row per line of the redirect table), plus the checks that the answers are
+// addresses the page knows (`productsPath` writes them, its views, parts and tabs are the ones named; `financePath` writes the funnel
+// report's; `accountPath`, `accountsListPath`, `legacyAccountPath` and `ranksPath` write the Accounts ones).
 import { describe, expect, it } from 'vitest';
+import {
+  ACCOUNT_TABS,
+  accountPath,
+  accountsListPath,
+  legacyAccountPath,
+  ranksPath,
+} from '@/features/accounts';
 import { financePath } from '@/features/finance';
 import { PRODUCTS_VIEWS, productsPath, RULES_TABS, SERVICE_PARTS } from '@/features/services';
 import { legacyTarget } from './legacyRedirects';
@@ -443,6 +451,230 @@ const CHECKOUTS: Case[] = [
   ],
 ];
 
+// ---- Merchants and Customers, which are one Accounts page ----
+
+// `/merchants`: the Merchants chip. `group` is `rank`; the search, the page and the two sorts stay.
+const MERCHANTS_LIST: Case[] = [
+  ['the bare Merchants page', '/merchants', '', '/accounts?chip=merchants'],
+  ['an empty query', '/merchants', '?', '/accounts?chip=merchants'],
+  ['a trailing slash', '/merchants/', '', '/accounts?chip=merchants'],
+  ['another letter case', '/Merchants', '', '/accounts?chip=merchants'],
+  ['the search', '/merchants', '?q=acme', '/accounts?chip=merchants&q=acme'],
+  ['an empty search is no search', '/merchants', '?q=', '/accounts?chip=merchants'],
+  ['the group is the rank', '/merchants', '?group=3', '/accounts?chip=merchants&rank=3'],
+  ['a group that is not a number is dropped', '/merchants', '?group=abc&q=x', '/accounts?chip=merchants&q=x'],
+  ['a page', '/merchants', '?page=2', '/accounts?chip=merchants&page=2'],
+  ['the first page leaves no trace', '/merchants', '?page=1', '/accounts?chip=merchants'],
+  ['a page that is not a number is dropped', '/merchants', '?page=abc', '/accounts?chip=merchants'],
+  ['the sort by status, ascending', '/merchants', '?sort=status', '/accounts?chip=merchants&sort=status'],
+  [
+    'the sort by status, descending',
+    '/merchants',
+    '?sort=status&dir=desc',
+    '/accounts?chip=merchants&sort=status&dir=desc',
+  ],
+  ['the sort by name, descending', '/merchants', '?sort=name&dir=desc', '/accounts?chip=merchants&dir=desc'],
+  ['the default sort leaves no trace', '/merchants', '?sort=name&dir=asc', '/accounts?chip=merchants'],
+  [
+    'a sort the old table did not have is dropped, and its direction',
+    '/merchants',
+    '?sort=spent&dir=desc',
+    '/accounts?chip=merchants',
+  ],
+  ['a direction with no sort is dropped', '/merchants', '?dir=desc', '/accounts?chip=merchants'],
+  [
+    'the search, the group, the page and the sort together, in the order the page writes them',
+    '/merchants',
+    '?sort=status&dir=desc&page=2&q=acme&group=3',
+    '/accounts?chip=merchants&rank=3&q=acme&sort=status&dir=desc&page=2',
+  ],
+  [
+    'keys only another page reads are dropped',
+    '/merchants',
+    '?q=x&service=4&run=7&country=JO',
+    '/accounts?chip=merchants&q=x',
+  ],
+  ['the All tab', '/merchants', '?tab=all&q=x', '/accounts?chip=merchants&q=x'],
+  ['the Active tab', '/merchants', '?tab=active', '/accounts?chip=merchants'],
+  // The Suspended tab lists the suspended merchants: the Merchants population stays and the status is named, so no suspended shop customer appears.
+  ['the Suspended tab', '/merchants', '?tab=suspended', '/accounts?chip=merchants&status=suspended'],
+  [
+    'the Suspended tab keeps the search, the group and the page',
+    '/merchants',
+    '?tab=suspended&q=acme&group=3&page=2',
+    '/accounts?chip=merchants&status=suspended&rank=3&q=acme&page=2',
+  ],
+  ['the Groups tab is the Ranks view', '/merchants', '?tab=groups', '/accounts?view=ranks'],
+  [
+    'the Ranks view carries nothing of the merchant table',
+    '/merchants',
+    '?tab=groups&q=x&group=3&page=2&sort=status',
+    '/accounts?view=ranks',
+  ],
+  ['the retired Pending tab', '/merchants', '?tab=pending', '/accounts?chip=merchants'],
+  [
+    'the retired Verification tab drops its own keys',
+    '/merchants',
+    '?tab=verification&kyc=pending&kycStatus=submitted&q=x',
+    '/accounts?chip=merchants&q=x',
+  ],
+  ['a tab that is not known', '/merchants', '?tab=nothing', '/accounts?chip=merchants'],
+];
+
+// `/merchants/:id`: a merchant keeps its number; the tab becomes the part of the account's record that has its content.
+const MERCHANT_RECORDS: Case[] = [
+  ['one merchant', '/merchants/12', '', '/accounts/12'],
+  ['an empty query', '/merchants/12', '?', '/accounts/12'],
+  ['a trailing slash', '/merchants/12/', '', '/accounts/12'],
+  ['another letter case', '/Merchants/12', '', '/accounts/12'],
+  ['the Orders tab', '/merchants/12', '?tab=orders', '/accounts/12?tab=orders'],
+  ['the Wallet ledger tab', '/merchants/12', '?tab=wallet', '/accounts/12?tab=wallet'],
+  ['the Billing tab is the Invoices part', '/merchants/12', '?tab=billing', '/accounts/12?tab=invoices'],
+  ['the Pricing tab is the Prices part', '/merchants/12', '?tab=pricing', '/accounts/12?tab=prices'],
+  ['the API access tab is the API part', '/merchants/12', '?tab=api', '/accounts/12?tab=api'],
+  ['the Profile tab is the Profile part', '/merchants/12', '?tab=profile', '/accounts/12?tab=profile'],
+  ['the Security tab', '/merchants/12', '?tab=security', '/accounts/12?tab=security'],
+  ['the Audit tab', '/merchants/12', '?tab=audit', '/accounts/12?tab=audit'],
+  ['the retired Verification tab opens the first part', '/merchants/12', '?tab=verification', '/accounts/12'],
+  ['a tab that is not known opens the first part', '/merchants/12', '?tab=nothing', '/accounts/12'],
+  ['a tab of the new record is not an old tab', '/merchants/12', '?tab=invoices', '/accounts/12'],
+  [
+    'an open order stays open on the Orders part',
+    '/merchants/12',
+    '?tab=orders&order=48100',
+    '/accounts/12?tab=orders&order=48100',
+  ],
+  ['an open order with no tab', '/merchants/12', '?order=48100', '/accounts/12?order=48100'],
+  [
+    'an order that is not a number is dropped',
+    '/merchants/12',
+    '?tab=orders&order=abc',
+    '/accounts/12?tab=orders',
+  ],
+  [
+    'the number of a merchant that is not small',
+    '/merchants/4021',
+    '?tab=billing',
+    '/accounts/4021?tab=invoices',
+  ],
+];
+
+// `/customers`: the Retail chip. The search, the country and the page stay; the old sort has no counterpart and is dropped.
+const CUSTOMERS_LIST: Case[] = [
+  ['the bare Customers page', '/customers', '', '/accounts?chip=retail'],
+  ['an empty query', '/customers', '?', '/accounts?chip=retail'],
+  ['a trailing slash', '/customers/', '', '/accounts?chip=retail'],
+  ['another letter case', '/Customers', '', '/accounts?chip=retail'],
+  ['the search', '/customers', '?q=sam', '/accounts?chip=retail&q=sam'],
+  ['the country', '/customers', '?country=JO', '/accounts?chip=retail&country=JO'],
+  ['the country in lower case', '/customers', '?country=jo', '/accounts?chip=retail&country=JO'],
+  [
+    'a country that is not two letters is dropped',
+    '/customers',
+    '?country=jordan&q=x',
+    '/accounts?chip=retail&q=x',
+  ],
+  ['a page', '/customers', '?page=3', '/accounts?chip=retail&page=3'],
+  [
+    'the search, the country and the page together, in the order the page writes them',
+    '/customers',
+    '?page=3&q=sam&country=JO',
+    '/accounts?chip=retail&country=JO&q=sam&page=3',
+  ],
+  [
+    'the sort and its direction are dropped',
+    '/customers',
+    '?sort=totalSpent&dir=desc&q=x',
+    '/accounts?chip=retail&q=x',
+  ],
+  ['the All tab', '/customers', '?tab=all', '/accounts?chip=retail'],
+  ['the Active tab', '/customers', '?tab=active', '/accounts?chip=retail'],
+  ['the retired Flagged tab', '/customers', '?tab=flagged', '/accounts?chip=retail'],
+  ['a tab that is not known', '/customers', '?tab=nothing&q=x', '/accounts?chip=retail&q=x'],
+  ['the Suspended tab', '/customers', '?tab=suspended', '/accounts?chip=retail&status=suspended'],
+  [
+    'the Suspended tab keeps the search, the country and the page',
+    '/customers',
+    '?tab=suspended&q=sam&country=jo&page=2',
+    '/accounts?chip=retail&status=suspended&country=JO&q=sam&page=2',
+  ],
+  ['the Blocked tab', '/customers', '?tab=blocked', '/accounts?chip=retail&status=blocked'],
+  [
+    'the Blocked tab keeps the search',
+    '/customers',
+    '?tab=blocked&q=sam',
+    '/accounts?chip=retail&status=blocked&q=sam',
+  ],
+  ['the Data requests tab', '/customers', '?tab=requests', '/accounts?chip=requests'],
+  [
+    'the Data requests tab keeps its page and nothing of the customer table',
+    '/customers',
+    '?tab=requests&status=completed&page=2&q=sam&country=JO&sort=dueAt',
+    '/accounts?chip=requests&page=2',
+  ],
+];
+
+// `/customers/:id`: a customer's number is not an account number, so every record address says `from=customer` and the page asks the server.
+const CUSTOMER_RECORDS: Case[] = [
+  ['one customer', '/customers/5', '', '/accounts/5?from=customer'],
+  ['an empty query', '/customers/5', '?', '/accounts/5?from=customer'],
+  ['a trailing slash', '/customers/5/', '', '/accounts/5?from=customer'],
+  ['another letter case', '/Customers/5', '', '/accounts/5?from=customer'],
+  ['the Orders tab', '/customers/5', '?tab=orders', '/accounts/5?from=customer&tab=orders'],
+  [
+    'the Account tab is the Security part',
+    '/customers/5',
+    '?tab=account',
+    '/accounts/5?from=customer&tab=security',
+  ],
+  ['the Wallet tab', '/customers/5', '?tab=wallet', '/accounts/5?from=customer&tab=wallet'],
+  ['the Support tab', '/customers/5', '?tab=support', '/accounts/5?from=customer&tab=support'],
+  [
+    'the Consents tab is the Privacy and risk part',
+    '/customers/5',
+    '?tab=consents',
+    '/accounts/5?from=customer&tab=privacy',
+  ],
+  [
+    'the Risk tab is the Privacy and risk part',
+    '/customers/5',
+    '?tab=risk',
+    '/accounts/5?from=customer&tab=privacy',
+  ],
+  [
+    'a tab that is not known opens the first part',
+    '/customers/5',
+    '?tab=nothing',
+    '/accounts/5?from=customer',
+  ],
+  ['a tab of the new record is not an old tab', '/customers/5', '?tab=security', '/accounts/5?from=customer'],
+  [
+    'a customer whose number is also a merchant’s',
+    '/customers/12',
+    '?tab=wallet',
+    '/accounts/12?from=customer&tab=wallet',
+  ],
+];
+
+// Addresses below the old pages, and ids that are not whole numbers, are not old addresses: the not-found page answers them.
+const ACCOUNTS_NOT_OLD: Case[] = [
+  ['Accounts itself', '/accounts', '?chip=merchants', null],
+  ['one account', '/accounts/12', '?tab=wallet', null],
+  ['an old customer number already on the Accounts page', '/accounts/5', '?from=customer', null],
+  ['a merchant id that is not a number', '/merchants/abc', '', null],
+  ['a merchant id of zero', '/merchants/0', '', null],
+  ['a merchant id with a sign', '/merchants/-3', '', null],
+  ['a merchant id with letters after the digits', '/merchants/12abc', '', null],
+  ['a merchant id with a leading zero', '/merchants/012', '', null],
+  ['a merchant id that is too big to be exact', '/merchants/99999999999999999999', '', null],
+  ['a customer id that is not a number', '/customers/abc', '', null],
+  ['a customer id of zero', '/customers/0', '', null],
+  ['an address below a merchant record', '/merchants/12/wallet', '', null],
+  ['an address below a customer record', '/customers/5/orders', '?tab=orders', null],
+  ['an address that only starts with the Merchants name', '/merchants-old', '', null],
+  ['an address that only starts with the Customers name', '/customersx', '', null],
+];
+
 const NOT_OLD: Case[] = [
   ['Product / Services itself', '/products', '?view=publish&run=7', null],
   ['the Suppliers page', '/suppliers', '?supplier=2', null],
@@ -459,6 +691,8 @@ const NOT_OLD: Case[] = [
   ['an address that only starts with the retired name', '/commissions-old', '', null],
   ['Finance itself', '/finance', '?tab=payments', null],
 ];
+
+const ACCOUNTS_MOVED = [...MERCHANTS_LIST, ...MERCHANT_RECORDS, ...CUSTOMERS_LIST, ...CUSTOMER_RECORDS];
 
 const MOVED = [
   ...SERVICES,
@@ -482,6 +716,11 @@ describe('legacyTarget', () => {
     ['the Abandoned checkouts page, which is the funnel report now', CHECKOUTS],
     ['the Shop content addresses that stay', STOREFRONT_STAYS],
     ['the retired Commissions page', COMMISSIONS],
+    ['the Merchants list, which is the Merchants chip of Accounts', MERCHANTS_LIST],
+    ['one merchant, whose number is the account number', MERCHANT_RECORDS],
+    ['the Customers list, which is the Retail chip of Accounts', CUSTOMERS_LIST],
+    ['one customer, whose number is not an account number', CUSTOMER_RECORDS],
+    ['addresses that look like old Merchants and Customers ones and are not', ACCOUNTS_NOT_OLD],
     ['addresses that are not old ones', NOT_OLD],
   ] as const)('%s', (_group, cases) => {
     it.each(cases)('%s: %s%s', (_name, pathname, search, target) => {
@@ -560,8 +799,79 @@ describe('legacyTarget', () => {
     );
   });
 
+  it('answers the Merchants and Customers addresses with the same addresses as the builders of the Accounts feature', () => {
+    // The keys are written by `accountsListPath` in its one order, so these are equal as strings, not only as sets.
+    expect(legacyTarget('/merchants')).toBe(accountsListPath({ chip: 'merchants' }));
+    expect(legacyTarget('/merchants', '?group=3&q=acme&page=2&sort=status&dir=desc')).toBe(
+      accountsListPath({ chip: 'merchants', rank: 3, q: 'acme', page: 2, sort: 'status', dir: 'desc' }),
+    );
+    expect(legacyTarget('/merchants', '?tab=groups')).toBe(ranksPath());
+    expect(legacyTarget('/customers')).toBe(accountsListPath({ chip: 'retail' }));
+    expect(legacyTarget('/customers', '?q=sam&country=jo&page=3')).toBe(
+      accountsListPath({ chip: 'retail', q: 'sam', country: 'JO', page: 3 }),
+    );
+    expect(legacyTarget('/merchants/12')).toBe(accountPath(12));
+    expect(legacyTarget('/merchants/12', '?tab=billing')).toBe(accountPath(12, 'invoices'));
+    expect(legacyTarget('/merchants/12', '?tab=orders&order=7')).toBe(
+      accountPath(12, 'orders', { order: 7 }),
+    );
+    expect(legacyTarget('/customers/5')).toBe(legacyAccountPath('customer', 5));
+    expect(legacyTarget('/customers/5', '?tab=account')).toBe(legacyAccountPath('customer', 5, 'security'));
+  });
+
+  it('only answers with parts the account record has', () => {
+    for (const [, pathname, search] of [...MERCHANT_RECORDS, ...CUSTOMER_RECORDS]) {
+      const params = new URLSearchParams((legacyTarget(pathname, search) ?? '').split('?')[1]);
+      if (params.has('tab')) expect(ACCOUNT_TABS).toContain(params.get('tab'));
+    }
+  });
+
+  it('lands the merchant tabs that moved on the part with their content: Billing, Pricing and API access get parts of their own', () => {
+    const part = (tab: string) =>
+      new URLSearchParams((legacyTarget('/merchants/12', `?tab=${tab}`) ?? '').split('?')[1]).get('tab');
+    expect([
+      part('orders'),
+      part('wallet'),
+      part('billing'),
+      part('pricing'),
+      part('api'),
+      part('profile'),
+      part('security'),
+      part('audit'),
+    ]).toEqual(['orders', 'wallet', 'invoices', 'prices', 'api', 'profile', 'security', 'audit']);
+  });
+
+  it('never sends an old customer number to the account that has the same number', () => {
+    // The customers were copied after the merchants, so customer 7 and merchant 7 are two people: the record address of a customer always
+    // carries `from=customer`, and the page resolves it. Only a merchant address is a plain account address.
+    for (const [, pathname, search] of CUSTOMER_RECORDS) {
+      const target = legacyTarget(pathname, search) ?? '';
+      expect(new URLSearchParams(target.split('?')[1]).get('from')).toBe('customer');
+    }
+    for (const [, pathname, search] of MERCHANT_RECORDS) {
+      const target = legacyTarget(pathname, search) ?? '';
+      expect(new URLSearchParams(target.split('?')[1]).has('from')).toBe(false);
+    }
+  });
+
+  it('answers a list address with a chip the list page reads and a record address on the Accounts page', () => {
+    // The page reads `chip` = retail, merchants, guests, and the first design's suspended, blocked and requests (still read for old bookmarks); and the view `ranks`.
+    const readable = new Set(['retail', 'merchants', 'guests', 'suspended', 'blocked', 'requests']);
+    for (const [, pathname, search] of [...MERCHANTS_LIST, ...CUSTOMERS_LIST]) {
+      const target = legacyTarget(pathname, search) ?? '';
+      expect(target.startsWith('/accounts?')).toBe(true);
+      const params = new URLSearchParams(target.split('?')[1]);
+      if (params.get('view')) expect(params.get('view')).toBe('ranks');
+      else expect(readable).toContain(params.get('chip'));
+      expect([...params.keys()].sort()).toEqual([...new Set(params.keys())].sort());
+    }
+    for (const [, pathname, search] of [...MERCHANT_RECORDS, ...CUSTOMER_RECORDS]) {
+      expect(legacyTarget(pathname, search)).toMatch(/^\/accounts\/[1-9]\d*(\?|$)/);
+    }
+  });
+
   it('never answers with an address that is itself an old one', () => {
-    for (const [, pathname, search] of [...MOVED, ...COMMISSIONS, ...CHECKOUTS]) {
+    for (const [, pathname, search] of [...MOVED, ...ACCOUNTS_MOVED, ...COMMISSIONS, ...CHECKOUTS]) {
       const target = legacyTarget(pathname, search);
       const [path, query = ''] = (target ?? '').split('?');
       expect(legacyTarget(path, query)).toBeNull();

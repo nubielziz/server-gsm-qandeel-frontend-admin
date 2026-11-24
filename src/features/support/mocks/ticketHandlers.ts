@@ -17,6 +17,13 @@ import { supportState } from './store';
 import type { MockFile, MockTicket, SupportState } from './types';
 
 const SEARCH_FIELDS = ['number', 'subject', 'requester.name'];
+
+// The list filter `rankKind` reads the requester's rank, which a row keeps under `requester`.
+function withRankFilter(params: URLSearchParams): URLSearchParams {
+  return new URLSearchParams(
+    [...params].map(([key, value]) => [key === 'rankKind' ? 'requester.rankKind' : key, value]),
+  );
+}
 const PRIORITIES: readonly TicketPriority[] = ['high', 'normal', 'low'];
 
 // A message written by the signed-in staff member now; `internal` makes it a note. `files` are the uploads it carries.
@@ -127,9 +134,15 @@ export const ticketHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
+    const params = new URL(request.url).searchParams;
+    // A requester is always an account: the words of the old model are refused, as the server does (decision 023).
+    const requesterType = params.get('requesterType');
+    if (requesterType !== null && requesterType !== 'account') {
+      return invalid([{ field: 'requesterType', message: 'The requester is an account.' }]);
+    }
     const state = await supportState();
     const rows = state.tickets.list().map((row) => toTicket(row));
-    const { page, total } = applyListQuery(rows, new URL(request.url).searchParams, SEARCH_FIELDS);
+    const { page, total } = applyListQuery(rows, withRankFilter(params), SEARCH_FIELDS);
     return HttpResponse.json(page, {
       headers: { 'x-total-count': String(total), 'access-control-expose-headers': 'x-total-count' },
     });

@@ -4,8 +4,10 @@ import {
   actionOf,
   areaLevel,
   areaNames,
+  areaOf,
   describeRole,
   groupPermissions,
+  groupTitle,
   humanize,
   normalisePermissions,
   OTHER_GROUP,
@@ -68,6 +70,27 @@ describe('groupPermissions', () => {
     expect(groups[2].items.map((item) => item.key)).toEqual(['staff:read', 'staff:create']);
   });
 
+  it('titles the accounts family Accounts, the ranks Ranks and the privacy permission Privacy', () => {
+    const accounts = normalisePermissions([
+      'staff:read',
+      'clients:read',
+      'clients:block',
+      'groups:read',
+      'customers:privacy',
+      'wallet:read',
+    ]);
+    const groups = groupPermissions(accounts, []);
+    expect(groups.map((group) => group.title)).toEqual(['Accounts', 'Privacy', 'Ranks', 'Staff', 'Wallet']);
+    expect(groups[0].items.map((item) => item.key)).toEqual(['clients:read', 'clients:block']);
+    expect(groups[0].items.map((item) => item.label)).toEqual(['Read', 'Block']);
+    expect(groups[1].items.map((item) => item.key)).toEqual(['customers:privacy']);
+    expect(groupTitle('clients')).toBe('Accounts');
+    expect(groupTitle('groups')).toBe('Ranks');
+    expect(groupTitle('customers')).toBe('Privacy');
+    expect(groupTitle('api_keys')).toBe('Api keys');
+    expect(groupTitle('')).toBe('General');
+  });
+
   it('puts entries that are not in the catalog in a last group, but leaves the wildcard to its own switch', () => {
     const groups = groupPermissions(catalog, ['staff:read', 'orders:*', 'orders:*', '*']);
     const other = groups[groups.length - 1];
@@ -110,6 +133,63 @@ describe('areaLevel', () => {
     );
     expect(areaLevel({ permissions: ['support:reply'] }, area('Support'), catalog)).toBe('partial');
     expect(areaLevel({ permissions: ['orders:read'] }, area('Support'), catalog)).toBe('none');
+  });
+});
+
+describe('the Accounts area', () => {
+  const catalog = normalisePermissions([
+    'clients:read',
+    'clients:create',
+    'clients:update',
+    'clients:security',
+    'clients:block',
+    'wallet:read',
+    'wallet:adjust',
+    'groups:read',
+    'groups:update',
+    'api_keys:read',
+    'customers:privacy',
+  ]);
+  const accounts = ROLE_AREAS.find((area) => area.name === 'Accounts')!;
+
+  it('replaces the Customers area, and has no area of that name left', () => {
+    expect(ROLE_AREAS.map((area) => area.name)).toEqual([
+      'Orders',
+      'Accounts',
+      'Support',
+      'Risk',
+      'Money',
+      'Catalog',
+      'Settings',
+      'Admins',
+      'System',
+    ]);
+    expect(ROLE_AREAS.some((area) => area.name === 'Customers')).toBe(false);
+  });
+
+  it('holds the accounts family, its wallets, ranks and keys, and the privacy permission', () => {
+    expect(accounts.prefixes).toEqual(['clients', 'customers', 'wallet', 'groups', 'api_keys']);
+    for (const prefix of ['clients', 'customers', 'wallet', 'groups', 'api_keys']) {
+      expect(areaOf(prefix)?.name).toBe('Accounts');
+    }
+  });
+
+  it('is full for a role that manages the area, and view for one that only reads', () => {
+    const manage = ['clients:*', 'wallet:*', 'groups:*', 'api_keys:*', 'customers:privacy'];
+    expect(areaLevel({ permissions: manage }, accounts, catalog)).toBe('full');
+    const read = ['clients:read', 'wallet:read', 'groups:read', 'api_keys:read'];
+    expect(areaLevel({ permissions: read }, accounts, catalog)).toBe('view');
+  });
+
+  it('counts clients:block as a permission of the area, so a role holding only it is partial there', () => {
+    expect(areaLevel({ permissions: ['clients:block'] }, accounts, catalog)).toBe('partial');
+    expect(areaLevel({ permissions: ['orders:read'] }, accounts, catalog)).toBe('none');
+  });
+
+  it('names the area Accounts for every one of its permissions', () => {
+    expect(areaNames({ permissions: ['clients:block', 'groups:read', 'customers:privacy'] })).toEqual([
+      'Accounts',
+    ]);
   });
 });
 

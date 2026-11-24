@@ -1,7 +1,8 @@
 // Tests for the old addresses inside the whole app: they redirect (the entry is replaced) before a page's permission gate answers,
-// carry their query, and leave the Shop content addresses alone; the retired Commissions page lands on Finance. They assert addresses
-// and gates, not what a page shows.
+// carry their query, and leave the Shop content addresses alone; the retired Commissions page lands on Finance, and Merchants and
+// Customers land on Accounts. They assert addresses and gates, not what a page shows.
 import { render, screen, waitFor } from '@testing-library/react';
+import { useEffect } from 'react';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { AppProviders } from './App';
@@ -20,6 +21,31 @@ function NavigationProbe() {
       {search}
     </p>
   );
+}
+
+// Records every move of the router (`REPLACE /accounts/5?from=customer`). The Accounts page replaces an old customer number by the
+// account's own address as soon as the server has answered, so a test that only looks at where the router is now could miss the redirect.
+function NavigationLog({ steps }: { steps: string[] }) {
+  const { pathname, search } = useLocation();
+  const type = useNavigationType();
+  useEffect(() => {
+    steps.push(`${type} ${pathname}${search}`);
+  }, [steps, type, pathname, search]);
+  return null;
+}
+
+// Renders the whole app at an old address and returns the moves the router made.
+function renderLogged(old: string) {
+  const steps: string[] = [];
+  render(
+    <MemoryRouter initialEntries={[old]}>
+      <AppProviders>
+        <AppRoutes />
+        <NavigationLog steps={steps} />
+      </AppProviders>
+    </MemoryRouter>,
+  );
+  return steps;
 }
 
 // Waits for a page's title, so the lazy chunk of the page the redirect ended on has loaded before the test ends.
@@ -177,6 +203,97 @@ describe('before the permission gate', () => {
     expect(
       screen.getByText('catalog:read or pricing:read or inventory:read or storefront:read'),
     ).toBeInTheDocument();
+  });
+});
+
+describe('the old Merchants and Customers addresses go to Accounts', () => {
+  it.each([
+    ['/merchants', '/accounts?chip=merchants'],
+    ['/merchants?q=acme&group=3&page=2', '/accounts?chip=merchants&rank=3&q=acme&page=2'],
+    ['/merchants?tab=suspended', '/accounts?chip=merchants&status=suspended'],
+    ['/merchants?tab=groups', '/accounts?view=ranks'],
+    ['/merchants?tab=verification', '/accounts?chip=merchants'],
+    ['/customers', '/accounts?chip=retail'],
+    ['/customers?q=sam&country=JO&page=3', '/accounts?chip=retail&country=JO&q=sam&page=3'],
+    ['/customers?tab=blocked', '/accounts?chip=retail&status=blocked'],
+    ['/customers?tab=requests', '/accounts?chip=requests'],
+    ['/merchants/12', '/accounts/12'],
+    ['/merchants/12?tab=billing', '/accounts/12?tab=invoices'],
+    ['/merchants/12?tab=pricing', '/accounts/12?tab=prices'],
+    ['/merchants/12?tab=api', '/accounts/12?tab=api'],
+    ['/merchants/12?tab=profile', '/accounts/12?tab=profile'],
+    ['/merchants/12?tab=orders&order=48100', '/accounts/12?tab=orders&order=48100'],
+    ['/customers/5', '/accounts/5?from=customer'],
+    ['/customers/5?tab=account', '/accounts/5?from=customer&tab=security'],
+    ['/customers/5?tab=consents', '/accounts/5?from=customer&tab=privacy'],
+  ])('%s goes to %s', async (old, target) => {
+    await signInAs();
+    const steps = renderLogged(old);
+    // The router starts at the old address and then REPLACES that entry (not a push), so Back does not return to the old address.
+    await waitFor(() => expect(steps).toContain(`REPLACE ${target}`), { timeout: 10_000 });
+    expect(steps[0]).toBe(`POP ${old}`);
+  });
+
+  it('sends an old customer number to the lookup, never to the account that has the same number', async () => {
+    await signInAs();
+    const steps = renderLogged('/customers/7?tab=wallet');
+    await waitFor(() => expect(steps).toContain('REPLACE /accounts/7?from=customer&tab=wallet'), {
+      timeout: 10_000,
+    });
+    // The record of account 7 (a merchant) is never the answer to customer 7: no step shows that address without `from`.
+    expect(steps).not.toContain('REPLACE /accounts/7');
+    expect(steps).not.toContain('REPLACE /accounts/7?tab=wallet');
+  });
+
+  it('lets a role that may open Accounts follow an old customer link, with no refusal', async () => {
+    // `customers:read` opened the old Customers page; `clients:read` opens Accounts, so the old address is not refused any more.
+    mockMe({ permissions: ['clients:read'] });
+    const steps = renderLogged('/customers/5?tab=wallet');
+    await waitFor(() => expect(steps).toContain('REPLACE /accounts/5?from=customer&tab=wallet'), {
+      timeout: 10_000,
+    });
+    expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
+  });
+
+  it('lets a role that holds only groups:read follow the old Groups tab to the Ranks view', async () => {
+    mockMe({ permissions: ['groups:read'] });
+    const steps = renderLogged('/merchants?tab=groups');
+    await waitFor(() => expect(steps).toContain('REPLACE /accounts?view=ranks'), { timeout: 10_000 });
+    expect(screen.queryByText('You do not have access to this page')).not.toBeInTheDocument();
+  });
+
+  it('still refuses a role with neither accounts permission, at the new address', async () => {
+    mockMe({ permissions: ['orders:read'] });
+    const app = renderApp('/merchants/5');
+    await waitFor(() => expect(app.location()).toBe('/accounts/5'), { timeout: 10_000 });
+    expect(
+      await screen.findByText('You do not have access to this page', {}, { timeout: 10_000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('clients:read or groups:read')).toBeInTheDocument();
+  });
+
+  it('does not redirect an address below the old page or an id that is not a number', async () => {
+    mockMe({ permissions: ['*'] });
+    const first = renderApp('/merchants/12/wallet');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(first.location()).toBe('/merchants/12/wallet');
+    first.unmount();
+
+    const second = renderApp('/customers/abc');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
+    expect(second.location()).toBe('/customers/abc');
+  });
+
+  it('keeps the old address in the sign-in screen of a signed-out visitor, which then sends them on', async () => {
+    const app = renderApp('/merchants/12?tab=billing');
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(app.location()).toBe('/login?to=%2Fmerchants%2F12%3Ftab%3Dbilling');
+  });
+
+  it('keeps the old customer address in the sign-in screen of a signed-out visitor', async () => {
+    const app = renderApp('/customers/5?tab=wallet');
+    await screen.findByRole('heading', { level: 1, name: 'Sign in' });
+    expect(app.location()).toBe('/login?to=%2Fcustomers%2F5%3Ftab%3Dwallet');
   });
 });
 

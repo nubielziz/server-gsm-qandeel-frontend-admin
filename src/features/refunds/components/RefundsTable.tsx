@@ -6,7 +6,7 @@ import { ago, lm, money } from '@/lib/format';
 import { badgeFor, REFUND_BADGE, refundLabel } from '../lib/labels';
 import { isAutomatic, refundActor, refundWhen } from '../lib/refund';
 import type { Refund } from '../types';
-import { CustomerLink } from './CustomerLink';
+import { AccountLink } from './AccountLink';
 import { OrderLink } from './OrderLink';
 import { StatusBadge } from './StatusBadge';
 
@@ -60,7 +60,7 @@ export function RefundsTable({
       key: 'who',
       label: 'Customer',
       hide: 'md',
-      render: (refund) => <CustomerLink customer={refund.customer} />,
+      render: (refund) => <AccountLink account={refund.customer} />,
     },
     {
       key: 'reason',

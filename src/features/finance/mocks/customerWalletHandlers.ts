@@ -1,8 +1,8 @@
-// Mock of `GET /admin/customer-wallets` (feature 21): every customer wallet with the state filter, the search over name and email,
-// the sort (balance or updated) and the row range. The wallets themselves live in the customers mock; this only lists them.
+// Mock of `GET /admin/customer-wallets` (the store balances list): every store balance with the state filter, the search over name and
+// email, the sort (balance or updated) and the row range. The wallets themselves live in the accounts mock; this only lists them.
 // Mocks fake answers only (decision 014).
 import { http, HttpResponse, type HttpHandler } from 'msw';
-import { walletRows } from '@/features/customers/mocks';
+import { storeBalanceRows } from '@/features/accounts/mocks';
 import { applyListQuery } from '@/mocks/crud';
 import { latency } from '@/mocks/latency';
 import { guard } from '@/mocks/session';
@@ -23,7 +23,7 @@ export const customerWalletHandlers: HttpHandler[] = [
       next.set('_sort', 'updatedAt');
       next.set('_order', 'desc');
     }
-    const rows = (await walletRows()).filter(
+    const rows = (await storeBalanceRows()).filter(
       (row) => states.length === 0 || states.includes(walletStateOf(row)),
     );
     const { page, total } = applyListQuery(rows, next, ['customer.name', 'customer.email']);

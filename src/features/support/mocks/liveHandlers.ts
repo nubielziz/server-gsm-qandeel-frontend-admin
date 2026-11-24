@@ -25,7 +25,7 @@ function allowedType(filename: string, declared: string): string | null {
   return TYPES[filename.split('.').pop()?.toLowerCase() ?? ''] ?? null;
 }
 
-const isRequester = (authorType: string): boolean => authorType === 'customer' || authorType === 'client';
+const isRequester = (authorType: string): boolean => authorType === 'account';
 
 export const liveHandlers: HttpHandler[] = [
   http.post('*/admin/support-tickets/:id/read', async ({ request, params }) => {

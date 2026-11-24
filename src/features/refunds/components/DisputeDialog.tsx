@@ -4,7 +4,7 @@
 import { useState, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, dialogSubmit, Modal, TextareaField } from '@/components/ui';
-import { ago, customerLabel, lm } from '@/lib/format';
+import { accountLabel, ago, lm } from '@/lib/format';
 import type { RefundGrants } from '../hooks/useRefundGrants';
 import { useDispute } from '../hooks/useRefund';
 import { useSubmitEvidence } from '../hooks/useDisputeMutations';
@@ -72,7 +72,7 @@ export function DisputeDialog({ dispute: row, grants, now, onClose, onAccept }: 
       open
       size="lg"
       title={`${disputeLabel(dispute.id)} · ${dispute.reasonCode}`}
-      sub={`${customerLabel(dispute.customer)} · ${storefrontOrderLabel(dispute.orderId)} · ${lm(dispute.amount, dispute.currency, dispute.fx)} · opened ${ago(dispute.createdAt, now)}`}
+      sub={`${accountLabel(dispute.customer)} · ${storefrontOrderLabel(dispute.orderId)} · ${lm(dispute.amount, dispute.currency, dispute.fx)} · opened ${ago(dispute.createdAt, now)}`}
       onClose={onClose}
       dismissible={!submit.isPending}
       error={failure}

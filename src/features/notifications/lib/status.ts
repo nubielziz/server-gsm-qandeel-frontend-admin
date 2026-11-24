@@ -98,4 +98,5 @@ export const RECIPIENT_STATUS_LOOK: Record<RecipientStatus, StatusLook> = {
   failed: { label: 'Failed', tone: 'crit', icon: 'alert' },
 };
 
-export const RECIPIENT_TYPE_LABEL = { staff: 'Staff', client: 'Merchant', customer: 'Customer' } as const;
+/** What the recipients table calls a kind of person: the stored word is `account` for every account, whatever its rank. */
+export const RECIPIENT_TYPE_LABEL = { staff: 'Staff', account: 'Account' } as const;

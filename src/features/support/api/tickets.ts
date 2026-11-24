@@ -27,7 +27,8 @@ import type {
 
 /**
  * The support inbox, one page of tickets, with the total in `x-total-count`. Filters: `status` (an array repeats the key),
- * `late`, `assigneeId`, `requesterType`, `requesterId` and `q` (ticket number, subject and requester name). The inbox sorts
+ * `late`, `assigneeId`, `requesterId` (an account id), `rankKind` (`retail` or `merchant`: the kind of the requester's rank) and `q`
+ * (ticket number, subject and requester name); a `requesterType` of the old model is refused. The inbox sorts
  * late tickets first (`_sort=late,updatedAt`); the counts above it are this call with `_start=0&_end=1`.
  * Assumed contract: rows carry `requester`, `assignee` and the timers `lastPublicAt`, `slaDueAt` and `late`.
  * @route GET /admin/support-tickets

@@ -123,7 +123,7 @@ describe('the figures', () => {
     await open(9, {}, 'Counted');
     expect(await screen.findByText(/The fan-out stopped/)).toBeInTheDocument();
     expect(screen.getByText('2 people have switched announcement emails off')).toBeInTheDocument();
-    expect(screen.getByText('1 customer has no account, so no inbox item')).toBeInTheDocument();
+    expect(screen.getByText('1 guest has no login, so no inbox item')).toBeInTheDocument();
   });
 });
 
@@ -133,7 +133,7 @@ describe('the audience, the timeline and the log link', () => {
     const audience = within(await screen.findByRole('region', { name: 'Audience' }));
     expect(audience.getByText('All active staff')).toBeInTheDocument();
     expect(audience.getByText('Active merchants')).toBeInTheDocument();
-    expect(audience.getByText('Customers with an account')).toBeInTheDocument();
+    expect(audience.getByText('Retail accounts with a login')).toBeInTheDocument();
     const timeline = within(screen.getByRole('region', { name: 'Timeline' }));
     expect(timeline.getByText('Campaign created')).toBeInTheDocument();
     expect(timeline.getByText('Queued for sending')).toBeInTheDocument();

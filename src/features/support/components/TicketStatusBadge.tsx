@@ -1,5 +1,5 @@
 // TicketStatusBadge: the state of a ticket as a badge (icon + word). Ports ticketBadge of 12-state-b2c.js; the inbox rows, the thread
-// header and the customer page's ticket list use it.
+// header and the account record's ticket list use it.
 import { Badge } from '@/components/ui';
 import { STATUS_BADGE } from '../lib/status';
 import type { TicketStatus } from '../types';

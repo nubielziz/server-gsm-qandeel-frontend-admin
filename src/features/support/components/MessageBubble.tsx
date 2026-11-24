@@ -1,4 +1,4 @@
-// MessageBubble: one message of the thread. A customer or merchant message sits on the left in a bordered bubble, a staff reply
+// MessageBubble: one message of the thread. A message of the requester's account sits on the left in a bordered bubble, a staff reply
 // on the right in the accent tint, and an internal note is a dashed amber block with a lock. Files on the message are listed
 // under its text. Ports the `msg` function of threadView (49-p-support.js). The text is typed by a person, so it carries
 // `dir="auto"`: a message in a right-to-left script reads and aligns the way it was written (decision 039, text stays data).

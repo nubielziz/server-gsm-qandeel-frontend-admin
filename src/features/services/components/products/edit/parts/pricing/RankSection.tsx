@@ -1,4 +1,4 @@
-// RankSection: the rank prices of the Set Pricing part, once the merchant groups are known. Listing the groups needs groups:read (a role
+// RankSection: the rank prices of the Set Pricing part, once the ranks are known. Listing the groups needs groups:read (a role
 // without it sees a sentence instead of the table); the table itself (RankPrices) opens only when the groups are loaded.
 import type { RefObject } from 'react';
 import { QueryState, SkeletonTable } from '@/components/ui';

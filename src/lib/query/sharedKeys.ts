@@ -8,10 +8,10 @@
 export const DASHBOARD_KEY = ['api', 'dashboard'] as const;
 
 /**
- * A merchant's wallet figures (the merchants feature reads them). An action that moves money into or out of a wallet
- * elsewhere (a deposit approved on the Finance page) invalidates this key.
+ * An account's wallet figures (the accounts feature reads them, for a merchant wallet and a store balance alike). An action that
+ * moves money into or out of a wallet elsewhere (a deposit approved on the Finance page) invalidates this key.
  */
-export const MERCHANT_WALLET_KEY = ['api', 'merchants', 'wallet'] as const;
+export const ACCOUNT_WALLET_KEY = ['api', 'accounts', 'wallet'] as const;
 
 /**
  * Every read that shows the services' rows or the facts printed on them: the services lists (All, the price grid) and the shop,

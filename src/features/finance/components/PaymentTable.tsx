@@ -1,12 +1,13 @@
 // PaymentTable: the deposits table with the demo's columns (submitted, deposit, paid by, method, amount, credited, status).
 // Ports the `cols` of paymentsTab in 45-p-finance.js. It only draws what it is given: the tab owns the data, the sort and the
-// page. The Status column is only there on the All sub-tab, since a status sub-tab already says it. "Paid by" is the merchant, or
-// (feature 21) the storefront customer whose store balance the top-up fills, with a link to their wallet and a chip for a chargeback.
+// page. The Status column is only there on the All sub-tab, since a status sub-tab already says it. "Paid by" is the merchant account, or
+// the account whose store balance the top-up fills, with a link to its wallet and a chip for a chargeback.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { DataTable, type DataTableColumn, type PaginationState, type SortState } from '@/components/ui';
-import { ago, hasCustomerName, maskedCustomerLabel, maskEmail, money, toAmount } from '@/lib/format';
-import { customerWalletPath, methodLabel, paymentLabel } from '../lib/payments';
+import { accountPath } from '@/features/accounts';
+import { ago, hasAccountName, maskedAccountLabel, maskEmail, money, toAmount } from '@/lib/format';
+import { methodLabel, paymentLabel } from '../lib/payments';
 import type { Payment } from '../types';
 import { PaymentDisputeChip } from './PaymentDisputeChip';
 import { PaymentStatusBadge } from './PaymentStatusBadge';
@@ -68,13 +69,13 @@ export function PaymentTable({
             <span className="font-medium">{payment.client?.name ?? '–'}</span>
           ) : (
             <>
-              <Link className="link font-medium" to={customerWalletPath(payment.customer.id)}>
-                {maskedCustomerLabel(payment.customer)}
+              <Link className="link font-medium" to={accountPath(payment.customer.id, 'wallet')}>
+                {maskedAccountLabel(payment.customer)}
               </Link>
               <span className="text-xs text-ink3">
                 {' '}
-                · customer
-                {hasCustomerName(payment.customer) && ` · ${maskEmail(payment.customer.email)}`}
+                · store balance
+                {hasAccountName(payment.customer) && ` · ${maskEmail(payment.customer.email)}`}
               </span>
             </>
           )}

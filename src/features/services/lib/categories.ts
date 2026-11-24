@@ -1,4 +1,4 @@
-// Small helpers for the Group views of the Product / Services page: which ranks (merchant groups) see a group, in words, whether two
+// Small helpers for the Group views of the Product / Services page: which ranks see a group, in words, whether two
 // lists of ranks are the same, and how one rank is ticked or unticked. An empty list means every rank (the assumed reading of `allowedGroupIds`).
 import type { Id } from '@/lib/api';
 import type { NamedRef } from '../types';

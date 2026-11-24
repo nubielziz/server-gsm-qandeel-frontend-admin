@@ -46,7 +46,7 @@ export function PeopleList({
               <span className="min-w-0 flex-1">
                 <span className="font-medium">{person.name}</span>
                 <span className="ms-2 text-xs text-ink3">
-                  {PERSON_WORD[person.type]}
+                  {person.rank?.name ?? PERSON_WORD[person.type]}
                   {person.detail ? `, ${person.detail}` : ''}
                 </span>
               </span>

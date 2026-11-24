@@ -34,7 +34,7 @@ export function InvoicesToolbar({ filters, onChange, onClear, total, issue, onIs
   const search = useDebouncedCommit(filters.q, (q) => onChange({ q }));
   return (
     <div className="flex flex-wrap items-center gap-2 p-3">
-      <SearchInput value={search.text} onChange={search.setText} placeholder="Search number or merchant" />
+      <SearchInput value={search.text} onChange={search.setText} placeholder="Search number or account" />
       <SelectField
         aria-label="Filter by status"
         value={filters.status}

@@ -53,9 +53,28 @@ describe('listAuditLogs', () => {
   it('filters by record type and by search text', async () => {
     expect((await listAuditLogs({ filters: { entityType: 'order' } })).total).toBe(14);
     expect((await listAuditLogs({ filters: { entityType: 'merchant' } })).total).toBe(6);
+    // The record type "account" lists the rows that say account, merchant or customer.
+    expect((await listAuditLogs({ filters: { entityType: 'account' } })).total).toBe(7);
     expect((await listAuditLogs({ q: 'price' })).total).toBe(7);
     expect((await listAuditLogs({ q: 'cairo' })).total).toBe(2);
     expect((await listAuditLogs({ q: 'cairo', filters: { entityType: 'order' } })).total).toBe(0);
+  });
+
+  it('filters by one account: its old merchant rows and the old customer rows of its old number', async () => {
+    const merchant = await listAuditLogs({ filters: { accountId: 5 } });
+    expect(merchant.total).toBe(2);
+    expect(merchant.data.every((row) => row.entityType === 'merchant' && row.account?.id === 5)).toBe(true);
+    const customer = await listAuditLogs({ filters: { accountId: 119 } });
+    expect(customer.total).toBe(1);
+    expect(customer.data[0]).toMatchObject({ entityType: 'customer', entityId: 19, account: { id: 119 } });
+    // Account 19 is the merchant of that number, never the old customer 19 (who is account 119).
+    const nineteen = await listAuditLogs({ filters: { accountId: 19 } });
+    expect(nineteen.data.map((row) => row.entityLabel)).toEqual(['Tunis Fix Point']);
+  });
+
+  it('says which account an entry is about only for the rows that name one', async () => {
+    const orders = await listAuditLogs({ filters: { entityType: 'order' } });
+    expect(orders.data.every((row) => row.account === undefined)).toBe(true);
   });
 
   it('filters by days, both included', async () => {

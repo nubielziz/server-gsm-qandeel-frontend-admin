@@ -1,11 +1,11 @@
-// RejectPaymentDialog: "Reject PAY-…": a reason from a short list plus a message the merchant sees. Ports the `pay-reject`
+// RejectPaymentDialog: "Reject PAY-…": a reason from a short list plus a message the account holder sees. Ports the `pay-reject`
 // action of 45-p-finance.js. The two become the one reason the server stores; a server refusal shows in the dialog.
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextareaField, dialogSubmit } from '@/components/ui';
 import { money } from '@/lib/format';
 import { useRejectPayment } from '../hooks/usePaymentMutations';
-import { paymentLabel, REJECT_REASONS, rejectReason } from '../lib/payments';
+import { payerName, paymentLabel, REJECT_REASONS, rejectReason } from '../lib/payments';
 import type { Payment } from '../types';
 
 type Values = { reason: string; message: string };
@@ -43,7 +43,7 @@ export function RejectPaymentDialog({ payment, onCancel, onRejected }: RejectPay
     <FormDialog
       open
       title={`Reject ${paymentLabel(payment.id)}`}
-      sub={`${payment.client?.name ?? 'Merchant'} · ${money(payment.amount)}`}
+      sub={`${payerName(payment)} · ${money(payment.amount)}`}
       confirm="Reject deposit"
       kind="danger"
       onClose={() => (done.current ? onRejected() : onCancel())}
@@ -55,15 +55,15 @@ export function RejectPaymentDialog({ payment, onCancel, onRejected }: RejectPay
           selectWrapClassName="w-full"
           options={REASON_OPTIONS}
           error={errors.reason}
-          {...register('reason', { required: 'Choose a reason so the merchant knows what to fix.' })}
+          {...register('reason', { required: 'Choose a reason so the account holder knows what to fix.' })}
         />
         <TextareaField
-          label="Message to merchant"
-          placeholder="Visible to the merchant"
+          label="Message to the account holder"
+          placeholder="Visible to the account holder"
           {...register('message')}
         />
         <p className="text-xs text-ink3">
-          The merchant’s wallet is not changed. They see the reason and can submit a new deposit.
+          The wallet is not changed. They see the reason and can submit a new deposit.
         </p>
       </div>
     </FormDialog>

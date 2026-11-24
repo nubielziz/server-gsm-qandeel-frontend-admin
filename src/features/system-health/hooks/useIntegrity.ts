@@ -1,4 +1,4 @@
-// Read of the Integrity tab: the four ledger checks, their findings and the last run.
+// Read of the Integrity tab: the ledger checks, their findings and the last run.
 import { getIntegrity } from '../api';
 import { healthKey, POLL } from './keys';
 import { useHealthQuery } from './useHealthQuery';

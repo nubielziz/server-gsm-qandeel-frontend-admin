@@ -1,4 +1,4 @@
-// The name of the open record ("Acme Ltd" on a merchant page), shown as the last breadcrumb and in the tab title.
+// The name of the open record ("Acme Ltd" on an account page), shown as the last breadcrumb and in the tab title.
 // Detail pages set it with useBreadcrumbTitle(name); the shell provides the store and reads it. Replaces the
 // merchant/customer name lookups in renderTopbar and render() of 90-app.js.
 import { createContext, useContext, useEffect } from 'react';

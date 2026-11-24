@@ -28,7 +28,7 @@ export function LedgerToolbar({ filters, onChange, onClear, total }: LedgerToolb
       <SearchInput
         value={search.text}
         onChange={search.setText}
-        placeholder="Search journal, memo, merchant"
+        placeholder="Search journal, memo, account"
       />
       <SelectField
         aria-label="Filter by type"

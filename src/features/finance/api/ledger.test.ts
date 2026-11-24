@@ -23,9 +23,23 @@ describe('listLedgerTransactions', () => {
       expect(entry.entries.reduce((sum, line) => sum + Number(line.amount), 0)).toBeCloseTo(0);
     }
     expect(data[0].entries[0]).toMatchObject({
-      account: { kind: 'client_wallet', ownerType: 'client' },
+      account: { kind: 'client_wallet', ownerType: 'account' },
       amount: expect.stringMatching(/^-?\d+\.\d{4}$/),
     });
+  });
+
+  it('names the owner of every wallet line an account (a merchant number is its account id), and of a supplier line a supplier', async () => {
+    const { data } = await listLedgerTransactions({ start: 0, end: 200 });
+    const owned = data
+      .flatMap((entry) => entry.entries.map((line) => line.account))
+      .filter((account) => account.ownerType);
+    expect(owned.length).toBeGreaterThan(50);
+    expect(new Set(owned.map((account) => account.ownerType))).toEqual(new Set(['account', 'supplier']));
+    for (const account of owned) {
+      if (account.kind.endsWith('_wallet') || account.kind.endsWith('_hold'))
+        expect(account.ownerType).toBe('account');
+      if (account.kind === 'supplier_prepaid') expect(account.ownerType).toBe('supplier');
+    }
   });
 
   it('pages the whole ledger and filters by kind', async () => {

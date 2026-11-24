@@ -1,5 +1,5 @@
 // Tests for the support inbox, run through the whole app against the dev mock API: the figures, the list and its order, each filter
-// kept in the address (including a customer's tickets and the overdue link), search, the open thread, and the empty and error states.
+// kept in the address (including an account's tickets and the overdue link), search, the open thread, and the empty and error states.
 // The live part (feature 28) runs on the dev stand-in for the stream: the unread dot, the list and the figures following ticket events.
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -65,7 +65,7 @@ describe('the list', () => {
     expect(app.location()).toBe('/support');
   });
 
-  it('shows who wrote, the merchant tag, the badges and how long a reply is overdue', async () => {
+  it('shows who wrote, the merchant tag for a merchant rank, the badges and how long a reply is overdue', async () => {
     await openSupport();
     const late = await ticketRow('Phone still locked after unlock (SF-20471)');
     expect(late.getByText('Victor Silva')).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('filters in the address', () => {
     await waitFor(async () => expect(await subjects()).toHaveLength(15));
   });
 
-  it('separates customers from merchants', async () => {
+  it('separates retail accounts from merchants by the kind of their rank', async () => {
     const user = userEvent.setup();
     const app = await openSupport('/support?filter=all');
     await user.click(within(screen.getByRole('group', { name: 'Who wrote' })).getByText('Merchants'));
@@ -137,14 +137,21 @@ describe('filters in the address', () => {
       'Deposit PAY-1037 not showing in the wallet',
       'API returns 429 for bulk orders',
     ]);
-    await user.click(within(screen.getByRole('group', { name: 'Who wrote' })).getByText('Customers'));
+    await user.click(within(screen.getByRole('group', { name: 'Who wrote' })).getByText('Retail'));
+    expect(app.location()).toBe('/support?filter=all&who=retail');
     await waitFor(async () => expect(await subjects()).toHaveLength(12));
+  });
+
+  it('reads the old word of the Who control as the retail side', async () => {
+    await openSupport('/support?filter=all&who=customers');
+    await waitFor(async () => expect(await subjects()).toHaveLength(12));
+    expect(pressed('Who wrote')).toEqual(['Retail']);
   });
 
   it('searches by ticket number, subject and name, after a pause', async () => {
     const user = userEvent.setup();
     const app = await openSupport();
-    await user.type(screen.getByRole('searchbox', { name: 'Search ticket, customer, subject' }), 'jessica');
+    await user.type(screen.getByRole('searchbox', { name: 'Search ticket, account, subject' }), 'jessica');
     await waitFor(() => expect(app.location()).toBe('/support?q=jessica'));
     await waitForSubjects([
       'Order SF-20487 is taking longer than expected',
@@ -152,22 +159,29 @@ describe('filters in the address', () => {
     ]);
   });
 
-  it('shows one customer’s tickets with a removable chip, on All', async () => {
+  it('shows one account’s tickets with a removable chip, on All', async () => {
     const user = userEvent.setup();
-    const app = await openSupport('/support?customerId=28');
+    const app = await openSupport('/support?accountId=128');
     await waitForSubjects(['Phone still locked after unlock (SF-20471)', 'Charged twice for SF-20442']);
     expect(pressed('Ticket filter')).toEqual(['All']);
-    expect(screen.getByText(/Customer: Victor Silva/)).toBeInTheDocument();
+    expect(screen.getByText(/Account: Victor Silva/)).toBeInTheDocument();
     expect(screen.queryByRole('group', { name: 'Who wrote' })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Remove the customer filter' }));
+    await user.click(screen.getByRole('button', { name: 'Remove the account filter' }));
     expect(app.location()).toBe('/support?filter=all');
     await waitFor(async () => expect(await subjects()).toHaveLength(15));
-    expect(screen.queryByText(/Customer: /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Account: /)).not.toBeInTheDocument();
+  });
+
+  it('does not read an old customer number as an account: the inbox opens on the open tickets', async () => {
+    const app = await openSupport('/support?customerId=28');
+    await waitForSubjects(OPEN_ORDER);
+    expect(screen.queryByText(/Account: /)).not.toBeInTheDocument();
+    expect(app.location()).toBe('/support?customerId=28');
   });
 
   it('ignores an address it cannot read', async () => {
-    await openSupport('/support?filter=nonsense&who=nobody&customerId=abc&ticket=x&page=0');
+    await openSupport('/support?filter=nonsense&who=nobody&accountId=abc&ticket=x&page=0');
     await waitForSubjects(OPEN_ORDER);
   });
 });
@@ -281,8 +295,9 @@ describe('paging and focus', () => {
           subject: `Ticket ${i + 1}`,
           status: 'open',
           priority: 'normal',
-          requesterType: 'customer',
-          requester: { name: 'Pat Example', email: null },
+          requesterType: 'account',
+          requesterId: 140,
+          requester: { name: 'Pat Example', email: null, rankKind: 'retail' },
           late: false,
           slaDueAt: null,
           lastPublicAt: null,

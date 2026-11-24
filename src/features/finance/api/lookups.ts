@@ -1,22 +1,25 @@
-// Two read-only helpers that borrow routes other features own: the issue-invoice dialog's merchant picker and the link to a
-// stored file. They stay private and carry no route tag, so the coverage count is not claimed twice.
-import { apiList, apiUrl, pathOf, type ApiInit, type Id, type ListResult } from '@/lib/api';
+// Two read-only helpers that borrow routes other features own: the issue-invoice dialog's merchant picker (the accounts list) and the link
+// to a stored file. They stay private and carry no route tag, so the coverage count is not claimed twice.
+import { listAccounts } from '@/features/accounts';
+import { apiUrl, pathOf, type ApiInit, type Id, type ListResult } from '@/lib/api';
+import { accountLabel } from '@/lib/format';
 import type { MerchantOption } from '../types';
 
 /** Most names the picker loads. A longer list would need a search box; the demo's pickers were plain selects too. */
 export const LOOKUP_CAP = 200;
 
 /**
- * The merchants (id, name) by name, for choosing who to bill. Needs `clients:read`.
- * Assumed contract: rows carry `id` and `name`.
+ * The accounts of a merchant rank (id, name) by name, for choosing who to bill: a manual invoice is for a merchant only, so the list
+ * asks for `rankKind=merchant` (a retail account is refused by the server with `not_merchant`). Needs `clients:read`. An account with
+ * no name shows its email, and a removed one "Deleted account".
+ * Assumed contract: the accounts list rows carry `id`, `name`, `email` and `status`.
  */
-export function listMerchantOptions(init?: ApiInit): Promise<ListResult<MerchantOption>> {
-  return apiList<MerchantOption>(
-    '/admin/clients',
-    { start: 0, end: LOOKUP_CAP, sort: ['name'], order: ['asc'] },
-    undefined,
+export async function listMerchantOptions(init?: ApiInit): Promise<ListResult<MerchantOption>> {
+  const { data, total } = await listAccounts(
+    { start: 0, end: LOOKUP_CAP, sort: ['name'], order: ['asc'], filters: { rankKind: 'merchant' } },
     init,
   );
+  return { data: data.map((account) => ({ id: account.id, name: accountLabel(account) })), total };
 }
 
 /**

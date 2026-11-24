@@ -82,7 +82,7 @@ describe('the refunds table', () => {
     await openRefunds();
     const row = await rowWith('Refunds', 'RF-1007');
     expect(row.getByRole('button', { name: 'SF-20467' })).toBeInTheDocument();
-    expect(row.getByRole('link', { name: 'Priya Nair' })).toHaveAttribute('href', '/customers/11');
+    expect(row.getByRole('link', { name: 'Priya Nair' })).toHaveAttribute('href', '/accounts/111');
     expect(row.getByText('Unlock did not work: phone still asks for a code')).toBeInTheDocument();
     expect(row.getByText('CA$27.39')).toBeInTheDocument();
     expect(row.getByText('$19.99')).toBeInTheDocument();

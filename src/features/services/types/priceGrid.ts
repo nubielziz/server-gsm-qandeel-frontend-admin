@@ -1,6 +1,6 @@
 // Types of the price grid (the Pricing view of the Product / Services page): one row per service with every figure the grid shows, as
 // `GET /admin/services/price-grid` sends it (backend decision 063), and the body of `POST /admin/services/order`. The server works out
-// every figure (the cost, the margins, the price each merchant group pays); the console only prints them.
+// every figure (the cost, the margins, the price each rank pays); the console only prints them.
 import type { Id, Money } from '@/lib/api';
 import type { RetailPriceSource } from '@/features/storefront';
 import type { NamedRef, ServiceStatus } from './service';
@@ -12,7 +12,7 @@ import type { NamedRef, ServiceStatus } from './service';
 export type GridRetailSource = RetailPriceSource;
 
 /**
- * One merchant group's column of a grid row. `fixedPrice` is the price staff fixed for the group and the service, as stored (`null`: the group
+ * One rank's column of a grid row. `fixedPrice` is the price staff fixed for the group and the service, as stored (`null`: the group
  * pays the base price less its discount). `price` is what the price resolver gives the group today, and `margin` is that price minus the cost
  * (signed text such as `"-0.5000"`; `null` when the cost is not on record).
  */
@@ -26,7 +26,7 @@ export type PriceGridGroupPrice = {
 /**
  * One service of the grid. `cost` is the effective cost (the larger of the service's own cost and the first supplier link's), `null` while no
  * cost is on record; `costChangedFrom` is the older cost when it rose since the base price was set. `sort` is the position staff gave the
- * service among those of its category (0 when never set). `groupPrices` has one entry per merchant group (kind `b2b`) in the order of
+ * service among those of its category (0 when never set). `groupPrices` has one entry per rank (kind `b2b`) in the order of
  * the groups page, the same groups on every row. `retailPrice` is the shop price (`null`: none) and `retailPriceSource` where it comes from.
  */
 export type PriceGridRow = {

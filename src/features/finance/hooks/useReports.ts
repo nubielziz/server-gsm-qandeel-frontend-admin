@@ -6,7 +6,7 @@ import { profitDates, vatDates, type ProfitRange, type VatPeriod } from '../lib/
 import type { ProfitGroup } from '../types';
 import { REFRESH_MS, REPORT_KEY } from './keys';
 
-/** Profit split by day, service, supplier or merchant over the last 7, 30 or 90 days. */
+/** Profit split by day, service, supplier or merchant (an account of a merchant rank) over the last 7, 30 or 90 days. */
 export function useProfitReport(by: ProfitGroup, range: ProfitRange, enabled = true) {
   const { from, to } = profitDates(range);
   return useApiQuery({
@@ -16,7 +16,7 @@ export function useProfitReport(by: ProfitGroup, range: ProfitRange, enabled = t
   });
 }
 
-/** The merchants' wallets. The header's wallet figures share this read, so it asks again as the header does. */
+/** The merchant wallets and the store balances. The header's wallet figures share this read, so it asks again as the header does. */
 export function useWalletExposure(enabled = true) {
   return useApiQuery({
     queryKey: [...REPORT_KEY, 'wallet-exposure'],

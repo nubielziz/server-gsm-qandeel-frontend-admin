@@ -1,7 +1,7 @@
-// The dashboard routes: the figures page, the top merchants list and the queue monitor link. Ports the data behind
+// The dashboard routes: the figures page, the top accounts list and the queue monitor link. Ports the data behind
 // `pageDashboard` in 40-p-dashboard.js (the demo computed everything from its in-memory state; the server does it here).
 import { apiGet, apiUrl } from '@/lib/api';
-import type { Dashboard, DashboardParams, TopClient, TopClientsParams } from '../types';
+import type { Dashboard, DashboardParams, TopAccount, TopClientsParams } from '../types';
 
 /**
  * The kinds of "Needs attention" rows whose feature the console retired: `merchants_pending` (merchants waiting for approval;
@@ -15,7 +15,7 @@ export const RETIRED_ATTENTION_KINDS: ReadonlySet<string> = new Set([
 
 /**
  * Everything the dashboard page shows in one call: the key figures with the previous period, the attention list, the
- * queues, supplier health, the charts, the storefront funnel, the top customers and the numbers for the sidebar. `scope`
+ * queues, supplier health, the charts, the storefront funnel and the numbers for the sidebar. `scope`
  * separates merchants from the storefront (the map); `days` is the period of the figures. One call keeps all panels
  * from the same moment, and the sidebar counts share it. The old `navCounts.merchants` count is ignored when an older server still
  * sends it.
@@ -36,15 +36,16 @@ export async function getDashboard(params: DashboardParams, signal?: AbortSignal
 }
 
 /**
- * The merchants that bought most over the period, for the dashboard's "Top merchants" list. It is a separate report
- * with its own permission (`reports:read`), so the dashboard asks for it only when the staff member has it.
- * Assumed contract: query `days` and `limit`, an array of `TopClient` ranked by spend, highest first.
+ * The accounts that bought most over the period, for the dashboard's "Top accounts" list: merchants and storefront buyers
+ * (guests too) in one ranking. `scope` is the door the orders came through, as on the rest of the dashboard. It is a separate
+ * report with its own permission (`reports:read`), so the dashboard asks for it only when the staff member has it.
+ * Assumed contract: query `days`, `limit` and `scope`, an array of `TopAccount` ranked by spend, highest first.
  * @route GET /admin/reports/top-clients
  */
-export function getTopClients(params: TopClientsParams, signal?: AbortSignal): Promise<TopClient[]> {
-  return apiGet<TopClient[]>(
+export function getTopClients(params: TopClientsParams, signal?: AbortSignal): Promise<TopAccount[]> {
+  return apiGet<TopAccount[]>(
     '/admin/reports/top-clients',
-    { days: params.days, limit: params.limit },
+    { days: params.days, limit: params.limit, scope: params.scope },
     { signal },
   );
 }

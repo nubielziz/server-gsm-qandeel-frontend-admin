@@ -1,36 +1,42 @@
-// requesterLabel and firstName: who wrote a ticket, even when a customer has no name.
+// requesterLabel, isMerchantRequester and firstName: who wrote a ticket, even when an account has no name.
 import { describe, expect, it } from 'vitest';
-import { firstName, requesterLabel } from './status';
+import { firstName, isMerchantRequester, requesterLabel } from './status';
 
 describe('requesterLabel', () => {
-  it('names a merchant by the name on the ticket and a customer by theirs', () => {
+  it('names an account by the name on the ticket, whatever its rank', () => {
     expect(
       requesterLabel({
-        requesterType: 'client',
         requesterId: 3,
-        requester: { name: 'Phone Doctor', email: null },
+        requester: { name: 'Phone Doctor', email: null, rankKind: 'merchant' },
       }),
     ).toBe('Phone Doctor');
     expect(
       requesterLabel({
-        requesterType: 'customer',
-        requesterId: 9,
-        requester: { name: 'Maya Haddad', email: 'maya@example.com' },
+        requesterId: 109,
+        requester: { name: 'Maya Haddad', email: 'maya@example.com', rankKind: 'retail' },
       }),
     ).toBe('Maya Haddad');
   });
 
-  it('names a customer with no name by the masked email, else by the customer number', () => {
+  it('names an account with no name by the masked email, else by the account number', () => {
     expect(
       requesterLabel({
-        requesterType: 'customer',
-        requesterId: 9,
-        requester: { name: '', email: 'maya@example.com' },
+        requesterId: 109,
+        requester: { name: '', email: 'maya@example.com', rankKind: 'retail' },
       }),
     ).toBe('ma•••@example.com');
     expect(
-      requesterLabel({ requesterType: 'customer', requesterId: 9, requester: { name: ' ', email: null } }),
-    ).toBe('Customer #9');
+      requesterLabel({ requesterId: 109, requester: { name: ' ', email: null, rankKind: 'retail' } }),
+    ).toBe('Account #109');
+  });
+});
+
+describe('isMerchantRequester', () => {
+  it('is true only for an explicit merchant rank', () => {
+    expect(isMerchantRequester({ requester: { name: 'A', email: null, rankKind: 'merchant' } })).toBe(true);
+    expect(isMerchantRequester({ requester: { name: 'A', email: null, rankKind: 'retail' } })).toBe(false);
+    // A row from an older server has no rank kind: it reads as retail, the side that is masked.
+    expect(isMerchantRequester({ requester: { name: 'A', email: null } as never })).toBe(false);
   });
 });
 

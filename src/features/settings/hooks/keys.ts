@@ -3,8 +3,8 @@
 import type { QueryKey } from '@tanstack/react-query';
 import { DASHBOARD_KEY } from '@/lib/query';
 
-/** The merchant group names the gateway cards and dialog use. */
-export const GROUP_NAMES_KEY = ['api', 'settings', 'groups'] as const;
+/** The rank names the gateway cards and dialog use. */
+export const RANK_NAMES_KEY = ['api', 'settings', 'ranks'] as const;
 
 /** The catalog of ready-made payment methods (a fixed list: it changes only with a backend release). */
 export const GATEWAY_PRESETS_KEY = ['api', 'settings', 'gateway-presets'] as const;
@@ -15,7 +15,7 @@ export const PREVIEW_KEY = ['api', 'settings', 'preview'] as const;
 /** The reads a currency change makes stale besides Refine's own: the dashboard's "exchange rate is out of date" alert. */
 export const CURRENCY_STALE_KEYS: QueryKey[] = [DASHBOARD_KEY];
 
-/** How long the group names are kept: they change rarely, and a dialog should not wait for a request each time. */
+/** How long the rank names are kept: they change rarely, and a dialog should not wait for a request each time. */
 export const LOOKUP_STALE_MS = 5 * 60_000;
 
 /** Rows one list call asks for when the tab shows a whole short table (gateways, tax, currencies, templates). */

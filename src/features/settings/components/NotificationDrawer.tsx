@@ -3,7 +3,7 @@
 import { KeyValue } from '@/components/ui';
 import { fmtDate } from '@/lib/format';
 import { useNotification } from '../hooks/useLogs';
-import { jsonText, NOTIFICATION_STATUS } from '../lib/logs';
+import { jsonText, NOTIFICATION_STATUS, recipientTypeText } from '../lib/logs';
 import { channelLabel, eventLabel } from '../lib/templates';
 import type { NotificationLogEntry } from '../types';
 import { LogDrawerShell } from './LogDrawerShell';
@@ -47,7 +47,7 @@ export function NotificationDrawer({
                   {notification.recipient}
                 </span>,
               ],
-              ['Recipient type', notification.recipientType],
+              ['Recipient type', recipientTypeText(notification.recipientType)],
               ['Created', fmtDate(notification.createdAt)],
               [
                 'Sent',

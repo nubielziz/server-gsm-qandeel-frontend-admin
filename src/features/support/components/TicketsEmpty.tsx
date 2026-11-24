@@ -14,7 +14,8 @@ export function TicketsEmpty({ inboxEmpty, filtersOn, onReset }: TicketsEmptyPro
   if (inboxEmpty) {
     return (
       <EmptyState icon="life" title="Inbox is empty">
-        Tickets from the storefront contact form, email and live chat land here, next to merchant requests.
+        Tickets from the storefront contact form, email and live chat land here, next to the requests of
+        merchants.
       </EmptyState>
     );
   }

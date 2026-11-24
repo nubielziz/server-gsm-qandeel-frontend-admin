@@ -7,9 +7,8 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
   [
     ['dashboard', 'Dashboard', 'Operations', 'dashboard', 'dashboard:read'],
     ['orders', 'Orders', 'Operations', 'orders', 'orders:read'],
-    // Any tab's read permission opens Merchants (the merchants manifest; MISMATCHES, merchants rows).
-    ['merchants', 'Merchants', 'Operations', 'users', ['clients:read', 'groups:read']],
-    ['customers', 'Customers', 'Operations', 'user', 'customers:read'],
+    // One Accounts page in the place of Merchants and Customers; its list and its ranks have their own read permission, and either opens it.
+    ['accounts', 'Accounts', 'Operations', 'users', ['clients:read', 'groups:read']],
     ['support', 'Support', 'Operations', 'life', 'support:read'],
     ['risk', 'Risk & checks', 'Operations', 'shield', 'risk:read'],
     // No demo page (feature 23, backend addition): campaigns and their detail.
@@ -62,7 +61,7 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
   ];
 
 describe('page resources', () => {
-  it('are the console’s pages in order: Notifications after Risk & checks, Shop content after Settings, System health last', () => {
+  it('are the console’s pages in order: Accounts after Orders, Notifications after Risk & checks, Shop content after Settings, System health last', () => {
     expect(resources.map((resource) => resource.name)).toEqual(EXPECTED.map(([name]) => name));
   });
 
@@ -79,19 +78,40 @@ describe('page resources', () => {
     expect(resources.some((resource) => resource.name === 'catalog')).toBe(false);
   });
 
+  it('keep one Accounts page and no page for Merchants or Customers', () => {
+    // Merchants and Customers are one page; a resource left under either name would keep a sidebar entry and let a name-keyed check pass.
+    const names = resources.map((resource) => resource.name);
+    expect(names.filter((name) => name === 'accounts')).toHaveLength(1);
+    expect(names).not.toContain('merchants');
+    expect(names).not.toContain('customers');
+  });
+
+  it('hold Accounts in the Operations group, right after Orders', () => {
+    const operations = resources
+      .filter((resource) => resource.meta?.group === 'Operations')
+      .map((resource) => resource.name);
+    expect(operations).toEqual(['dashboard', 'orders', 'accounts', 'support', 'risk', 'notifications']);
+  });
+
+  it('open Accounts to a role with the accounts read permission or the ranks read permission', () => {
+    const permission = resources.find((resource) => resource.name === 'accounts')?.meta?.permission;
+    expect(permission).toEqual(['clients:read', 'groups:read']);
+    // The old page permission of the customers (`customers:read`) no longer opens anything.
+    expect(permission).not.toContain('customers:read');
+  });
+
   it.each(EXPECTED)('%s: label, group, icon and permission', (name, label, group, icon, permission) => {
     const resource = resources.find((candidate) => candidate.name === name);
     expect(resource?.list).toBe(`/${name}`);
     expect(resource?.meta).toEqual({ label, group, icon, permission });
   });
 
-  it('have a detail route only for merchants, customers and notifications', () => {
+  it('have a detail route only for accounts and notifications', () => {
     const withDetail = resources
       .filter((resource) => resource.show)
       .map((resource) => [resource.name, resource.show]);
     expect(withDetail).toEqual([
-      ['merchants', '/merchants/:id'],
-      ['customers', '/customers/:id'],
+      ['accounts', '/accounts/:id'],
       ['notifications', '/notifications/:id'],
     ]);
   });
@@ -105,12 +125,12 @@ describe('page resources', () => {
 
 describe('toPageResource', () => {
   it('reads a page resource with its paths', () => {
-    const merchants = resources.find((resource) => resource.name === 'merchants');
-    expect(toPageResource(merchants)).toEqual({
-      name: 'merchants',
-      meta: merchants?.meta,
-      path: '/merchants',
-      detailPath: '/merchants/:id',
+    const accounts = resources.find((resource) => resource.name === 'accounts');
+    expect(toPageResource(accounts)).toEqual({
+      name: 'accounts',
+      meta: accounts?.meta,
+      path: '/accounts',
+      detailPath: '/accounts/:id',
     });
     expect(toPageResource(resources[0])?.detailPath).toBeUndefined();
   });

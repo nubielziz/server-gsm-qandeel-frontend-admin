@@ -1,7 +1,15 @@
 // Tests for the words of the Deposits tab: methods, status badges, the reject reason and the fee text.
 import { describe, expect, it } from 'vitest';
-import { feeText, methodLabel, payerName, paymentLabel, paymentStatusBadge, rejectReason } from './payments';
-import { paymentListFilters, parsePaymentFilter } from './paymentView';
+import {
+  disputeText,
+  feeText,
+  methodLabel,
+  payerName,
+  paymentLabel,
+  paymentStatusBadge,
+  rejectReason,
+} from './payments';
+import { PAYMENT_OWNERS, paymentListFilters, parsePaymentFilter, parsePaymentOwner } from './paymentView';
 
 describe('rejectReason', () => {
   it('puts the message after the chosen reason', () => {
@@ -56,10 +64,62 @@ describe('the sub-tabs', () => {
   });
 });
 
-describe('payerName', () => {
-  const customer = { id: 5, name: '', email: 'maya@example.com', walletBalance: null };
+describe('the owner filter', () => {
+  it('names the two kinds of wallet and keeps the wire words as ids', () => {
+    expect(PAYMENT_OWNERS).toEqual([
+      { id: 'all', label: 'All payers' },
+      { id: 'merchant', label: 'Merchant wallet' },
+      { id: 'customer', label: 'Store balance' },
+    ]);
+    expect(parsePaymentOwner(new URLSearchParams('owner=customer'))).toBe('customer');
+    expect(parsePaymentOwner(new URLSearchParams('owner=account'))).toBe('all');
+  });
 
-  it('names a merchant by its company, a customer by their name, else by the masked email', () => {
+  it('sends the owner as the wire says it, and nothing for everyone', () => {
+    expect(paymentListFilters('pending', 'customer')).toEqual({
+      purpose: 'topup',
+      status: 'pending',
+      owner: 'customer',
+    });
+    expect(paymentListFilters('all', 'merchant')).toEqual({ purpose: 'topup', owner: 'merchant' });
+    expect(paymentListFilters('all', 'all')).toEqual({ purpose: 'topup' });
+  });
+});
+
+describe('disputeText', () => {
+  const dispute = (status: string) => ({ status }) as never;
+
+  it('speaks of the account’s store balance on hold while a store top-up is disputed, and of the wallet for a merchant', () => {
+    expect(disputeText({ customer: customer5(), dispute: dispute('needs_response') })).toBe(
+      'The account’s store balance is on hold while the dispute is open.',
+    );
+    expect(disputeText({ customer: null, dispute: dispute('under_review') })).toBe(
+      'The card network is reviewing the chargeback of this top-up.',
+    );
+  });
+
+  it('says the credit was taken back, and that a store balance may now be below zero', () => {
+    expect(disputeText({ customer: customer5(), dispute: dispute('lost') })).toBe(
+      'The credit was taken back from the account’s store balance, which may now be below zero.',
+    );
+    expect(disputeText({ customer: null, dispute: dispute('lost') })).toBe(
+      'The credit was taken back from the merchant’s wallet.',
+    );
+  });
+
+  it('is silent without a dispute', () => {
+    expect(disputeText({ customer: null, dispute: null })).toBeNull();
+  });
+});
+
+function customer5() {
+  return { id: 105, name: 'Maya Haddad', email: 'maya@example.com', walletBalance: null };
+}
+
+describe('payerName', () => {
+  const customer = { id: 105, name: '', email: 'maya@example.com', walletBalance: null };
+
+  it('names a merchant account by its company, a store balance’s account by its name, else by the masked email', () => {
     expect(
       payerName({
         client: { id: 3, name: 'Phone Doctor FZE', group: null, walletBalance: null },

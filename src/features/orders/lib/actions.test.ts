@@ -52,7 +52,7 @@ describe('orderActions', () => {
   });
 
   it('sends a held storefront order to the Risk page and offers nothing else', () => {
-    const actions = orderActions(order({ channel: 'b2c', client: null, status: 'pending', queue: 'review' }));
+    const actions = orderActions(order({ channel: 'b2c', status: 'pending', queue: 'review' }));
     expect(offered(actions)).toEqual(['riskLink']);
     expect(actions.recommended).toBe('risk');
   });
@@ -64,7 +64,7 @@ describe('orderActions', () => {
   });
 
   it('refunds a completed storefront order from the Refunds page', () => {
-    const actions = orderActions(order({ status: 'completed', channel: 'b2c', client: null }));
+    const actions = orderActions(order({ status: 'completed', channel: 'b2c' }));
     expect(offered(actions)).toEqual(['reopen', 'refundsLink']);
   });
 

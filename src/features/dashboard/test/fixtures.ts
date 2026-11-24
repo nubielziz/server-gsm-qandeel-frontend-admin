@@ -228,10 +228,6 @@ export function dashboardFixture(overrides: Partial<Dashboard> = {}): Dashboard 
       firstReplySeconds: 1800,
       heldForReview: 4,
     },
-    topCustomers: [
-      { id: 7, name: 'Daniel Whitmore', country: 'GB', orders: 5, spend: '99.0000' },
-      { id: 9, name: 'Sara Lindqvist', country: 'SE', orders: 3, spend: '41.5000' },
-    ],
     navCounts: NAV_COUNTS,
     ...overrides,
   };

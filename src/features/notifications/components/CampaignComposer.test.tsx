@@ -119,17 +119,17 @@ describe('the live count', () => {
   it('says who is left out and why for marketing', async () => {
     const { user, composer } = await openComposer();
     await user.click(composer.getByRole('radio', { name: /Marketing/ }));
-    await user.click(composer.getByRole('button', { name: 'Customers' }));
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
     const count = within(composer.getByRole('region', { name: 'Reach' }));
     expect(
-      await count.findByText(/customers did not agree to marketing/, undefined, { timeout: 5_000 }),
+      await count.findByText(/retail accounts did not agree to marketing/, undefined, { timeout: 5_000 }),
     ).toBeInTheDocument();
   });
 
   it('asks nothing while the audience is incomplete or a country code is wrong', async () => {
     const sent = recordRequests('/audience-preview');
     const { user, composer } = await openComposer();
-    await user.click(composer.getByRole('button', { name: 'Customers' }));
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
     await user.type(composer.getByRole('textbox', { name: 'Countries' }), 'Jordan');
     expect(await composer.findByText(/Not a code: JORDAN/)).toBeInTheDocument();
     await new Promise((resolve) => setTimeout(resolve, 700));
@@ -164,6 +164,47 @@ describe('the audience builder', () => {
     expect(presets.getByRole('button', { name: 'Everyone' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('offers the merchant ranks, and no status choice, for the merchant group', async () => {
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Merchants' }));
+    const ranks = await composer.findByRole('group', { name: 'Only these ranks' });
+    expect(await within(ranks).findByRole('checkbox', { name: 'Wholesale' })).toBeInTheDocument();
+    // The retail rank holds no merchant accounts, so it is not offered here.
+    expect(within(ranks).queryByRole('checkbox', { name: /retail/i })).not.toBeInTheDocument();
+    expect(within(ranks).getByText('Every merchant rank.')).toBeInTheDocument();
+    expect(composer.queryByRole('group', { name: 'Status' })).not.toBeInTheDocument();
+    expect(composer.queryByRole('checkbox', { name: 'Not active yet' })).not.toBeInTheDocument();
+  });
+
+  it('sends the picked merchant ranks as groupIds and never a status', async () => {
+    const sent = recordRequests('/audience-preview');
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Merchants' }));
+    const ranks = await composer.findByRole('group', { name: 'Only these ranks' });
+    await user.click(await within(ranks).findByRole('checkbox', { name: 'Wholesale' }));
+    await waitFor(
+      () =>
+        expect(sent.at(-1)?.body).toEqual({
+          audience: { merchants: { groupIds: [expect.any(Number)] } },
+          channels: ['in_app', 'email'],
+          purpose: 'service',
+        }),
+      { timeout: 5_000 },
+    );
+  });
+
+  it('says retail accounts and guests for the retail group, and names its choices', async () => {
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
+    expect(composer.getByText(/Retail accounts and guests of the storefront/)).toBeInTheDocument();
+    const who = within(composer.getByRole('group', { name: 'Retail accounts with a login or guests' }));
+    expect(who.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'All',
+      'With a login',
+      'Guests',
+    ]);
+  });
+
   it('offers the roles of the server as checkboxes for the staff group', async () => {
     const { user, composer } = await openComposer();
     await user.click(composer.getByRole('button', { name: 'Staff' }));
@@ -183,8 +224,8 @@ describe('the audience builder', () => {
   it('shows link fields only for the people the audience reaches', async () => {
     const { user, composer } = await openComposer();
     expect(composer.queryByRole('textbox', { name: /^Link for/ })).not.toBeInTheDocument();
-    await user.click(composer.getByRole('button', { name: 'Customers' }));
-    expect(composer.getByRole('textbox', { name: 'Link for customers' })).toHaveAttribute(
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
+    expect(composer.getByRole('textbox', { name: 'Link for retail accounts' })).toHaveAttribute(
       'placeholder',
       '/account/orders',
     );

@@ -313,13 +313,14 @@ describe('roles and permissions', () => {
 });
 
 describe('sessions', () => {
-  it('lists the sessions of staff and marks the caller’s own', async () => {
+  it('lists the sessions of staff and of accounts and marks the caller’s own', async () => {
     const { data, total } = await listSessions();
-    expect(total).toBe(4);
-    expect(data.every((session) => session.subjectType === 'staff')).toBe(true);
+    // Four devices of staff and three sessions of accounts of merchant ranks.
+    expect(total).toBe(7);
+    expect([...new Set(data.map((session) => session.subjectType))].sort()).toEqual(['account', 'staff']);
     const current = data.filter((session) => session.current);
     expect(current).toHaveLength(1);
-    expect(current[0].subject.id).toBe(RAMI);
+    expect(current[0]).toMatchObject({ subjectType: 'staff', subject: { id: RAMI } });
     expect(data[0]).toEqual(
       expect.objectContaining({
         ip: expect.any(String),
@@ -329,30 +330,53 @@ describe('sessions', () => {
     );
   });
 
+  it('never says an old word: the subject of a session is staff or account', async () => {
+    const { data } = await listSessions();
+    expect(
+      data.every((session) => session.subjectType === 'staff' || session.subjectType === 'account'),
+    ).toBe(true);
+  });
+
   it('pages', async () => {
     const page = await listSessions({ start: 0, end: 3 });
     expect(page.data).toHaveLength(3);
-    expect(page.total).toBe(4);
+    expect(page.total).toBe(7);
   });
 
-  it('asks the server for staff only, so the total and the pages leave the merchants out', async () => {
-    const { apiList } = await import('@/lib/api');
-    const merchants = await apiList('/admin/sessions', {}, { subjectType: 'client' });
-    expect(merchants.total).toBeGreaterThan(0);
-    // Without the filter the server lists both kinds, and its total counts both.
-    expect((await apiList('/admin/sessions')).total).toBe(4 + merchants.total);
+  it('asks the server for one kind with subjectType, so the total and the pages count that kind', async () => {
+    const staff = await listSessions({ filters: { subjectType: 'staff' } });
+    expect(staff.total).toBe(4);
+    expect(staff.data.every((session) => session.subjectType === 'staff')).toBe(true);
 
-    const page = await listSessions({ start: 3, end: 6 });
+    const accounts = await listSessions({ filters: { subjectType: 'account' } });
+    expect(accounts.total).toBe(3);
+    expect(accounts.data.every((session) => session.subjectType === 'account')).toBe(true);
+    expect(accounts.data.map((session) => session.subject.name)).toContain('Zain Mobile Hub');
+
+    const page = await listSessions({ start: 3, end: 6, filters: { subjectType: 'staff' } });
     expect(page.total).toBe(4);
     expect(page.data).toHaveLength(1);
     expect(page.data[0].subjectType).toBe('staff');
   });
 
-  it('sends the staff filter, and still drops a merchant row from a server that ignores it', async () => {
-    let search = '';
+  it('sends the filter in the address, and none when both kinds are wanted', async () => {
+    const searches: string[] = [];
     mockServer.use(
       http.get('*/admin/sessions', ({ request }) => {
-        search = new URL(request.url).search;
+        searches.push(new URL(request.url).search);
+        return HttpResponse.json([], { headers: { 'x-total-count': '0' } });
+      }),
+    );
+    await listSessions({ start: 0, end: 25, filters: { subjectType: 'account' } });
+    await listSessions({ start: 0, end: 25 });
+    expect(new URLSearchParams(searches[0]).getAll('subjectType')).toEqual(['account']);
+    expect(new URLSearchParams(searches[0]).has('subjectId')).toBe(false);
+    expect(new URLSearchParams(searches[1]).has('subjectType')).toBe(false);
+  });
+
+  it('keeps every row it is sent, whatever the kind: the server does the choosing', async () => {
+    mockServer.use(
+      http.get('*/admin/sessions', () => {
         const row = (id: number, subjectType: string, name: string) => ({
           id,
           subjectType,
@@ -363,25 +387,32 @@ describe('sessions', () => {
           expiresAt: null,
           createdAt: '2026-01-01T00:00:00.000Z',
         });
-        return HttpResponse.json([row(1, 'staff', 'Rami K.'), row(2, 'client', 'Zain Mobile Hub')], {
+        return HttpResponse.json([row(1, 'staff', 'Rami K.'), row(2, 'account', 'Zain Mobile Hub')], {
           headers: { 'x-total-count': '2' },
         });
       }),
     );
     const { data } = await listSessions({ start: 0, end: 25 });
-    expect(data.map((session) => session.subject.name)).toEqual(['Rami K.']);
-    const params = new URLSearchParams(search);
-    expect(params.getAll('subjectType')).toEqual(['staff']);
-    expect(params.has('subjectId')).toBe(false);
+    expect(data.map((session) => [session.subjectType, session.subject.name])).toEqual([
+      ['staff', 'Rami K.'],
+      ['account', 'Zain Mobile Hub'],
+    ]);
   });
 
   it('ends one session, which also lowers the admin’s count', async () => {
-    const { data } = await listSessions();
+    const { data } = await listSessions({ filters: { subjectType: 'staff' } });
     const ramis = data.filter((session) => session.subject.id === RAMI);
     await revokeSession(ramis[0].id);
-    expect((await listSessions()).total).toBe(3);
+    expect((await listSessions({ filters: { subjectType: 'staff' } })).total).toBe(3);
     expect((await getStaff(RAMI)).activeSessions).toBe(1);
     await expect(revokeSession(ramis[0].id)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('ends the session of an account and leaves the staff alone', async () => {
+    const { data } = await listSessions({ filters: { subjectType: 'account' } });
+    await revokeSession(data[0].id);
+    expect((await listSessions({ filters: { subjectType: 'account' } })).total).toBe(2);
+    expect((await listSessions({ filters: { subjectType: 'staff' } })).total).toBe(4);
   });
 });
 

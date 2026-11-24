@@ -10,7 +10,7 @@ export type NavCount = {
   lateLabel?: string;
 };
 
-/** Counts by page id (`orders`, `finance`, `merchants`, `support`, `refunds`, `risk`). */
+/** Counts by page id (`orders`, `finance`, `support`, `refunds`, `risk`). The Accounts page has none. */
 export type NavCounts = Partial<Record<string, NavCount>>;
 
 const NO_COUNTS: NavCounts = {};

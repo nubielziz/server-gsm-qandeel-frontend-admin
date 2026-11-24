@@ -38,7 +38,7 @@ export interface OrderTableProps {
   onOpen: (order: Order) => void;
   empty?: ReactNode;
   caption?: string;
-  /** Leave out the Buyer column (a merchant's own page). */
+  /** Leave out the Buyer column (an account's own page). */
   hideBuyer?: boolean;
   /** The "⋯" menu of a row; leave out for a plain list. */
   menu?: (order: Order) => ReactNode;

@@ -1,8 +1,10 @@
 // HeldDetails: the middle of a held order's card: "Why it was held" (the signals the server found) and "Who is buying" (the
-// customer, their masked email, country and history). Ports the second block of `heldCard` in 54-p-risk.js.
+// buyer, their masked email, country and history). Ports the second block of `heldCard` in 54-p-risk.js. The buyer is an account:
+// the `customer` key of the queue holds its number.
 import { Link } from 'react-router';
 import { Icon, KeyValue } from '@/components/ui';
-import { maskedCustomerLabel, maskEmail } from '@/lib/format';
+import { accountPath } from '@/features/accounts';
+import { maskedAccountLabel, maskEmail } from '@/lib/format';
 import { countryName } from '../lib/countries';
 import { historyText } from '../lib/queue';
 import type { HeldOrder } from '../types';
@@ -32,8 +34,8 @@ export function HeldDetails({ order }: { order: HeldOrder }) {
           rows={[
             [
               'Customer',
-              <Link className="link" to={`/customers/${customer.id}`}>
-                {maskedCustomerLabel(customer)}
+              <Link className="link" to={accountPath(customer.id)}>
+                {maskedAccountLabel(customer)}
               </Link>,
             ],
             ['Email', maskEmail(customer.email)],

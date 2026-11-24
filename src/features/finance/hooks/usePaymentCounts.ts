@@ -28,7 +28,7 @@ async function countOf(
 
 /**
  * `enabled` is false until the staff member's permissions are known, or without `payments:read`. `owner` counts only
- * merchants' or only customers' top-ups (feature 21), so each number is what its sub-tab lists.
+ * merchant wallets' or only store balances' top-ups, so each number is what its sub-tab lists.
  */
 export function usePaymentCounts(enabled = true, owner: PaymentOwnerFilter = 'all'): PaymentCounts {
   const results = useQueries({

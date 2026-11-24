@@ -122,7 +122,7 @@ export type ServiceOption = Pick<ServiceOptionRow, 'value' | 'label' | 'supplier
   list: ServiceOptionList;
 };
 
-/** The fixed price of a service for one merchant group; a group with no entry pays the base price less its discount. */
+/** The fixed price of a service for one rank; a group with no entry pays the base price less its discount. */
 export type ServiceGroupPrice = Pick<ServiceGroupPriceRow, 'groupId' | 'price'>;
 
 /**

@@ -11,11 +11,12 @@ export type Actor = { type: 'staff'; id: number | null; name: string };
 const SYSTEM = { type: 'system' as const, id: null, name: 'System' };
 const amount = (value: string): number => Number(value);
 
-// The account that holds the buyer's money while the order is open: a merchant's hold, or a customer's funds.
+// The account that holds the buyer's money while the order is open: the hold of the buyer's account for an order of the merchant
+// door, or the shop's customer funds for an order paid first. The door decides, never the buyer's rank today.
 function holder(order: MockOrder): Pick<LedgerLine, 'kind' | 'ownerType' | 'ownerId' | 'ownerName'> {
   return order.channel === 'b2c'
     ? { kind: 'customer_funds' }
-    : { kind: 'client_hold', ownerType: 'client', ownerId: order.client?.id, ownerName: order.client?.name };
+    : { kind: 'client_hold', ownerType: 'account', ownerId: order.account.id, ownerName: order.account.name };
 }
 
 const wallet = (order: MockOrder): LedgerLine['kind'] =>
@@ -101,9 +102,9 @@ export async function rejectMock(order: MockOrder, actor: Actor, reason: string)
         ? { kind: wallet(order), amount: -(price + tax) }
         : {
             kind: 'client_wallet',
-            ownerType: 'client' as const,
-            ownerId: order.client?.id,
-            ownerName: order.client?.name,
+            ownerType: 'account' as const,
+            ownerId: order.account.id,
+            ownerName: order.account.name,
             amount: -price,
           },
     ],
@@ -148,9 +149,9 @@ export async function refundMock(order: MockOrder, actor: Actor, reason: string)
       { kind: 'revenue', amount: price },
       {
         kind: 'client_wallet',
-        ownerType: 'client',
-        ownerId: order.client?.id,
-        ownerName: order.client?.name,
+        ownerType: 'account',
+        ownerId: order.account.id,
+        ownerName: order.account.name,
         amount: -price,
       },
     ],

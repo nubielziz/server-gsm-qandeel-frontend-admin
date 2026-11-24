@@ -46,14 +46,14 @@ describe('profit', () => {
     mockServer.events.removeAllListeners();
   });
 
-  it('splits by merchant and links each merchant to its page, with no chart', async () => {
+  it('splits by merchant and links each merchant to its account, with no chart', async () => {
     const user = userEvent.setup();
     const app = await openFinance('/finance?tab=reports');
     await user.click(await screen.findByRole('button', { name: 'Merchant' }));
     expect(app.location()).toBe('/finance?tab=reports&by=client');
     const table = await tableNamed('Profit by merchant');
     const link = (await table.findAllByRole('link'))[0];
-    expect(link).toHaveAttribute('href', expect.stringMatching(/^\/merchants\/\d+$/));
+    expect(link).toHaveAttribute('href', expect.stringMatching(/^\/accounts\/[1-9]\d*$/));
     expect(screen.queryByRole('img', { name: /Stacked bar chart/ })).not.toBeInTheDocument();
   });
 
@@ -116,6 +116,52 @@ describe('wallet exposure', () => {
     expect(figures.getByText('Wallet balances')).toBeInTheDocument();
     expect(figures.getByText('Overdraft in use')).toBeInTheDocument();
     expect(figures.getByText(/\d+ merchants$/)).toBeInTheDocument();
+    // Each merchant leads to the Financial part of its account.
+    expect(within(rows[1]).getByRole('link', { name: 'Phone Doctor FZE' })).toHaveAttribute(
+      'href',
+      '/accounts/3?tab=wallet',
+    );
+  });
+
+  it('shows the store balances beside the merchant wallets, and keeps them out of the merchant totals', async () => {
+    const user = userEvent.setup();
+    await openFinance('/finance?tab=reports');
+    await user.click(await reportSwitch().findByRole('button', { name: 'Wallet exposure' }));
+    const store = within(await screen.findByRole('region', { name: 'Store balance totals' }));
+    expect(store.getByText('Store balances')).toBeInTheDocument();
+    expect(store.getByText('Below zero')).toBeInTheDocument();
+    expect(store.getByText('On hold')).toBeInTheDocument();
+    // The seed holds one credited balance of $50.
+    expect(store.getByText('$50')).toBeInTheDocument();
+    expect(store.getByText('1 account')).toBeInTheDocument();
+  });
+
+  it('draws the store balance totals the server sends, a negative one in red', async () => {
+    mockServer.use(
+      http.get('*/admin/reports/wallet-exposure', () =>
+        HttpResponse.json({
+          currency: 'USD',
+          totals: {
+            clients: 0,
+            balance: '0.0000',
+            reserved: '0.0000',
+            overdraftLimit: '0.0000',
+            overdraftUsed: '0.0000',
+            inOverdraft: 0,
+          },
+          storeBalances: { accounts: 3, balance: '-12.0000', negative: 2, frozen: 1 },
+          rows: [],
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    await openFinance('/finance?tab=reports');
+    await user.click(await reportSwitch().findByRole('button', { name: 'Wallet exposure' }));
+    // No merchant wallet, yet the store balances still show: the report is not "empty".
+    const store = within(await screen.findByRole('region', { name: 'Store balance totals' }));
+    expect(store.getByText('3 accounts')).toBeInTheDocument();
+    expect(store.getByText('-$12')).toBeInTheDocument();
+    expect(screen.queryByText('No merchant wallets yet')).not.toBeInTheDocument();
   });
 });
 

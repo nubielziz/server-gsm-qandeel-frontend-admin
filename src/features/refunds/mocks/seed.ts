@@ -4,6 +4,7 @@
 import type { NamedRef } from '@/features/orders';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';
+import { customerAccountId } from '@/mocks/seed/accountIds';
 import { demoStaffIds } from '@/mocks/staff';
 import type { Dispute, PaymentLine, Refund } from '../types';
 import type { DemoCustomer, DemoDispute, DemoLegal, DemoOrder, DemoRefund, DemoTicket } from './demoTypes';
@@ -25,6 +26,9 @@ export type RefundsMockState = {
 };
 
 const grossOf = (order: DemoOrder): number => order.gross ?? order.price;
+
+/** The buyer's account number: demo customer `cN` is account `100 + N` (`mocks/seed/accountIds.ts`). */
+const accountIdOf = (customer: DemoCustomer): number => customerAccountId(demoNumericId(customer.id));
 
 function toRefund(
   r: DemoRefund,
@@ -48,7 +52,7 @@ function toRefund(
     partial: r.partial,
     gatewayRefundId: r.gw,
     note: r.note || null,
-    requestedBy: r.auto ? { type: 'system', name: 'System' } : { type: 'customer', name: null },
+    requestedBy: r.auto ? { type: 'system', name: 'System' } : { type: 'account', name: null },
     approvedBy: decidedBy ? { id: staffIds.get(decidedBy) ?? 0, name: decidedBy } : null,
     customer,
     order: {
@@ -91,7 +95,7 @@ function toDispute(
     submittedAt: d.submittedAt ? toIso(d.submittedAt) : null,
     resolvedAt: d.resolvedAt ? toIso(d.resolvedAt) : null,
     createdAt: toIso(d.opened),
-    customer: { id: demoNumericId(customer.id), name: customer.name },
+    customer: { id: accountIdOf(customer), name: customer.name },
     evidence: items,
     strength,
   };
@@ -121,7 +125,7 @@ export async function buildState(): Promise<RefundsMockState> {
   const customers = new Map(demoRows<DemoCustomer>(demo, 'customers').map((c) => [c.id, c]));
   const named = (id: string | undefined): NamedRef | null => {
     const customer = id ? customers.get(id) : undefined;
-    return customer ? { id: demoNumericId(customer.id), name: customer.name } : null;
+    return customer ? { id: accountIdOf(customer), name: customer.name } : null;
   };
   const staffIds = demoStaffIds(demo);
   const context: EvidenceContext = {

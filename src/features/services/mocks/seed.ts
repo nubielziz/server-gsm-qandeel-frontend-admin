@@ -26,7 +26,7 @@ export type DemoService = {
 type DemoNamed = { id: string; name: string };
 type DemoMerchant = DemoNamed & { group: string };
 
-/** The demo's three merchant groups (`GROUPS` in 10-data.js) with the ids the mock gives them. */
+/** The demo's three ranks (`GROUPS` in 10-data.js) with the ids the mock gives them. */
 export const GROUPS: readonly MockGroup[] = [
   { id: 1, name: 'Standard', kind: 'b2b', discountPercent: 0 },
   { id: 2, name: 'Wholesale', kind: 'b2b', discountPercent: 4 },
@@ -42,7 +42,7 @@ export type Stores = {
   codes: Collection<MockCode>;
   groups: MockGroup[];
   merchants: ReadonlyMap<number, MockMerchant>;
-  /** Merchant overrides by `${merchantId}|${serviceId}`; the merchants feature owns their editing. */
+  /** Merchant overrides by `${merchantId}|${serviceId}`; the accounts feature owns their editing. */
   clientPrices: ReadonlyMap<string, number>;
 };
 

@@ -49,7 +49,8 @@ describe('listDisputes', () => {
       fee: '15.0000',
       currency: 'GBP',
       reasonCode: 'Product not received (13.1)',
-      customer: { name: 'Daniel Whitmore' },
+      // The buyer is an account: its number is 100 + the old customer number, never the old number itself.
+      customer: { id: expect.any(Number), name: 'Daniel Whitmore' },
     });
   });
 });

@@ -16,7 +16,7 @@ import {
 import type { CreateGatewayBody, GatewayPreset, PaymentGateway, UpdateGatewayBody } from '../types';
 
 /**
- * The payment gateways with their fees, limits and the merchant groups that may use them.
+ * The payment gateways with their fees, limits and the ranks that may use them (the wire still calls them `allowedGroupIds`).
  * Rows never carry a secret, only the hints `secretHint`, `webhookSecretHint` and `secondaryWebhookSecretHint`.
  * @route GET /admin/payment-gateways
  */

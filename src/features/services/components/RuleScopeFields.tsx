@@ -1,5 +1,5 @@
 // RuleScopeFields: the first fields of the pricing rule dialog: what the rule covers (every service, a category or one service), which
-// one, whether it adds or takes from the price, and for which merchant group. The menus are controlled, so a rule being edited keeps its
+// one, whether it adds or takes from the price, and for which rank. The menus are controlled, so a rule being edited keeps its
 // target and group chosen while the names load, and changing what the rule covers clears the target (a category id is not a service id).
 import type { UseFormReturn } from 'react-hook-form';
 import { SelectField } from '@/components/ui';
@@ -17,7 +17,7 @@ export interface RuleScopeFieldsProps {
   rule?: PricingRule;
 }
 
-/** Covers, target, type and merchant group of a rule. */
+/** Covers, target, type and rank of a rule. */
 export function RuleScopeFields({ form, rule }: RuleScopeFieldsProps) {
   const grants = useServiceGrants();
   const canReadServices = grants.can('catalog:read');
@@ -91,14 +91,14 @@ export function RuleScopeFields({ form, rule }: RuleScopeFieldsProps) {
         />
         <div>
           <SelectField
-            label="Merchant group"
+            label="Rank"
             selectWrapClassName="w-full"
             options={groupOptions}
             error={errors.groupId}
             {...register('groupId')}
             value={groupId}
           />
-          <LookupNote what="merchant groups" query={groups} />
+          <LookupNote what="ranks" query={groups} />
         </div>
       </div>
     </>

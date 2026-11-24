@@ -1,5 +1,5 @@
 // Mock of the category routes (`/admin/service-categories*`). The mock refuses to delete a category that services still use. The merchant
-// group list the pricing screens read (`GET /admin/client-groups`) is not served here: the merchants feature owns that route.
+// group list the pricing screens read (`GET /admin/client-groups`) is not served here: the accounts feature owns that route.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toCategory } from './dto';
 import { bodyOf, conflict, invalid, listAnswer, notFound, signedIn, textOf } from './http';
@@ -31,10 +31,10 @@ function applyFields(
   }
   if ('isActive' in body) draft.isActive = body.isActive === true;
   if ('allowedGroupIds' in body) {
-    // The merchants feature owns the groups, so any positive whole number is taken as a group.
+    // The accounts feature owns the groups, so any positive whole number is taken as a group.
     const ids = Array.isArray(body.allowedGroupIds) ? body.allowedGroupIds.map(Number) : [];
     if (ids.every((id) => Number.isInteger(id) && id > 0)) draft.allowedGroupIds = ids;
-    else problems.push({ field: 'allowedGroupIds', message: 'Choose merchant groups.' });
+    else problems.push({ field: 'allowedGroupIds', message: 'Choose ranks.' });
   }
   return draft;
 }

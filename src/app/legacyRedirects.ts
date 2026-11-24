@@ -1,8 +1,16 @@
-// The old addresses of the Catalog, Services & pricing, Storefront, Commissions and Abandoned checkouts pages and where each one goes now
-// (Product / Services, Shop content when the address already names one of its tabs, Finance for the retired Commissions page, and the
-// sales funnel report of Finance for the retired checkouts page). Pure, so every case is a table row in the tests; `LegacyRedirect` runs it
-// before a page's gate. The addresses stay for good: stored links (mails, the notification bell, bookmarks) still use them; the backend's
-// mail about shop price changes links to `/catalog?view=settings&tab=shop-prices`.
+// The old addresses of the Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants and Customers pages and where
+// each one goes now (Product / Services, Shop content when the address already names one of its tabs, Finance for the retired Commissions
+// page, the sales funnel report of Finance for the retired checkouts page, and Accounts for the two pages that became one). Pure, so every
+// case is a table row in the tests; `LegacyRedirect` runs it before a page's gate. The addresses stay for good: stored links (mails, the
+// notification bell, bookmarks) still use them; the backend's mail about shop price changes links to `/catalog?view=settings&tab=shop-prices`.
+import {
+  accountPath,
+  accountsListPath,
+  legacyAccountPath,
+  ranksPath,
+  type AccountsListState,
+  type AccountTab,
+} from '@/features/accounts';
 
 // The Services tabs that are Catalog settings tabs (the Services tab itself is the table), and the Catalog settings tabs.
 const SERVICES_SETTINGS_TABS: ReadonlySet<string> = new Set(['categories', 'rules', 'resolver', 'inventory']);
@@ -162,6 +170,112 @@ function fromCheckouts(old: URLSearchParams): string {
   return `/finance?${params.toString()}`;
 }
 
+// ---- Merchants and Customers: one Accounts page (decision 023) ----
+
+// A whole number from 1 up that a number can hold exactly, as an address writes an id; undefined for anything else.
+function idOf(value: string | null): number | undefined {
+  if (!isId(value)) return undefined;
+  const id = Number(value);
+  return Number.isSafeInteger(id) ? id : undefined;
+}
+
+// The sorts the old merchant table had. The Accounts list reads both; any other sort of an old address is dropped.
+const MERCHANT_SORTS: ReadonlySet<string> = new Set(['name', 'status']);
+
+// What the tabs of a merchant's record became, as parts of an account's record: Billing is the Invoices part, Pricing the Prices part and
+// API access the API part, Profile has a part of its own. A tab the record no longer has (the retired Verification) or never had leaves the
+// record on its first part, so it is not in the table.
+const MERCHANT_PARTS: ReadonlyMap<string, AccountTab> = new Map([
+  ['orders', 'orders'],
+  ['wallet', 'wallet'],
+  ['billing', 'invoices'],
+  ['pricing', 'prices'],
+  ['api', 'api'],
+  ['profile', 'profile'],
+  ['security', 'security'],
+  ['audit', 'audit'],
+]);
+
+// The same for the tabs of a customer's record: its Account tab is the Security part, and its Consents and Risk tabs are both Privacy and risk.
+const CUSTOMER_PARTS: ReadonlyMap<string, AccountTab> = new Map([
+  ['orders', 'orders'],
+  ['account', 'security'],
+  ['wallet', 'wallet'],
+  ['support', 'support'],
+  ['consents', 'privacy'],
+  ['risk', 'privacy'],
+]);
+
+// The chip of the list page's first design that no address of the page writes any more: `chip=requests` is the Data requests view. The page
+// still reads it (and the old `chip=suspended` and `chip=blocked`, which are the status filter, for bookmarks), so the redirect puts the chip
+// in front of the keys `accountsListPath` wrote. A Suspended or Blocked tab is not written this way: it keeps its population and says the
+// status (`chip=merchants&status=suspended`), because `chip=suspended` alone lists the suspended accounts of every kind.
+function withRequestsChip(state: AccountsListState): string {
+  const [, query = ''] = accountsListPath(state).split('?');
+  return `/accounts?${new URLSearchParams([['chip', 'requests'], ...new URLSearchParams(query)]).toString()}`;
+}
+
+// `/merchants`: the Merchants chip of the Accounts list. `group` is `rank`; the search, the page and the table's two sorts stay. The
+// Suspended tab is the list of suspended merchants, the Groups tab is the Ranks view, and every other tab (Active, the retired Pending and
+// Verification, an unknown one) is the plain Merchants chip.
+function fromMerchants(old: URLSearchParams): string {
+  const tab = old.get('tab');
+  if (tab === 'groups') return ranksPath();
+  const state: AccountsListState = { q: old.get('q') ?? '', page: idOf(old.get('page')) };
+  const rank = idOf(old.get('group'));
+  if (rank !== undefined) state.rank = rank;
+  const sort = old.get('sort');
+  if (sort && MERCHANT_SORTS.has(sort)) {
+    state.sort = sort;
+    // The old table sorted ascending unless the address said `dir=desc`, as the Accounts list does.
+    state.dir = old.get('dir') === 'desc' ? 'desc' : 'asc';
+  }
+  return accountsListPath({
+    ...state,
+    chip: 'merchants',
+    ...(tab === 'suspended' ? { status: 'suspended' } : {}),
+  });
+}
+
+// `/customers`: the Retail chip. The search, the country and the page stay; the sort does not, because the old default (biggest spender
+// first) and its columns have no counterpart. The Suspended and Blocked tabs are those lists of retail accounts, the Data requests tab is that
+// view (it keeps only its page), and Active, the retired Flagged and an unknown tab are the plain Retail chip.
+function fromCustomers(old: URLSearchParams): string {
+  const tab = old.get('tab');
+  const page = idOf(old.get('page'));
+  if (tab === 'requests') return withRequestsChip({ page });
+  const country = old.get('country');
+  const state: AccountsListState = {
+    q: old.get('q') ?? '',
+    ...(country && /^[A-Za-z]{2}$/.test(country) ? { country: country.toUpperCase() } : {}),
+    page,
+  };
+  return accountsListPath({
+    ...state,
+    chip: 'retail',
+    ...(tab === 'suspended' || tab === 'blocked' ? { status: tab } : {}),
+  });
+}
+
+// `/merchants/:id`: a merchant keeps its number, so this is the account of that number, on the part its tab became; an open order stays open.
+function fromMerchantRecord(rawId: string, old: URLSearchParams): string | null {
+  const id = idOf(rawId);
+  if (id === undefined) return null;
+  const order = idOf(old.get('order'));
+  return accountPath(id, MERCHANT_PARTS.get(old.get('tab') ?? ''), order === undefined ? {} : { order });
+}
+
+// `/customers/:id`: a customer's number is NOT an account number (the customers were copied after the merchants), so the address says
+// `from=customer` and the page asks the server which account that customer became. It never shows the account that has the same number.
+function fromCustomerRecord(rawId: string, old: URLSearchParams): string | null {
+  const id = idOf(rawId);
+  if (id === undefined) return null;
+  return legacyAccountPath('customer', id, CUSTOMER_PARTS.get(old.get('tab') ?? ''));
+}
+
+// `/merchants/<id>` and `/customers/<id>`, with nothing after the id.
+const RECORD_PATH = /^\/(merchants|customers)\/([^/]+)$/;
+
 /**
  * The address an old one now leads to (path and query), or null when the address is not an old one. `search` may start with `?`.
  * - `/catalog` and `/services` with table keys is `/products?view=all`: `q`, `type` and `page` stay, `categoryId` is `group`, `supplierId`
@@ -178,6 +292,15 @@ function fromCheckouts(old: URLSearchParams): string {
  * - `/commissions` is `/finance` whatever its query: the page is gone, and Finance still lists the old commission entries in its
  *   ledger. Nothing of the old query (tab, status, agent) means anything there, so none of it is carried.
  * - `/checkouts` is `/finance?tab=reports&report=funnel`; `days=7` or `days=90` is `range=7` or `range=90`, any other key is dropped.
+ * - `/merchants` is `/accounts?chip=merchants` (`q`, `page` and `sort=name|status` with `dir` stay, `group` is `rank`); `tab=suspended` adds
+ *   `status=suspended`, `tab=groups` is `view=ranks`, any other tab is `chip=merchants`.
+ * - `/customers` is `/accounts?chip=retail` (`q`, `country` and `page` stay); `tab=suspended|blocked` adds `status=suspended|blocked`,
+ *   `tab=requests` is `chip=requests`, any other tab is `chip=retail`.
+ * - `/merchants/<id>` is `/accounts/<id>` (a merchant keeps its number) and `tab=orders|wallet|billing|pricing|api|profile|security|audit` is
+ *   `tab=orders|wallet|invoices|prices|api|profile|security|audit`; `order` stays.
+ * - `/customers/<id>` is `/accounts/<id>?from=customer` (the page asks which account that customer became) and
+ *   `tab=orders|account|wallet|support|consents|risk` is `tab=orders|security|wallet|support|privacy|privacy`.
+ * - An id that is not a whole number from 1 up, and any address below the record, is not an old address (null).
  */
 export function legacyTarget(pathname: string, search = ''): string | null {
   const path = pathname.replace(/\/+$/, '').toLowerCase();
@@ -187,5 +310,12 @@ export function legacyTarget(pathname: string, search = ''): string | null {
   if (path === '/storefront') return fromStorefront(old);
   if (path === '/commissions') return '/finance';
   if (path === '/checkouts') return fromCheckouts(old);
+  if (path === '/merchants') return fromMerchants(old);
+  if (path === '/customers') return fromCustomers(old);
+  const record = RECORD_PATH.exec(path);
+  if (record)
+    return record[1] === 'merchants'
+      ? fromMerchantRecord(record[2], old)
+      : fromCustomerRecord(record[2], old);
   return null;
 }

@@ -2,6 +2,7 @@
 // them here (rulesTab in 43-p-services.js); the map keeps no single list of them, since a group price belongs to a service and an
 // override to a merchant, so this block points to the two places instead (MISMATCHES M95).
 import { Link } from 'react-router';
+import { MERCHANT_ACCOUNTS_PATH } from '../lib/paths';
 import { RuleSection } from './RuleSection';
 
 /** Says where fixed prices are set. */
@@ -13,9 +14,9 @@ export function FixedPricesNote() {
     >
       <p className="text-sm text-ink2">
         Set a group price from the row menu of a service (Group prices…). Set a merchant’s own price on the
-        Pricing tab of that merchant’s page, under{' '}
-        <Link className="link" to="/merchants">
-          Merchants
+        Prices part of that merchant’s account, under{' '}
+        <Link className="link" to={MERCHANT_ACCOUNTS_PATH}>
+          Accounts
         </Link>
         .
       </p>

@@ -17,8 +17,7 @@ function lastPublic(messages: readonly TicketMessage[]): TicketMessage | undefin
   return messages.findLast((message) => !message.isInternal);
 }
 
-const isRequester = (message: TicketMessage): boolean =>
-  message.authorType === 'customer' || message.authorType === 'client';
+const isRequester = (message: TicketMessage): boolean => message.authorType === 'account';
 
 /** The list row: the stored fields without the thread, plus the three timers and `hasUnread` (a requester message the team has not seen). */
 export function toTicket(row: MockTicket, now = Date.now()): SupportTicket {
@@ -28,10 +27,7 @@ export function toTicket(row: MockTicket, now = Date.now()): SupportTicket {
     (max, message) => (isRequester(message) ? Math.max(max, message.id) : max),
     0,
   );
-  const waiting =
-    row.status !== 'resolved' &&
-    last !== undefined &&
-    (last.authorType === 'customer' || last.authorType === 'client');
+  const waiting = row.status !== 'resolved' && last !== undefined && isRequester(last);
   const due = waiting && last ? Date.parse(last.createdAt) + TARGET_MS[row.priority] : null;
   return {
     ...rest,

@@ -1,4 +1,4 @@
-// The menus the pricing, inventory and services screens choose from: the services (by name), the categories, the merchant groups, the
+// The menus the pricing, inventory and services screens choose from: the services (by name), the categories, the ranks, the
 // merchants and the suppliers. The group, merchant and supplier lists are read once and kept for a few minutes: they change rarely,
 // and a menu should not wait for a request each time a dialog opens.
 import { useList } from '@refinedev/core';
@@ -39,7 +39,7 @@ export function useCategories(enabled = true) {
   return { categories: result.data, total: result.total, query };
 }
 
-/** The merchant groups with their discounts. Pass `enabled: false` when the staff member lacks `groups:read`. */
+/** The ranks with their discounts. Pass `enabled: false` when the staff member lacks `groups:read`. */
 export function useGroupOptions(enabled = true) {
   return useApiQuery({
     queryKey: [...SERVICE_LOOKUP_KEY, 'groups'],

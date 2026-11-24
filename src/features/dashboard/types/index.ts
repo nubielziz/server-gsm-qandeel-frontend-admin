@@ -1,8 +1,9 @@
 // Types for the dashboard (`/dashboard`): what `GET /admin/dashboard` and `GET /admin/reports/top-clients` send. The map names the
 // routes and the `scope` filter but gives no bodies (MISMATCHES M10), so every shape below is an assumed contract, written from
 // what the demo's dashboard shows. Every type is "Assumed contract" even where its comment does not repeat it.
-import type { Id, IsoDateTime, Money } from '@/lib/api';
+import type { RankKind } from '@/features/accounts';
 import type { ServiceType } from '@/features/orders';
+import type { Id, IsoDateTime, Money } from '@/lib/api';
 
 /*
  * Units used below: money is a 4-decimal string; rates are percentages from 0 to 100; durations say their unit in the field
@@ -10,7 +11,7 @@ import type { ServiceType } from '@/features/orders';
  * `YYYY-MM-DD` or a month `YYYY-MM`.
  */
 
-/** Which orders the figures cover. The map names `scope`: everything, merchants' orders (API and portal) or the storefront's. */
+/** Which orders the figures cover. The map names `scope`: everything, merchants' orders (API and portal) or the storefront's: the order's door. */
 export type DashboardScope = 'all' | 'b2b' | 'b2c';
 
 /**
@@ -71,6 +72,7 @@ export type AttentionItem = { id: string; severity: AttentionSeverity } & (
     }
   | { kind: 'services_below_floor'; count: number; serviceNames: string[] }
   | { kind: 'deposits_pending'; count: number; total: Money; oldestAt: IsoDateTime }
+  // `clients` keeps its wire name; each entry is an account (of a merchant rank in practice, since only a rank with credit can go below zero).
   | { kind: 'wallets_negative'; count: number; clients: { id: Id; name: string; balance: Money }[] }
   | { kind: 'orders_held'; count: number; captured: Money; oldestAt: IsoDateTime }
   | { kind: 'disputes_due'; count: number; firstDisputeId: Id; dueAt: IsoDateTime; amount: Money; fee: Money }
@@ -147,9 +149,6 @@ export type StorefrontSummary = {
   heldForReview: number;
 };
 
-/** A storefront customer in the top five by spend over the period. Assumed contract. */
-export type TopCustomer = { id: Id; name: string; country: string; orders: number; spend: Money };
-
 /**
  * The numbers beside the sidebar items. They cover the whole console whatever the scope, so the sidebar can read them
  * from the default dashboard call. Assumed contract (a lighter counts route would be better, see HANDOFF.md).
@@ -164,7 +163,8 @@ export type DashboardNavCounts = {
 
 /**
  * Everything the dashboard shows, from `GET /admin/dashboard` (assumed contract). `attention` is the whole list, ranked by
- * the server; the console shows six and a "Show more" button. A section the scope does not use is `null`.
+ * the server; the console shows six and a "Show more" button. A section the scope does not use is `null`. The server still sends a
+ * `topCustomers` list until the contract release; the console never reads it: the one Top accounts panel asks the report.
  */
 export type Dashboard = {
   generatedAt: IsoDateTime;
@@ -175,21 +175,23 @@ export type Dashboard = {
   ordersByType: OrdersByType;
   revenueByChannel: ChannelRevenue | null;
   storefront: StorefrontSummary | null;
-  topCustomers: TopCustomer[] | null;
   navCounts: DashboardNavCounts;
 };
 
-/** What the top merchants list is asked for (assumed contract: the query parameters `days` and `limit`). */
-export type TopClientsParams = { days: DashboardDays; limit: number };
+/** What the top accounts list is asked for (assumed contract: the query parameters `days`, `limit` and `scope`, the order's door). */
+export type TopClientsParams = { days: DashboardDays; limit: number; scope: DashboardScope };
 
 /**
- * A merchant in the top list of `GET /admin/reports/top-clients` (assumed contract). The list is ranked by `spend`,
- * highest first; `walletBalance` can be negative.
+ * An account in the list of `GET /admin/reports/top-clients` (assumed contract): every account that ordered in the period through
+ * the door the scope names, guests included and anonymized accounts left out. The list is ranked by `spend`, highest first;
+ * `walletBalance` is the balance of the account's live wallet and can be negative; `hasAccount` is false for a guest, who has no login.
  */
-export type TopClient = {
+export type TopAccount = {
   id: Id;
   name: string;
   country: string;
+  rank: { id: Id; name: string; kind: RankKind };
+  hasAccount: boolean;
   orders: number;
   spend: Money;
   profit: Money;

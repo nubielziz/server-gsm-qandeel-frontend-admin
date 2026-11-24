@@ -1,6 +1,6 @@
 // The tabs of the Finance page, what each needs, and the addresses that open them. Ports the `tabs` list of pageFinance in
 // 45-p-finance.js; Withdrawals stays out (MISMATCHES M3), Invoices and Reports are new (MISMATCHES M123, MISMATCHES M124) and so is
-// Customer wallets (feature 21).
+// Store balances (feature 21).
 import { hasPermission } from '@/lib/auth/permissions';
 
 export type FinanceTab = 'ledger' | 'payments' | 'accounts' | 'wallets' | 'invoices' | 'reports';
@@ -12,7 +12,7 @@ export const FINANCE_TABS: readonly TabSpec[] = [
   { id: 'ledger', label: 'Ledger', permission: 'ledger:read' },
   { id: 'payments', label: 'Deposits', permission: 'payments:read' },
   { id: 'accounts', label: 'Trial balance', permission: 'ledger:read' },
-  { id: 'wallets', label: 'Customer wallets', permission: 'wallet:read' },
+  { id: 'wallets', label: 'Store balances', permission: 'wallet:read' },
   { id: 'invoices', label: 'Invoices', permission: 'invoices:read' },
   { id: 'reports', label: 'Reports', permission: ['reports:read', 'reports:finance', 'reports:growth'] },
 ];

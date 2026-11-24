@@ -1,5 +1,5 @@
 // FinancePage: the Finance page (`/finance`, the demo's `pageFinance` in 45-p-finance.js). A header with the deposits waiting
-// and Run reconciliation, the strip of key figures, and tabs: Ledger, Deposits, Trial balance, Customer wallets, Invoices and Reports. The tab
+// and Run reconciliation, the strip of key figures, and tabs: Ledger, Deposits, Trial balance, Store balances, Invoices and Reports. The tab
 // and each tab's filters, page and open record live in the address. The page only composes; the server owns every figure.
 import { useState } from 'react';
 import { Panel, SectionTabs, type TabItem } from '@/components/ui';

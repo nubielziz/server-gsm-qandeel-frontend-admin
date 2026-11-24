@@ -8,10 +8,54 @@ describe('recordTarget', () => {
     expect(recordTarget('orders', 5, null)).toEqual({ page: 'orders', orderId: 5 });
   });
 
-  it('links a merchant, a customer and a supplier to their pages', () => {
-    expect(recordTarget('merchant', 5, 'Cairo GSM Lab')).toEqual({ page: 'merchants', to: '/merchants/5' });
-    expect(recordTarget('clients', 5, 'Cairo GSM Lab')).toEqual({ page: 'merchants', to: '/merchants/5' });
-    expect(recordTarget('customer', 19, 'Jack Turner')).toEqual({ page: 'customers', to: '/customers/19' });
+  it('links an account row to the account with the number it carries', () => {
+    expect(recordTarget('account', 7, 'Cairo GSM Lab')).toEqual({ page: 'accounts', to: '/accounts/7' });
+    expect(recordTarget('accounts', 7, 'Cairo GSM Lab')).toEqual({ page: 'accounts', to: '/accounts/7' });
+  });
+
+  it('keeps the number of an old merchant or client row', () => {
+    expect(recordTarget('merchant', 5, 'Cairo GSM Lab')).toEqual({ page: 'accounts', to: '/accounts/5' });
+    expect(recordTarget('clients', 5, 'Cairo GSM Lab')).toEqual({ page: 'accounts', to: '/accounts/5' });
+  });
+
+  it('sends an old customer row through the lookup, never to the account with the same number', () => {
+    expect(recordTarget('customer', 19, 'Jack Turner')).toEqual({
+      page: 'accounts',
+      to: '/accounts/19?from=customer',
+    });
+    expect(recordTarget('customers', 19, 'Jack Turner', null)).toEqual({
+      page: 'accounts',
+      to: '/accounts/19?from=customer',
+    });
+  });
+
+  it('uses the account the server resolved for the row, whatever the word', () => {
+    expect(recordTarget('customer', 19, 'Jack Turner', { id: 119 })).toEqual({
+      page: 'accounts',
+      to: '/accounts/119',
+    });
+    expect(recordTarget('merchant', 5, 'Cairo GSM Lab', { id: 5 })).toEqual({
+      page: 'accounts',
+      to: '/accounts/5',
+    });
+    expect(recordTarget('account', 0, 'Gone Ltd', { id: 9 })).toEqual({
+      page: 'accounts',
+      to: '/accounts/9',
+    });
+  });
+
+  it('falls back to the number of the row when the server resolved no account', () => {
+    expect(recordTarget('account', 7, 'Cairo GSM Lab', null)).toEqual({
+      page: 'accounts',
+      to: '/accounts/7',
+    });
+    expect(recordTarget('merchant', 5, 'Cairo GSM Lab', undefined)).toEqual({
+      page: 'accounts',
+      to: '/accounts/5',
+    });
+  });
+
+  it('links a supplier to its page', () => {
     expect(recordTarget('supplier', 2, 'Gulf Server Hub')).toEqual({
       page: 'suppliers',
       to: '/suppliers?supplier=2',
@@ -53,5 +97,7 @@ describe('recordTarget', () => {
   it('gives nothing for a record that has no id', () => {
     expect(recordTarget('order', 0, 'ORD')).toBeNull();
     expect(recordTarget('merchant', Number.NaN, 'Cairo')).toBeNull();
+    expect(recordTarget('customer', 0, 'Jack Turner')).toBeNull();
+    expect(recordTarget('account', 0, 'Gone Ltd', null)).toBeNull();
   });
 });

@@ -1,10 +1,10 @@
-// TicketRow: one ticket in the inbox list: who wrote (a Merchant tag for a merchant), when, the subject, the number, the status
+// TicketRow: one ticket in the inbox list: who wrote (a Merchant tag for an account of a merchant rank), when, the subject, the number, the status
 // badge, High priority and how long the reply is overdue. Ports ticketRow() of 49-p-support.js. The whole row opens the thread.
 // Feature 28 adds a dot while the requester's newest message is not seen by the team.
 import { Badge, cx, Icon, StatusDot, TypeTag } from '@/components/ui';
 import { ageText, ago } from '@/lib/format';
 import { overdueMs } from '../lib/sla';
-import { requesterLabel } from '../lib/status';
+import { isMerchantRequester, requesterLabel } from '../lib/status';
 import type { SupportTicket } from '../types';
 import { TicketStatusBadge } from './TicketStatusBadge';
 
@@ -31,7 +31,7 @@ export function TicketRow({ ticket, selected, now, onSelect }: TicketRowProps) {
         <div className="flex items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium">
             {ticket.hasUnread && <StatusDot tone="accent" label="Unread message" className="flex-none" />}
-            {ticket.requesterType === 'client' && <TypeTag>Merchant</TypeTag>}
+            {isMerchantRequester(ticket) && <TypeTag>Merchant</TypeTag>}
             <span className="truncate">{requesterLabel(ticket)}</span>
           </span>
           <span className="flex-1" />

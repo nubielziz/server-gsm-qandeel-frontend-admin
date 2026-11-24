@@ -19,7 +19,10 @@ type DemoJournal = {
 
 type Named = { id: string; name: string };
 
-/** One line to post: the account (kind and owner) and a signed amount, positive for a debit, negative for a credit. */
+/**
+ * One line to post: the ledger account (kind and owner) and a signed amount, positive for a debit, negative for a credit. A wallet's
+ * owner is the `account` that holds it (a merchant's number is its account id), a prepaid supplier balance the `supplier`.
+ */
 export type LedgerLine = {
   kind: string;
   ownerType?: LedgerOwnerType;
@@ -89,7 +92,7 @@ function fromDemo(
 ): LedgerTransaction {
   const lines = journal.entries.map((entry): LedgerLine => {
     const owner = entry.mid
-      ? { ownerType: 'client' as const, ownerId: refNumber(entry.mid), ownerName: merchants.get(entry.mid) }
+      ? { ownerType: 'account' as const, ownerId: refNumber(entry.mid), ownerName: merchants.get(entry.mid) }
       : entry.sid
         ? {
             ownerType: 'supplier' as const,

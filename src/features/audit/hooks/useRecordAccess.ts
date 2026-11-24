@@ -8,8 +8,7 @@ export function useRecordAccess(): (page: RecordPage) => boolean {
   // One call per page, written out: a hook cannot be called in a loop.
   const allowed: Record<RecordPage, boolean> = {
     orders: useCanOpenPage('orders') === true,
-    merchants: useCanOpenPage('merchants') === true,
-    customers: useCanOpenPage('customers') === true,
+    accounts: useCanOpenPage('accounts') === true,
     suppliers: useCanOpenPage('suppliers') === true,
     products: useCanOpenPage('products') === true,
     risk: useCanOpenPage('risk') === true,

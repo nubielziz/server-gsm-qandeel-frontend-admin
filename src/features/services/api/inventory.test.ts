@@ -1,5 +1,5 @@
 // Tests for the code inventory API functions and the two private lookups, run against the dev mock API: the masked list and its filters,
-// the import with the server's counts, the void action, and the merchant group and merchant menus.
+// the import with the server's counts, the void action, and the rank and merchant menus.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi, signInAs } from '@/test/mockApi';
@@ -10,7 +10,7 @@ import { listGroupOptions, listMerchantOptions, LOOKUP_CAP } from './lookups';
 
 setupMockApi();
 beforeEach(async () => {
-  // The merchants feature serves the group list; these tests bring their own copy of it.
+  // The accounts feature serves the rank list; these tests bring their own copy of it.
   mockServer.use(...groupHandlers);
   await signInAs();
 });
@@ -82,7 +82,7 @@ describe('voidInventoryCodes', () => {
 });
 
 describe('the private lookups', () => {
-  it('reads the merchant groups with their discount and merchants', async () => {
+  it('reads the ranks with their discount and number of accounts', async () => {
     const requests = recordRequests();
     const groups = await listGroupOptions();
     expect(requests.last().url.pathname).toBe('/admin/client-groups');
@@ -90,19 +90,26 @@ describe('the private lookups', () => {
       _start: '0',
       _end: String(LOOKUP_CAP),
     });
-    expect(groups.data.map((group) => [group.name, group.discountPercent, group.merchantCount])).toEqual([
+    expect(groups.data.map((group) => [group.name, group.discountPercent, group.accountCount])).toEqual([
       ['Standard', '0.00', 11],
       ['Wholesale', '4.00', 6],
       ['VIP', '8.00', 3],
     ]);
   });
 
-  it('reads the merchants by name', async () => {
+  it('reads the accounts of merchant ranks by name, with their rank', async () => {
     const requests = recordRequests();
     const merchants = await listMerchantOptions();
     expect(requests.last().url.pathname).toBe('/admin/clients');
     expect(requests.last().url.searchParams.get('_sort')).toBe('name');
+    // The server has no merchant-only default, so the lookup asks for the rank kind.
+    expect(requests.last().url.searchParams.get('rankKind')).toBe('merchant');
     expect(merchants.data).toHaveLength(merchants.total);
+    expect(merchants.total).toBe(20);
     expect(merchants.data.map((merchant) => merchant.name)).toContain('Cairo GSM Lab');
+    expect(merchants.data.find((merchant) => merchant.name === 'Cairo GSM Lab')).toMatchObject({
+      status: 'active',
+      group: { name: 'VIP' },
+    });
   });
 });

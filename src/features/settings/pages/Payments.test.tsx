@@ -19,7 +19,7 @@ afterEach(() => vi.restoreAllMocks());
 const card = async (name: string) => within(await screen.findByRole('article', { name }));
 
 describe('the cards', () => {
-  it('shows each payment method with its audience, mode, fee, limits and merchant groups', async () => {
+  it('shows each payment method with its audience, mode, fee, limits and ranks', async () => {
     await openSettings();
     const gateway = await card('Card gateway');
     expect(gateway.getByText('B2C')).toBeInTheDocument();
@@ -204,9 +204,9 @@ describe('Delete payment method', () => {
 });
 
 describe('permissions', () => {
-  it('names the merchant groups by number when the role cannot read the groups', async () => {
+  it('names the ranks by number when the role cannot read the ranks', async () => {
     await openSettings('/settings', { permissions: ['payments:gateways'] });
-    expect(await (await card('Bank transfer')).findByText('Group 2, Group 3')).toBeInTheDocument();
+    expect(await (await card('Bank transfer')).findByText('Rank 2, Rank 3')).toBeInTheDocument();
     expect((await card('Card gateway')).getByRole('switch', { name: 'Turn off Card gateway' })).toBeEnabled();
   });
 

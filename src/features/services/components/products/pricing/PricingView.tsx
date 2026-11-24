@@ -1,5 +1,5 @@
 // PricingView: the price grid of the services of one kind (the second link of the page). A Quick Search box, then a grid in the list skin: per
-// service the cost, the supplier's price, the base price, the shop price and one price per merchant group, every figure the server's. The
+// service the cost, the supplier's price, the base price, the shop price and one price per rank, every figure the server's. The
 // prices are typed in place and saved by the bar at the foot, row by row; "Display Enable/Disable Service" and "Set Order" add a box per row.
 import { useEffect, useState } from 'react';
 import {
@@ -27,12 +27,12 @@ import { usePricingSave } from './usePricingSave';
 
 const RETAIL_GROUP_KIND = 'b2c_retail';
 
-/** The lock of a box that needs the merchant group list (the shop price is sent back with every rank price). */
+/** The lock of a box that needs the rank list (the shop price is sent back with every rank price). */
 function groupsLock(canEdit: Lock, canRead: boolean, loaded: boolean, failed: boolean): Lock {
   if (canEdit.disabled) return canEdit;
   if (!canRead) return { disabled: true, title: 'You need the groups:read permission' };
-  if (failed) return { disabled: true, title: 'The merchant groups could not be read' };
-  return loaded ? { disabled: false } : { disabled: true, title: 'Reading the merchant groups' };
+  if (failed) return { disabled: true, title: 'The ranks could not be read' };
+  return loaded ? { disabled: false } : { disabled: true, title: 'Reading the ranks' };
 }
 
 /** The Pricing view. */

@@ -1,28 +1,27 @@
-// BuyerCell: the Buyer column. Ports buyerCell of 13-b2c-ui.js: a merchant with the way the order arrived, or a
-// storefront customer with a masked email.
+// BuyerCell: the Buyer column. The account with its rank, and how the order arrived: a merchant rank shows the door (API, portal), a
+// store order the masked email of an account that has a name. An account with no name is shown by the masked email, once.
 import { TypeTag } from '@/components/ui';
-import { hasCustomerName, maskedCustomerLabel, maskEmail } from '@/lib/format';
+import { hasAccountName, maskedAccountLabel, maskEmail } from '@/lib/format';
 import { sourceLabel } from '../lib/status';
 import type { Order } from '../types';
 
 export function BuyerCell({ order }: { order: Order }) {
-  if (order.channel === 'b2c') {
-    return (
-      <>
-        <span className="block max-w-[170px] truncate">
-          {order.customer ? maskedCustomerLabel(order.customer) : '–'}
-        </span>
-        <span className="block max-w-[170px] truncate text-2xs text-ink3">
-          <TypeTag className="me-1">Storefront</TypeTag>
-          {order.customer && hasCustomerName(order.customer) ? maskEmail(order.customer.email) : ''}
-        </span>
-      </>
-    );
-  }
+  const { account } = order;
   return (
     <>
-      <span className="block max-w-[170px] truncate">{order.client?.name ?? '–'}</span>
-      <span className="mono text-2xs text-ink3">{sourceLabel(order.source)}</span>
+      <span className="block max-w-[170px] truncate">{maskedAccountLabel(account)}</span>
+      <span className="block max-w-[170px] truncate text-2xs text-ink3">
+        <TypeTag className="me-1">{account.rank.name}</TypeTag>
+        {order.channel === 'b2c' ? (
+          hasAccountName(account) ? (
+            maskEmail(account.email)
+          ) : (
+            ''
+          )
+        ) : (
+          <span className="mono">{sourceLabel(order.source)}</span>
+        )}
+      </span>
     </>
   );
 }

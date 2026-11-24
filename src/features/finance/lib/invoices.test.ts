@@ -33,10 +33,10 @@ describe('labels', () => {
     expect(invoiceStatusBadge('disputed')).toMatchObject({ label: 'Disputed', tone: 'neutral' });
   });
 
-  it('links a merchant and masks a customer’s email', () => {
+  it('links a merchant account to its wallet and masks a shop buyer’s email', () => {
     expect(billedTo({ client: { id: 3, name: 'Phone Doctor FZE' }, customer: null })).toEqual({
       name: 'Phone Doctor FZE',
-      href: '/merchants/3',
+      href: '/accounts/3?tab=wallet',
     });
     expect(
       billedTo({ client: null, customer: { id: 1, name: 'Daniel', email: 'daniel@mail.example' } }).name,
@@ -44,10 +44,20 @@ describe('labels', () => {
     expect(billedTo({ client: null, customer: null })).toEqual({ name: '–' });
   });
 
-  it('names a top-up customer with no name by the masked email, still linked to their wallet', () => {
+  it('names a store balance top-up with no name by the masked email, still linked to the account’s wallet', () => {
     expect(
-      billedTo({ kind: 'topup', client: null, customer: { id: 5, name: '', email: 'maya@example.com' } }),
-    ).toEqual({ name: 'ma•••@example.com', href: '/customers/5?tab=wallet' });
+      billedTo({ kind: 'topup', client: null, customer: { id: 105, name: '', email: 'maya@example.com' } }),
+    ).toEqual({ name: 'ma•••@example.com', href: '/accounts/105?tab=wallet' });
+  });
+
+  it('never links an account that is not named as a top-up (a tax receipt shows the masked email, no link)', () => {
+    expect(
+      billedTo({
+        kind: 'receipt',
+        client: null,
+        customer: { id: 105, name: 'Maya', email: 'maya@example.com' },
+      }),
+    ).toEqual({ name: 'ma•••@example.com' });
   });
 });
 

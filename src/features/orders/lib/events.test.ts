@@ -37,6 +37,21 @@ describe('eventBy and eventKind', () => {
     expect(eventBy(orderEvent({ actor: { type: 'supplier', id: null, name: null } }))).toBe('Supplier');
   });
 
+  it('says Account for an account actor with no name, and keeps the old words for rows written before the merge', () => {
+    expect(eventBy(orderEvent({ actor: { type: 'account', id: 13, name: null }, account: { id: 13 } }))).toBe(
+      'Account',
+    );
+    expect(eventBy(orderEvent({ actor: { type: 'account', id: 13, name: 'Muscat Mobile Clinic' } }))).toBe(
+      'Muscat Mobile Clinic',
+    );
+    expect(eventBy(orderEvent({ actor: { type: 'client', id: 13, name: null }, account: { id: 13 } }))).toBe(
+      'Merchant',
+    );
+    expect(
+      eventBy(orderEvent({ actor: { type: 'customer', id: 7, name: null }, account: { id: 107 } })),
+    ).toBe('Customer');
+  });
+
   it('colours the events the demo coloured', () => {
     expect(eventKind('completed')).toBe('completed');
     expect(eventKind('order_settle')).toBe('settle');

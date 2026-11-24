@@ -26,7 +26,8 @@ describe('parseOrderFilters', () => {
       q: '',
       type: '',
       supplierId: '',
-      clientId: '',
+      accountId: '',
+      rankId: '',
       channel: '',
       pastSla: false,
     });
@@ -35,17 +36,27 @@ describe('parseOrderFilters', () => {
   it('reads every filter', () => {
     expect(
       parseOrderFilters(
-        params('tab=review&q=48100&type=imei&supplierId=3&clientId=7&channel=b2c&pastSla=true'),
+        params('tab=review&q=48100&type=imei&supplierId=3&accountId=7&rankId=2&channel=b2c&pastSla=true'),
       ),
     ).toEqual({
       tab: 'review',
       q: '48100',
       type: 'imei',
       supplierId: '3',
-      clientId: '7',
+      accountId: '7',
+      rankId: '2',
       channel: 'b2c',
       pastSla: true,
     });
+  });
+
+  it('reads an address saved with clientId as the same account (a merchant number is an account number)', () => {
+    expect(parseOrderFilters(params('clientId=7')).accountId).toBe('7');
+    expect(parseOrderFilters(params('accountId=9&clientId=7')).accountId).toBe('9');
+  });
+
+  it('ignores customerId: the old customer number would name another account', () => {
+    expect(parseOrderFilters(params('customerId=7')).accountId).toBe('');
   });
 
   it('drops values it does not know', () => {
@@ -72,11 +83,21 @@ describe('writeOrderFilters', () => {
   it('writes the past SLA chip as pastSla=true', () => {
     expect(writeOrderFilters(params(''), { pastSla: true }).get('pastSla')).toBe('true');
   });
+
+  it('writes the buyer as accountId and the rank as rankId, and drops the old key', () => {
+    const next = writeOrderFilters(params('clientId=7&tab=all'), { rankId: '2' });
+    expect(next.get('accountId')).toBe('7');
+    expect(next.get('rankId')).toBe('2');
+    expect(next.has('clientId')).toBe(false);
+    expect(writeOrderFilters(next, { accountId: '', rankId: '' }).toString()).toBe('tab=all');
+  });
 });
 
 describe('clearOrderFilters', () => {
   it('removes the toolbar filters and the page, and keeps the tab and the open order', () => {
-    const next = clearOrderFilters(params('tab=review&q=x&type=imei&pastSla=true&page=3&order=9'));
+    const next = clearOrderFilters(
+      params('tab=review&q=x&type=imei&accountId=7&rankId=2&clientId=7&pastSla=true&page=3&order=9'),
+    );
     expect(next.toString()).toBe('tab=review&order=9');
   });
 });
@@ -87,6 +108,8 @@ describe('hasActiveFilters', () => {
     expect(hasActiveFilters(parseOrderFilters(params('q=abc')))).toBe(true);
     expect(hasActiveFilters(parseOrderFilters(params('pastSla=true')))).toBe(true);
     expect(hasActiveFilters(parseOrderFilters(params('channel=b2b')))).toBe(true);
+    expect(hasActiveFilters(parseOrderFilters(params('accountId=7')))).toBe(true);
+    expect(hasActiveFilters(parseOrderFilters(params('rankId=2')))).toBe(true);
     expect(hasActiveFilters(parseOrderFilters(params('q=%20%20')))).toBe(false);
   });
 });
@@ -148,7 +171,7 @@ describe('normalizeSearch', () => {
 
 describe('to the API', () => {
   const filters = parseOrderFilters(
-    params('tab=open&q=ORD-48100&type=imei&supplierId=3&clientId=7&channel=b2b&pastSla=true'),
+    params('tab=open&q=ORD-48100&type=imei&supplierId=3&accountId=7&rankId=2&channel=b2b&pastSla=true'),
   );
 
   it('combines the tab and the toolbar, with ids as numbers', () => {
@@ -157,25 +180,40 @@ describe('to the API', () => {
       q: '48100',
       type: 'imei',
       supplierId: 3,
-      clientId: 7,
+      accountId: 7,
+      rankId: 2,
       channel: 'b2b',
       pastSla: true,
     });
   });
 
-  it('lets a fixed filter win and add (a merchant’s page)', () => {
-    expect(toListFilters(parseOrderFilters(params('tab=all')), { clientId: 9 })).toEqual({ clientId: 9 });
-    expect(toListFilters(filters, { clientId: 9 }).clientId).toBe(9);
+  it('lets a fixed filter win and add (an account’s page)', () => {
+    expect(toListFilters(parseOrderFilters(params('tab=all')), { accountId: 9 })).toEqual({ accountId: 9 });
+    expect(toListFilters(filters, { accountId: 9 }).accountId).toBe(9);
+  });
+
+  it('never sends the old buyer keys', () => {
+    const sent = toListFilters(parseOrderFilters(params('clientId=7&customerId=8')));
+    expect(sent).toEqual({ status: ['pending', 'processing'], accountId: 7 });
+    expect(sent).not.toHaveProperty('clientId');
+    expect(sent).not.toHaveProperty('customerId');
   });
 
   it('becomes Refine filters: arrays use "in", the rest "eq"', () => {
     expect(
-      toRefineFilters({ status: ['pending', 'processing'], q: 'abc', pastSla: true, clientId: 7 }),
+      toRefineFilters({
+        status: ['pending', 'processing'],
+        q: 'abc',
+        pastSla: true,
+        accountId: 7,
+        rankId: 2,
+      }),
     ).toEqual([
       { field: 'status', operator: 'in', value: ['pending', 'processing'] },
       { field: 'q', operator: 'eq', value: 'abc' },
       { field: 'pastSla', operator: 'eq', value: true },
-      { field: 'clientId', operator: 'eq', value: 7 },
+      { field: 'accountId', operator: 'eq', value: 7 },
+      { field: 'rankId', operator: 'eq', value: 2 },
     ]);
   });
 

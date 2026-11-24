@@ -9,7 +9,7 @@ import { featureManifests } from '../features';
  * `go` opens a path of the console (a result's `run` calls it), so a source needs no router of its own.
  */
 export interface PaletteSource {
-  /** Stable name of the source (`orders`, `merchants`). */
+  /** Stable name of the source (`orders`, `accounts`). */
   id: string;
   /** Heading shown above this source's results ("Orders"). */
   group: string;
@@ -20,7 +20,8 @@ export interface PaletteSource {
 
 /**
  * The sources the palette searches while the user types: every `palette` entry of the feature manifests (orders,
- * merchants, customers, tickets, services). A feature with a search endpoint lists its source there.
+ * accounts, tickets, services). A feature with a search endpoint lists its source there. Merchants and customers are one source now:
+ * the accounts feature lists it (`accountsPaletteSource`), so nothing here names it.
  */
 export const paletteSources: readonly PaletteSource[] = featureManifests.flatMap(
   (manifest) => manifest.palette ?? [],

@@ -6,7 +6,7 @@ import { problem } from '@/mocks/problem';
 import { guard } from '@/mocks/session';
 import type { DashboardDays, DashboardScope } from '../types';
 import { buildDashboard } from './dashboard';
-import { topClients } from './topClients';
+import { topAccounts } from './topClients';
 import { loadWorld, type World } from './world';
 
 const SCOPES: readonly DashboardScope[] = ['all', 'b2b', 'b2c'];
@@ -41,8 +41,12 @@ export const dashboardHandlers: HttpHandler[] = [
     await latency();
     const query = new URL(request.url).searchParams;
     const days = DAYS.find((candidate) => String(candidate) === (query.get('days') ?? '7'));
+    const scope = SCOPES.find((candidate) => candidate === (query.get('scope') ?? 'all'));
     const limit = Number(query.get('limit') ?? 6);
     if (!days) return outsideChoices('days', DAYS);
-    return HttpResponse.json(topClients(world, days, Number.isInteger(limit) && limit > 0 ? limit : 6));
+    if (!scope) return outsideChoices('scope', SCOPES);
+    return HttpResponse.json(
+      await topAccounts(world, days, Number.isInteger(limit) && limit > 0 ? limit : 6, scope),
+    );
   }),
 ];

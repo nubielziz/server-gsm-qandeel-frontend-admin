@@ -83,7 +83,10 @@ describe('the review dialog', () => {
     const dialog = within(await screen.findByRole('dialog', { name: 'Review deposit PAY-1048' }));
     expect(dialog.getByText('Phone Doctor FZE · USDT (TRC20)')).toBeInTheDocument();
     expect(dialog.getByRole('note')).toHaveTextContent('Large deposit. Check the tx hash on-chain');
-    expect(dialog.getByRole('link', { name: 'Phone Doctor FZE' })).toHaveAttribute('href', '/merchants/3');
+    expect(dialog.getByRole('link', { name: 'Phone Doctor FZE' })).toHaveAttribute(
+      'href',
+      '/accounts/3?tab=wallet',
+    );
     expect(dialog.getByText('$25.00 (1%)')).toBeInTheDocument();
     expect(dialog.getByText('Credited to wallet')).toBeInTheDocument();
     expect(dialog.getByText('Wallet now')).toBeInTheDocument();
@@ -141,11 +144,13 @@ describe('the review dialog', () => {
 
     const dialog = within(await screen.findByRole('dialog', { name: 'Reject PAY-1048' }));
     await user.click(dialog.getByRole('button', { name: 'Reject deposit' }));
-    expect(await dialog.findByText('Choose a reason so the merchant knows what to fix.')).toBeInTheDocument();
+    expect(
+      await dialog.findByText('Choose a reason so the account holder knows what to fix.'),
+    ).toBeInTheDocument();
     expect(body).toBeUndefined();
 
     await user.selectOptions(dialog.getByLabelText('Reason'), 'Transaction hash not found on-chain');
-    await user.type(dialog.getByLabelText('Message to merchant'), 'Send the hash again');
+    await user.type(dialog.getByLabelText('Message to the account holder'), 'Send the hash again');
     await user.click(dialog.getByRole('button', { name: 'Reject deposit' }));
     expect(await screen.findByText('PAY-1048 rejected')).toBeInTheDocument();
     expect(body).toEqual({ reason: 'Transaction hash not found on-chain. Send the hash again' });
@@ -157,7 +162,7 @@ describe('the review dialog', () => {
     mockServer.use(
       http.post('*/admin/payments/:id/reject', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
-          { field: 'reason', message: 'The reason is too short for the merchant to act on.' },
+          { field: 'reason', message: 'The reason is too short for the account holder to act on.' },
         ]),
       ),
     );
@@ -167,7 +172,7 @@ describe('the review dialog', () => {
     await user.selectOptions(dialog.getByLabelText('Reason'), 'Other');
     await user.click(dialog.getByRole('button', { name: 'Reject deposit' }));
     expect(
-      await dialog.findByText('The reason is too short for the merchant to act on.'),
+      await dialog.findByText('The reason is too short for the account holder to act on.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('PAY-1048 rejected')).not.toBeInTheDocument();
   });

@@ -14,7 +14,7 @@ import {
   hasTarget,
   parseCountries,
   specToAudienceForm,
-  targetedTypes,
+  targetedLinks,
   type ComposerForm,
 } from './spec';
 
@@ -27,7 +27,7 @@ const filled = (change: Partial<ComposerForm> = {}): ComposerForm => ({
 });
 
 describe('presets', () => {
-  it('Everyone is active staff, active merchants and customers with an account', () => {
+  it('Everyone is active staff, active merchants and retail accounts with a login', () => {
     expect(audienceToSpec(applyPreset(emptyForm().audience, 'everyone'))).toEqual({
       staff: {},
       merchants: {},
@@ -35,7 +35,7 @@ describe('presets', () => {
     });
   });
 
-  it('Staff, Merchants and Customers each target one group, and Specific people targets none', () => {
+  it('Staff, Merchants and Retail each target one group, and Specific people targets none', () => {
     const audience = emptyForm().audience;
     expect(audienceToSpec(applyPreset(audience, 'staff'))).toEqual({ staff: {} });
     expect(audienceToSpec(applyPreset(audience, 'merchants'))).toEqual({ merchants: {} });
@@ -66,47 +66,61 @@ describe('the audience in the API shape', () => {
     const audience = {
       ...emptyForm().audience,
       staff: { on: true, roleIds: [2, 3] },
-      merchants: {
-        on: true,
-        statuses: ['active', 'pending'] as ('active' | 'pending')[],
-        groupIds: [4],
-        countries: 'jo, sa',
-      },
+      merchants: { on: true, groupIds: [4], countries: 'jo, sa' },
       customers: { on: true, accounts: 'guests' as const, countries: 'sa' },
     };
     expect(audienceToSpec(audience)).toEqual({
       staff: { roleIds: [2, 3] },
-      merchants: { statuses: ['active', 'pending'], groupIds: [4], countries: ['JO', 'SA'] },
+      merchants: { groupIds: [4], countries: ['JO', 'SA'] },
       customers: { hasAccount: false, countries: ['SA'] },
     });
   });
 
-  it('leaves active-only merchants to the server default', () => {
+  it('never sends a status: only active accounts are reached, so the plain case sends nothing', () => {
     expect(audienceToSpec(applyPreset(emptyForm().audience, 'merchants'))).toEqual({ merchants: {} });
   });
 
   it('sends only the type and id of picked people', () => {
     const audience = {
       ...emptyForm().audience,
-      include: [{ type: 'client' as const, id: 5, name: 'Zain Hub', detail: 'z@x.example' }],
-      exclude: [{ type: 'customer' as const, id: 9, name: 'Sam' }],
+      include: [
+        {
+          type: 'account' as const,
+          id: 5,
+          name: 'Zain Hub',
+          detail: 'z@x.example',
+          rank: { name: 'Wholesale', kind: 'merchant' as const },
+        },
+      ],
+      exclude: [{ type: 'account' as const, id: 109, name: 'Sam' }],
     };
     expect(audienceToSpec(audience)).toEqual({
-      include: [{ type: 'client', id: 5 }],
-      exclude: [{ type: 'customer', id: 9 }],
+      include: [{ type: 'account', id: 5 }],
+      exclude: [{ type: 'account', id: 109 }],
     });
   });
 
   it('reads a stored spec back into the form and out again unchanged', () => {
     const spec = {
       staff: { roleIds: [1] },
-      merchants: { statuses: ['pending' as const], countries: ['JO'] },
+      merchants: { groupIds: [3], countries: ['JO'] },
       customers: { hasAccount: true, countries: ['SA'] },
       include: [{ type: 'staff' as const, id: 2 }],
     };
     const form = specToAudienceForm(spec);
     expect(form.include[0].name).toBe('Staff member #2');
     expect(audienceToSpec(form)).toEqual(spec);
+  });
+
+  it('reads the status of an old campaign and leaves it out when it is saved again', () => {
+    // A stored `pending` reads as `active` on the server now, so the form has no status to keep.
+    const old = { merchants: { statuses: ['pending' as const], countries: ['JO'] } };
+    expect(audienceToSpec(specToAudienceForm(old))).toEqual({ merchants: { countries: ['JO'] } });
+  });
+
+  it('names a person known by id only as an account', () => {
+    const form = specToAudienceForm({ include: [{ type: 'account', id: 7 }] });
+    expect(form.include[0]).toMatchObject({ type: 'account', id: 7, name: 'Account #7' });
   });
 });
 
@@ -119,16 +133,39 @@ describe('countries', () => {
 });
 
 describe('channels and who is targeted', () => {
-  it('lists the kinds of people the audience reaches, in the server order', () => {
-    expect(targetedTypes(applyPreset(emptyForm().audience, 'everyone'))).toEqual([
+  it('lists the links the audience needs, in the server order', () => {
+    expect(targetedLinks(applyPreset(emptyForm().audience, 'everyone'))).toEqual([
       'staff',
-      'client',
+      'merchant',
       'customer',
     ]);
-    expect(
-      targetedTypes({ ...emptyForm().audience, include: [{ type: 'customer', id: 1, name: 'A' }] }),
-    ).toEqual(['customer']);
     expect(hasTarget(emptyForm().audience)).toBe(false);
+  });
+
+  it('takes the link of an added account from the rank it holds', () => {
+    const audience = emptyForm().audience;
+    const retail = {
+      type: 'account' as const,
+      id: 101,
+      name: 'A',
+      rank: { name: 'Retail', kind: 'retail' as const },
+    };
+    const merchant = {
+      type: 'account' as const,
+      id: 5,
+      name: 'B',
+      rank: { name: 'VIP', kind: 'merchant' as const },
+    };
+    expect(targetedLinks({ ...audience, include: [retail] })).toEqual(['customer']);
+    expect(targetedLinks({ ...audience, include: [merchant] })).toEqual(['merchant']);
+  });
+
+  it('offers both account links for an account known by id only', () => {
+    const audience = {
+      ...emptyForm().audience,
+      include: [{ type: 'account' as const, id: 3, name: 'Account #3' }],
+    };
+    expect(targetedLinks(audience)).toEqual(['merchant', 'customer']);
   });
 });
 
@@ -200,12 +237,12 @@ describe('the hints', () => {
     expect(audienceProblems(filled({ channels: [] })).channels).toBe('Choose at least one channel.');
   });
 
-  it('wants at least one merchant status when merchants are on', () => {
+  it('asks for no merchant status: the segment has none', () => {
     const audience = {
       ...applyPreset(emptyForm().audience, 'merchants'),
-      merchants: { on: true, statuses: [], groupIds: [], countries: '' },
+      merchants: { on: true, groupIds: [], countries: '' },
     };
-    expect(audienceProblems(filled({ audience }))['audience.merchants.statuses']).toBeDefined();
+    expect(Object.keys(audienceProblems(filled({ audience })))).not.toContain('audience.merchants.statuses');
   });
 });
 

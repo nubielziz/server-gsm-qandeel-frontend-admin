@@ -92,11 +92,13 @@ describe('the conversation', () => {
 });
 
 describe('who wrote and the order', () => {
-  it('links the customer’s page, masks the email, and shows the order with its status, service and price', async () => {
+  it('links the account’s page, masks the email of a retail account, and shows the order with its status, service and price', async () => {
     await openSupport(`/support?ticket=${LATE_HIGH}`);
     const link = await screen.findByRole('link', { name: 'Victor Silva' });
-    expect(link).toHaveAttribute('href', '/customers/28');
-    expect(screen.getByText('Customer')).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/accounts/128');
+    expect(screen.getByText('Retail account')).toBeInTheDocument();
+    expect(screen.getByText('vi•••@webmail.example')).toBeInTheDocument();
+    expect(screen.queryByText('victor.silva@webmail.example')).not.toBeInTheDocument();
     const order = await screen.findByRole('link', { name: 'SF-20471' });
     expect(order).toHaveAttribute('href', '/orders?order=20471');
     const block = order.closest('div') as HTMLElement;
@@ -104,12 +106,26 @@ describe('who wrote and the order', () => {
     expect(block.textContent).toMatch(/\$\d/);
   });
 
-  it('links a merchant’s page and says when no order is linked', async () => {
+  it('links the page of an account of a merchant rank, shows its address and says when no order is linked', async () => {
     await openSupport(`/support?ticket=${MERCHANT}`);
     const link = await screen.findByRole('link', { name: 'Cairo GSM Lab' });
-    expect(link).toHaveAttribute('href', '/merchants/5');
+    expect(link).toHaveAttribute('href', '/accounts/5');
     expect(screen.getByText('Merchant', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText('ops@cairogsmlab.example')).toBeInTheDocument();
     expect(screen.getByText('Not linked to an order')).toBeInTheDocument();
+  });
+
+  it('hides a merchant’s address from a role without clients:read, and says why', async () => {
+    await openSupport(`/support?ticket=${MERCHANT}`, {
+      permissions: ['dashboard:read', 'support:read', 'support:reply', 'orders:read'],
+    });
+    const hidden = await screen.findByText('op•••@cairogsmlab.example');
+    // Without clients:read the Accounts page is closed too, so the name is plain text (the page access answers a moment later).
+    await waitFor(() =>
+      expect(screen.queryByRole('link', { name: 'Cairo GSM Lab' })).not.toBeInTheDocument(),
+    );
+    expect(hidden).toHaveAttribute('title', expect.stringMatching(/clients:read/));
+    expect(screen.queryByText('ops@cairogsmlab.example')).not.toBeInTheDocument();
   });
 
   it('opens the order’s drawer on the same page from the order link', async () => {

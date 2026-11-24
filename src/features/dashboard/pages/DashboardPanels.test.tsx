@@ -5,9 +5,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { setupMockApi } from '@/test/renderApp';
 import { answerDashboard, answerTopClients, refuse } from '../test/answers';
-import { openDashboard, panelOf } from '../test/dashboardPage';
+import { control, openDashboard, panelOf } from '../test/dashboardPage';
 import { dashboardFixture } from '../test/fixtures';
-import type { TopClient } from '../types';
+import type { TopAccount } from '../types';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -152,12 +152,14 @@ describe('supplier health', () => {
   });
 });
 
-describe('top merchants', () => {
-  const clients: TopClient[] = [
+describe('top accounts', () => {
+  const accounts: TopAccount[] = [
     {
       id: 9,
       name: 'Lagos Gadget Fix',
       country: 'NG',
+      rank: { id: 2, name: 'Wholesale', kind: 'merchant' },
+      hasAccount: true,
       orders: 15,
       spend: '347.5700',
       profit: '31.2700',
@@ -167,52 +169,127 @@ describe('top merchants', () => {
       id: 17,
       name: 'Sana’a Repair',
       country: 'YE',
+      rank: { id: 1, name: 'Standard', kind: 'merchant' },
+      hasAccount: true,
       orders: 4,
       spend: '59.0000',
       profit: '5.0000',
       walletBalance: '-81.9500',
     },
+    {
+      id: 107,
+      name: 'Daniel Whitmore',
+      country: 'GB',
+      rank: { id: 4, name: 'Storefront retail', kind: 'retail' },
+      hasAccount: true,
+      orders: 5,
+      spend: '99.0000',
+      profit: '8.0000',
+      walletBalance: '12.0000',
+    },
+    {
+      id: 131,
+      name: '',
+      country: 'SE',
+      rank: { id: 4, name: 'Storefront retail', kind: 'retail' },
+      hasAccount: false,
+      orders: 1,
+      spend: '9.0000',
+      profit: '1.0000',
+      walletBalance: '0.0000',
+    },
   ];
 
-  it('lists the merchants the report sent, with a negative wallet in the critical colour', async () => {
-    const seen = answerTopClients(clients);
+  it('lists the accounts the report sent in one table, with the rank and the wallet, a negative wallet in the critical colour', async () => {
+    const seen = answerTopClients(accounts);
     answerDashboard(dashboardFixture());
     await openDashboard();
-    const panel = await panelOf('Top merchants');
+    const panel = await panelOf('Top accounts');
     expect(panel.getByText('By spend, last 7 days')).toBeInTheDocument();
-    const table = within(await panel.findByRole('table', { name: 'Top merchants by spend' }));
+    const table = within(await panel.findByRole('table', { name: 'Top accounts by spend' }));
+    expect(table.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
+      'Account',
+      'Rank',
+      'Orders',
+      'Spend',
+      'Profit',
+      'Wallet',
+    ]);
     const lagos = within(table.getByText('Lagos Gadget Fix').closest('tr') as HTMLElement);
     expect(lagos.getByText('NG')).toBeInTheDocument();
+    expect(lagos.getByText('Wholesale')).toBeInTheDocument();
     expect(lagos.getByText('15')).toBeInTheDocument();
     expect(lagos.getByText('$348')).toBeInTheDocument();
+    expect(lagos.getByText('$31')).toBeInTheDocument();
     expect(lagos.getByText('$96').closest('td')).not.toHaveClass('text-crit-fg');
     const sanaa = within(table.getByText('Sana’a Repair').closest('tr') as HTMLElement);
     expect(sanaa.getByText('-$82').closest('td')).toHaveClass('text-crit-fg');
-    expect(
-      await within(table.getByText('Lagos Gadget Fix').closest('tr') as HTMLElement).findByRole('link', {
-        name: 'Lagos Gadget Fix',
-      }),
-    ).toHaveAttribute('href', '/merchants/9');
+    const daniel = within(table.getByText('Daniel Whitmore').closest('tr') as HTMLElement);
+    expect(daniel.getByText('Storefront retail')).toBeInTheDocument();
+    expect(daniel.getByText('$12')).toBeInTheDocument();
     expect(seen).toHaveLength(1);
-    expect(Object.fromEntries(seen[0].searchParams)).toEqual({ days: '7', limit: '6' });
+    expect(Object.fromEntries(seen[0].searchParams)).toEqual({ days: '7', limit: '6', scope: 'all' });
+  });
+
+  it('links each account, a merchant or a buyer, to the Accounts page by its number', async () => {
+    answerTopClients(accounts);
+    answerDashboard(dashboardFixture());
+    await openDashboard();
+    const panel = await panelOf('Top accounts');
+    const table = within(await panel.findByRole('table', { name: 'Top accounts by spend' }));
+    const link = async (name: string) =>
+      within(table.getByText(name).closest('tr') as HTMLElement).findByRole('link', { name });
+    expect(await link('Lagos Gadget Fix')).toHaveAttribute('href', '/accounts/9');
+    expect(await link('Daniel Whitmore')).toHaveAttribute('href', '/accounts/107');
+  });
+
+  it('marks a guest, names a guest with no name by its number and shows no wallet for it', async () => {
+    answerTopClients(accounts);
+    answerDashboard(dashboardFixture());
+    await openDashboard();
+    const panel = await panelOf('Top accounts');
+    const table = within(await panel.findByRole('table', { name: 'Top accounts by spend' }));
+    const guest = within(table.getByText('Account #131').closest('tr') as HTMLElement);
+    expect(guest.getByText('Guest')).toBeInTheDocument();
+    expect(guest.getByText('–')).toBeInTheDocument();
+    expect(guest.queryByText('$0')).not.toBeInTheDocument();
+    expect(
+      within(table.getByText('Lagos Gadget Fix').closest('tr') as HTMLElement).queryByText('Guest'),
+    ).toBeNull();
   });
 
   it('asks again for the period chosen', async () => {
     const user = userEvent.setup();
-    const seen = answerTopClients(clients);
+    const seen = answerTopClients(accounts);
     answerDashboard(dashboardFixture());
     await openDashboard();
-    await screen.findByRole('table', { name: 'Top merchants by spend' });
+    await screen.findByRole('table', { name: 'Top accounts by spend' });
     await user.click(screen.getByRole('button', { name: '14D' }));
     await waitFor(() => expect(seen.map((url) => url.searchParams.get('days'))).toEqual(['7', '14']));
   });
 
-  it('says so when no merchant ordered', async () => {
+  it('follows the channel: it asks for the door shown and names it', async () => {
+    const user = userEvent.setup();
+    const seen = answerTopClients(accounts);
+    answerDashboard(dashboardFixture());
+    await openDashboard();
+    await screen.findByRole('table', { name: 'Top accounts by spend' });
+    await user.click(control('Channel').getByRole('button', { name: 'Storefront' }));
+    await waitFor(() => expect(seen.map((url) => url.searchParams.get('scope'))).toEqual(['all', 'b2c']));
+    expect(await screen.findByText('By spend, the storefront, last 7 days')).toBeInTheDocument();
+    await user.click(control('Channel').getByRole('button', { name: 'Merchants' }));
+    await waitFor(() =>
+      expect(seen.map((url) => url.searchParams.get('scope'))).toEqual(['all', 'b2c', 'b2b']),
+    );
+    expect(await screen.findByText('By spend, merchants, last 7 days')).toBeInTheDocument();
+  });
+
+  it('says so when no account ordered', async () => {
     answerTopClients([]);
     answerDashboard(dashboardFixture());
     await openDashboard();
-    const panel = await panelOf('Top merchants');
-    expect(await panel.findByRole('heading', { name: 'No merchant activity yet' })).toBeInTheDocument();
+    const panel = await panelOf('Top accounts');
+    expect(await panel.findByRole('heading', { name: 'No account activity yet' })).toBeInTheDocument();
   });
 
   it('shows the server’s refusal with a Retry that works', async () => {
@@ -220,60 +297,51 @@ describe('top merchants', () => {
     answerTopClients(refuse(403, 'FORBIDDEN', 'No access', 'Reports are not part of your role.'));
     answerDashboard(dashboardFixture());
     await openDashboard();
-    const panel = await panelOf('Top merchants');
-    expect(await panel.findByText('Could not load the top merchants')).toBeInTheDocument();
+    const panel = await panelOf('Top accounts');
+    expect(await panel.findByText('Could not load the top accounts')).toBeInTheDocument();
     expect(panel.getByText('Reports are not part of your role.')).toBeInTheDocument();
     // The rest of the dashboard is untouched.
     expect(screen.getByRole('region', { name: 'Needs attention' })).toBeInTheDocument();
 
-    answerTopClients(clients);
+    answerTopClients(accounts);
     await user.click(panel.getByRole('button', { name: 'Retry' }));
-    expect(await panel.findByRole('table', { name: 'Top merchants by spend' })).toBeInTheDocument();
+    expect(await panel.findByRole('table', { name: 'Top accounts by spend' })).toBeInTheDocument();
   });
 
   it('is left out, and not requested, without reports:read', async () => {
-    const seen = answerTopClients(clients);
+    const seen = answerTopClients(accounts);
     answerDashboard(dashboardFixture());
     await openDashboard('/dashboard', { permissions: ['dashboard:read', 'orders:read'] });
     await screen.findByRole('region', { name: 'Supplier health' });
     await settle();
-    expect(screen.queryByRole('region', { name: 'Top merchants' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Top accounts' })).not.toBeInTheDocument();
     expect(seen).toHaveLength(0);
   });
 
-  it('is left out for the storefront channel', async () => {
-    const seen = answerTopClients(clients);
+  it('has plain names, not links, when the staff member may not open Accounts', async () => {
+    answerTopClients(accounts);
     answerDashboard(dashboardFixture());
-    await openDashboard('/dashboard?scope=b2c');
-    await screen.findByRole('region', { name: 'Top customers' });
+    await openDashboard('/dashboard', { permissions: ['dashboard:read', 'reports:read'] });
+    const panel = await panelOf('Top accounts');
+    const table = within(await panel.findByRole('table', { name: 'Top accounts by spend' }));
+    expect(table.getByText('Lagos Gadget Fix')).toBeInTheDocument();
     await settle();
-    expect(screen.queryByRole('region', { name: 'Top merchants' })).not.toBeInTheDocument();
-    expect(seen).toHaveLength(0);
-  });
-});
-
-describe('top customers', () => {
-  it('lists the storefront’s best customers, each linking to the customer', async () => {
-    answerDashboard(dashboardFixture());
-    await openDashboard();
-    const panel = await panelOf('Top customers');
-    expect(panel.getByText('Storefront, by spend, last 7 days')).toBeInTheDocument();
-    const table = within(await panel.findByRole('table', { name: 'Top customers by spend' }));
-    const daniel = within(table.getByText('Daniel Whitmore').closest('tr') as HTMLElement);
-    expect(daniel.getByText('GB')).toBeInTheDocument();
-    expect(daniel.getByText('5')).toBeInTheDocument();
-    expect(daniel.getByText('$99')).toBeInTheDocument();
-    expect(await daniel.findByRole('link', { name: 'Daniel Whitmore' })).toHaveAttribute(
-      'href',
-      '/customers/7',
-    );
+    expect(table.queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('says so when no customer ordered, and is left out when the server sends none', async () => {
-    answerDashboard(dashboardFixture({ topCustomers: [] }));
+  it('never reads the list of best customers an older server still sends with the dashboard', async () => {
+    answerTopClients([]);
+    // The key is spread in from an untyped object: the console's type no longer has it.
+    const older = {
+      ...dashboardFixture(),
+      ...{ topCustomers: [{ id: 7, name: 'Daniel Whitmore', country: 'GB', orders: 5, spend: '99.0000' }] },
+    };
+    answerDashboard(older);
     await openDashboard();
-    const panel = await panelOf('Top customers');
-    expect(await panel.findByRole('heading', { name: 'No customer orders yet' })).toBeInTheDocument();
+    const panel = await panelOf('Top accounts');
+    expect(await panel.findByRole('heading', { name: 'No account activity yet' })).toBeInTheDocument();
+    expect(screen.queryByText('Daniel Whitmore')).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Top customers' })).not.toBeInTheDocument();
   });
 });
 

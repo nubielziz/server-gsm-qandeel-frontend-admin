@@ -15,7 +15,7 @@ export function SupportHeader({ view, onView }: SupportHeaderProps) {
       title="Support"
       sub={
         inbox
-          ? 'One inbox for customers on the storefront and merchants on the API.'
+          ? 'One inbox for the accounts that write to you: shop buyers and merchants.'
           : 'Ready-made replies your team inserts into an answer.'
       }
       actions={

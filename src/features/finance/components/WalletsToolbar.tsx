@@ -1,4 +1,4 @@
-// WalletsToolbar: the search box, the state filter, Clear filters and the live count above the customer wallets list (feature 21).
+// WalletsToolbar: the search box, the state filter, Clear filters and the live count above the store balances list.
 // The search text is sent after a pause.
 import { Button, SearchInput, SelectField, useDebouncedCommit } from '@/components/ui';
 import { num } from '@/lib/format';
@@ -21,11 +21,7 @@ export function WalletsToolbar({ filters, onChange, onClear, total }: WalletsToo
   const search = useDebouncedCommit(filters.q, (q) => onChange({ q }));
   return (
     <div className="flex flex-wrap items-center gap-2 p-3">
-      <SearchInput
-        value={search.text}
-        onChange={search.setText}
-        placeholder="Search customer name or email"
-      />
+      <SearchInput value={search.text} onChange={search.setText} placeholder="Search account name or email" />
       <SelectField
         aria-label="Filter by state"
         value={filters.state}
@@ -40,7 +36,7 @@ export function WalletsToolbar({ filters, onChange, onClear, total }: WalletsToo
       <span className="flex-1" />
       {total !== undefined && (
         <span className="text-xs text-ink3" aria-live="polite">
-          {num(total)} {total === 1 ? 'wallet' : 'wallets'}
+          {num(total)} {total === 1 ? 'balance' : 'balances'}
         </span>
       )}
     </div>

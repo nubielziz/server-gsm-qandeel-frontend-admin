@@ -1,4 +1,4 @@
-// WalletsTab: the "Customer wallets" tab of the Finance page (feature 21): every storefront customer's store balance, with a state
+// WalletsTab: the "Store balances" tab of the Finance page (feature 21): every account's store balance, with a state
 // filter and search so the negative and held ones are easy to find. The server filters, sorts and counts; the tab only composes.
 import { usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';

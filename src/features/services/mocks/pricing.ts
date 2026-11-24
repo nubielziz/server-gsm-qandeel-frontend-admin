@@ -21,7 +21,7 @@ export const marginOf = (service: MockService, price = service.price): number =>
   ((price - service.cost) / price) * 100;
 
 /**
- * A merchant group by id. The merchants feature owns the groups (their ids, names and discounts), so the mock must cope with an id it
+ * A rank by id. The accounts feature owns the groups (their ids, names and discounts), so the mock must cope with an id it
  * does not know: that group is named "Group #<id>" and has no discount.
  */
 export function groupOf(stores: Stores, id: number): MockGroup {

@@ -107,7 +107,7 @@ export function profileOf(scenario: MockScenario): Profile {
 export const onsetOf = (profile: Profile, anchor: number): number | null =>
   profile.troubleMin === null ? null : anchor - profile.troubleMin * MINUTE;
 
-/** The merchant whose wallet the ledger-mismatch story is about ("Basra Unlock Center" in the merchants mock). */
+/** The account whose wallet the ledger-mismatch story is about (merchant "Basra Unlock Center" of the accounts mock; a merchant keeps its number as its account id). */
 export const MISMATCH_CLIENT_ID = 4;
 
 /** The supplier the slow-supplier story is about (a seeded supplier of the suppliers mock). */

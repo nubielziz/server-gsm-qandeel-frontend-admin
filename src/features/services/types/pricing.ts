@@ -106,7 +106,7 @@ export type PriceStep = {
 /** The price source in words' keys: a merchant override, a group price or the base price. */
 export type PriceSource = 'client' | 'group' | 'base';
 
-/** What the same service costs the merchant's neighbours: one line per merchant group. */
+/** What the same service costs the merchant's neighbours: one line per rank. */
 export type GroupQuote = { group: NamedRef; price: Money; clamped: boolean };
 
 /**

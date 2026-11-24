@@ -5,7 +5,7 @@ import { DataTable, type DataTableColumn, type PaginationState, type SortState }
 import { ago, lm, money } from '@/lib/format';
 import { badgeFor, METHOD_LABEL, PAYMENT_BADGE } from '../lib/labels';
 import type { PaymentLine } from '../types';
-import { CustomerLink } from './CustomerLink';
+import { AccountLink } from './AccountLink';
 import { OrderLink } from './OrderLink';
 import { StatusBadge } from './StatusBadge';
 
@@ -48,7 +48,7 @@ export function PaymentsTable({
       key: 'who',
       label: 'Customer',
       hide: 'md',
-      render: (payment) => <CustomerLink customer={payment.customer} />,
+      render: (payment) => <AccountLink account={payment.customer} />,
     },
     {
       key: 'method',

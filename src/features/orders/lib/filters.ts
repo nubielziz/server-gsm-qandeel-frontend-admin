@@ -16,7 +16,10 @@ export type OrderFilters = {
   q: string;
   type: ServiceType | '';
   supplierId: string;
-  clientId: string;
+  /** The buyer: a merchant number is an account number. */
+  accountId: string;
+  /** The buyer's rank. */
+  rankId: string;
   channel: OrderChannel | '';
   pastSla: boolean;
 };
@@ -33,7 +36,9 @@ export function parseOrderFilters(params: URLSearchParams): OrderFilters {
     q: params.get('q') ?? '',
     type: SERVICE_TYPES.find((candidate) => candidate === type) ?? '',
     supplierId: digits(params.get('supplierId')),
-    clientId: digits(params.get('clientId')),
+    // An address saved before the accounts merged says `clientId`; a merchant number is an account number, so it reads the same.
+    accountId: digits(params.get('accountId') ?? params.get('clientId')),
+    rankId: digits(params.get('rankId')),
     channel: channel === 'b2b' || channel === 'b2c' ? channel : '',
     pastSla: params.get('pastSla') === 'true',
   };
@@ -51,7 +56,9 @@ export function writeOrderFilters(base: URLSearchParams, patch: Partial<OrderFil
   put('q', merged.q);
   put('type', merged.type);
   put('supplierId', merged.supplierId);
-  put('clientId', merged.clientId);
+  put('accountId', merged.accountId);
+  put('rankId', merged.rankId);
+  next.delete('clientId');
   put('channel', merged.channel);
   put('pastSla', merged.pastSla ? 'true' : '');
   return next;
@@ -63,7 +70,8 @@ export function hasActiveFilters(filters: OrderFilters): boolean {
     filters.q.trim() ||
     filters.type ||
     filters.supplierId ||
-    filters.clientId ||
+    filters.accountId ||
+    filters.rankId ||
     filters.channel ||
     filters.pastSla,
   );
@@ -75,7 +83,8 @@ export function clearOrderFilters(base: URLSearchParams): URLSearchParams {
     q: '',
     type: '',
     supplierId: '',
-    clientId: '',
+    accountId: '',
+    rankId: '',
     channel: '',
     pastSla: false,
   });
@@ -144,7 +153,7 @@ export function normalizeSearch(text: string): string {
   return id ? id[1] : trimmed;
 }
 
-/** The API filters for the tab and the toolbar. `fixed` filters (a merchant's page) always apply and win. */
+/** The API filters for the tab and the toolbar. `fixed` filters (an account's page) always apply and win. */
 export function toListFilters(filters: OrderFilters, fixed: OrderListFilters = {}): OrderListFilters {
   const q = normalizeSearch(filters.q);
   return {
@@ -152,7 +161,8 @@ export function toListFilters(filters: OrderFilters, fixed: OrderListFilters = {
     ...(q ? { q } : {}),
     ...(filters.type ? { type: filters.type } : {}),
     ...(filters.supplierId ? { supplierId: Number(filters.supplierId) } : {}),
-    ...(filters.clientId ? { clientId: Number(filters.clientId) } : {}),
+    ...(filters.accountId ? { accountId: Number(filters.accountId) } : {}),
+    ...(filters.rankId ? { rankId: Number(filters.rankId) } : {}),
     ...(filters.channel ? { channel: filters.channel } : {}),
     ...(filters.pastSla ? { pastSla: true } : {}),
     ...fixed,

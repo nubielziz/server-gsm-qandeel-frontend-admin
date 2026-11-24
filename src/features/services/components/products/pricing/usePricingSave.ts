@@ -10,7 +10,7 @@ import { MAX_ORDER_ITEMS } from '../../../types';
 import type { PriceEdits } from './usePriceEdits';
 
 /**
- * `savePrices` and `saveOrder`, with whether each is running. `retailGroupId` is the merchant group of kind `b2c_retail` (the shop group), which
+ * `savePrices` and `saveOrder`, with whether each is running. `retailGroupId` is the rank of kind `b2c_retail` (the shop group), which
  * the group prices replace needs to send the shop price back; it is undefined while the group list is not known.
  */
 export function usePricingSave(editing: PriceEdits, retailGroupId: Id | undefined) {

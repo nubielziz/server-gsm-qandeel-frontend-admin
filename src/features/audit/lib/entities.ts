@@ -1,18 +1,19 @@
 // The kinds of record an audit entry can be about: their names on screen, and how the server's `entityType` is read.
 // Ports TYPE_LABEL of 47-p-audit.js. The map does not list the `entityType` values (assumed contract: the singular names
-// below); table names such as `orders` or `clients` are accepted too, so a server that sends those still reads well.
+// below); table names such as `orders` or `staff_users` are accepted too, so a server that sends those still reads well.
+// An account is one kind of record: new rows say `account`, and rows written before the merge say `merchant` or `customer`;
+// all three read as "Account" and the one filter "Account" lists them together.
 import type { AuditLog } from '../types';
 
 /** The demo's record types and their names, in the words of the record-type filter. */
 export const ENTITY_LABEL: Readonly<Record<string, string>> = {
-  merchant: 'Merchant',
+  account: 'Account',
   order: 'Order',
   service: 'Service',
   supplier: 'Supplier',
   payment: 'Deposit',
   withdrawal: 'Withdrawal',
   session: 'Session',
-  customer: 'Customer',
   staff: 'Admin',
   ip_rule: 'IP rule',
   checkout: 'Checkout',
@@ -30,8 +31,13 @@ export const ENTITY_KINDS: readonly string[] = Object.keys(ENTITY_LABEL);
 
 // Other names the server might use for the same record (table names, and the demo's own `admin` and `access`).
 const ALIASES: Readonly<Record<string, string>> = {
-  client: 'merchant',
-  clients: 'merchant',
+  accounts: 'account',
+  client: 'account',
+  clients: 'account',
+  merchant: 'account',
+  merchants: 'account',
+  customer: 'account',
+  customers: 'account',
   admin: 'staff',
   admins: 'staff',
   staff_user: 'staff',
@@ -64,6 +70,18 @@ export function entityKind(entityType: string): string {
   if (Object.hasOwn(ALIASES, key)) return ALIASES[key];
   const singular = key.endsWith('s') ? key.slice(0, -1) : key;
   return Object.hasOwn(ENTITY_LABEL, singular) ? singular : key;
+}
+
+/**
+ * True for the old word `customer`: a row that says it carries the number of the old customer record, which is not an account
+ * number (the account has a new number). Every other word of an account (`account`, `merchant`, `client`) carries the account's own number.
+ */
+export function isOldCustomerWord(entityType: string): boolean {
+  const key = entityType
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  return key === 'customer' || key === 'customers';
 }
 
 /** "ip_rule" as "Ip rule": the name of a record type the console has no word for. */

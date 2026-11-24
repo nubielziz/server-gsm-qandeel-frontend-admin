@@ -69,13 +69,26 @@ describe('the inbox', () => {
 
 describe('the made-up audience', () => {
   it('has the sizes it says it has', () => {
-    const everyone = eligiblePeople(
-      { staff: {}, merchants: { statuses: ['active', 'pending'] }, customers: {} },
-      'service',
-    );
-    expect(everyone.people.filter((p) => p.type === 'staff')).toHaveLength(MOCK_AUDIENCE.staff);
-    expect(everyone.people.filter((p) => p.type === 'client')).toHaveLength(MOCK_AUDIENCE.merchants);
-    expect(everyone.people.filter((p) => p.type === 'customer')).toHaveLength(MOCK_AUDIENCE.customers);
+    const everyone = eligiblePeople({ staff: {}, merchants: {}, customers: {} }, 'service');
+    expect(everyone.people.filter((p) => p.kind === 'staff')).toHaveLength(MOCK_AUDIENCE.staff);
+    // Only active accounts are reached by a segment: the made-up suspended ones are left out of it.
+    expect(everyone.people.filter((p) => p.kind === 'merchant')).toHaveLength(MOCK_AUDIENCE.activeMerchants);
+    expect(everyone.people.filter((p) => p.kind === 'retail')).toHaveLength(MOCK_AUDIENCE.retail);
+  });
+
+  it('is made of staff and accounts: a merchant is account n and a buyer is account 100 + n', () => {
+    const everyone = eligiblePeople({ staff: {}, merchants: {}, customers: {} }, 'service');
+    expect(new Set(everyone.people.map((person) => person.type))).toEqual(new Set(['staff', 'account']));
+    const accounts = everyone.people.filter((person) => person.type === 'account');
+    expect(accounts.filter((person) => person.kind === 'merchant').map((person) => person.id)).toContain(1);
+    expect(accounts.filter((person) => person.kind === 'retail').map((person) => person.id)).toContain(101);
+  });
+
+  it('reaches a suspended merchant only when it is added by name', () => {
+    const suspended = MOCK_AUDIENCE.activeMerchants + 1;
+    expect(eligiblePeople({ merchants: {} }, 'service').people.map((p) => p.id)).not.toContain(suspended);
+    const added = eligiblePeople({ include: [{ type: 'account', id: suspended }] }, 'service');
+    expect(added.people.map((p) => p.id)).toEqual([suspended]);
   });
 
   it('counts the same people in the preview and in the fan-out, for a matrix of specs', () => {
@@ -85,7 +98,7 @@ describe('the made-up audience', () => {
       { customers: { hasAccount: false } },
       {
         staff: { roleIds: [1, 2] },
-        include: [{ type: 'client' as const, id: 3 }],
+        include: [{ type: 'account' as const, id: 3 }],
         exclude: [{ type: 'staff' as const, id: 1 }],
       },
       { customers: { countries: ['SA'] }, merchants: { countries: ['JO'] } },
@@ -103,7 +116,7 @@ describe('the made-up audience', () => {
     }
   });
 
-  it('drops customers who did not agree when the purpose is marketing, and says how many', () => {
+  it('drops retail accounts who did not agree when the purpose is marketing, and says how many', () => {
     const service = previewOf({ customers: {} }, ['email'], 'service');
     const marketing = previewOf({ customers: {} }, ['email'], 'marketing');
     expect(marketing.total).toBeLessThan(service.total);

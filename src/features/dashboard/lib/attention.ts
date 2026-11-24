@@ -5,7 +5,7 @@ import { ordersListPath } from '@/features/orders';
 import { productsPath } from '@/features/services';
 import { ageText, ago, money, money0, pct } from '@/lib/format';
 import type { AttentionItem, DashboardScope } from '../types';
-import { channelOf, merchantTarget, supplierTarget, type PageTarget } from './links';
+import { accountsListTarget, channelOf, supplierTarget, type PageTarget } from './links';
 
 /** The row's button: its words and the page it opens. */
 export type AttentionAction = PageTarget & { label: string };
@@ -91,16 +91,14 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
         meta: `${money0(item.total)} total, oldest ${ago(item.oldestAt, now)}`,
         action: go('Review deposits', 'finance', '/finance?tab=payments'),
       };
-    case 'wallets_negative': {
-      const first = item.clients[0];
+    case 'wallets_negative':
       return {
-        title: `${some(item.count, 'merchant has', 'merchants have')} a negative wallet`,
+        title: `${some(item.count, 'account has', 'accounts have')} a negative wallet`,
         meta: item.clients.map((client) => `${client.name} ${money(client.balance)}`).join(', '),
-        action: first
-          ? goTo('Open merchant', merchantTarget(first.id))
-          : go('Open merchant', 'merchants', '/merchants'),
+        // Every account, lowest balance first: a merchant wallet on credit can go below zero, and so can a store balance after a lost
+        // chargeback, so no population is narrowed away.
+        action: goTo('Open accounts', accountsListTarget({ sort: 'balance', dir: 'asc' })),
       };
-    }
     case 'orders_held':
       return {
         title: `${some(item.count, 'paid order is', 'paid orders are')} held by the risk engine`,

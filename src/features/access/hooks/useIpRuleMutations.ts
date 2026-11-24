@@ -1,5 +1,5 @@
-// Adding and removing IP rules, with the toasts the demo showed. `useCreateIpRule` is public: the customers page uses it
-// (through BlockIpDialog) to block the last address of a customer.
+// Adding and removing IP rules, with the toasts the demo showed. `useCreateIpRule` is public: the Accounts page uses it
+// (through BlockIpDialog) to block the last address of an account.
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/components/ui';
 import { SETTINGS_KEY, type Settings } from '@/features/settings';

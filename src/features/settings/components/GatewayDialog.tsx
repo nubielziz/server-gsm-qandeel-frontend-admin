@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, toast } from '@/components/ui';
 import { sameDecimal } from '../lib/decimal';
-import { useCreateGateway, useGroupNames, useUpdateGateway } from '../hooks/useGateways';
+import { useCreateGateway, useRankNames, useUpdateGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import type { CreateGatewayBody, GatewayPreset, PaymentGateway, UpdateGatewayBody } from '../types';
 import { GatewayFields, type GatewayValues } from './GatewayFields';
@@ -112,11 +112,11 @@ export function GatewayDialog({
   onClose: () => void;
 }) {
   const grants = useSettingsGrants();
-  const canGroups = grants.can('groups:read');
-  const groups = useGroupNames(canGroups);
+  const canRanks = grants.can('groups:read');
+  const ranks = useRankNames(canRanks);
   const create = useCreateGateway();
   const update = useUpdateGateway();
-  const [groupIds, setGroupIds] = useState<number[]>(gateway?.allowedGroupIds ?? []);
+  const [rankIds, setRankIds] = useState<number[]>(gateway?.allowedGroupIds ?? []);
   const form = useForm<GatewayValues>({
     defaultValues: {
       name: gateway?.name ?? start?.preset.name ?? '',
@@ -144,7 +144,7 @@ export function GatewayDialog({
   const submit = dialogSubmit(
     form,
     async (values) => {
-      const next = toBody(values, groupIds, start?.preset.key);
+      const next = toBody(values, rankIds, start?.preset.key);
       if (!gateway) {
         await create.mutateAsync(next);
         return;
@@ -184,30 +184,30 @@ export function GatewayDialog({
         presetMade={Boolean(gateway?.preset) || start !== undefined}
       />
       <fieldset className="mt-3 min-w-0">
-        <legend className="label">Merchant groups</legend>
-        {canGroups ? (
+        <legend className="label">Ranks</legend>
+        {canRanks ? (
           <div className="space-y-1.5">
-            {(groups.data ?? []).map((group) => (
+            {(ranks.data ?? []).map((rank) => (
               <CheckboxField
-                key={group.id}
-                label={group.name}
-                checked={groupIds.includes(group.id)}
+                key={rank.id}
+                label={rank.name}
+                checked={rankIds.includes(rank.id)}
                 onChange={(event) =>
-                  setGroupIds((current) =>
-                    event.target.checked ? [...current, group.id] : current.filter((id) => id !== group.id),
+                  setRankIds((current) =>
+                    event.target.checked ? [...current, rank.id] : current.filter((id) => id !== rank.id),
                   )
                 }
               />
             ))}
             <p className="hint">
-              {groups.isError
-                ? 'Could not load the merchant groups. The method keeps the groups it has now.'
-                : 'Leave all unticked to allow every group. Groups only matter for merchants (B2B).'}
+              {ranks.isError
+                ? 'Could not load the ranks. The method keeps the ranks it has now.'
+                : 'Leave all unticked to allow every rank. Ranks only matter for merchants (B2B).'}
             </p>
           </div>
         ) : (
           <p className="hint">
-            You need the groups:read permission to choose groups. The method keeps the groups it has now.
+            You need the groups:read permission to choose ranks. The method keeps the ranks it has now.
           </p>
         )}
       </fieldset>

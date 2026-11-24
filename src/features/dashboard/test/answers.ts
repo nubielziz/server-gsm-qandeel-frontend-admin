@@ -3,7 +3,7 @@
 import { http, HttpResponse } from 'msw';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import type { Dashboard, TopClient } from '../types';
+import type { Dashboard, TopAccount } from '../types';
 
 type Answer<T> = T | Response | ((url: URL) => T | Response | Promise<T | Response>);
 
@@ -28,7 +28,7 @@ export function answerDashboard(answer: Answer<Dashboard>): URL[] {
 }
 
 /** Answers `GET /admin/reports/top-clients`; returns the request addresses like `answerDashboard`. */
-export function answerTopClients(answer: Answer<TopClient[]>): URL[] {
+export function answerTopClients(answer: Answer<TopAccount[]>): URL[] {
   const seen: URL[] = [];
   mockServer.use(
     http.get('*/admin/reports/top-clients', ({ request }) => {

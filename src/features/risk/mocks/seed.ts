@@ -3,6 +3,7 @@
 // the server. Shapes of the demo are listed here so the mapping can be read in one place.
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, toIso, toMoney, type DemoState } from '@/mocks/seed';
+import { customerAccountId } from '@/mocks/seed/accountIds';
 import { demoStaffIds } from '@/mocks/staff';
 import type { BlocklistEntry, HeldOrder, NamedRef, RiskOutcome, RiskRule } from '../types';
 import type { DemoBlock, DemoCustomer, DemoNamed, DemoRiskOrder, DemoRule } from './demoShapes';
@@ -68,7 +69,8 @@ function assessments(state: DemoState, ids: Map<string, number>): MockAssessment
         paymentMethod: order.pay.method,
         signals: order.risk.signals,
         customer: {
-          id: demoNumericId(customer.id),
+          // The buyer is an account: demo customer `cN` is account `100 + N` (`mocks/seed/accountIds.ts`).
+          id: customerAccountId(demoNumericId(customer.id)),
           name: customer.name,
           email: customer.email,
           country: customer.country,

@@ -38,9 +38,11 @@ describe('ordersPaletteSource', () => {
     expect(hits).toHaveLength(PALETTE_ORDER_LIMIT);
   });
 
-  it('names a storefront order by its customer', async () => {
+  it('names a storefront order by its account, never by the old customer number', async () => {
     const hits = await search('SF-20503');
     expect(hits[0].label).toMatch(/^SF-20503 /);
     expect(hits[0].hint).toBeTruthy();
+    // The hint is the account's masked label: an email is masked, and no record of the old model is named.
+    expect(hits[0].hint).not.toMatch(/^Customer #/);
   });
 });

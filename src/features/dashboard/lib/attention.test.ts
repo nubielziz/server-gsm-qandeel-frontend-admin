@@ -121,11 +121,15 @@ describe('describeAttention', () => {
     });
   });
 
-  it('negative wallets: each merchant with its balance, linking to the first one', () => {
+  it('negative wallets: each account with its balance, linking to every account (a store balance can be below zero too), lowest balance first', () => {
     expect(view(sample('wallets_negative'))).toEqual({
-      title: '1 merchant has a negative wallet',
+      title: '1 account has a negative wallet',
       meta: 'Muscat Mobile Clinic -$81.95',
-      action: { label: 'Open merchant', page: 'merchants', to: '/merchants/17' },
+      action: {
+        label: 'Open accounts',
+        page: 'accounts',
+        to: '/accounts?sort=balance',
+      },
     });
     const two = {
       ...sample('wallets_negative'),
@@ -136,7 +140,7 @@ describe('describeAttention', () => {
       ],
     } as AttentionItem;
     expect(view(two)).toMatchObject({
-      title: '2 merchants have a negative wallet',
+      title: '2 accounts have a negative wallet',
       meta: 'A -$1.00, B -$2.50',
     });
   });

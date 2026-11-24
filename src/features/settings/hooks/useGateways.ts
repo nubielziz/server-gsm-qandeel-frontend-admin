@@ -1,8 +1,8 @@
-// The payment gateways: the list for the Payment methods tab, the merchant group names the cards show, and the changes (create, edit,
+// The payment gateways: the list for the Payment methods tab, the rank names the cards show, and the changes (create, edit,
 // the on/off switch, delete), the catalog of ready-made methods and the logo upload and removal. A failed switch shows the server's message
 // as a toast; the dialogs show their own failures.
 import { useList } from '@refinedev/core';
-import { listClientGroups } from '@/features/merchants';
+import { listRanks } from '@/features/accounts';
 import { useApiMutation, useApiQuery } from '@/lib/query';
 import {
   createGateway,
@@ -14,7 +14,7 @@ import {
 } from '../api';
 import { logoForm } from '../lib/paymentLogos';
 import type { CreateGatewayBody, PaymentGateway, UpdateGatewayBody } from '../types';
-import { GATEWAY_PRESETS_KEY, GROUP_NAMES_KEY, LOOKUP_STALE_MS, WHOLE_LIST } from './keys';
+import { GATEWAY_PRESETS_KEY, LOOKUP_STALE_MS, RANK_NAMES_KEY, WHOLE_LIST } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
@@ -31,12 +31,12 @@ export function useGatewayList(enabled = true) {
   return { gateways: result.data, query };
 }
 
-/** The merchant groups by name, for "Merchant groups" on a card and in the dialog. Pass `enabled: false` without `groups:read`. */
-export function useGroupNames(enabled = true) {
+/** The ranks by name, for "Ranks" on a card and in the dialog. Pass `enabled: false` without `groups:read`. */
+export function useRankNames(enabled = true) {
   return useApiQuery({
-    queryKey: [...GROUP_NAMES_KEY],
+    queryKey: [...RANK_NAMES_KEY],
     queryFn: ({ signal }) =>
-      listClientGroups({ start: 0, end: WHOLE_LIST, sort: ['sort'], order: ['asc'] }, { signal }),
+      listRanks({ start: 0, end: WHOLE_LIST, sort: ['sort'], order: ['asc'] }, { signal }),
     select: (result) => result.data,
     enabled,
     staleTime: LOOKUP_STALE_MS,

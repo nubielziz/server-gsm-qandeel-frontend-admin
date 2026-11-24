@@ -1,5 +1,5 @@
-// Mock sign-in sessions: one per device the demo says an admin is signed in on, plus a few merchants (only their count shows, on the
-// merchant page).
+// Mock sign-in sessions: one per device the demo says an admin is signed in on, plus a few accounts of merchant ranks (their count shows
+// on the account's record; the session list of the access page shows both kinds).
 import { Collection } from './db';
 import { demoNumericId, demoRows, loadDemoState, toIso } from './seed';
 
@@ -13,13 +13,16 @@ type DemoAdmin = {
   lastIp: string | null;
 };
 
-/** A merchant of the demo seed (the fields the sessions use). */
+/** A merchant of the demo seed (the fields the sessions use): its number is its account id. */
 type DemoMerchant = { id: string; name: string; email: string; ips: string[]; lastSeen: number };
 
-/** A session as the mock keeps it; the person is stored with it, like a joined row. */
+/**
+ * A session as the mock keeps it; the person is stored with it, like a joined row. `subjectType` is `staff` or `account` (the
+ * subject's id is then the account's id: a merchant keeps its number).
+ */
 export type MockSession = {
   id: number;
-  subjectType: 'staff' | 'client';
+  subjectType: 'staff' | 'account';
   subject: { id: number; name: string; email: string };
   ip: string;
   userAgent: string;
@@ -37,11 +40,11 @@ const AGENTS = [
 ];
 
 const HOUR = 3_600_000;
-const MERCHANT_SESSIONS = 3;
+const ACCOUNT_SESSIONS = 3;
 
 let store: Promise<Collection<MockSession>> | undefined;
 
-/** The session collection, seeded on first use: `sessions` devices per admin, then three merchants. */
+/** The session collection, seeded on first use: `sessions` devices per admin, then three accounts of merchant ranks. */
 export function sessionStore(): Promise<Collection<MockSession>> {
   store ??= loadDemoState().then((state) => {
     const now = Date.now();
@@ -61,9 +64,9 @@ export function sessionStore(): Promise<Collection<MockSession>> {
         });
       }
     }
-    for (const merchant of demoRows<DemoMerchant>(state, 'merchants').slice(0, MERCHANT_SESSIONS)) {
+    for (const merchant of demoRows<DemoMerchant>(state, 'merchants').slice(0, ACCOUNT_SESSIONS)) {
       rows.push({
-        subjectType: 'client',
+        subjectType: 'account',
         subject: { id: demoNumericId(merchant.id), name: merchant.name, email: merchant.email },
         ip: merchant.ips?.[0] ?? '203.0.113.201',
         userAgent: AGENTS[agent++ % AGENTS.length],

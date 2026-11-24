@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { listLedgerTransactions } from '@/features/finance';
 import { mockServer } from '@/mocks/node';
+import { orderStore } from '@/mocks/orders';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { toListQuery } from '../lib/filters';
 import { ORDER_TABS, tabFilters } from '../lib/status';
@@ -44,6 +45,8 @@ const VERIFYING = 48841; // delivered, waiting for a verification decision
 const HELD = 20490; // a paid storefront order the risk engine holds
 const STOREFRONT_DONE = 20400; // a delivered storefront order
 
+const RETAIL_RANK = 4; // the id of the one retail rank in the accounts mock
+
 const total = async (filters: Parameters<typeof toListQuery>[0]) =>
   (await listOrders(toListQuery(filters, { start: 0, end: 1 }))).total;
 
@@ -82,17 +85,36 @@ describe('listOrders', () => {
     expect(Number(cheapest.data[0].totalPrice)).toBeLessThanOrEqual(0.2);
   });
 
-  it('filters by channel, type, supplier, merchant and text', async () => {
+  it('filters by channel, type, supplier, account, rank and text', async () => {
     expect(await total({ channel: 'b2c' })).toBe(104);
     const imei = await listOrders(toListQuery({ type: 'imei' }));
     expect(imei.data.every((order) => order.service.type === 'imei')).toBe(true);
-    const byMerchant = await listOrders(toListQuery({ clientId: 13 }));
-    expect(byMerchant.total).toBeGreaterThan(0);
-    expect(byMerchant.data.every((order) => order.client?.id === 13)).toBe(true);
+    const byAccount = await listOrders(toListQuery({ accountId: 13 }));
+    expect(byAccount.total).toBeGreaterThan(0);
+    expect(byAccount.data.every((order) => order.account.id === 13)).toBe(true);
+    // The one retail rank holds every storefront buyer: the same orders as the storefront door.
+    const byRank = await listOrders(toListQuery({ rankId: RETAIL_RANK }));
+    expect(byRank.total).toBe(104);
+    expect(byRank.data.every((order) => order.account.rank.kind === 'retail')).toBe(true);
+    const byVip = await listOrders(toListQuery({ rankId: 3 }));
+    expect(byVip.total).toBeGreaterThan(0);
+    expect(
+      byVip.data.every((order) => order.account.rank.id === 3 && order.account.rank.kind === 'merchant'),
+    ).toBe(true);
     const bySupplier = await listOrders(toListQuery({ supplierId: 1 }));
     expect(bySupplier.data.every((order) => order.supplier?.id === 1)).toBe(true);
     expect((await listOrders({ q: '48100' })).data.map((order) => order.id)).toEqual([DELIVERED]);
     expect((await listOrders({ q: '354607116588777' })).data.some((order) => order.id === NORMAL)).toBe(true);
+  });
+
+  it('reads clientId as accountId, and answers 422 to customerId', async () => {
+    const alias = await listOrders({ filters: { clientId: 13 } });
+    expect(alias.total).toBe((await listOrders(toListQuery({ accountId: 13 }))).total);
+    expect(alias.data.every((order) => order.account.id === 13)).toBe(true);
+    await expect(listOrders({ filters: { customerId: 111 } })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { customerId: [expect.any(String)] },
+    });
   });
 
   it('finds the open orders that are past their SLA, never the ones waiting for a person', async () => {
@@ -115,10 +137,27 @@ describe('getOrder and listOrderEvents', () => {
       status: 'processing',
       channel: 'b2b',
       service: { name: 'T-Mobile USA Unlock', type: 'imei', slaMinutes: 1440 },
-      client: { name: 'Muscat Mobile Clinic' },
+      account: {
+        id: 13,
+        name: 'Muscat Mobile Clinic',
+        rank: { kind: 'merchant' },
+        guest: false,
+      },
       supplier: { name: 'Nordic GSM' },
-      customer: null,
     });
+    // One buyer field replaces the two of the old model.
+    const order = await getOrder(NORMAL);
+    expect(order).not.toHaveProperty('client');
+    expect(order).not.toHaveProperty('customer');
+  });
+
+  it('reads a storefront order with the buyer account, its retail rank and whether it is a guest', async () => {
+    const order = await getOrder(STOREFRONT_DONE);
+    expect(order.channel).toBe('b2c');
+    expect(order.account).toMatchObject({ rank: { id: RETAIL_RANK, kind: 'retail' } });
+    // Demo customer cN is account 100 + N, so no storefront buyer shares a number with a merchant.
+    expect(order.account.id).toBeGreaterThan(100);
+    expect(typeof order.account.guest).toBe('boolean');
   });
 
   it('answers 404 for an order that does not exist', async () => {
@@ -135,8 +174,12 @@ describe('getOrder and listOrderEvents', () => {
       'completed',
       'settle',
     ]);
-    expect(events[0].actor).toMatchObject({ type: 'client' });
+    // The buyer's own steps are written by its account: the actor carries its number, and so does the resolved `account` of the row.
+    const buyer = (await getOrder(DELIVERED)).account.id;
+    expect(events[0].actor).toMatchObject({ type: 'account', id: buyer });
+    expect(events[0].account).toEqual({ id: buyer });
     expect(events[2].actor).toMatchObject({ type: 'system' });
+    expect(events[2].account).toBeNull();
   });
 });
 
@@ -195,6 +238,25 @@ describe('order actions', () => {
     await reopenOrder(DELIVERED, { reason: 'Result did not work' });
     expect(await getOrder(DELIVERED)).toMatchObject({ status: 'processing', completedAt: null });
     await expect(reopenOrder(NORMAL)).rejects.toMatchObject({ status: 409, code: 'ORDER_NOT_COMPLETED' });
+  });
+
+  it('refuses to reopen when the account holds a retail rank now, and points to the refund', async () => {
+    // The merchant became a retail account after the sale: its live wallet is the store balance, which has no hold to reopen onto.
+    const order = (await orderStore()).find(DELIVERED);
+    if (!order) throw new Error('The delivered order is missing from the mock seed.');
+    order.account = {
+      ...order.account,
+      rank: { id: RETAIL_RANK, name: 'Storefront retail', kind: 'retail' },
+    };
+    await expect(reopenOrder(DELIVERED)).rejects.toMatchObject({
+      status: 409,
+      code: 'RANK_CHANGED',
+      detail: 'Refund the order instead.',
+    });
+    expect(await getOrder(DELIVERED)).toMatchObject({ status: 'completed' });
+    // The refund is the way out: it always credits the wallet the account has now.
+    await refundOrder(DELIVERED, { reason: 'Rank changed after the sale' });
+    expect(await getOrder(DELIVERED)).toMatchObject({ status: 'rejected' });
   });
 
   it('refunds a completed merchant order, but sends a storefront refund to the Refunds page', async () => {

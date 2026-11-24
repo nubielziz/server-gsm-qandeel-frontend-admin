@@ -10,7 +10,7 @@ const NO_ERROR_TOAST = () => false as const;
 
 type ForService<B> = { service: Service; body: B };
 
-/** Saves the fixed price of a service for each merchant group. */
+/** Saves the fixed price of a service for each rank. */
 export function useReplaceGroupPrices() {
   return useApiMutation({
     mutationFn: ({ service, body }: ForService<ReplaceGroupPricesBody>) =>

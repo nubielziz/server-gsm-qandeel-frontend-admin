@@ -25,7 +25,7 @@ export function PaymentsEmpty({ filter, anyDeposits, onShowAll }: PaymentsEmptyP
   }
   return (
     <EmptyState icon="receipt" title="No deposits yet">
-      When a merchant pays by bank, USDT, Wise or card it shows up here.
+      When an account tops up its wallet by bank, USDT, Wise or card it shows up here.
     </EmptyState>
   );
 }

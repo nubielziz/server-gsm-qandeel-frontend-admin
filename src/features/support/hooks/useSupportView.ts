@@ -29,14 +29,14 @@ export function useSupportView() {
       setParams((prev) => writeSupportFilters(prev, patch), { replace: true }),
     [setParams],
   );
-  /** The demo's "Show open tickets": the default filter, everyone and no search (a chosen customer stays). */
+  /** The demo's "Show open tickets": the default filter, everyone and no search (a chosen account stays). */
   const resetFilters = useCallback(
     () =>
       setParams(
         (prev) => {
-          const { customerId } = parseSupportFilters(prev);
+          const { accountId } = parseSupportFilters(prev);
           return writeSupportFilters(prev, {
-            filter: customerId === null ? 'open' : 'all',
+            filter: accountId === null ? 'open' : 'all',
             who: 'all',
             q: '',
           });

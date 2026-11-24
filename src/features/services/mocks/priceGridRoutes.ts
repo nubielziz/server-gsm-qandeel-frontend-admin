@@ -47,7 +47,7 @@ function marginOver(service: MockService, priceNow: string | number): string | n
   return service.cost === 0 ? null : toMoney(round(Number(priceNow) - service.cost, 2));
 }
 
-/** One column per merchant group (kind b2b) in the groups' order: the fixed price, the price the resolver gives, and the margin. */
+/** One column per rank (kind b2b) in the groups' order: the fixed price, the price the resolver gives, and the margin. */
 function groupCells(stores: Stores, service: MockService): PriceGridGroupPrice[] {
   const groups = stores.groups.filter((group) => group.kind !== RETAIL_KIND);
   const first = groups[0];
@@ -66,8 +66,8 @@ function groupCells(stores: Stores, service: MockService): PriceGridGroupPrice[]
 }
 
 /**
- * The shop price of a service. The group prices replace writes it as a row of the shop group; the merchants feature owns the groups, so a row
- * of a group the store does not list as a merchant group is the shop's. A row that only repeats the shop price the storefront mock holds is
+ * The shop price of a service. The group prices replace writes it as a row of the shop group; the accounts feature owns the groups, so a row
+ * of a group the store does not list as a rank is the shop's. A row that only repeats the shop price the storefront mock holds is
  * a box nobody touched, so it does not turn a rule-made price into a typed one.
  */
 function retailOf(stores: Stores, service: MockService, shop: ShopFacts) {

@@ -1,7 +1,7 @@
-// The storefront funnel with its small figures, and the top customers, for the dev mock. Ports the numbers of storefrontPanel()
-// and topCustomersPanel() in 40-p-dashboard.js and supportStats() of 12-state-b2c.js. The real server counts these.
-import { demoNumericId, toMoney } from '@/mocks/seed';
-import type { StorefrontSummary, TopCustomer } from '../types';
+// The storefront funnel with its small figures, for the dev mock. Ports the numbers of storefrontPanel() in 40-p-dashboard.js and
+// supportStats() of 12-state-b2c.js. The real server counts these. (The best buyers are not here: the Top accounts report has them.)
+import { toMoney } from '@/mocks/seed';
+import type { StorefrontSummary } from '../types';
 import { createdAt, isHeld } from './orderRules';
 import { DAY, median, sumBy } from './util';
 import type { World } from './world';
@@ -40,31 +40,3 @@ export function storefrontSummary(world: World): StorefrontSummary {
     heldForReview: world.orders.filter(isHeld).length,
   };
 }
-
-/** The five storefront customers who spent most over the last `days` days (rejected orders do not count). */
-export function topCustomers(world: World, days: number): TopCustomer[] {
-  const since = world.now - days * DAY;
-  const known = new Map(world.customers.map((customer) => [demoNumericId(customer.id), customer]));
-  const totals = new Map<number, { orders: number; spend: number }>();
-  for (const order of world.orders) {
-    if (order.channel !== 'b2c' || !order.customer || order.status === 'rejected') continue;
-    if (createdAt(order) < since) continue;
-    const entry = totals.get(order.customer.id) ?? { orders: 0, spend: 0 };
-    entry.orders += 1;
-    entry.spend += gross(order);
-    totals.set(order.customer.id, entry);
-  }
-  return [...totals]
-    .map(([id, total]) => ({
-      id,
-      name: known.get(id)?.name ?? unknownName(id),
-      country: known.get(id)?.country ?? '',
-      orders: total.orders,
-      spend: toMoney(total.spend),
-    }))
-    .sort((a, b) => Number(b.spend) - Number(a.spend))
-    .slice(0, 5);
-}
-
-// A customer the seed does not know (it cannot happen with the demo data).
-const unknownName = (id: number): string => `Customer ${id}`;

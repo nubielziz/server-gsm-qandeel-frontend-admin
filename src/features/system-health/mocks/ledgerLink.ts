@@ -11,8 +11,8 @@ const touchesWallet = (transaction: LedgerTransaction): boolean =>
   );
 
 /**
- * True when a manual adjustment on that merchant's wallet was posted after the state was seeded (the wallet adjust of
- * the merchants mock writes one). Only the ledger-mismatch scenario has a difference to put right.
+ * True when a manual adjustment on that account's wallet was posted after the state was seeded (the wallet adjust of
+ * the accounts mock writes one). Only the ledger-mismatch scenario has a difference to put right.
  */
 export async function reversingEntryPosted(state: HealthState): Promise<boolean> {
   if (!state.profile.ledgerMismatch) return false;

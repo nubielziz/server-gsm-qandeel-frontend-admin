@@ -1,9 +1,9 @@
-// The supplier and merchant names behind the filter menus and the reroute menu. They are read once and kept for a few
+// The supplier, merchant and rank names behind the filter menus and the reroute menu. They are read once and kept for a few
 // minutes: the lists change rarely, and a menu should not wait for a request each time the page opens.
-import { listClients } from '@/features/merchants';
+import { listAccounts, listRanks, toListQuery as toAccountsQuery } from '@/features/accounts';
 import { useApiQuery } from '@/lib/query';
 import { listSuppliers } from '@/features/suppliers';
-import type { ClientOption, SupplierOption } from '../types';
+import type { AccountOption, RankOption, SupplierOption } from '../types';
 
 /** Most names one menu loads. A longer list would need a search box; the demo's menus were plain selects too. */
 const LOOKUP_CAP = 200;
@@ -30,14 +30,36 @@ export function useSupplierOptions(enabled = true) {
   });
 }
 
-/** The merchants. Pass `enabled: false` when the staff member lacks `clients:read`. */
-export function useClientOptions(enabled = true) {
+/**
+ * The merchants: the accounts that hold a merchant rank. Pass `enabled: false` when the staff member lacks `clients:read`. A
+ * retail account is not in the menu; an order of one is found by the rank menu or from the account's own record.
+ */
+export function useMerchantOptions(enabled = true) {
   return useApiQuery({
-    queryKey: [...ORDER_LOOKUP_KEY, 'clients'],
-    // The merchants feature owns `GET /admin/clients`; the menu needs only ids and names, first 200 by name.
+    queryKey: [...ORDER_LOOKUP_KEY, 'merchants'],
+    // The accounts feature owns `GET /admin/clients`; the menu needs only ids and names, first 200 by name.
     queryFn: ({ signal }) =>
-      listClients({ start: 0, end: LOOKUP_CAP, sort: ['name'], order: ['asc'] }, { signal }),
-    select: (result): ClientOption[] => result.data.map(({ id, name }) => ({ id, name })),
+      listAccounts(
+        toAccountsQuery(
+          { rankKind: 'merchant' },
+          { start: 0, end: LOOKUP_CAP, sort: ['name'], order: ['asc'] },
+        ),
+        { signal },
+      ),
+    select: (result): AccountOption[] => result.data.map(({ id, name }) => ({ id, name })),
+    enabled,
+    staleTime: FIVE_MINUTES,
+  });
+}
+
+/** The ranks, every kind. Pass `enabled: false` when the staff member lacks `groups:read`. */
+export function useRankOptions(enabled = true) {
+  return useApiQuery({
+    queryKey: [...ORDER_LOOKUP_KEY, 'ranks'],
+    // The accounts feature owns `GET /admin/client-groups`; the menu needs only ids and names, in the ranks' own order.
+    queryFn: ({ signal }) =>
+      listRanks({ start: 0, end: LOOKUP_CAP, sort: ['sort'], order: ['asc'] }, { signal }),
+    select: (result): RankOption[] => result.data.map(({ id, name }) => ({ id, name })),
     enabled,
     staleTime: FIVE_MINUTES,
   });

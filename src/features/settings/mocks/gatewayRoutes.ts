@@ -92,7 +92,7 @@ function applyFields(
   if ('allowedGroupIds' in body) {
     const ids = Array.isArray(body.allowedGroupIds) ? body.allowedGroupIds.map(Number) : [];
     if (ids.every((id) => Number.isInteger(id) && id > 0)) draft.allowedGroupIds = ids;
-    else problems.push({ field: 'allowedGroupIds', message: 'Choose merchant groups.' });
+    else problems.push({ field: 'allowedGroupIds', message: 'Choose ranks.' });
   }
   for (const key of ['supportsRefunds', 'supports3ds', 'isManual', 'isActive'] as const)
     if (key in body) draft[key] = body[key] === true;

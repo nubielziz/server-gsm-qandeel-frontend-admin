@@ -49,7 +49,8 @@ describe('getRiskQueue', () => {
       paymentMethod: 'card',
     });
     expect(queue.held[0].signals).toEqual(['New customer, first order above $40']);
-    expect(queue.held[0].customer).toMatchObject({ name: 'Tyler Brooks', country: 'US' });
+    // The buyer is an account: demo customer 10 is account 110.
+    expect(queue.held[0].customer).toMatchObject({ id: 110, name: 'Tyler Brooks', country: 'US' });
     expect(queue.held[0].customer).not.toHaveProperty('riskLevel');
     expect(queue.stats).toMatchObject({ decided30d: 2, approved30d: 1, refunded30d: 1 });
     expect(queue.recent?.map((order) => order.orderId)).toEqual(DECIDED);

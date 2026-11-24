@@ -26,7 +26,7 @@ export function AuditPage() {
     <>
       <PageHeader
         title="Audit log"
-        sub="Every change to money, prices, merchants and suppliers, with who and when. Entries can’t be edited or deleted."
+        sub="Every change to money, prices, accounts and suppliers, with who and when. Entries can’t be edited or deleted."
       />
       <Panel flush>
         <AuditToolbar view={view} actors={actors} onChange={setView} onClear={clear} total={logs.total} />

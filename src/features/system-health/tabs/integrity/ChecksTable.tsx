@@ -1,4 +1,4 @@
-// ChecksTable: the four ledger checks as a table (cards on a phone) with the quiet "passed" line under it. Part of the
+// ChecksTable: the ledger checks as a table (cards on a phone) with the quiet "passed" line under it. Part of the
 // Integrity tab (route group health, GET /admin/system/integrity). No demo screen.
 import type { DataTableColumn } from '@/components/ui';
 import { num } from '@/lib/format';

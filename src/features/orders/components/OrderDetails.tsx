@@ -3,8 +3,9 @@
 // may read them, are plain download links (`GET /admin/files/:id`).
 import { Link } from 'react-router';
 import { CopyButton, Icon, KeyValue, TypeTag } from '@/components/ui';
+import { accountPath } from '@/features/accounts';
 import type { Id } from '@/lib/api';
-import { dur, fmtImei, hasCustomerName, maskedCustomerLabel, maskEmail } from '@/lib/format';
+import { dur, fmtImei, hasAccountName, maskedAccountLabel, maskEmail } from '@/lib/format';
 import { orderFileUrl } from '../api';
 import type { OrderGrants } from '../hooks/useOrderGrants';
 import { ageText, slaMs, slaView } from '../lib/sla';
@@ -44,32 +45,26 @@ export interface OrderDetailsProps {
 }
 
 export function OrderDetails({ order, now, grants }: OrderDetailsProps) {
-  const { service, customer, client, supplier } = order;
+  const { service, account, supplier } = order;
   const device = typeof order.inputs?.device === 'string' ? order.inputs.device : null;
   const files = grants.can('files:read');
   return (
     <KeyValue
       className="mb-5"
       rows={[
-        customer
-          ? [
-              'Customer',
-              <>
-                <Link className="link" to={`/customers/${customer.id}`}>
-                  {maskedCustomerLabel(customer)}
-                </Link>{' '}
-                <span className="text-ink3">· storefront</span>
-                {hasCustomerName(customer) && (
-                  <p className="text-xs text-ink3">{maskEmail(customer.email)}</p>
-                )}
-              </>,
-            ]
-          : client && [
-              'Merchant',
-              <Link className="link" to={`/merchants/${client.id}`}>
-                {client.name}
-              </Link>,
-            ],
+        [
+          'Account',
+          <>
+            <Link className="link" to={accountPath(account.id)}>
+              {maskedAccountLabel(account)}
+            </Link>{' '}
+            <span className="text-ink3">
+              · {account.rank.name}
+              {account.guest ? ', guest' : ''}
+            </span>
+            {hasAccountName(account) && <p className="text-xs text-ink3">{maskEmail(account.email)}</p>}
+          </>,
+        ],
         [
           'Service',
           <>

@@ -11,7 +11,7 @@ import { resources, toPageResource, type PageResource } from '../resources';
 import { AppCommandPalette } from './AppCommandPalette';
 import { buildPaletteItems } from './buildPaletteItems';
 import { filterFixedItems } from './filterItems';
-import { SEARCH_DEBOUNCE_MS, type PaletteSource } from './paletteSources';
+import { paletteSources, SEARCH_DEBOUNCE_MS, type PaletteSource } from './paletteSources';
 import { useRemotePaletteItems } from './useRemotePaletteItems';
 
 setupMockApi();
@@ -30,8 +30,8 @@ function items(pages: PageResource[], overrides: Partial<Parameters<typeof build
 describe('buildPaletteItems', () => {
   it('offers a "Go to" row per permitted page, in the demo’s order, then the actions', () => {
     const rows = items(ALL_PAGES);
-    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(16);
-    expect(rows.slice(0, 3).map((row) => row.label)).toEqual(['Dashboard', 'Orders', 'Merchants']);
+    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(15);
+    expect(rows.slice(0, 3).map((row) => row.label)).toEqual(['Dashboard', 'Orders', 'Accounts']);
     expect(rows.filter((row) => row.group === 'Actions').map((row) => row.label)).toEqual([
       'Open the risk review queue',
       'Review refund requests',
@@ -56,6 +56,20 @@ describe('buildPaletteItems', () => {
       .find((row) => row.label === 'Product / Services')
       ?.run();
     expect(go).toHaveBeenCalledExactlyOnceWith('/products');
+  });
+
+  it('offers one Accounts row, which opens the Accounts page, and none for Merchants or Customers', () => {
+    const goTo = items(ALL_PAGES)
+      .filter((row) => row.group === 'Go to')
+      .map((row) => row.label);
+    expect(goTo.filter((label) => label === 'Accounts')).toHaveLength(1);
+    expect(goTo).not.toContain('Merchants');
+    expect(goTo).not.toContain('Customers');
+    const go = vi.fn();
+    items(pagesNamed('accounts'), { go })
+      .find((row) => row.label === 'Accounts')
+      ?.run();
+    expect(go).toHaveBeenCalledExactlyOnceWith('/accounts');
   });
 
   it('leaves out the demo’s simulations', () => {
@@ -161,13 +175,13 @@ describe('useRemotePaletteItems', () => {
 
   it('gives results the source’s group unless they have their own', async () => {
     const source: PaletteSource = {
-      id: 'merchants',
-      group: 'Merchants',
-      search: async () => [found('m1'), found('m2', { group: 'Elsewhere' })],
+      id: 'accounts',
+      group: 'Accounts',
+      search: async () => [found('a1'), found('a2', { group: 'Elsewhere' })],
     };
     const { result } = setup('ac', [source]);
     await wait(SEARCH_DEBOUNCE_MS);
-    expect(result.current.map((item) => item.group)).toEqual(['Merchants', 'Elsewhere']);
+    expect(result.current.map((item) => item.group)).toEqual(['Accounts', 'Elsewhere']);
   });
 
   it('keeps source order, and ignores a source that fails or throws at once', async () => {
@@ -236,6 +250,19 @@ describe('useRemotePaletteItems', () => {
     const { result } = setup('anything', []);
     await wait(1000);
     expect(result.current).toEqual([]);
+  });
+});
+
+describe('paletteSources', () => {
+  // The accounts feature's manifest lists `accountsPaletteSource`, and the two old features, with their Merchants and Customers
+  // sources, are gone.
+  it('search accounts through one source, which is the only one for merchants and customers', () => {
+    const ids = paletteSources.map((source) => source.id);
+    expect(ids.filter((id) => id === 'accounts')).toHaveLength(1);
+    expect(ids).not.toContain('merchants');
+    expect(ids).not.toContain('customers');
+    const accounts = paletteSources.find((source) => source.id === 'accounts');
+    expect(accounts).toMatchObject({ group: 'Accounts', permission: 'clients:read' });
   });
 });
 
@@ -317,7 +344,7 @@ describe('AppCommandPalette', () => {
   it('shows at most 14 rows, like the demo', async () => {
     renderPalette([]);
     await screen.findByRole('combobox');
-    // 16 pages and 5 actions are available; the list stops at 14.
+    // 15 pages and 5 actions are available; the list stops at 14.
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(14));
   });
 });

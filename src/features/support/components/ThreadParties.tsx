@@ -1,13 +1,14 @@
-// ThreadParties: the strip under the thread header: who wrote (a link to the customer or the merchant) and the order the ticket is
+// ThreadParties: the strip under the thread header: who wrote (a link to the account) and the order the ticket is
 // about (a link that opens its drawer, with its status badge, service and price). Ports the two-column block of threadView
 // (49-p-support.js). The order is read separately; without `orders:read` the strip shows the number only.
 import type { MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router';
-import { customerPath } from '@/features/customers';
-import { merchantPath } from '@/features/merchants';
+import { accountPath } from '@/features/accounts';
 import { OrderStatusBadge, orderLabel, orderPath, useOrderDrawer, type Order } from '@/features/orders';
-import { hasCustomerName, maskEmail, money } from '@/lib/format';
-import { requesterLabel } from '../lib/status';
+import { useCanOpenPage } from '@/lib/auth/useCanOpenPage';
+import { hasAccountName, maskEmail, money } from '@/lib/format';
+import { useSupportGrants } from '../hooks/useSupportGrants';
+import { isMerchantRequester, requesterLabel } from '../lib/status';
 import type { SupportTicketDetail } from '../types';
 
 export interface ThreadPartiesProps {
@@ -63,22 +64,42 @@ function OrderBlock({ orderId, order }: { orderId: number | null; order: Order |
   );
 }
 
-export function ThreadParties({ ticket, order }: ThreadPartiesProps) {
-  const merchant = ticket.requesterType === 'client';
-  const to = merchant ? merchantPath(ticket.requesterId) : customerPath(ticket.requesterId);
+// The address under the name. The server masks it for a caller without `clients:read` (decision 047), for every rank; the console masks it
+// again for a retail account (its second pass) and shows a merchant's as it came. Without `clients:read` the hint says why it is hidden.
+function Address({ ticket }: { ticket: SupportTicketDetail }) {
+  const grants = useSupportGrants();
   const email = ticket.requester.email;
+  const merchant = isMerchantRequester(ticket);
+  if (!email || !(merchant || hasAccountName(ticket.requester))) return null;
+  const canSee = grants.can('clients:read');
+  return (
+    <p
+      className="truncate text-xs text-ink3"
+      title={canSee ? undefined : 'The address is hidden: you need the clients:read permission to see it.'}
+    >
+      {merchant && canSee ? email : maskEmail(email)}
+    </p>
+  );
+}
+
+export function ThreadParties({ ticket, order }: ThreadPartiesProps) {
+  const merchant = isMerchantRequester(ticket);
+  const canOpen = useCanOpenPage('accounts');
+  const label = requesterLabel(ticket);
   return (
     <div className="grid gap-3 border-b border-line bg-sunken px-3.5 py-2.5 text-sm sm:grid-cols-2">
       <div className="min-w-0">
-        <p className="text-xs text-ink3">{merchant ? 'Merchant' : 'Customer'}</p>
+        <p className="text-xs text-ink3">{merchant ? 'Merchant' : 'Retail account'}</p>
         <p className="truncate font-medium">
-          <Link className="link" to={to}>
-            {requesterLabel(ticket)}
-          </Link>
+          {canOpen === false ? (
+            label
+          ) : (
+            <Link className="link" to={accountPath(ticket.requesterId)}>
+              {label}
+            </Link>
+          )}
         </p>
-        {email && (merchant || hasCustomerName(ticket.requester)) && (
-          <p className="truncate text-xs text-ink3">{merchant ? email : maskEmail(email)}</p>
-        )}
+        <Address ticket={ticket} />
       </div>
       <div className="min-w-0">
         <OrderBlock orderId={ticket.orderId} order={order} />

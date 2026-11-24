@@ -1,15 +1,22 @@
-// The people the mock campaigns reach: a small made-up audience (6 staff, 28 merchants, 80 customers) with the facts the server's providers know (can see an
-// inbox, may be emailed, agreed to marketing), so the live count, the send and the recipients agree with each other.
+// The people the mock campaigns reach: a small made-up audience (6 staff, 28 merchant accounts, 80 retail accounts) with the facts the server's providers know (can see an
+// inbox, may be emailed, agreed to marketing), so the live count, the send and the recipients agree with each other. A merchant keeps its number as the account
+// id and retail buyer `n` is account `100 + n` (`@/mocks/seed/accountIds`), so a person picked from the accounts mock is a person of this audience.
 // Mocks fake answers only (decision 014): the real server counts the real people.
+import { customerAccountId, merchantAccountId } from '@/mocks/seed/accountIds';
 import type { AudiencePreview, AudienceSpec, CampaignChannel, CampaignPurpose, PersonType } from '../types';
+
+/** The kind a made-up person has: staff, an account of a merchant rank or an account of a retail rank. */
+export type MockKind = 'staff' | 'merchant' | 'retail';
 
 /** One person of the made-up audience, with how each channel reaches them. */
 export type MockPerson = {
   type: PersonType;
+  kind: MockKind;
+  /** The staff number, or the account id. */
   id: number;
   inApp: boolean;
   email: boolean;
-  /** Customers only: agreed to marketing. Everyone else is true. */
+  /** Retail accounts only: agreed to marketing. Everyone else is true. */
   consent: boolean;
 };
 
@@ -17,30 +24,30 @@ const COUNTRIES = ['JO', 'SA', 'AE', 'EG', 'KW'];
 const STAFF_COUNT = 6;
 const MERCHANT_COUNT = 28;
 const ACTIVE_MERCHANTS = 24;
-const CUSTOMER_COUNT = 80;
-const CUSTOMERS_WITH_ACCOUNT = 60;
+const RETAIL_COUNT = 80;
+const RETAIL_WITH_LOGIN = 60;
 
-const staff = (id: number) => ({ type: 'staff' as const, id, roleId: ((id - 1) % 6) + 1 });
-const merchant = (id: number) => ({
-  type: 'client' as const,
-  id,
-  pending: id > ACTIVE_MERCHANTS,
-  groupId: (id % 3) + 1,
-  country: COUNTRIES[id % 4],
+const staff = (id: number) => ({ id, roleId: ((id - 1) % 6) + 1 });
+/** Merchant `n` of the made-up audience: the account of that number. Those past the active ones are suspended, so a segment never reaches them. */
+const merchant = (n: number) => ({
+  id: merchantAccountId(n),
+  active: n <= ACTIVE_MERCHANTS,
+  rankId: (n % 3) + 1,
+  country: COUNTRIES[n % 4],
 });
-const customer = (id: number) => ({
-  type: 'customer' as const,
-  id,
-  hasAccount: id <= CUSTOMERS_WITH_ACCOUNT,
-  country: COUNTRIES[id % 5],
+/** Retail buyer `n`: account `100 + n`; the first ones have a login, the rest are guests. */
+const retail = (n: number) => ({
+  id: customerAccountId(n),
+  hasAccount: n <= RETAIL_WITH_LOGIN,
+  country: COUNTRIES[n % 5],
 });
 
 /** A merchant who switched the announcement email off (about one in twenty-five). */
-const merchantEmail = (id: number) => id % 25 !== 0;
-/** A customer agrees to marketing seven times in ten. */
-const customerConsent = (id: number) => id % 10 < 7;
+const merchantEmail = (n: number) => n % 25 !== 0;
+/** A retail account agrees to marketing seven times in ten. */
+const retailConsent = (n: number) => n % 10 < 7;
 
-/** Everyone the spec targets who is eligible, before consent: staff, merchants and customers, in the server's order, minus the people left out. */
+/** Everyone the spec targets who is eligible, before consent: staff, merchants and retail accounts, in the server's order, minus the people left out. */
 export function eligiblePeople(
   spec: AudienceSpec,
   purpose: CampaignPurpose,
@@ -54,41 +61,42 @@ export function eligiblePeople(
     const row = staff(id);
     const inSegment = spec.staff && (!spec.staff.roleIds || spec.staff.roleIds.includes(row.roleId));
     if (inSegment || include.has(`staff:${id}`))
-      out.push({ type: 'staff', id, inApp: true, email: true, consent: true });
+      out.push({ type: 'staff', kind: 'staff', id, inApp: true, email: true, consent: true });
   }
-  for (let id = 1; id <= MERCHANT_COUNT; id++) {
-    const row = merchant(id);
+  for (let n = 1; n <= MERCHANT_COUNT; n++) {
+    const row = merchant(n);
     const segment = spec.merchants;
-    const statuses = segment?.statuses ?? ['active'];
     const inSegment =
       segment &&
-      statuses.includes(row.pending ? 'pending' : 'active') &&
-      (!segment.groupIds || segment.groupIds.includes(row.groupId)) &&
+      row.active &&
+      (!segment.groupIds || segment.groupIds.includes(row.rankId)) &&
       (!segment.countries || segment.countries.includes(row.country));
-    if (inSegment || include.has(`client:${id}`))
+    if (inSegment || include.has(`account:${row.id}`))
       out.push({
-        type: 'client',
-        id,
+        type: 'account',
+        kind: 'merchant',
+        id: row.id,
         inApp: true,
-        email: merchantEmail(id),
+        email: merchantEmail(n),
         consent: true,
       });
   }
-  for (let id = 1; id <= CUSTOMER_COUNT; id++) {
-    const row = customer(id);
+  for (let n = 1; n <= RETAIL_COUNT; n++) {
+    const row = retail(n);
     const segment = spec.customers;
     const inSegment =
       segment &&
       (segment.hasAccount === undefined || segment.hasAccount === row.hasAccount) &&
       (!segment.countries || segment.countries.includes(row.country));
-    if (!inSegment && !include.has(`customer:${id}`)) continue;
-    if (purpose === 'marketing' && !customerConsent(id)) {
+    if (!inSegment && !include.has(`account:${row.id}`)) continue;
+    if (purpose === 'marketing' && !retailConsent(n)) {
       noConsent += 1;
       continue;
     }
     out.push({
-      type: 'customer',
-      id,
+      type: 'account',
+      kind: 'retail',
+      id: row.id,
       inApp: row.hasAccount,
       email: true,
       consent: true,
@@ -114,9 +122,9 @@ export function previewOf(
     total: people.length,
     reachable: reachable.length,
     byType: {
-      staff: count((p) => p.type === 'staff'),
-      client: count((p) => p.type === 'client'),
-      customer: count((p) => p.type === 'customer'),
+      staff: count((p) => p.kind === 'staff'),
+      merchant: count((p) => p.kind === 'merchant'),
+      retail: count((p) => p.kind === 'retail'),
     },
     byChannel: {
       inApp: wants('in_app') ? count((p) => p.inApp) : 0,
@@ -134,5 +142,6 @@ export function previewOf(
 export const MOCK_AUDIENCE = {
   staff: STAFF_COUNT,
   merchants: MERCHANT_COUNT,
-  customers: CUSTOMER_COUNT,
+  activeMerchants: ACTIVE_MERCHANTS,
+  retail: RETAIL_COUNT,
 } as const;

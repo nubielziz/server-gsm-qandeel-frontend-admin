@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { safeDestination, withDestination } from './destination';
 
 describe('safeDestination', () => {
-  it.each(['/orders', '/orders?tab=review&status=requested', '/merchants/12', '/finance#top'])(
+  it.each(['/orders', '/orders?tab=review&status=requested', '/accounts/12', '/finance#top'])(
     'keeps the console path %s',
     (path) => {
       expect(safeDestination(path)).toBe(path);

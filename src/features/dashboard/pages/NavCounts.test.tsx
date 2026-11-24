@@ -47,7 +47,7 @@ describe('sidebar counts', () => {
     expect(link(/^Finance/).querySelector('.dot')).toBeNull();
     expect(link(/^Risk/).querySelector('.dot')).toBeNull();
     // Pages the dashboard has no count for show none.
-    for (const name of [/^Dashboard/, /^Merchants/, /^Customers/, /^Settings/, /^Audit log/]) {
+    for (const name of [/^Dashboard/, /^Accounts/, /^Settings/, /^Audit log/]) {
       expect(link(name).querySelector('.count')).toBeNull();
     }
   });
@@ -63,7 +63,7 @@ describe('sidebar counts', () => {
     await waitFor(() =>
       expect(within(nav.getByRole('link', { name: /^Orders/ })).getByText('12')).toBeInTheDocument(),
     );
-    expect(nav.getByRole('link', { name: /^Merchants/ }).querySelector('.count')).toBeNull();
+    expect(nav.getByRole('link', { name: /^Accounts/ }).querySelector('.count')).toBeNull();
   });
 
   it('leaves out a page whose count is zero', async () => {

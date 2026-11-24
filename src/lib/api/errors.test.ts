@@ -91,6 +91,54 @@ describe('parseErrorResponse', () => {
     expect(error.fieldErrors).toEqual({ email: ['bad', 'worse'], name: ['missing'], age: ['too low'] });
   });
 
+  it('keeps the code of each errors[] entry beside its message, field by field and in order', async () => {
+    const error = await parseErrorResponse(
+      problemResponse(
+        {
+          code: 'RANK_CHANGE_BLOCKED',
+          errors: [
+            { field: 'groupId', code: 'frozen', message: 'The wallet is on hold.' },
+            { field: 'email', message: 'Taken.' },
+            { field: 'groupId', code: 'negative_balance', message: 'The balance is below zero.' },
+            { code: 'guest', message: 'No field here.' },
+          ],
+        },
+        { status: 409 },
+      ),
+    );
+    // The messages are read as before; the codes sit beside them and an entry without a code adds none.
+    expect(error.fieldErrors).toEqual({
+      groupId: ['The wallet is on hold.', 'The balance is below zero.'],
+      email: ['Taken.'],
+    });
+    expect(error.fieldCodes).toEqual({ groupId: ['frozen', 'negative_balance'] });
+    expect(error.formErrors).toEqual(['No field here.']);
+  });
+
+  it('reads a code that is also the message, and codes inside an errors object keyed by field', async () => {
+    const onlyCode = await parseErrorResponse(
+      problemResponse({ errors: [{ field: 'email', code: 'login_exists' }] }),
+    );
+    expect(onlyCode.fieldErrors).toEqual({ email: ['login_exists'] });
+    expect(onlyCode.fieldCodes).toEqual({ email: ['login_exists'] });
+    const keyed = await parseErrorResponse(
+      problemResponse({ errors: { email: [{ code: 'guest', message: 'A guest uses it.' }, 'plain'] } }),
+    );
+    expect(keyed.fieldErrors).toEqual({ email: ['A guest uses it.', 'plain'] });
+    expect(keyed.fieldCodes).toEqual({ email: ['guest'] });
+  });
+
+  it('has no codes when the body names none, and when the error is built by hand', async () => {
+    const error = await parseErrorResponse(
+      problemResponse({ errors: [{ field: 'a', message: 'one' }, 'general'] }),
+    );
+    expect(error.fieldCodes).toEqual({});
+    expect(new ApiError({ status: 400 }).fieldCodes).toEqual({});
+    expect(new ApiError({ status: 409, fieldCodes: { groupId: ['guest'] } }).fieldCodes).toEqual({
+      groupId: ['guest'],
+    });
+  });
+
   it('falls back to HTTP_<status> and the status text when the body says nothing', async () => {
     const error = await parseErrorResponse(new Response('', { status: 500, statusText: 'Server Error' }));
     expect(error).toMatchObject({ status: 500, code: 'HTTP_500', title: 'Server Error' });

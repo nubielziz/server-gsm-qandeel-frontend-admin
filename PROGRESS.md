@@ -11,6 +11,32 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-24): one Accounts page (decision 023), merged
+
+The backend's decision 064 makes merchants and customers one account type, told apart by a rank. The console follows: the Merchants and Customers
+pages are gone and one page, Accounts, does what both did, in the layout of the Product / Services page (decision 022).
+
+- **The page** `/accounts` ("Accounts", Operations group): a strip of **All accounts, Retail, Merchants, Guests** with counts and a row of views, **All,
+  Add Account (+), Ranks, Add Rank (+)** and **Data requests (n)**. Every view is a full view with the footer pager and the pinned bar; the "With selected"
+  strip suspends, reactivates and signs accounts out, and moves no money.
+- **The record** `/accounts/:id`: a left menu of up to thirteen parts (Overview, Financial, Profile, Invoices, Payments, API, Security, Prices, Orders,
+  Support, Statement, Privacy and risk, Activity Log) shown by what the role may read and what the account has (a merchant rank, a login, a guest).
+  Actions sit in the part that owns them; there is no action header.
+- **Ranks**: the groups became the Ranks view. **Change rank…** names the blockers and the amount that moves with the account; it is offered to the Owner only,
+  as are a merchant rank in Add Account and a new API key. Every money write sends one `Idempotency-Key` per dialog opening.
+- **Old addresses** of `/merchants` and `/customers` redirect for good. An old customer record carries `from=customer`, because a customer number is
+  not an account number: the page asks the server which account it became. `g m` opens Accounts; `g k` is retired.
+- **Other pages** name accounts, not merchants and customers: orders (the buyer and its rank), refunds, risk, finance (store balances, the ledger kind "Rank
+  change transfer"), support, notifications (the people picker has the tabs Staff and Accounts), audit (one filter, "Account"), the dashboard (one Top
+  accounts panel), system health (the check that wallets follow ranks), access (sessions of either kind) and Product / Services ("Rank").
+- **Backend needed** (its decision 064): the account routes, the rank change and the 410 on `/admin/customers*`. The wire the console reads is in MISMATCHES
+  M328 to M367. The two repositories and the shop are released together.
+- **Checks**: typecheck, lint (eslint, prettier, the English check) and the production build pass. The Accounts and finance suites passed on their last full run
+  (1,321 tests); the mock-layer tests, the live-route generator test and the people picker test pass. The whole suite passes (7,723 tests).
+  `src/mocks/liveRoutes.gen.ts` and `docs/ROUTE_COVERAGE.md` are made again from the backend's contract and the `@route` tags.
+- **Not in this version**: lifetime figures on Overview (the detail read carries only the 30-day figures), a bulk action that moves money, and the retired
+  Flagged tab and risk level.
+
 ## Status (2026-11-24): the Product / Services page (decision 022), built on `feat/products-services`, merged
 
 The owner found the one-page Catalog too complex and asked for a page in the layout their staff already know. The Catalog page of

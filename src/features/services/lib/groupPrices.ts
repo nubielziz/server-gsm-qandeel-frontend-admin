@@ -3,7 +3,7 @@
 import type { Money } from '@/lib/api';
 import type { ClientGroup, ServiceGroupPrice } from '../types';
 
-/** `kind` of the storefront's single retail group among the merchant groups. */
+/** `kind` of the storefront's single retail group among the ranks. */
 export const RETAIL_GROUP_KIND = 'b2c_retail';
 
 /**

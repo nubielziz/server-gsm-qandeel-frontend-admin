@@ -67,7 +67,7 @@ export type World = {
   checkouts: { created: number }[];
   /** Twelve months of order counts, oldest first (the demo's synthetic yearly history). */
   monthly: SeedMonth[];
-  /** Merchant wallet balance by merchant id, from the ledger (`client_wallet` is a liability: credits are negative). */
+  /** Merchant wallet balance by account id (a merchant keeps its number), from the ledger (`client_wallet` is a liability: credits are negative). */
   wallets: Map<number, number>;
   /** Supplier prepaid balance by supplier id, from the ledger. */
   prepaid: Map<number, number>;
@@ -90,7 +90,7 @@ export async function loadWorld(): Promise<World> {
   for (const transaction of ledger.list()) {
     for (const { account, amount } of transaction.entries) {
       if (account.ownerId === null) continue;
-      if (account.kind === 'client_wallet' && account.ownerType === 'client') {
+      if (account.kind === 'client_wallet' && account.ownerType === 'account') {
         wallets.set(account.ownerId, (wallets.get(account.ownerId) ?? 0) - Number(amount));
       } else if (account.kind === 'supplier_prepaid' && account.ownerType === 'supplier') {
         prepaid.set(account.ownerId, (prepaid.get(account.ownerId) ?? 0) + Number(amount));

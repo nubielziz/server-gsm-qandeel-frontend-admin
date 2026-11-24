@@ -21,7 +21,7 @@ setupMockApi();
 vi.setConfig({ testTimeout: 30_000 });
 afterEach(() => vi.restoreAllMocks());
 
-// The merchants feature serves the group list; these tests bring their own copy of it, with the shop's group (kind b2c_retail) added.
+// The accounts feature serves the rank list; these tests bring their own copy of it, with the shop's group (kind b2c_retail) added.
 const RETAIL = 9;
 beforeEach(async () => {
   mockServer.use(...groupHandlers);
@@ -45,7 +45,7 @@ const SAVE = { name: 'Save prices' };
 type User = ReturnType<typeof userEvent.setup>;
 
 /**
- * Opens the view and waits for its grid. A role that can read the merchant groups also waits for them (the columns are named by them, and
+ * Opens the view and waits for its grid. A role that can read the ranks also waits for them (the columns are named by them, and
  * the rank and shop boxes open once the shop group is known).
  */
 async function openPricing(route = IMEI, options: { permissions?: string[] } = {}) {
@@ -85,7 +85,7 @@ const sentTo = (requests: ReturnType<typeof recordRequests>, method: string, pat
   requests.sent().filter((sent) => sent.method === method && sent.url.pathname === path);
 
 describe('the grid', () => {
-  it('lists the services of the kind with the columns of the layout: cost, API price, base, shop and one price per merchant group', async () => {
+  it('lists the services of the kind with the columns of the layout: cost, API price, base, shop and one price per rank', async () => {
     await openPricing();
     const table = within(screen.getByRole('table', { name: 'Price grid' }));
     for (const name of [
@@ -679,7 +679,7 @@ describe('permissions', () => {
     await openPricing(IMEI, {
       permissions: ['catalog:read', 'pricing:read', 'pricing:update', 'groups:read'],
     });
-    // The rank and shop boxes open once the merchant groups are read.
+    // The rank and shop boxes open once the ranks are read.
     expect(await screen.findByRole('textbox', { name: `Wholesale price of ${ATT}` })).toBeEnabled();
     expect(box('Shop price', ATT)).toBeEnabled();
     expect(screen.queryByRole('textbox', { name: /^Base price of/ })).not.toBeInTheDocument();

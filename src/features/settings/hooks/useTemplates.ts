@@ -16,7 +16,8 @@ const NO_ERROR_TOAST = () => false as const;
 
 /**
  * The email templates that match the menu above the table (an empty text means all). A template of a channel that was retired, which
- * an older backend may still list, is left out. Needs `notifications:read`.
+ * an older backend may still list, is left out: the staff alert templates of the Telegram channel stay with the backend and are never
+ * shown, whatever audience the menu holds (the owner's choice). Needs `notifications:read`.
  */
 export function useTemplateList(filters: { audience: string }, enabled = true) {
   const crud: CrudFilters = [];

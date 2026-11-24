@@ -41,7 +41,6 @@ export function messagesUnder(errors: Problems, prefix: string): string | undefi
 const OWN_PLACE = [
   'audience.include',
   'audience.exclude',
-  'audience.merchants.statuses',
   'audience.merchants.countries',
   'audience.customers.countries',
 ];

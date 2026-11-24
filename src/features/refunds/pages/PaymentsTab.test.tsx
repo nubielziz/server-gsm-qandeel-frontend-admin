@@ -78,7 +78,10 @@ describe('storefront payments', () => {
   it('shows the order, customer, method, what was paid, the fee, the payment state and when', async () => {
     await openRefunds('/refunds?tab=payments&sort=orderId&dir=asc');
     const lost = await rowWith('Storefront payments', 'SF-20400');
-    expect(lost.getByText('Jack Turner')).toBeInTheDocument();
+    // The buyer links to its account record; a customer number of the old model is never an address.
+    expect(lost.getByRole('link', { name: 'Jack Turner' }).getAttribute('href')).toMatch(
+      /^\/accounts\/1\d\d$/,
+    );
     expect(lost.getByText('Card (3DS)')).toBeInTheDocument();
     expect(lost.getByText('Visa 4417')).toBeInTheDocument();
     expect(lost.getByText('£12.32')).toBeInTheDocument();

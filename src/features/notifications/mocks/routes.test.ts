@@ -87,6 +87,18 @@ describe('create and edit', () => {
     ]);
   });
 
+  it('refuses a person of the old model, as the server does: a person is staff or an account', async () => {
+    for (const type of ['client', 'customer']) {
+      const bad = await refusal(
+        createCampaign({ ...INPUT, audience: { staff: {}, include: [{ type: type as 'account', id: 3 }] } }),
+      );
+      expect(bad).toMatchObject({ status: 422 });
+      expect(bad.fieldErrors['audience.include']).toBeDefined();
+    }
+    const ok = await createCampaign({ ...INPUT, audience: { include: [{ type: 'account', id: 3 }] } });
+    expect(ok.audience.include).toEqual([{ type: 'account', id: 3 }]);
+  });
+
   it('edits a draft and a scheduled campaign, and refuses a sent one with INVALID_TRANSITION', async () => {
     expect((await updateCampaign(3, { name: 'Renamed' })).name).toBe('Renamed');
     expect((await updateCampaign(2, { channels: ['email', 'in_app'] })).channels).toEqual([
@@ -118,7 +130,7 @@ describe('the live count and the preview', () => {
       channels: ['in_app', 'email'],
       purpose: 'service',
     });
-    expect(preview).toMatchObject({ total: 6, reachable: 6, byType: { staff: 6, client: 0, customer: 0 } });
+    expect(preview).toMatchObject({ total: 6, reachable: 6, byType: { staff: 6, merchant: 0, retail: 0 } });
     expect(
       (await refusal(previewAudience({ audience: {}, channels: ['email'], purpose: 'service' }))).fieldErrors
         .audience,
@@ -245,6 +257,8 @@ describe('the recipients', () => {
     expect(email.total).toBeGreaterThan(25);
     expect(email.data).toHaveLength(25);
     expect(email.data.every((row) => row.channel === 'email' && row.recipient.includes('•••'))).toBe(true);
+    // A person is staff or an account, whatever the rank.
+    expect(new Set(email.data.map((row) => row.recipientType))).toEqual(new Set(['staff', 'account']));
     const read = await listCampaignRecipients(1, { channel: 'in_app', filters: { status: 'read' } });
     expect(read.data.length).toBeGreaterThan(0);
     expect(read.data.every((row) => row.status === 'read')).toBe(true);

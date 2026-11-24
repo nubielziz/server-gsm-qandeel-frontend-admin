@@ -26,10 +26,12 @@ const ROLE_MATRIX: Record<RoleKey, number[]> = {
 };
 
 // The API permission areas (the part before the colon) behind each demo area, in the same order:
-// Orders, Customers, Support, Risk, Money, Catalog, Settings, Admins, System.
+// Orders, Accounts, Support, Risk, Money, Catalog, Settings, Admins, System. The Accounts area is the one accounts table (`clients`),
+// its wallets, its ranks (`groups`) and the API keys of its merchant ranks; the privacy permission of the data requests
+// (`customers:privacy`) is added to its manage level below.
 const AREA_PERMISSIONS: string[][] = [
   ['orders', 'inventory', 'files'],
-  ['customers', 'clients', 'wallet', 'groups', 'api_keys'],
+  ['clients', 'wallet', 'groups', 'api_keys'],
   ['support'],
   ['risk'],
   ['ledger', 'payments', 'invoices', 'refunds', 'disputes', 'reports'],
@@ -38,6 +40,9 @@ const AREA_PERMISSIONS: string[][] = [
   ['staff', 'access', 'roles', 'sessions', 'audit', 'queues'],
   ['system', 'alerts', 'incidents'],
 ];
+
+// What the manage level of an area grants besides `<prefix>:*` for each of its prefixes (by area number, as in AREA_PERMISSIONS).
+const MANAGE_EXTRAS: Record<number, string[]> = { 1: ['customers:privacy'] };
 
 // Every permission of the map, by prefix, written out from docs/route-manifest.json (a CRUD row `x:*` stands for
 // `x:read`, `x:create`, `x:update`, `x:delete` where the route exists), except the two permissions of the retired merchant
@@ -50,7 +55,7 @@ const CATALOG: Record<string, string> = {
   sessions: 'read revoke',
   audit: 'read',
   settings: 'read update storefront',
-  clients: 'read create update security',
+  clients: 'read create update security block',
   wallet: 'read adjust credit_limit',
   ledger: 'read reconcile',
   api_keys: 'read create update revoke',
@@ -67,7 +72,7 @@ const CATALOG: Record<string, string> = {
   dashboard: 'read',
   queues: 'read',
   notifications: 'read create update delete',
-  customers: 'read create update block password privacy suspend',
+  customers: 'privacy',
   tax: 'read create update',
   currencies: 'update',
   storefront: 'read create update publish',
@@ -102,6 +107,7 @@ export function permissionsOf(key: string): string[] {
       if (level === 2) granted.add(`${permissionArea}:*`);
       else if (level === 1) granted.add(`${permissionArea}:read`);
     }
+    if (level === 2) for (const extra of MANAGE_EXTRAS[area] ?? []) granted.add(extra);
   });
   return [...granted];
 }

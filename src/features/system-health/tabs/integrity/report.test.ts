@@ -55,6 +55,19 @@ describe('ordering the checks', () => {
     ]);
   });
 
+  it('orders the wallet check like any other: failed first, the server order kept inside a group', () => {
+    const checks = [
+      check('entries_balanced', 'pass'),
+      check('wallets_follow_rank', 'fail'),
+      check('accounts_match_lines', 'fail'),
+    ];
+    expect(orderChecks(checks).map((c) => c.key)).toEqual([
+      'wallets_follow_rank',
+      'accounts_match_lines',
+      'entries_balanced',
+    ]);
+  });
+
   it('does not change the list it was given', () => {
     const before = MIXED.map((c) => c.key);
     orderChecks(MIXED);

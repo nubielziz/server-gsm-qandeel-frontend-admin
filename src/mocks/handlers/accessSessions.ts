@@ -1,6 +1,6 @@
 // Mock of the session routes (`/admin/sessions*`): list the open sessions, end one. Like the server, the list holds the sessions of
-// staff and of merchants (the sessions mock keeps a few of both) and narrows them by the `subjectType` filter of the query, before the
-// total and the row range are worked out. The Sessions tab asks for `subjectType=staff`.
+// staff and of accounts (the sessions mock keeps a few of both) and narrows them by the `subjectType` filter of the query (`staff` or
+// `account`), before the total and the row range are worked out. The Sessions tab sends the filter only when one kind is chosen.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { latency } from '../latency';
 import { currentStaff, guard } from '../session';

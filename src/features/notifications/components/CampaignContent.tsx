@@ -11,16 +11,19 @@ import type { CampaignChannel, CampaignDetail, PreviewAudience } from '../types'
 const AUDIENCE_LABEL: Record<PreviewAudience, string> = {
   staff: 'Staff',
   merchant: 'Merchants',
-  customer: 'Customers',
+  customer: 'Retail',
 };
 
-/** The kinds of people the campaign reaches, customers first (the server's default sample). */
+/**
+ * The kinds of people the campaign reaches, retail first (the server's default sample). A person added by id may hold either kind of
+ * rank (the audience keeps no rank for them), so one added account offers both samples.
+ */
 function audiencesOf(campaign: CampaignDetail): PreviewAudience[] {
   const { audience } = campaign;
   const types = new Set((audience.include ?? []).map((person) => person.type));
   const found: PreviewAudience[] = [];
-  if (audience.customers || types.has('customer')) found.push('customer');
-  if (audience.merchants || types.has('client')) found.push('merchant');
+  if (audience.customers || types.has('account')) found.push('customer');
+  if (audience.merchants || types.has('account')) found.push('merchant');
   if (audience.staff || types.has('staff')) found.push('staff');
   return found.length > 0 ? found : ['customer'];
 }

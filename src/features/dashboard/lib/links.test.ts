@@ -3,9 +3,9 @@
 import { ordersListPath } from '@/features/orders';
 import { describe, expect, it } from 'vitest';
 import {
+  accountsListTarget,
+  accountTarget,
   channelOf,
-  customerTarget,
-  merchantTarget,
   queueTarget,
   SUPPLIERS_PAGE,
   supplierTarget,
@@ -34,8 +34,19 @@ describe('queueTarget', () => {
 describe('page targets', () => {
   it('names the page each address needs, so a button is shown only to staff who may open it', () => {
     expect(supplierTarget(2)).toEqual({ page: 'suppliers', to: '/suppliers?supplier=2' });
-    expect(merchantTarget(17)).toEqual({ page: 'merchants', to: '/merchants/17' });
-    expect(customerTarget(7)).toEqual({ page: 'customers', to: '/customers/7' });
     expect(SUPPLIERS_PAGE).toEqual({ page: 'suppliers', to: '/suppliers' });
+  });
+
+  it('opens an account, merchant or buyer, on the Accounts page with the address the accounts feature builds', () => {
+    expect(accountTarget(17)).toEqual({ page: 'accounts', to: '/accounts/17' });
+    expect(accountTarget(117, 'wallet')).toEqual({ page: 'accounts', to: '/accounts/117?tab=wallet' });
+  });
+
+  it('opens the list of accounts with a population and a sort', () => {
+    expect(accountsListTarget()).toEqual({ page: 'accounts', to: '/accounts' });
+    expect(accountsListTarget({ chip: 'merchants', sort: 'balance', dir: 'asc' })).toEqual({
+      page: 'accounts',
+      to: '/accounts?chip=merchants&sort=balance',
+    });
   });
 });

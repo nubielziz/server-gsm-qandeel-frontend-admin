@@ -16,9 +16,10 @@ import type { Order, OrderEvent } from '../types';
 
 /**
  * Orders and their queues, one page of them, with the total in `x-total-count`. Filters: `status`, `queue`, `q`,
- * `type`, `supplierId`, `clientId`, `customerId`, `channel` (`b2b` or `b2c`) and `pastSla` (see `OrderListFilters`);
+ * `type`, `supplierId`, `accountId`, `rankId`, `channel` (`b2b` or `b2c`) and `pastSla` (see `OrderListFilters`; `clientId` is an
+ * alias of `accountId` and `customerId` answers 422, so neither is sent);
  * sort with `_sort`/`_order`. The tab counts and the "past SLA" figure are this call with `_start=0&_end=1`.
- * Assumed contract: rows carry the service, merchant or customer, and supplier as `{ id, name }` joins.
+ * Assumed contract: rows carry the service, the buyer `account` (with its rank) and the supplier as joins.
  * @route GET /admin/orders
  */
 export function listOrders(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Order>> {

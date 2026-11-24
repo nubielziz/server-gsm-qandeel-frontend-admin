@@ -4,7 +4,7 @@
 import { useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, TextField } from '@/components/ui';
 import { orderLabel } from '@/features/orders';
-import { fmtImei, lm, maskedCustomerLabel, maskEmail } from '@/lib/format';
+import { fmtImei, lm, maskedAccountLabel, maskEmail } from '@/lib/format';
 import { useRefundHeldOrder } from '../hooks/useRiskDecisions';
 import { defaultRefundReason, refundDestination } from '../lib/queue';
 import type { HeldOrder } from '../types';
@@ -65,9 +65,8 @@ export function RefundHeldDialog({ order, block, onClose }: RefundHeldDialogProp
     >
       <div className="space-y-3 text-sm text-ink2">
         <p>
-          {lm(order.capturedAmount, order.currency, order.fxRate)} goes back to{' '}
-          {maskedCustomerLabel(customer)}’s {refundDestination(order.paymentMethod)}. The supplier is never
-          contacted.
+          {lm(order.capturedAmount, order.currency, order.fxRate)} goes back to {maskedAccountLabel(customer)}
+          ’s {refundDestination(order.paymentMethod)}. The supplier is never contacted.
         </p>
         <TextField
           label="Reason"
@@ -90,7 +89,7 @@ export function RefundHeldDialog({ order, block, onClose }: RefundHeldDialogProp
             {...register('blockDevice')}
           />
         </div>
-        <p>{consequence(maskedCustomerLabel(customer), { blockEmail, blockDevice })}</p>
+        <p>{consequence(maskedAccountLabel(customer), { blockEmail, blockDevice })}</p>
       </div>
     </FormDialog>
   );

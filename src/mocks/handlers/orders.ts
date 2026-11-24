@@ -12,7 +12,7 @@ import { bodyOf, invalid, notFound, textOf } from './accessShared';
 import { actorOf, isOpen } from './ordersShared';
 import { orderActionHandlers } from './ordersActionRoutes';
 
-const SEARCH_FIELDS = ['id', 'imei', 'supplierRef', 'client.name', 'customer.name', 'service.name'];
+const SEARCH_FIELDS = ['id', 'imei', 'supplierRef', 'account.name', 'account.email', 'service.name'];
 const REVIEW_QUEUES = new Set(['manual', 'needs_attention', 'verification', 'review']);
 
 // The server's call on "past SLA" (open, not waiting for a person, older than the service's target); the mock uses the same sum.
@@ -21,17 +21,33 @@ function isPastSla(row: MockOrder, now: number): boolean {
   return now - Date.parse(row.createdAt) > row.service.slaMinutes * 60_000;
 }
 
-// A row with the extra fields the list filters name (`type`, `supplierId`, `clientId`, `customerId`, `pastSla`).
+// A row with the extra fields the list filters name (`type`, `supplierId`, `accountId`, `rankId`, `pastSla`).
 function filterable(row: MockOrder, now: number) {
   return {
     ...toOrder(row),
     type: row.service.type,
     supplierId: row.supplier?.id ?? null,
-    clientId: row.client?.id ?? null,
-    customerId: row.customer?.id ?? null,
+    accountId: row.account.id,
+    rankId: row.account.rank.id,
     pastSla: isPastSla(row, now),
     row,
   };
+}
+
+// The server answers `customerId` with 422 (the buyer is an account) and reads `clientId` as `accountId`; the mock does the same.
+function readFilters(params: URLSearchParams): { params: URLSearchParams } | { refused: Response } {
+  if (params.has('customerId')) {
+    return {
+      refused: invalid([
+        { field: 'customerId', message: 'Filter by accountId: a customer is an account now.' },
+      ]),
+    };
+  }
+  const next = new URLSearchParams(params);
+  const clientId = next.getAll('clientId');
+  next.delete('clientId');
+  for (const id of clientId) next.append('accountId', id);
+  return { params: next };
 }
 
 async function matching(params: URLSearchParams) {
@@ -67,28 +83,30 @@ export const ordersHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
-    const params = new URL(request.url).searchParams;
-    params.delete('_start');
-    params.delete('_end');
-    const { page } = await matching(params);
+    const read = readFilters(new URL(request.url).searchParams);
+    if ('refused' in read) return read.refused;
+    read.params.delete('_start');
+    read.params.delete('_end');
+    const { page } = await matching(read.params);
     const lines = page.map(({ row }) =>
       [
         row.id,
         row.createdAt,
         row.channel,
-        row.client?.name ?? row.customer?.name,
+        row.account.name,
         row.service.name,
         row.imei,
         row.status,
         row.supplier?.name,
         row.totalPrice,
         row.totalCost,
+        row.account.rank.name,
       ]
         .map(csvCell)
         .join(','),
     );
     return new HttpResponse(
-      ['id,created,channel,buyer,service,input,status,supplier,price,cost', ...lines].join('\n'),
+      ['id,created,channel,buyer,service,input,status,supplier,price,cost,rank', ...lines].join('\n'),
       {
         headers: {
           'Content-Type': 'text/csv',
@@ -139,7 +157,9 @@ export const ordersHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
-    const { page, total } = await matching(new URL(request.url).searchParams);
+    const read = readFilters(new URL(request.url).searchParams);
+    if ('refused' in read) return read.refused;
+    const { page, total } = await matching(read.params);
     return HttpResponse.json(
       page.map(({ row }) => toOrder(row)),
       { headers: { 'x-total-count': String(total), 'access-control-expose-headers': 'x-total-count' } },

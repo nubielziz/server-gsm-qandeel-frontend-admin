@@ -1,6 +1,7 @@
 // Tests of the System health mock's operational writes: the 403 of a read-only staff member, pausing a queue and
 // retrying failed jobs, running a job, the integrity run, and maintenance (on, change, off, and what it refuses).
 import { describe, expect, it, vi } from 'vitest';
+import { adjustAccountWallet } from '@/features/accounts';
 import { apiDelete, apiGet, apiList, apiPatch, apiPost, apiPut } from '@/lib/api';
 import { MOCK_SCENARIOS, setMockScenario } from '@/mocks/scenario';
 import type {
@@ -218,12 +219,12 @@ describe('jobs and the integrity run', () => {
       value: 1,
       state: 'crit',
     });
-    // Finance puts the wallet right: the merchants mock posts the adjustment into the ledger mock.
-    await apiPost('/admin/clients/4/wallet/adjust', {
-      direction: 'credit',
-      amount: 37.5,
-      reason: 'Reverse the difference',
-    });
+    // Finance puts the wallet right: the accounts mock posts the adjustment into the ledger mock (the key makes a retry post once).
+    await adjustAccountWallet(
+      4,
+      { direction: 'credit', amount: '37.5000', reason: 'Reverse the difference' },
+      'ops-reverse-difference',
+    );
     await apiPost('/admin/system/integrity/run');
     await vi.waitFor(async () => {
       const report = await apiGet<IntegrityReport>('/admin/system/integrity');
@@ -245,13 +246,13 @@ describe('jobs and the integrity run', () => {
     expect(resolved.data[0].resolvedAt).toBeTruthy();
   });
 
-  it('ignores an adjustment on another merchant: the difference stays', async () => {
+  it('ignores an adjustment on another account: the difference stays', async () => {
     setMockScenario('maintenance');
-    await apiPost('/admin/clients/1/wallet/adjust', {
-      direction: 'credit',
-      amount: 5,
-      reason: 'Goodwill credit',
-    });
+    await adjustAccountWallet(
+      1,
+      { direction: 'credit', amount: '5.0000', reason: 'Goodwill credit' },
+      'ops-goodwill-credit',
+    );
     await apiPost('/admin/system/integrity/run');
     await vi.waitFor(async () => {
       const report = await apiGet<IntegrityReport>('/admin/system/integrity');

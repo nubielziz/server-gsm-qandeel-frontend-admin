@@ -11,24 +11,21 @@ import {
 } from '@/lib/api';
 import type { Session } from '../types';
 
-/** A row as an older server may send it: it also listed the sign-in sessions of merchants. */
-type SessionWire = Omit<Session, 'subjectType'> & { subjectType: string };
-
 /**
- * The open sign-in sessions of staff: who, from which address and device, when last seen and when it ends. The total
- * comes in `x-total-count`. The server does the choosing: the request always carries `subjectType=staff`, so the total
- * and the pages count staff only. A row of a merchant that still comes back (a server that ignores the filter) is
- * dropped as a second line of defence; a row with no `subjectType` is kept.
- * Assumed contract: filter `subjectType` (`staff` | `client`), rows shaped like `Session`.
+ * The open sign-in sessions of staff and of accounts: who, from which address and device, when last seen and when it ends. The total
+ * comes in `x-total-count`. The server does the choosing: `filters.subjectType` (`staff` or `account`) narrows the list before the
+ * total and the pages are worked out, and none lists both kinds. The email of an account comes masked unless the caller holds
+ * `clients:read`.
+ * Assumed contract: rows shaped like `Session`.
  * @route GET /admin/sessions
  */
-export async function listSessions(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Session>> {
-  const page = await apiList<SessionWire>('/admin/sessions', query, { subjectType: 'staff' }, init);
-  return { ...page, data: page.data.filter((row): row is Session => row.subjectType !== 'client') };
+export function listSessions(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Session>> {
+  return apiList<Session>('/admin/sessions', query, undefined, init);
 }
 
 /**
- * Ends one session, signing that person out of that device. Ending your own session signs you out of the console.
+ * Ends one session, signing that person out of that device. Ending your own session signs you out of the console. A session of an
+ * account needs `clients:security` besides `sessions:revoke`, and is written to the account's history.
  * Assumed contract: no body, answer 204.
  * @route DELETE /admin/sessions/:id
  */

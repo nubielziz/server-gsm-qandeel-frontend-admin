@@ -28,6 +28,14 @@ describe('visibleTabs', () => {
   });
 });
 
+describe('the tab names', () => {
+  it('calls the wallets tab Store balances, and keeps its address id', () => {
+    const wallets = visibleTabs(['wallet:read'])[0];
+    expect(wallets).toMatchObject({ id: 'wallets', label: 'Store balances' });
+    expect(financePath('wallets', { state: 'negative' })).toBe('/finance?tab=wallets&state=negative');
+  });
+});
+
 describe('resolveTab', () => {
   const tabs = visibleTabs(['payments:read', 'invoices:read']);
 

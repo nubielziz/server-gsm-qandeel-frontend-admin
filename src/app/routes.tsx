@@ -1,6 +1,6 @@
 // The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate, with the
-// old addresses of Catalog, Services & pricing, Storefront, Commissions and Abandoned checkouts redirected before that gate
-// (legacyRedirects.ts).
+// old addresses of Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants and Customers redirected before
+// that gate (legacyRedirects.ts).
 import { Authenticated } from '@refinedev/core';
 import { lazy, type ComponentType } from 'react';
 import { Outlet, Route, Routes } from 'react-router';
@@ -29,13 +29,23 @@ const PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
   featureManifests.flatMap(({ page }) => (page ? [[page.name, lazyLoaded(page.list)]] : [])),
 );
 
-/** The same for detail views (`/merchants/:id`, `/customers/:id`). */
+/** The same for detail views (`/accounts/:id`, `/notifications/:id`). */
 const DETAIL_PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
   featureManifests.flatMap(({ page }) => (page?.detail ? [[page.name, lazyLoaded(page.detail)]] : [])),
 );
 
-// The addresses of pages that are gone: they have a route (and no resource) only to be redirected.
-const LEGACY_PAGE_PATHS = ['/services', '/catalog', '/commissions', '/checkouts'] as const;
+// The addresses of pages that are gone: they have a route (and no resource) only to be redirected. The Merchants and Customers pages
+// had a detail view, so their `/:id` addresses are routes of their own.
+const LEGACY_PAGE_PATHS = [
+  '/services',
+  '/catalog',
+  '/commissions',
+  '/checkouts',
+  '/merchants',
+  '/merchants/:id',
+  '/customers',
+  '/customers/:id',
+] as const;
 
 const PAGE_RESOURCES = resources
   .map(toPageResource)
@@ -74,8 +84,8 @@ export function AppRoutes() {
           />
         ))}
         {/* The old Services & pricing and Catalog pages (sent to Product / Services), Commissions (sent to Finance, which still lists the old
-            commission entries) and Abandoned checkouts (sent to the sales funnel report that sat on it) have no resource any more; their
-            addresses are redirected for good. */}
+            commission entries), Abandoned checkouts (sent to the sales funnel report that sat on it) and Merchants and Customers (sent to
+            Accounts, the one page of both) have no resource any more; their addresses are redirected for good. */}
         {LEGACY_PAGE_PATHS.map((path) => (
           <Route
             key={path}

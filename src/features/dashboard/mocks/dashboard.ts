@@ -7,7 +7,7 @@ import { ordersByType, revenueByChannel } from './charts';
 import { navCounts } from './navCounts';
 import { queuesByType, supplierHealth } from './queues';
 import { periodStats } from './stats';
-import { storefrontSummary, topCustomers } from './storefront';
+import { storefrontSummary } from './storefront';
 import type { World } from './world';
 
 /** The whole payload for a channel and period, every section worked out from the same `world`. */
@@ -21,7 +21,6 @@ export function buildDashboard(world: World, { scope, days }: DashboardParams): 
     ordersByType: ordersByType(world, scope),
     revenueByChannel: scope === 'all' ? revenueByChannel(world) : null,
     storefront: scope === 'b2b' ? null : storefrontSummary(world),
-    topCustomers: scope === 'b2b' ? null : topCustomers(world, days),
     navCounts: navCounts(world),
   };
 }

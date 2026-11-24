@@ -749,35 +749,90 @@ describe('roles', () => {
 });
 
 describe('sessions', () => {
-  it('lists the staff who are signed in, from where and on what, and marks your own session', async () => {
+  it('lists who is signed in, staff and accounts, from where and on what, and marks your own session', async () => {
     await openAccess('/access?tab=sessions');
     const lina = await sessionRow('Lina S.');
     expect(lina.getByText('203.0.113.31')).toBeInTheDocument();
+    expect(lina.getByText('Staff')).toBeInTheDocument();
+    const zain = await sessionRow('Zain Mobile Hub');
+    expect(zain.getByText('Account')).toBeInTheDocument();
     expect(await screen.findAllByText('This session')).toHaveLength(1);
-    expect(screen.getAllByText(/^(Chrome|Safari|Firefox|Edge) on /)).toHaveLength(4);
+    // Four devices of staff and three sessions of accounts.
+    expect(screen.getAllByText(/^(Chrome|Safari|Firefox|Edge) on /)).toHaveLength(7);
     expect(screen.queryByRole('button', { name: 'Merchants' })).not.toBeInTheDocument();
-    expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument();
   });
 
-  it('shows no merchant row, even from a server that still sends one', async () => {
+  it('narrows the list to staff or to accounts with the Who filter, and back to all', async () => {
+    const user = userEvent.setup();
+    await openAccess('/access?tab=sessions');
+    await sessionRow('Zain Mobile Hub');
+    const who = screen.getByRole('group', { name: 'Who is signed in' });
+    expect(
+      within(who)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['All', 'Staff', 'Account']);
+    expect(within(who).getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(who).getByRole('button', { name: 'Account' }));
+    await waitFor(async () =>
+      expect((await tableNamed('Open sessions')).queryByText('Lina S.')).not.toBeInTheDocument(),
+    );
+    expect((await tableNamed('Open sessions')).getByText('Zain Mobile Hub')).toBeInTheDocument();
+    expect(within(who).getByRole('button', { name: 'Account' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(within(who).getByRole('button', { name: 'Staff' }));
+    await sessionRow('Lina S.');
+    await waitFor(async () =>
+      expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument(),
+    );
+
+    await user.click(within(who).getByRole('button', { name: 'All' }));
+    await sessionRow('Zain Mobile Hub');
+    await sessionRow('Lina S.');
+  });
+
+  it('asks the server for one kind only when one is chosen', async () => {
+    const user = userEvent.setup();
+    const searches: URLSearchParams[] = [];
+    mockServer.use(
+      http.get('*/admin/sessions', ({ request }) => {
+        searches.push(new URL(request.url).searchParams);
+        return Response.json([], { headers: { 'x-total-count': '0' } });
+      }),
+    );
+    await openAccess('/access?tab=sessions');
+    await screen.findByText('No open sessions');
+    await user.click(
+      within(screen.getByRole('group', { name: 'Who is signed in' })).getByRole('button', {
+        name: 'Account',
+      }),
+    );
+    await waitFor(() =>
+      expect(searches.some((params) => params.get('subjectType') === 'account')).toBe(true),
+    );
+    expect(searches[0].has('subjectType')).toBe(false);
+  });
+
+  it('links the name of an account to its record for a role that reads accounts, and not otherwise', async () => {
+    await openAccess('/access?tab=sessions', { permissions: ['sessions:read', 'clients:read'] });
+    const zain = await sessionRow('Zain Mobile Hub');
+    expect(zain.getByRole('link', { name: 'Zain Mobile Hub' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/accounts\/\d+$/),
+    );
+    expect((await sessionRow('Lina S.')).queryByRole('link', { name: 'Lina S.' })).not.toBeInTheDocument();
+  });
+
+  it('shows the text as the server sends it: a row of an account with a masked email keeps it masked', async () => {
     mockServer.use(
       http.get('*/admin/sessions', () =>
         Response.json(
           [
             {
-              id: 1,
-              subjectType: 'staff',
-              subject: { id: 2, name: 'Lina S.' },
-              ip: '203.0.113.31',
-              userAgent: 'Mozilla/5.0 (X11; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0',
-              lastSeenAt: null,
-              expiresAt: null,
-              createdAt: '2026-01-01T00:00:00.000Z',
-            },
-            {
               id: 2,
-              subjectType: 'client',
-              subject: { id: 1, name: 'Zain Mobile Hub' },
+              subjectType: 'account',
+              subject: { id: 1, name: 'Zain Mobile Hub', email: 'o***@z***.example' },
               ip: '203.0.113.55',
               userAgent: 'Mozilla/5.0',
               lastSeenAt: null,
@@ -785,13 +840,38 @@ describe('sessions', () => {
               createdAt: '2026-01-01T00:00:00.000Z',
             },
           ],
-          { headers: { 'x-total-count': '2' } },
+          { headers: { 'x-total-count': '1' } },
         ),
       ),
     );
     await openAccess('/access?tab=sessions');
-    await sessionRow('Lina S.');
-    expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument();
+    const zain = await sessionRow('Zain Mobile Hub');
+    expect(zain.getByText('o***@z***.example')).toBeInTheDocument();
+    expect(zain.getByText('Account')).toBeInTheDocument();
+  });
+
+  it('ends an account session only with clients:security, and says which permission is missing', async () => {
+    await openAccess('/access?tab=sessions', { permissions: ['sessions:read', 'sessions:revoke'] });
+    const zain = await sessionRow('Zain Mobile Hub');
+    const blocked = zain.getByRole('button', { name: 'End session' });
+    expect(blocked).toBeDisabled();
+    expect(blocked).toHaveAttribute('title', 'You need the clients:security permission');
+    // A staff session needs sessions:revoke only.
+    expect((await sessionRow('Omar T.')).getByRole('button', { name: 'End session' })).toBeEnabled();
+  });
+
+  it('ends an account session after a review step that says it is written to the account', async () => {
+    const user = userEvent.setup();
+    await openAccess('/access?tab=sessions');
+    await user.click((await sessionRow('Zain Mobile Hub')).getByRole('button', { name: 'End session' }));
+    const dialog = await screen.findByRole('dialog', { name: "End Zain Mobile Hub's session?" });
+    expect(within(dialog).getByText(/This is an account session/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'End session' }));
+    expect(await screen.findByText('Session ended')).toBeInTheDocument();
+    await waitFor(async () =>
+      expect((await tableNamed('Open sessions')).queryByText('Zain Mobile Hub')).not.toBeInTheDocument(),
+    );
+    expect((await listSessions({ filters: { subjectType: 'account' } })).total).toBe(2);
   });
 
   it('ends a session after a review step', async () => {
@@ -805,7 +885,7 @@ describe('sessions', () => {
     await waitFor(async () =>
       expect((await tableNamed('Open sessions')).queryByText('Omar T.')).not.toBeInTheDocument(),
     );
-    expect((await listSessions()).total).toBe(3);
+    expect((await listSessions({ filters: { subjectType: 'staff' } })).total).toBe(3);
   });
 
   it('warns before you end your own session', async () => {

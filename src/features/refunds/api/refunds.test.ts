@@ -54,8 +54,9 @@ describe('listRefunds', () => {
       amount: '19.9900',
       currency: 'CAD',
       partial: false,
-      customer: { name: 'Priya Nair' },
-      requestedBy: { type: 'customer' },
+      // The buyer is an account: demo customer 11 is account 111.
+      customer: { id: 111, name: 'Priya Nair' },
+      requestedBy: { type: 'account' },
       approvedBy: null,
       order: { id: 20467, cost: '9.8000' },
       payment: { method: 'card', brand: 'Mastercard 7803', amount: '19.9900', taxAmount: '0.0000' },

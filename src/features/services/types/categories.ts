@@ -1,11 +1,11 @@
-// Types of the Group views and of the two private lookups the pricing screens need (merchant groups and merchants).
+// Types of the Group views and of the two private lookups the pricing screens need (ranks and merchants).
 // The map gives the tables but no bodies (MISMATCHES M10), so every shape here is an assumed contract.
 import type { Id } from '@/lib/api';
 import type { ClientGroupRow, ServiceCategoryRow } from '@/lib/api/schema.gen';
 import type { NamedRef, ServiceType } from './service';
 
 /**
- * A service category (`GET /admin/service-categories`, assumed contract). `allowedGroupIds` lists the merchant groups
+ * A service category (`GET /admin/service-categories`, assumed contract). `allowedGroupIds` lists the ranks
  * that can see it; an empty list is read as "every group". `serviceCount` is optional: when the server counts the
  * services in the category, the table shows it.
  */
@@ -33,12 +33,12 @@ export type CreateCategoryBody = {
 export type UpdateCategoryBody = Partial<CreateCategoryBody>;
 
 /**
- * A merchant group as the pricing screens need it (assumed contract; the merchants feature owns `GET /admin/client-groups`).
- * `kind` is `b2c_retail` for the storefront's single retail group. `merchantCount` is optional.
+ * A rank as the pricing screens need it (assumed contract; the accounts feature owns `GET /admin/client-groups`).
+ * `kind` is `b2c_retail` for the storefront's single retail group. `accountCount` (every account in the rank, retail too) is optional.
  */
 export type ClientGroup = Pick<ClientGroupRow, 'id' | 'name' | 'kind' | 'discountPercent'> & {
-  merchantCount?: number;
+  accountCount?: number;
 };
 
-/** A merchant as the price resolver's menu needs it (assumed contract; the merchants feature owns `GET /admin/clients`). */
+/** A merchant as the price resolver's menu needs it (assumed contract; the accounts feature owns `GET /admin/clients`). */
 export type MerchantOption = NamedRef & { status?: string; group?: NamedRef | null };

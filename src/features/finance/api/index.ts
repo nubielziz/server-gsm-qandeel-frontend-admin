@@ -1,5 +1,5 @@
 // Re-exports the finance API functions and the data-provider registry. The merchant lookup (`./lookups`) stays private to
-// the feature: it borrows a route the merchants feature owns.
+// the feature: it borrows the accounts list, which the accounts feature owns.
 export * from './accounts';
 export * from './customerWallets';
 export * from './invoices';

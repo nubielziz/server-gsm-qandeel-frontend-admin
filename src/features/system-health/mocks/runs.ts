@@ -43,7 +43,7 @@ export async function startRun(
   return run;
 }
 
-// Ends one run: it succeeded. An integrity run also renews the four checks: they still fail unless a reversing entry was
+// Ends one run: it succeeded. An integrity run also renews the checks: they still fail unless a reversing entry was
 // posted in Finance, and then the mismatch alert closes by itself, as the server does when the value is back in range.
 function finish(state: HealthState, id: number, at: number, fixed: boolean): void {
   const run = state.runs.find(id);

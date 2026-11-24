@@ -1,5 +1,5 @@
 // RuleDialog: "New rule" and "Edit rule" for a pricing rule (`POST` and `PATCH /admin/pricing-rules`). The demo only had the one-click
-// "Add promo: Carrier unlock -2%" button (`cat-on`); this is the general form: what the rule covers, which merchant group, whether it
+// "Add promo: Carrier unlock -2%" button (`cat-on`); this is the general form: what the rule covers, which rank, whether it
 // adds (margin) or takes from (discount, promo) the price, by a percentage and/or a fixed amount, with rounding, priority and dates.
 // Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';

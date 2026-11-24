@@ -13,9 +13,10 @@ import {
 import type { CreateInvoiceBody, Invoice } from '../types';
 
 /**
- * Invoices, one page of them, with the total in `x-total-count`. Filters: `status`, `kind`, `clientId` and the free
- * text `q` (the invoice number or the merchant's name); sort with `_sort`/`_order` (`createdAt`, `total`, `status`).
- * Assumed contract: rows carry the merchant or customer as a `{ id, name }` join.
+ * Invoices, one page of them, with the total in `x-total-count`. Filters: `status`, `kind`, `accountId` (`clientId` is its alias) and
+ * the free text `q` (the invoice number or the account's name); sort with `_sort`/`_order` (`createdAt`, `total`, `status`).
+ * Assumed contract: rows carry the merchant wallet's account (`client`) or the store balance's account (`customer`) as a
+ * `{ id, name }` join; `id` is the account id.
  * @route GET /admin/invoices
  */
 export function listInvoices(query: ListQuery = {}, init?: ApiInit): Promise<ListResult<Invoice>> {
@@ -32,8 +33,9 @@ export function getInvoice(id: Id, init?: ApiInit): Promise<Invoice> {
 }
 
 /**
- * Issues a manual invoice for a merchant. The server checks the amount, adds tax, numbers the invoice and answers the
- * new one; its message (a merchant without a billing country, an amount out of range) is shown in the dialog.
+ * Issues a manual invoice for an account of a merchant rank (`clientId` is its account id). The server checks the amount, adds tax,
+ * numbers the invoice and answers the new one; its message (a retail account: 422 on `clientId` with the code `not_merchant`, a
+ * merchant without a billing country, an amount out of range) is shown in the dialog.
  * Assumed contract: the body is `{ clientId, amount, description }`.
  * @route POST /admin/invoices
  */

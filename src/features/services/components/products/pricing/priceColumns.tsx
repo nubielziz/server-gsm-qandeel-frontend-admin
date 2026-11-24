@@ -1,4 +1,4 @@
-// The columns of the price grid: Service Name, the "$" tool, Purchase Cost, API price, Base Price, Retail Price and one column per merchant group,
+// The columns of the price grid: Service Name, the "$" tool, Purchase Cost, API price, Base Price, Retail Price and one column per rank,
 // in the list skin. Every figure is the server's (the console prints it); the boxes are the base price, the shop price and the fixed price
 // of each group. "Display Enable/Disable Service" puts a box before each service name (no column of its own), "Set Order" adds the Order column.
 import { ButtonLink, cx, Icon, type DataTableColumn } from '@/components/ui';
@@ -28,7 +28,7 @@ export type Lock = { disabled: boolean; title?: string };
 /** Everything the columns need from the view. */
 export type GridColumnsInput = {
   type: ServiceType;
-  /** The merchant groups (kind b2b) in the order of the columns, and their names when the group list could be read. */
+  /** The ranks (kind b2b) in the order of the columns, and their names when the group list could be read. */
   groupIds: readonly Id[];
   groupNames: ReadonlyMap<Id, string>;
   edits: GridEdits;

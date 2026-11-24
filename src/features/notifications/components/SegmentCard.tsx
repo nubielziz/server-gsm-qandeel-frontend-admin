@@ -1,4 +1,4 @@
-// SegmentCard: one group of the audience (staff, merchants, customers) with its on/off switch; the filters of the group show while it is on.
+// SegmentCard: one group of the audience (staff, merchants, retail) with its on/off switch; the filters of the group show while it is on.
 import type { ReactNode } from 'react';
 import { Switch } from '@/components/ui';
 

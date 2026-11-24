@@ -14,7 +14,7 @@ export const CAMPAIGN_STATUSES = [
 ] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
-/** `service` is an announcement every eligible person gets; `marketing` reaches only customers who agreed to marketing. */
+/** `service` is an announcement every eligible person gets; `marketing` reaches only retail accounts and guests who agreed to marketing. */
 export const CAMPAIGN_PURPOSES = ['service', 'marketing'] as const;
 export type CampaignPurpose = (typeof CAMPAIGN_PURPOSES)[number];
 
@@ -22,11 +22,19 @@ export type CampaignPurpose = (typeof CAMPAIGN_PURPOSES)[number];
 export const CAMPAIGN_CHANNELS = ['in_app', 'email'] as const;
 export type CampaignChannel = (typeof CAMPAIGN_CHANNELS)[number];
 
-/** Who a person is: a staff member, a merchant (`client`) or a customer. */
-export type PersonType = 'staff' | 'client' | 'customer';
+/**
+ * Who a person is: a staff member or an account (decision 023). A merchant, a shop buyer and a guest are all accounts, told
+ * apart by the rank they hold; a request that names `client` or `customer` is refused (422).
+ */
+export type PersonType = 'staff' | 'account';
 export type PersonRef = { type: PersonType; id: Id };
 
-/** The audience as the server stores it: a key present means that group is targeted (`{}` is all of it). */
+/**
+ * The audience as the server stores it: a key present means that group is targeted (`{}` is all of it). The wire keys keep their
+ * names: `merchants` is the accounts whose rank is a merchant rank (`groupIds` are merchant ranks, only active accounts), and
+ * `customers` is the retail accounts and the guests. `statuses` is read for an old campaign and never sent: the status `pending`
+ * is gone, and a stored `pending` reads as `active`.
+ */
 export type AudienceSpec = {
   staff?: { roleIds?: Id[] };
   merchants?: { statuses?: ('active' | 'pending')[]; groupIds?: Id[]; countries?: string[] };
@@ -39,7 +47,7 @@ export type AudienceSpec = {
 export type CampaignText = { title: string; body: string };
 export type CampaignContent = CampaignText;
 
-/** A site path per audience (`/account/orders`), for the link of the notification. */
+/** A site path per audience (`/account/orders`), for the link of the notification: the keys stay, a link goes to accounts of that rank kind. */
 export type CampaignLink = { staff?: string; merchant?: string; customer?: string };
 
 export type StaffRef = { id: Id; name: string };
@@ -108,7 +116,8 @@ export type AudiencePreviewBody = {
 export type AudiencePreview = {
   total: number;
   reachable: number;
-  byType: { staff: number; client: number; customer: number };
+  /** The reachable people by kind: staff, accounts of a merchant rank, accounts of a retail rank (guests included). */
+  byType: { staff: number; merchant: number; retail: number };
   byChannel: { inApp: number; email: number };
   excluded: { noConsent: number; optedOut: number; noAccount: number };
 };
@@ -145,7 +154,7 @@ export type ScheduleCampaignBody = { scheduledAt: IsoDateTime };
 export const RECIPIENT_STATUSES = ['delivered', 'read', 'queued', 'sent', 'failed'] as const;
 export type RecipientStatus = (typeof RECIPIENT_STATUSES)[number];
 
-/** One person of a campaign on one channel. `recipient` is masked by the server. */
+/** One person of a campaign on one channel. `recipient` is masked by the server; `recipientType` is `account` for every account. */
 export type CampaignRecipient = {
   id: Id;
   channel: CampaignChannel;

@@ -44,7 +44,7 @@ describe('listPriceGrid', () => {
     ]);
   });
 
-  it('gives every figure of a row the server works out: cost, margins, floor, the shop price and one price per merchant group', async () => {
+  it('gives every figure of a row the server works out: cost, margins, floor, the shop price and one price per rank', async () => {
     const { data } = await listPriceGrid({ q: 'AT&T' });
     expect(data).toHaveLength(1);
     expect(data[0]).toMatchObject({
@@ -119,7 +119,7 @@ describe('listPriceGrid', () => {
 
   it('shows what the existing routes saved: a new base price with its margin, a fixed price for a group, a typed shop price', async () => {
     await updateService(ATT, { basePrice: '18.5000' });
-    // The shop group is not one of the merchant groups; a row of an unknown group is the shop's (the merchants feature owns the groups).
+    // The shop group is not one of the ranks; a row of an unknown group is the shop's (the accounts feature owns the groups).
     await replaceServiceGroupPrices(ATT, {
       prices: [
         { groupId: 1, price: '17.1000' },

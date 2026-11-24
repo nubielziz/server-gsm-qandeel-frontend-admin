@@ -10,12 +10,12 @@ export type InvoiceKind = 'topup' | 'manual' | 'receipt';
 /** Where an invoice stands: waiting for payment, paid, or cancelled. */
 export type InvoiceStatus = 'open' | 'paid' | 'void';
 
-/** A merchant or customer named in a join. */
+/** An account named in a join (`id` is the account id). */
 export type InvoiceParty = { id: Id; name: string };
 
 /**
- * One invoice, as `GET /admin/invoices` and `GET /admin/invoices/:id` send it (assumed contract). A merchant's invoice
- * has `client`; a storefront customer's tax receipt has `customer` (with the email, which the console masks). The
+ * One invoice, as `GET /admin/invoices` and `GET /admin/invoices/:id` send it (assumed contract). A merchant-wallet invoice
+ * has `client`; a store balance top-up and a shop buyer's tax receipt have `customer` (with the email, which the console masks). The
  * amounts are the server's: `amount` before fee and tax, `total` what is billed.
  */
 export type Invoice = Pick<
@@ -51,14 +51,18 @@ export type Invoice = Pick<
 export type InvoiceFilters = {
   status?: InvoiceStatus;
   kind?: InvoiceKind;
+  /** One account's invoices. */
+  accountId?: Id;
+  /** Alias of `accountId` (a merchant's id is its account id). */
   clientId?: Id;
 };
 
 /**
- * Body of `POST /admin/invoices` (assumed contract): bill a merchant for an amount. `amount` is a 4-decimal money
- * string; the server adds tax, numbers the invoice and answers the new one.
+ * Body of `POST /admin/invoices` (assumed contract): bill a merchant-rank account for an amount (`clientId` is its account id; a
+ * retail account is refused with 422 on `clientId`, code `not_merchant`). `amount` is a 4-decimal money string; the server adds
+ * tax, numbers the invoice and answers the new one.
  */
 export type CreateInvoiceBody = { clientId: Id; amount: Money; description: string };
 
-/** The merchant names the issue dialog offers (a private lookup on the merchants route). */
+/** The merchant-rank accounts the issue dialog offers (a private lookup on the accounts list). */
 export type MerchantOption = { id: Id; name: string };

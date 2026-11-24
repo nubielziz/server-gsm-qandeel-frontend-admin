@@ -21,7 +21,7 @@ describe('the page', () => {
         'Ledger',
         'Deposits7',
         'Trial balance',
-        'Customer wallets',
+        'Store balances',
         'Invoices',
         'Reports',
       ]),
@@ -85,9 +85,14 @@ describe('the Ledger tab', () => {
     expect(rows[1]).toHaveTextContent('Order hold');
     expect(rows[1]).toHaveTextContent('Hold for ORD-48859');
     expect(rows[1]).toHaveTextContent('Muscat Mobile Clinic');
+    // The owner of the wallet line is an account: its name leads to the Financial part of the account's record.
+    expect(within(rows[1]).getByRole('link', { name: 'Muscat Mobile Clinic' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/accounts\/\d+\?tab=wallet$/),
+    );
     expect(rows[1]).toHaveTextContent('$12.49');
     expect(await screen.findByText('1,962 entries')).toBeInTheDocument();
-    for (const name of ['Time', 'Journal', 'Type', 'Memo', 'Merchant', 'Amount', 'By']) {
+    for (const name of ['Time', 'Journal', 'Type', 'Memo', 'Account', 'Amount', 'By']) {
       expect(table.getByRole('columnheader', { name: new RegExp(`^${name}`) })).toBeInTheDocument();
     }
   });
@@ -111,17 +116,14 @@ describe('the Ledger tab', () => {
     const app = await openFinance();
     await screen.findByText('1,962 entries');
     await user.type(
-      screen.getByRole('searchbox', { name: 'Search journal, memo, merchant' }),
+      screen.getByRole('searchbox', { name: 'Search journal, memo, account' }),
       'Hold for ORD-48100',
     );
     await waitFor(() => expect(app.location()).toBe('/finance?q=Hold+for+ORD-48100'));
     expect(await screen.findByText('1 entry')).toBeInTheDocument();
 
-    await user.clear(screen.getByRole('searchbox', { name: 'Search journal, memo, merchant' }));
-    await user.type(
-      screen.getByRole('searchbox', { name: 'Search journal, memo, merchant' }),
-      'no such memo',
-    );
+    await user.clear(screen.getByRole('searchbox', { name: 'Search journal, memo, account' }));
+    await user.type(screen.getByRole('searchbox', { name: 'Search journal, memo, account' }), 'no such memo');
     expect(await screen.findByText('No entries match')).toBeInTheDocument();
     // The toolbar and the empty state both offer it.
     await user.click(screen.getAllByRole('button', { name: 'Clear filters' })[0]);
@@ -241,7 +243,7 @@ describe('Run reconciliation', () => {
     await user.click(screen.getByRole('button', { name: 'Run reconciliation' }));
     const dialog = within(await screen.findByRole('dialog', { name: 'Reconciliation found differences' }));
     expect(dialog.getByText('1 account differs from its entries.')).toBeInTheDocument();
-    const row = within(dialog.getByText(/Client wallets/).closest('tr') as HTMLElement);
+    const row = within(dialog.getByText(/Merchant wallets/).closest('tr') as HTMLElement);
     expect(row.getByText(/Zain Mobile Hub/)).toBeInTheDocument();
     expect(row.getByText('$120.00')).toBeInTheDocument();
     expect(row.getByText('$100.00')).toBeInTheDocument();

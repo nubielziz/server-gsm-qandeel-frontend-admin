@@ -1,5 +1,5 @@
 // EndSessionDialog: "End this session?" with a review step. Ending a session signs that person out of that device; ending
-// your own signs you out of the console.
+// your own signs you out of the console; ending an account's is written to that account's history.
 import { ConfirmDialog } from '@/components/ui';
 import { useRevokeSession } from '../hooks/useSessions';
 import { describeUserAgent } from '../lib/userAgent';
@@ -17,6 +17,11 @@ export function EndSessionDialog({ session, onClose }: { session: Session; onClo
             {session.subject.name} is signed out of {describeUserAgent(session.userAgent)} at{' '}
             <span className="mono">{session.ip}</span> right away and must sign in again.
           </p>
+          {session.subjectType === 'account' && (
+            <p className="mt-2 text-ink2">
+              This is an account session. Ending it is written to the account's history.
+            </p>
+          )}
           {session.current && (
             <p className="mt-2 font-medium text-crit-fg">
               This is your own session. Ending it signs you out of the console.

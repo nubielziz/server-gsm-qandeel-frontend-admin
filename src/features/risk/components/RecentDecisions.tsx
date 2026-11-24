@@ -1,7 +1,7 @@
 // RecentDecisions: "Decided recently", the last held orders a person approved or refunded, with who decided and when. Ports
 // the `hist` panel of `tabQueue` in 54-p-risk.js. Left out when the server sends none.
 import { Badge, Panel, ScoreMeter } from '@/components/ui';
-import { ago, customerLabel, lm } from '@/lib/format';
+import { accountLabel, ago, lm } from '@/lib/format';
 import type { DecidedOrder } from '../types';
 import { OrderLink } from './OrderLink';
 
@@ -16,7 +16,7 @@ export function RecentDecisions({ rows, now }: { rows: readonly DecidedOrder[] |
               <OrderLink id={row.orderId} />
             </span>
             <span className="min-w-0 flex-1 truncate text-ink2">
-              {customerLabel(row.customer)} · {lm(row.capturedAmount, row.currency, row.fxRate)}
+              {accountLabel(row.customer)} · {lm(row.capturedAmount, row.currency, row.fxRate)}
             </span>
             <ScoreMeter score={row.score} />
             {row.outcome === 'approved' ? (

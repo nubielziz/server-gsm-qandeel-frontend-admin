@@ -46,13 +46,13 @@ export function limitsText(gateway: Pick<PaymentGateway, 'minAmount' | 'maxAmoun
   return 'No limits';
 }
 
-/** "All groups" when none are picked, else the group names (a group the list does not know is shown by its number). */
-export function groupsText(
+/** "All ranks" when none are picked, else the rank names (a rank the list does not know is shown by its number). */
+export function ranksText(
   ids: readonly Id[],
-  groups: readonly { id: Id; name: string }[] | undefined,
+  ranks: readonly { id: Id; name: string }[] | undefined,
 ): string {
-  if (ids.length === 0) return 'All groups';
-  return ids.map((id) => groups?.find((group) => group.id === id)?.name ?? `Group ${id}`).join(', ');
+  if (ids.length === 0) return 'All ranks';
+  return ids.map((id) => ranks?.find((rank) => rank.id === id)?.name ?? `Rank ${id}`).join(', ');
 }
 
 /** The demo's Live / Manual badge: a manual gateway needs a person to check each payment. */

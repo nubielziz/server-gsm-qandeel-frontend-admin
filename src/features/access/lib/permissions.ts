@@ -44,6 +44,22 @@ export function normalisePermissions(answer: PermissionsAnswer | null | undefine
   return permissions;
 }
 
+/**
+ * The titles of the permission groups whose stored prefix is not the word staff read: the one accounts family (`clients`) is
+ * "Accounts", the ranks (`groups`) "Ranks", and the privacy permission of the data requests (`customers:privacy`) "Privacy".
+ * Any other group is titled by its prefix, humanised.
+ */
+export const GROUP_TITLES: Readonly<Record<string, string>> = {
+  clients: 'Accounts',
+  groups: 'Ranks',
+  customers: 'Privacy',
+};
+
+/** The title of a permission group: the title above, else the group's id made readable. */
+export function groupTitle(id: string): string {
+  return GROUP_TITLES[id] ?? (humanize(id) || 'General');
+}
+
 /** A group of permissions in the role dialog. */
 export type PermissionGroup = { id: string; title: string; items: Permission[] };
 
@@ -63,7 +79,7 @@ export function groupPermissions(
     byGroup.set(permission.group, [...(byGroup.get(permission.group) ?? []), permission]);
   }
   const groups = [...byGroup.entries()]
-    .map(([id, items]) => ({ id, title: humanize(id) || 'General', items }))
+    .map(([id, items]) => ({ id, title: groupTitle(id), items }))
     .sort((a, b) => a.title.localeCompare(b.title));
   const known = new Set(catalog.map((permission) => permission.key));
   // The wildcard `*` has its own switch in the dialog, so it is not listed here.
@@ -80,14 +96,16 @@ export type RoleArea = { name: string; full: string; prefixes: readonly string[]
 
 /**
  * The demo's eight areas (ROLE_AREAS), each with the permission prefixes of the map that belong to it, plus System
- * (health, alerts, incidents), which the demo does not have (MISMATCHES).
+ * (health, alerts, incidents), which the demo does not have (MISMATCHES). The second area is Accounts: the one accounts family
+ * (`clients`, with `clients:block`), its wallets, its ranks (`groups`), the API keys of its merchant ranks and the privacy
+ * permission of the data requests (`customers:privacy`).
  */
 export const ROLE_AREAS: readonly RoleArea[] = [
   { name: 'Orders', full: 'Orders and the review queue', prefixes: ['orders', 'inventory', 'files'] },
   {
-    name: 'Customers',
-    full: 'Customers and merchants',
-    prefixes: ['customers', 'clients', 'wallet', 'groups', 'api_keys'],
+    name: 'Accounts',
+    full: 'Accounts, ranks and privacy',
+    prefixes: ['clients', 'customers', 'wallet', 'groups', 'api_keys'],
   },
   { name: 'Support', full: 'Tickets and replies', prefixes: ['support'] },
   { name: 'Risk', full: 'Risk and checks', prefixes: ['risk'] },

@@ -35,7 +35,7 @@ export type ProfitQuery = { groupBy: ProfitGroup; from: string; to: string };
 
 // ---- Wallet exposure ----
 
-/** One merchant's wallet: what it holds, what is reserved for open orders, and the overdraft allowed and used. */
+/** One merchant wallet: what it holds, what is reserved for open orders, and the overdraft allowed and used (`clientId` is the account id). */
 export type WalletExposureRow = {
   clientId: Id;
   name: string;
@@ -45,7 +45,7 @@ export type WalletExposureRow = {
   overdraftUsed: Money;
 };
 
-/** The wallets added up by the server. `inOverdraft` counts the merchants whose balance is below zero. */
+/** The merchant wallets added up by the server. `inOverdraft` counts the merchants whose balance is below zero. */
 export type WalletExposureTotals = {
   clients: number;
   balance: Money;
@@ -55,10 +55,25 @@ export type WalletExposureTotals = {
   inOverdraft: number;
 };
 
-/** `GET /admin/reports/wallet-exposure` (assumed contract): the totals and the largest wallets first. */
+/**
+ * The store balances added up by the server (a retail account's wallet): how many accounts hold one, what they hold, and how many
+ * are below zero or on hold. They are not part of `totals`, which count merchant wallets only.
+ */
+export type StoreBalanceTotals = {
+  accounts: number;
+  balance: Money;
+  negative: number;
+  frozen: number;
+};
+
+/**
+ * `GET /admin/reports/wallet-exposure` (assumed contract): the totals and the largest merchant wallets first, then the totals of
+ * the store balances beside them (`storeBalances`, a sibling of `totals`).
+ */
 export type WalletExposure = {
   currency: string;
   totals: WalletExposureTotals;
+  storeBalances: StoreBalanceTotals;
   rows: WalletExposureRow[];
 };
 

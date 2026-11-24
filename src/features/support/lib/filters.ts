@@ -1,4 +1,4 @@
-// The support page's filter, who, search, customer, open thread, page and view as URL search parameters, and how they become
+// The support page's filter, who, search, account, open thread, page and view as URL search parameters, and how they become
 // API filters. Ports the `ui.support` state and ticketRows() of 49-p-support.js: the demo filtered an in-memory array, the
 // console asks the server. Nothing here decides which tickets match; it only writes and reads the question.
 import type { CrudFilters } from '@refinedev/core';
@@ -19,39 +19,47 @@ export const FILTER_ITEMS: readonly { value: TicketFilter; label: string }[] = [
   { value: 'all', label: 'All' },
 ];
 
-export type WhoFilter = 'all' | 'customers' | 'merchants';
+export type WhoFilter = 'all' | 'retail' | 'merchants';
 
-/** Who wrote: everyone, storefront customers (`b2c` in the demo) or merchants (`b2b`). */
+/** Who wrote: everyone, accounts of a retail rank (the shop's buyers, guests too) or accounts of a merchant rank. */
 export const WHO_ITEMS: readonly { value: WhoFilter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'customers', label: 'Customers' },
+  { value: 'retail', label: 'Retail' },
   { value: 'merchants', label: 'Merchants' },
 ];
 
 export type SupportView = 'inbox' | 'templates';
 
 /** The inbox filters kept in the address; the open thread, the page and the view have their own parameters. */
-export type SupportFilters = { filter: TicketFilter; who: WhoFilter; q: string; customerId: number | null };
+export type SupportFilters = { filter: TicketFilter; who: WhoFilter; q: string; accountId: number | null };
 
 const isId = (raw: string | null): raw is string => raw !== null && /^\d+$/.test(raw) && Number(raw) > 0;
 
 /**
- * The filter a bare `/support` opens on: Open (the demo's default). One customer's tickets open on All, because the link
- * says "N tickets from this customer" and the count includes the resolved ones.
+ * The filter a bare `/support` opens on: Open (the demo's default). One account's tickets open on All, because the link
+ * says "N tickets from this account" and the count includes the resolved ones.
  */
-export function defaultFilter(customerId: number | null): TicketFilter {
-  return customerId === null ? 'open' : 'all';
+export function defaultFilter(accountId: number | null): TicketFilter {
+  return accountId === null ? 'open' : 'all';
 }
 
-/** Reads the filters from the address; anything unknown or malformed is dropped. */
+// The word an address written before the merge used for the retail side of the Who control.
+const LEGACY_WHO: Readonly<Record<string, WhoFilter>> = { customers: 'retail' };
+
+/**
+ * Reads the filters from the address; anything unknown or malformed is dropped. `accountId` names the account. An address written
+ * before the merge may carry `customerId`: it is ignored, because an old customer number names another account now (the number
+ * space moved), and the first change of a filter writes the address without it.
+ */
 export function parseSupportFilters(params: URLSearchParams): SupportFilters {
-  const rawCustomer = params.get('customerId');
-  const customerId = isId(rawCustomer) ? Number(rawCustomer) : null;
+  const rawAccount = params.get('accountId');
+  const accountId = isId(rawAccount) ? Number(rawAccount) : null;
+  const rawWho = params.get('who') ?? '';
   return {
-    customerId,
+    accountId,
     filter:
-      FILTER_ITEMS.find((item) => item.value === params.get('filter'))?.value ?? defaultFilter(customerId),
-    who: WHO_ITEMS.find((item) => item.value === params.get('who'))?.value ?? 'all',
+      FILTER_ITEMS.find((item) => item.value === params.get('filter'))?.value ?? defaultFilter(accountId),
+    who: WHO_ITEMS.find((item) => item.value === (LEGACY_WHO[rawWho] ?? rawWho))?.value ?? 'all',
     q: params.get('q') ?? '',
   };
 }
@@ -63,15 +71,17 @@ export function parseSupportFilters(params: URLSearchParams): SupportFilters {
 export function writeSupportFilters(base: URLSearchParams, patch: Partial<SupportFilters>): URLSearchParams {
   const current = parseSupportFilters(base);
   const merged = { ...current, ...patch };
-  // A filter nobody chose follows the default of the customer in the address (a link to a customer's tickets opens on All).
+  // A filter nobody chose follows the default of the account in the address (a link to an account's tickets opens on All).
   const chosen = patch.filter ?? (base.has('filter') ? current.filter : undefined);
-  const filter = chosen ?? defaultFilter(merged.customerId);
+  const filter = chosen ?? defaultFilter(merged.accountId);
   const next = new URLSearchParams(base);
   const put = (key: string, value: string) => (value ? next.set(key, value) : next.delete(key));
-  put('filter', filter === defaultFilter(merged.customerId) ? '' : filter);
+  put('filter', filter === defaultFilter(merged.accountId) ? '' : filter);
   put('who', merged.who === 'all' ? '' : merged.who);
   put('q', merged.q);
-  put('customerId', merged.customerId === null ? '' : String(merged.customerId));
+  put('accountId', merged.accountId === null ? '' : String(merged.accountId));
+  // The key of the old model is never written back.
+  next.delete('customerId');
   next.delete('ticket');
   next.delete('page');
   return next;
@@ -121,7 +131,7 @@ export function writeView(base: URLSearchParams, view: SupportView): URLSearchPa
 /** Whether the inbox differs from what a clean address shows: the demo's "Show open tickets" only appears then. */
 export function hasActiveFilters(filters: SupportFilters): boolean {
   return (
-    filters.filter !== defaultFilter(filters.customerId) || filters.who !== 'all' || filters.q.trim() !== ''
+    filters.filter !== defaultFilter(filters.accountId) || filters.who !== 'all' || filters.q.trim() !== ''
   );
 }
 
@@ -147,7 +157,7 @@ export const UNRESOLVED = ['new', 'open', 'pending'] as const;
 
 /**
  * The API filters for the inbox. `meId` is the signed-in staff member, for Mine (the page waits for it before it asks).
- * A customer in the address means that customer's tickets whatever the Who control says.
+ * An account in the address means that account's tickets whatever the Who control says; the server takes the account id alone.
  */
 export function toListFilters(filters: SupportFilters, meId?: number): TicketListFilters {
   const q = filters.q.trim();
@@ -156,10 +166,10 @@ export function toListFilters(filters: SupportFilters, meId?: number): TicketLis
   if (filters.filter === 'late') out.late = true;
   if (filters.filter === 'mine' && meId !== undefined) out.assigneeId = meId;
   if (filters.filter === 'resolved') out.status = 'resolved';
-  if (filters.who !== 'all') out.requesterType = filters.who === 'customers' ? 'customer' : 'client';
-  if (filters.customerId !== null) {
-    out.requesterType = 'customer';
-    out.requesterId = filters.customerId;
+  if (filters.who !== 'all') out.rankKind = filters.who === 'retail' ? 'retail' : 'merchant';
+  if (filters.accountId !== null) {
+    delete out.rankKind;
+    out.requesterId = filters.accountId;
   }
   if (q) out.q = q;
   return out;

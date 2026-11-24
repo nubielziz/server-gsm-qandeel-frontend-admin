@@ -44,7 +44,7 @@ export function getIpRule(id: Id, init?: ApiInit): Promise<IpRule> {
 /**
  * Allows an address for the admin console, or blocks an address or range for one audience (storefront, merchant API,
  * admin console) or for all of them, optionally until `expiresAt`. A block always beats an allow. Also the way the
- * customers page blocks the last address of a customer.
+ * Accounts page blocks the last address of an account.
  * Assumed contract: body `{ kind, scope, cidr, label?, reason?, expiresAt? }`, answer the new rule.
  * @route POST /admin/ip-rules
  */

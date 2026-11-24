@@ -16,7 +16,7 @@ export function AuditEmpty({ filtered, onClear }: { filtered: boolean; onClear: 
   }
   return (
     <EmptyState icon="history" title="Nothing recorded yet">
-      Every change to prices, balances, merchants and suppliers is written here with the person and the time.
+      Every change to prices, balances, accounts and suppliers is written here with the person and the time.
     </EmptyState>
   );
 }

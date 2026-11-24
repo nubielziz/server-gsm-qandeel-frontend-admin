@@ -3,15 +3,15 @@
 import { useApiMutation } from '@/lib/query';
 import { money } from '@/lib/format';
 import { approvePayment, rejectPayment } from '../api';
-import { paymentLabel } from '../lib/payments';
+import { paymentLabel, payerName } from '../lib/payments';
 import type { Payment } from '../types';
 import { APPROVE_STALE_KEYS, DEPOSIT_STALE_KEYS, staleDeposit } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
 
 /**
- * Approves a pending deposit: the server credits the wallet and posts the entry. The toast names the amount and, when the
- * server's answer carries the merchant's wallet, what the wallet holds now (the demo's "Wallet is now …").
+ * Approves a pending deposit: the server credits the account's live wallet and posts the entry. The toast names the amount and,
+ * when the server's answer carries the wallet, what it holds now (the demo's "Wallet is now …", "Balance is now …" for a store balance).
  */
 export function useApprovePayment() {
   return useApiMutation({
@@ -19,18 +19,20 @@ export function useApprovePayment() {
     invalidates: (_updated, payment) => staleDeposit(payment),
     invalidateKeys: APPROVE_STALE_KEYS,
     successNotification: (updated, payment) => {
-      const name = updated.client?.name ?? payment.client?.name ?? 'the merchant';
-      const wallet = updated.client?.walletBalance;
+      const named = payerName(updated.client || updated.customer ? updated : payment);
+      const name = named === '–' ? 'the account' : named;
+      const wallet = (updated.client ?? updated.customer)?.walletBalance;
+      const what = updated.client || !updated.customer ? 'Wallet' : 'Balance';
       return {
         message: `${paymentLabel(payment.id)} approved`,
-        description: `${money(updated.netAmount)} credited to ${name}.${wallet ? ` Wallet is now ${money(wallet)}.` : ''}`,
+        description: `${money(updated.netAmount)} credited to ${name}.${wallet ? ` ${what} is now ${money(wallet)}.` : ''}`,
       };
     },
     errorNotification: NO_ERROR_TOAST,
   });
 }
 
-/** Rejects a pending deposit with a reason the merchant sees. No money moves. */
+/** Rejects a pending deposit with a reason the account holder sees. No money moves. */
 export function useRejectPayment() {
   return useApiMutation({
     mutationFn: ({ payment, reason }: { payment: Payment; reason: string }) =>
@@ -39,7 +41,7 @@ export function useRejectPayment() {
     invalidateKeys: DEPOSIT_STALE_KEYS,
     successNotification: (_updated, { payment }) => ({
       message: `${paymentLabel(payment.id)} rejected`,
-      description: `${payment.client?.name ?? 'The merchant'} was told why. No money moved.`,
+      description: `${payerName(payment) === '–' ? 'The account holder' : payerName(payment)} was told why. No money moved.`,
     }),
     errorNotification: NO_ERROR_TOAST,
   });

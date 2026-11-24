@@ -14,13 +14,13 @@ export const PAYMENT_FILTERS: readonly { id: PaymentFilter; label: string }[] = 
   { id: 'all', label: 'All' },
 ];
 
-/** Whose top-ups the list shows: everyone's, merchants' deposits, or customers' store balance top-ups (feature 21). */
+/** Whose top-ups the list shows: everyone's, the merchant wallets', or the store balances'. The ids are the wire's `owner` words. */
 export type PaymentOwnerFilter = PaymentOwner | 'all';
 
 export const PAYMENT_OWNERS: readonly { id: PaymentOwnerFilter; label: string }[] = [
   { id: 'all', label: 'All payers' },
-  { id: 'merchant', label: 'Merchants' },
-  { id: 'customer', label: 'Customers' },
+  { id: 'merchant', label: 'Merchant wallet' },
+  { id: 'customer', label: 'Store balance' },
 ];
 
 /** Everyone's top-ups are the default and leave no trace in the address. */
@@ -54,7 +54,7 @@ export function parsePaymentFilter(params: URLSearchParams): PaymentFilter {
 /**
  * The API filters of a sub-tab. The tab lists wallet top-ups only (`purpose=topup`): storefront order payments are not
  * deposits and never wait for review. The counts use the same filters, so each number is what its sub-tab lists. `owner`
- * keeps merchants' deposits or customers' top-ups only (feature 21).
+ * keeps the merchant wallets' top-ups or the store balances' only.
  */
 export function paymentListFilters(
   filter: PaymentFilter,

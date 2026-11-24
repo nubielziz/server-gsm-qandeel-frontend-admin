@@ -192,6 +192,8 @@ describe('the details drawer', () => {
     expect(await drawer.findByText('The mailbox does not exist.')).toBeInTheDocument();
     expect(drawer.getByText(/^[a-z]\*\*\*[a-z]@example\.com$/)).toBeInTheDocument();
     expect(drawer.getByText('Not sent')).toBeInTheDocument();
+    // A new line names its recipient an account, whatever the rank.
+    expect(drawer.getByText('Account')).toBeInTheDocument();
     expect(drawer.getByText(/"orderId": "SF-\d+"/)).toBeInTheDocument();
     expect(app.location()).toMatch(/&notification=\d+$/);
     await user.click(drawer.getByRole('button', { name: 'Close details' }));
@@ -205,6 +207,30 @@ describe('the details drawer', () => {
     expect(await drawer.findByText('support.reply')).toBeInTheDocument();
     expect(drawer.getByText('Failed')).toBeInTheDocument();
     expect(await drawer.findByText('The mailbox does not exist.')).toBeInTheDocument();
+  });
+
+  it('says what an old line means: a message written before the merge to a merchant keeps its word', async () => {
+    mockServer.use(
+      http.get('*/admin/notifications/:id', () =>
+        HttpResponse.json({
+          id: 5,
+          event: 'order.completed',
+          channel: 'email',
+          status: 'sent',
+          recipient: 'a***b@example.com',
+          recipientType: 'client',
+          recipientId: 1,
+          campaignId: null,
+          attempts: 1,
+          sentAt: '2026-11-10T09:00:00.000Z',
+          createdAt: '2026-11-10T09:00:00.000Z',
+          updatedAt: '2026-11-10T09:00:00.000Z',
+        }),
+      ),
+    );
+    await openSettings(`${LOG}&notification=5`);
+    const drawer = within(await screen.findByRole('dialog'));
+    expect(await drawer.findByText('Merchant')).toBeInTheDocument();
   });
 
   it('says so, with a Retry, when the message cannot be read', async () => {

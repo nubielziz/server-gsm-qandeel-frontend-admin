@@ -17,6 +17,15 @@ export function hasPermission(granted: readonly string[], required: string | rea
   return needed.some((permission) => granted.some((g) => covers(g, permission)));
 }
 
+/**
+ * Whether the granted permissions are the Owner's: true only for an exact `*` entry, the server's rule (`requireOwner`). A role that
+ * lists every permission, or `*:*`, is not the Owner. It only decides what to draw (the rank change, a merchant rank, a new API
+ * key); the server checks the Owner on every such request.
+ */
+export function isOwnerRole(granted: readonly string[]): boolean {
+  return granted.includes('*');
+}
+
 /** The CRUD operations Refine reports for a resource row. */
 export type CrudOp = 'list' | 'show' | 'create' | 'edit' | 'update' | 'delete';
 

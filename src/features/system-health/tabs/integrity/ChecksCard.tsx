@@ -1,4 +1,4 @@
-// ChecksCard: the "Ledger checks" card of the Integrity tab: the four checks of the last run with pass, fail or not checked,
+// ChecksCard: the "Ledger checks" card of the Integrity tab: the checks of the last run with pass, fail or not checked,
 // the count and the difference. Reads GET /admin/system/integrity (route group health).
 import { useState } from 'react';
 import { SkeletonTable } from '@/components/ui';
@@ -25,7 +25,7 @@ export function ChecksCard({ query, interval }: ChecksCardProps) {
       flush
       skeleton={<SkeletonTable cols={4} rows={4} />}
       isEmpty={(report) => report.checks.length === 0}
-      emptyText="The four ledger checks appear here after the first run."
+      emptyText="The ledger checks appear here after the first run."
       errorTitle="Could not load the ledger checks"
       permission="system:read"
     >

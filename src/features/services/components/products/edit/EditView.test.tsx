@@ -16,7 +16,7 @@ import { rememberAllAddress } from '../all/lastAllAddress';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
-// The merchants feature serves the group list; these tests bring their own copy of it.
+// The accounts feature serves the rank list; these tests bring their own copy of it.
 beforeEach(() => mockServer.use(...groupHandlers));
 afterEach(() => vi.restoreAllMocks());
 

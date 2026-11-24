@@ -19,12 +19,12 @@ const PURPOSE_OPTIONS = [
   {
     value: 'marketing',
     label: 'Marketing',
-    description: 'Customers who did not agree to marketing are left out, on every channel.',
+    description: 'Retail accounts and guests who did not agree to marketing are left out, on every channel.',
   },
 ];
 
 const CHANNEL_HINT: Record<CampaignChannel, string> = {
-  in_app: 'Shows in the bell of the console, the merchant portal or the customer account.',
+  in_app: 'Shows in the bell of the console, the merchant portal or the shop account.',
   email: 'People who switched announcement emails off are left out.',
 };
 

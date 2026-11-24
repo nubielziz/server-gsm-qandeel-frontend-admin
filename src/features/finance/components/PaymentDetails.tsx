@@ -1,12 +1,13 @@
-// PaymentDetails: the facts of one deposit inside its dialog: a warning or the rejection reason, a chargeback note, then merchant
-// (or, since feature 21, the customer whose store balance it tops up), dates, reference, receipt and the amounts. Ports the body of payDialog in 45-p-finance.js. "Spend, 30 days" and the wallet-after
+// PaymentDetails: the facts of one deposit inside its dialog: a warning or the rejection reason, a chargeback note, then the merchant
+// account (or the account whose store balance it tops up), dates, reference, receipt and the amounts. Ports the body of payDialog in 45-p-finance.js. "Spend, 30 days" and the wallet-after
 // preview are not here (MISMATCHES M127): the deposit does not carry them and the server posts the credit.
 import { Link } from 'react-router';
 import { Icon, KeyValue } from '@/components/ui';
-import { ago, customerLabel, fmtDate, hasCustomerName, money } from '@/lib/format';
+import { accountPath } from '@/features/accounts';
+import { ago, accountLabel, fmtDate, hasAccountName, money } from '@/lib/format';
 import { fileDownloadUrl } from '../api/lookups';
 import { PaymentDisputeChip } from './PaymentDisputeChip';
-import { customerWalletPath, disputeText, feeText } from '../lib/payments';
+import { disputeText, feeText } from '../lib/payments';
 import type { Payment } from '../types';
 
 export interface PaymentDetailsProps {
@@ -61,19 +62,19 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
         rows={[
           customer && !client
             ? [
-                'Customer',
+                'Account',
                 <>
-                  <Link className="link" to={customerWalletPath(customer.id)}>
-                    {customerLabel(customer)}
+                  <Link className="link" to={accountPath(customer.id, 'wallet')}>
+                    {accountLabel(customer)}
                   </Link>
-                  {hasCustomerName(customer) && <span className="text-ink3"> · {customer.email}</span>}
+                  {hasAccountName(customer) && <span className="text-ink3"> · {customer.email}</span>}
                 </>,
               ]
             : [
                 'Merchant',
                 client ? (
                   <>
-                    <Link className="link" to={`/merchants/${client.id}`}>
+                    <Link className="link" to={accountPath(client.id, 'wallet')}>
                       {client.name}
                     </Link>
                     {client.group && <span className="text-ink3"> · {client.group}</span>}
@@ -125,7 +126,7 @@ export function PaymentDetails({ payment, now, canOpenFiles }: PaymentDetailsPro
       {fresh && (
         <p className="text-xs text-ink3">
           Check that the amount on the proof matches the amount above before approving. Approval credits the
-          {customer && !client ? ' customer’s store balance' : ' wallet'} immediately.
+          {customer && !client ? ' account’s store balance' : ' wallet'} immediately.
         </p>
       )}
     </div>

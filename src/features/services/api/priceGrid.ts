@@ -5,7 +5,7 @@ import type { PriceGridRow, ServiceOrderBody, ServiceOrderResult } from '../type
 
 /**
  * One page of the price grid: per service the effective cost, the base price with its margin, the floor, the shop price with where it
- * comes from and its margin, and for every merchant group (kind `b2b`, in the order of the groups page) the fixed price, the price the price
+ * comes from and its margin, and for every rank (kind `b2b`, in the order of the groups page) the fixed price, the price the price
  * resolver gives it today and its margin. The server works out every figure; the console prints them. Filters `type`, `status` and
  * `categoryId`; `q` is a contains over name, code and category name; sorts `name` (default), `sort` (the order merchants see) and `id`;
  * the total is in `x-total-count`. Needs `catalog:read` and `pricing:read` (403 naming `pricing:read` without it).

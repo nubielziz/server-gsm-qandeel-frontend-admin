@@ -1,6 +1,6 @@
 // Tests for the Settings page frame, run through the whole app against the dev mock API: the six tabs, the address (`?tab=`), the
 // tabs a role may open, the stale-rate count, the old address of the retired webhook tab, and the exports other features already use
-// (the access and customers pages).
+// (the access and Accounts pages).
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

@@ -83,18 +83,27 @@ describe('the price and the steps', () => {
     expect(screen.getByText('Group rows ignore this merchant’s personal override.')).toBeInTheDocument();
   });
 
-  it('names each merchant’s group in the menu, leaves out merchants that are not active yet and marks the merchant’s own group', async () => {
+  it('names each merchant’s rank in the menu, leaves out deleted accounts and marks the merchant’s own rank', async () => {
+    const asked: URL[] = [];
+    const row = (id: number, name: string, status: string, rank: { id: number; name: string }) => ({
+      id,
+      name,
+      email: `account${id}@example.com`,
+      status,
+      rank: { ...rank, kind: 'merchant' },
+    });
     mockServer.use(
-      http.get('*/admin/clients', () =>
-        HttpResponse.json(
+      http.get('*/admin/clients', ({ request }) => {
+        asked.push(new URL(request.url));
+        return HttpResponse.json(
           [
-            { id: 6, name: 'Erbil Mobile Parts', status: 'active', group: { id: 1, name: 'Standard' } },
-            { id: 2, name: 'Al-Noor Telecom', status: 'active', group: { id: 2, name: 'Wholesale' } },
-            { id: 20, name: 'Waiting Trader', status: 'pending', group: { id: 1, name: 'Standard' } },
+            row(6, 'Erbil Mobile Parts', 'active', { id: 1, name: 'Standard' }),
+            row(2, 'Al-Noor Telecom', 'active', { id: 2, name: 'Wholesale' }),
+            row(20, 'Deleted account', 'anonymized', { id: 1, name: 'Standard' }),
           ],
           { headers: { 'x-total-count': '3' } },
-        ),
-      ),
+        );
+      }),
     );
     await openProducts(`${RESOLVER}&service=${ATT}&merchant=${ERBIL}`);
     const merchant = await screen.findByRole('combobox', { name: 'Merchant' });
@@ -103,6 +112,8 @@ describe('the price and the steps', () => {
         .getAllByRole('option')
         .map((option) => option.textContent),
     ).toEqual(['Erbil Mobile Parts (Standard)', 'Al-Noor Telecom (Wholesale)']);
+    // The list asks for the accounts of merchant ranks only: the server has no merchant-only default.
+    expect(asked[0].searchParams.get('rankKind')).toBe('merchant');
     const table = within(await screen.findByRole('table', { name: 'Same service, other groups' }));
     expect(
       within(table.getByText('Standard').closest('tr') as HTMLElement).getByText('(this merchant)'),
@@ -129,7 +140,7 @@ describe('the choice', () => {
 
     await user.selectOptions(service, 'T-Mobile USA Unlock');
     await waitFor(() => expect(app.location()).toBe(`${RESOLVER}&service=6`));
-    // The merchants feature's mock serves the names, with the group after each one ("Cairo GSM Lab (VIP)").
+    // The accounts feature's mock serves the names, with the rank after each one ("Cairo GSM Lab (VIP)").
     const merchant = screen.getByRole('combobox', { name: 'Merchant' });
     const cairo = within(merchant).getByRole('option', { name: /^Cairo GSM Lab/ }) as HTMLOptionElement;
     await user.selectOptions(merchant, cairo);

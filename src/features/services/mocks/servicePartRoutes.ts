@@ -117,9 +117,9 @@ export const servicePartRoutes: HttpHandler[] = [
       for (const [index, row] of rows.entries()) {
         const groupId = idOf(row.groupId);
         const price = Number(row.price);
-        // The merchants feature owns the groups, so any positive whole number is taken as a group.
+        // The accounts feature owns the groups, so any positive whole number is taken as a group.
         if (groupId === null) {
-          problems.push({ field: `prices.${index}.groupId`, message: 'Choose a merchant group.' });
+          problems.push({ field: `prices.${index}.groupId`, message: 'Choose a rank.' });
         } else if (!Number.isFinite(price) || price <= 0) {
           problems.push({ field: `prices.${index}.price`, message: 'Enter a price greater than zero.' });
         } else {

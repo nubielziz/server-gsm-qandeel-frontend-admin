@@ -354,7 +354,7 @@ describe('the parts of a service', () => {
     expect((await getService(ATT)).options).toEqual(options);
   });
 
-  it('replaces the group prices, for any group id (the merchants feature owns the groups)', async () => {
+  it('replaces the group prices, for any group id (the accounts feature owns the groups)', async () => {
     const requests = recordRequests();
     const prices = [{ groupId: 2, price: '16.0000' }];
     expect(await replaceServiceGroupPrices(ATT, { prices, retailPriceSeen: null })).toEqual(prices);
@@ -370,7 +370,7 @@ describe('the parts of a service', () => {
       prices: [{ groupId: 0, price: '1.0000' }],
       retailPriceSeen: null,
     }).catch((e: unknown) => e);
-    expect((noGroup as ApiError).fieldErrors['prices.0.groupId']).toEqual(['Choose a merchant group.']);
+    expect((noGroup as ApiError).fieldErrors['prices.0.groupId']).toEqual(['Choose a rank.']);
     const noPrice = await replaceServiceGroupPrices(ATT, {
       prices: [{ groupId: 2, price: '0.0000' }],
       retailPriceSeen: null,
@@ -493,7 +493,7 @@ describe('categories', () => {
       sort: 0,
       isActive: true,
     }).catch((e: unknown) => e);
-    expect((notGroup as ApiError).fieldErrors.allowedGroupIds).toEqual(['Choose merchant groups.']);
+    expect((notGroup as ApiError).fieldErrors.allowedGroupIds).toEqual(['Choose ranks.']);
     const blank = await createCategory({
       name: ' ',
       type: 'imei',

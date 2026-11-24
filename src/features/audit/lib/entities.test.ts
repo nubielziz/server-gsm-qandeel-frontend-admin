@@ -1,6 +1,6 @@
 // Tests for the record types: names on screen, the server's other spellings, and the text for a record.
 import { describe, expect, it } from 'vitest';
-import { ENTITY_KINDS, entityKind, entityTypeLabel, recordText } from './entities';
+import { ENTITY_KINDS, entityKind, entityTypeLabel, isOldCustomerWord, recordText } from './entities';
 
 describe('entityKind', () => {
   it('keeps the console’s own names', () => {
@@ -10,11 +10,33 @@ describe('entityKind', () => {
 
   it('reads table names and plurals as the same record type', () => {
     expect(entityKind('orders')).toBe('order');
-    expect(entityKind('clients')).toBe('merchant');
     expect(entityKind('staff_users')).toBe('staff');
     expect(entityKind('support_tickets')).toBe('ticket');
     expect(entityKind('Legal Documents')).toBe('legal');
     expect(entityKind('ip-rules')).toBe('ip_rule');
+  });
+
+  it('reads every word of an account as the one record type "account"', () => {
+    for (const word of [
+      'account',
+      'accounts',
+      'merchant',
+      'merchants',
+      'client',
+      'clients',
+      'customer',
+      'Customers',
+    ]) {
+      expect(entityKind(word)).toBe('account');
+      expect(entityTypeLabel(word)).toBe('Account');
+    }
+  });
+
+  it('knows the old customer word, whose number is not an account number', () => {
+    expect(isOldCustomerWord('customer')).toBe(true);
+    expect(isOldCustomerWord(' Customers ')).toBe(true);
+    for (const word of ['account', 'merchant', 'client', 'order'])
+      expect(isOldCustomerWord(word)).toBe(false);
   });
 
   it('gives an unknown type back in lower case', () => {
@@ -35,8 +57,14 @@ describe('entityTypeLabel', () => {
   });
 
   it('has a word for every type the filter offers', () => {
-    expect(ENTITY_KINDS).toHaveLength(18);
+    expect(ENTITY_KINDS).toHaveLength(17);
     for (const kind of ENTITY_KINDS) expect(entityTypeLabel(kind)).not.toBe('');
+  });
+
+  it('offers one filter for accounts and none for the old words', () => {
+    expect(ENTITY_KINDS).toContain('account');
+    expect(ENTITY_KINDS).not.toContain('merchant');
+    expect(ENTITY_KINDS).not.toContain('customer');
   });
 
   it('offers no filter for the retired commission plan, and still names an old row of that type', () => {

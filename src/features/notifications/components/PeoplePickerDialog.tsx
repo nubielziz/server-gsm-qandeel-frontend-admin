@@ -1,4 +1,4 @@
-// PeoplePickerDialog: picks individual people to add to the audience or to leave out of it. Tabs for staff, merchants and customers (a tab is hidden when
+// PeoplePickerDialog: picks individual people to add to the audience or to leave out of it. Tabs for staff and accounts (a tab is hidden when
 // the role cannot read that list), a search, and a paged table with a tick box per row. The ticks stay while the page, the search or the tab changes (the
 // picked people are kept in one map). Built on the mechanics of the suppliers' ImportPicker.
 import { useMemo, useState } from 'react';
@@ -17,10 +17,16 @@ import { useSettledValue } from '../hooks/useSettledValue';
 import { MAX_PEOPLE, PERSON_WORD, type PickedPerson } from '../lib/spec';
 import type { PersonType } from '../types';
 
-const TAB_LABEL: Record<PersonType, string> = { staff: 'Staff', client: 'Merchants', customer: 'Customers' };
+const TAB_LABEL: Record<PersonType, string> = { staff: 'Staff', account: 'Accounts' };
 
 const COLUMNS: DataTableColumn<PickedPerson>[] = [
   { key: 'name', label: 'Name', render: (person) => <span className="font-medium">{person.name}</span> },
+  {
+    key: 'rank',
+    label: 'Rank',
+    hide: 'sm',
+    render: (person) => <span className="text-ink2">{person.rank?.name}</span>,
+  },
   {
     key: 'detail',
     label: 'Email',

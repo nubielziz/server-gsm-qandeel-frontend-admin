@@ -1,6 +1,7 @@
 // ProfitTable: the profit report as a table: one row per day, service, supplier or merchant, and the totals the server sent.
-// New (MISMATCHES M124). A merchant or supplier row links to its page. A day is shown newest first, as the chart's table twin.
+// New (MISMATCHES M124). A merchant row links to the account's record and a supplier row to its page. A day is shown newest first, as the chart's table twin.
 import { Link } from 'react-router';
+import { accountPath } from '@/features/accounts';
 import { money, num } from '@/lib/format';
 import { dayLabel } from '../lib/reports';
 import type { ProfitGroup, ProfitReport, ProfitRow } from '../types';
@@ -12,9 +13,9 @@ const COLUMN: Record<ProfitGroup, string> = {
   client: 'Merchant',
 };
 
-// Where a row's name leads: the merchant's page or the suppliers page with that supplier selected.
+// Where a row's name leads: the merchant account's record or the suppliers page with that supplier selected.
 function linkOf(group: ProfitGroup, row: ProfitRow): string | null {
-  if (group === 'client' && /^\d+$/.test(row.key)) return `/merchants/${row.key}`;
+  if (group === 'client' && /^\d+$/.test(row.key) && Number(row.key) > 0) return accountPath(Number(row.key));
   if (group === 'supplier' && /^\d+$/.test(row.key)) return `/suppliers?supplier=${row.key}`;
   return null;
 }

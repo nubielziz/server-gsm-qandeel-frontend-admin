@@ -211,14 +211,14 @@ describe('onError', () => {
 
   it('keeps the page the session ended on, so signing in again goes back to it', async () => {
     const { provider } = setup();
-    window.history.pushState({}, '', '/merchants/3?tab=wallet');
+    window.history.pushState({}, '', '/accounts/3?tab=wallet');
     try {
       await expect(provider.onError(apiError(401, 'UNAUTHORIZED'))).resolves.toMatchObject({
         logout: true,
-        redirectTo: '/login?to=%2Fmerchants%2F3%3Ftab%3Dwallet',
+        redirectTo: '/login?to=%2Faccounts%2F3%3Ftab%3Dwallet',
       });
       await expect(provider.onError(apiError(403, ERROR_CODES.ACCOUNT_SUSPENDED))).resolves.toMatchObject({
-        redirectTo: '/login?reason=suspended&to=%2Fmerchants%2F3%3Ftab%3Dwallet',
+        redirectTo: '/login?reason=suspended&to=%2Faccounts%2F3%3Ftab%3Dwallet',
       });
       // A sign-in screen is never a destination (it would only bounce the user again).
       window.history.pushState({}, '', '/login');

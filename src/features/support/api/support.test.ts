@@ -72,8 +72,8 @@ describe('what each function sends', () => {
       toListQuery(
         {
           status: ['new', 'open', 'pending'],
-          requesterType: 'customer',
-          requesterId: 28,
+          rankKind: 'retail',
+          requesterId: 128,
           assigneeId: 1,
           q: 'unlock',
         },
@@ -88,8 +88,9 @@ describe('what each function sends', () => {
     expect(params.get('_order')).toBe('desc,desc');
     expect(params.get('q')).toBe('unlock');
     expect(params.getAll('status')).toEqual(['new', 'open', 'pending']);
-    expect(params.get('requesterType')).toBe('customer');
-    expect(params.get('requesterId')).toBe('28');
+    expect(params.get('rankKind')).toBe('retail');
+    expect(params.get('requesterId')).toBe('128');
+    expect(params.has('requesterType')).toBe(false);
     expect(params.get('assigneeId')).toBe('1');
   });
 
@@ -252,11 +253,17 @@ describe('listing tickets', () => {
     expect(await total('filter=resolved')).toBe(5);
     expect(await total('filter=all')).toBe(15);
     expect(await total('filter=all&who=merchants')).toBe(3);
+    expect(await total('filter=all&who=retail')).toBe(12);
+    expect(await total('accountId=128')).toBe(2);
     expect((await listSupportTickets({ filters: { status: 'new' }, start: 0, end: 1 })).total).toBe(4);
   });
 
   it('puts the requester, the assignee and the three timers on each row', async () => {
-    const { data } = await listSupportTickets({ filters: { requesterId: 28 }, sort: ['id'], order: ['asc'] });
+    const { data } = await listSupportTickets({
+      filters: { requesterId: 128 },
+      sort: ['id'],
+      order: ['asc'],
+    });
     const late = data.find((row) => row.id === LATE);
     expect(late).toMatchObject({
       number: 'T-4202',
@@ -264,8 +271,9 @@ describe('listing tickets', () => {
       priority: 'high',
       channel: 'web',
       category: 'failed_unlock',
-      requesterType: 'customer',
-      requester: { name: 'Victor Silva' },
+      requesterType: 'account',
+      requesterId: 128,
+      requester: { name: 'Victor Silva', rankKind: 'retail' },
       orderId: 20471,
       assignee: { name: 'Lina S.' },
       late: true,
@@ -294,16 +302,31 @@ describe('reading one ticket', () => {
   it('sends the whole thread, oldest first, and the channels a reply can use', async () => {
     const ticket = await getSupportTicket(4212);
     expect(ticket.messages.map((message) => [message.authorType, message.isInternal])).toEqual([
-      ['customer', false],
+      ['account', false],
       ['staff', true],
     ]);
-    expect(ticket.messages[0]).toMatchObject({ authorName: 'Jack', authorId: 19 });
+    expect(ticket.messages[0]).toMatchObject({ authorName: 'Jack', authorId: 119 });
     expect(ticket.replyChannels).toEqual(['email']);
     expect((await getSupportTicket(4207)).replyChannels).toEqual(['email', 'telegram']);
     expect((await getSupportTicket(MERCHANT)).messages.map((message) => message.authorType)).toEqual([
-      'client',
+      'account',
       'staff',
     ]);
+  });
+
+  it('keeps a merchant’s number as its account number and tells the rank kind on the ticket', async () => {
+    const merchant = await getSupportTicket(MERCHANT);
+    expect(merchant).toMatchObject({ requesterType: 'account', requester: { rankKind: 'merchant' } });
+    expect(merchant.requesterId).toBeLessThan(100);
+    expect((await getSupportTicket(LATE)).requester.rankKind).toBe('retail');
+  });
+
+  it('refuses a requester type of the old model, as the server does', async () => {
+    const error = await listSupportTickets({ filters: { requesterType: 'customer' } as never }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(isApiError(error) && error.status).toBe(422);
+    expect(isApiError(error) && error.fieldErrors.requesterType).toBeDefined();
   });
 
   it('answers 404 for a ticket that does not exist', async () => {

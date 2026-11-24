@@ -1,12 +1,14 @@
 // The dev mock store of the support feature, seeded from the demo (`S.tickets` with their messages, `S.macros`) and mapped to API-style
-// records (decision 014). Requester names come from the demo's customers and merchants, staff names from its admins. Dev and tests only.
+// records (decision 014). Requester names come from the demo's customers and merchants, staff names from its admins. A demo requester is an
+// account now: a merchant keeps its number and a customer `cN` is account `100 + N` (`@/mocks/seed/accountIds`), with the kind of its rank.
+// Dev and tests only.
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, type DemoState } from '@/mocks/seed';
+import { accountIdOfDemo } from '@/mocks/seed/accountIds';
 import { demoStaffIds } from '@/mocks/staff';
 import type {
   MessageAuthorType,
   ReplyTemplate,
-  RequesterType,
   TicketCategory,
   TicketChannel,
   TicketMessage,
@@ -18,12 +20,12 @@ import type { MockFile, MockTicket, SupportState } from './types';
 /** A message of a demo ticket: `by` is who wrote it (`note` is an internal note). */
 type DemoMessage = { by: 'customer' | 'staff' | 'note'; name: string; ts: number; text: string };
 
-/** A ticket of the demo seed, as the demo stores it (the fields the mock uses). */
+/** A ticket of the demo seed, as the demo stores it (the fields the mock uses). `who.type` is the demo's word: `client` is a merchant. */
 type DemoTicket = {
   id: string;
   subject: string;
   channel: TicketChannel;
-  who: { type: RequesterType; id: string };
+  who: { type: 'customer' | 'client'; id: string };
   oid: string | null;
   cat: TicketCategory;
   prio: TicketPriority;
@@ -87,7 +89,7 @@ function build(demo: DemoState): SupportState {
     const staffId = staff.get(message.name) ?? null;
     const authorType: MessageAuthorType =
       message.by === 'customer'
-        ? ticket.who.type
+        ? 'account'
         : message.by === 'note' && message.name === 'System'
           ? 'system'
           : 'staff';
@@ -97,7 +99,7 @@ function build(demo: DemoState): SupportState {
       ticketId: demoNumericId(ticket.id),
       authorType,
       authorId:
-        authorType === 'staff' ? staffId : authorType === 'system' ? null : demoNumericId(ticket.who.id),
+        authorType === 'staff' ? staffId : authorType === 'system' ? null : accountIdOfDemo(ticket.who.id),
       authorName: message.name,
       body: message.text,
       isInternal: message.by === 'note',
@@ -112,8 +114,7 @@ function build(demo: DemoState): SupportState {
    * resolved); the requester has seen a reply once they wrote again after it (or the ticket is resolved). A requester message with no answer is unread.
    */
   const marksOf = (messages: TicketMessage[], resolved: boolean, resolvedAt: string) => {
-    const isRequester = (message: TicketMessage) =>
-      message.authorType === 'customer' || message.authorType === 'client';
+    const isRequester = (message: TicketMessage) => message.authorType === 'account';
     const publicStaff = messages.filter((message) => message.authorType === 'staff' && !message.isInternal);
     const requesters = messages.filter(isRequester);
     const newestRequester = requesters.at(-1);
@@ -144,9 +145,13 @@ function build(demo: DemoState): SupportState {
       number: ticket.id,
       subject: ticket.subject,
       channel: ticket.channel,
-      requesterType: ticket.who.type,
-      requesterId: demoNumericId(ticket.who.id),
-      requester: { name: party?.name ?? 'Customer', email: party?.email ?? null },
+      requesterType: 'account',
+      requesterId: accountIdOfDemo(ticket.who.id),
+      requester: {
+        name: party?.name ?? 'Customer',
+        email: party?.email ?? null,
+        rankKind: ticket.who.type === 'client' ? 'merchant' : 'retail',
+      },
       orderId: ticket.oid ? demoNumericId(ticket.oid) : null,
       category: ticket.cat,
       priority: ticket.prio,

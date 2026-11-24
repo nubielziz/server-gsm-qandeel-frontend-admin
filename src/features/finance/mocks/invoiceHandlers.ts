@@ -1,6 +1,7 @@
-// Mock of the invoice routes (`/admin/invoices*`): the list, one invoice, and issuing a manual invoice for a merchant.
+// Mock of the invoice routes (`/admin/invoices*`): the list, one invoice, and issuing a manual invoice for a merchant-rank account.
 // Mocks fake answers only (decision 014): the amount and merchant checks below stand in for the server's own.
 import { http, HttpResponse, type HttpHandler } from 'msw';
+import { walletOfAccount } from '@/features/accounts/mocks';
 import { applyListQuery } from '@/mocks/crud';
 import { bodyOf, invalid, notFound, textOf } from '@/mocks/handlers/accessShared';
 import { latency } from '@/mocks/latency';
@@ -17,11 +18,15 @@ export const invoiceHandlers: HttpHandler[] = [
     const denied = guard(request);
     if (denied) return denied;
     await latency();
-    const { page, total } = applyListQuery((await invoiceStore()).list(), new URL(request.url).searchParams, [
-      'number',
-      'client.name',
-      'customer.name',
-    ]);
+    // The buyer is `accountId` (`clientId` is its alias): the id of the row's `client` or `customer`, which are both account ids.
+    const params = new URLSearchParams(new URL(request.url).searchParams);
+    const account = params.get('accountId') ?? params.get('clientId');
+    params.delete('accountId');
+    params.delete('clientId');
+    const rows = (await invoiceStore())
+      .list()
+      .filter((row) => !account || String((row.client ?? row.customer)?.id) === account);
+    const { page, total } = applyListQuery(rows, params, ['number', 'client.name', 'customer.name']);
     return HttpResponse.json(page, {
       headers: { 'x-total-count': String(total), 'access-control-expose-headers': 'x-total-count' },
     });
@@ -46,9 +51,17 @@ export const invoiceHandlers: HttpHandler[] = [
     const merchant = demoRows<{ id: string; name: string; cc: string }>(state, 'merchants').find(
       (candidate) => demoNumericId(candidate.id) === Number(body.clientId),
     );
+    // A retail account has a store balance, not a merchant wallet: the server refuses it with the code `not_merchant`.
+    const wallet = await walletOfAccount(Number(body.clientId));
 
     const errors: ProblemError[] = [];
-    if (!merchant) errors.push({ field: 'clientId', message: 'Choose a merchant that exists.' });
+    if (wallet && wallet.kind !== 'merchant') {
+      errors.push({
+        field: 'clientId',
+        code: 'not_merchant',
+        message: 'Only an account with a merchant rank can be billed.',
+      } as ProblemError);
+    } else if (!merchant) errors.push({ field: 'clientId', message: 'Choose a merchant that exists.' });
     if (!/^\d+(\.\d{1,4})?$/.test(amount) || !/[1-9]/.test(amount)) {
       errors.push({ field: 'amount', message: 'Enter an amount greater than zero.' });
     }

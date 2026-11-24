@@ -20,6 +20,25 @@ export const NOTIFICATION_STATUS_OPTIONS: readonly SelectOption[] = [
   { value: 'failed', label: 'Failed' },
 ];
 
+/**
+ * The recipient type of a log line in words. A new line says `account` (a merchant and a retail account alike); the lines written before
+ * the accounts were merged keep their word (`client` is a merchant, `customer` a store customer), because the log is never rewritten.
+ */
+export function recipientTypeText(recipientType: string): string {
+  switch (recipientType) {
+    case 'account':
+      return 'Account';
+    case 'client':
+      return 'Merchant';
+    case 'customer':
+      return 'Customer';
+    case 'staff':
+      return 'Staff';
+    default:
+      return recipientType;
+  }
+}
+
 /** JSON as indented text for a `<pre>`. A value that cannot be written (it cannot happen for API JSON) gives an empty text. */
 export function jsonText(value: unknown): string {
   try {

@@ -3,14 +3,22 @@
 import type { Id, IsoDateTime, Money } from '@/lib/api';
 import type { JobRun } from './queues';
 
-/** The four ledger checks of the map, in its order. */
+/**
+ * The ledger checks, in the server's order: the four of the map, then `wallets_follow_rank`, which looks at the wallets of the
+ * accounts (one live wallet of the kind of the rank; no balance or overdraft on the other kind; no overdraft on a rank without
+ * credit; every ledger account owned by an account that exists).
+ */
 export type IntegrityCheckKey =
-  'entries_balanced' | 'accounts_match_lines' | 'stuck_holds' | 'payments_without_entry';
+  | 'entries_balanced'
+  | 'accounts_match_lines'
+  | 'stuck_holds'
+  | 'payments_without_entry'
+  | 'wallets_follow_rank';
 
 /** Result of one check in the last run; `unknown` when it has never run or could not finish. */
 export type IntegrityStatus = 'pass' | 'fail' | 'unknown';
 
-/** One problem a check found: an unbalanced entry, an account off from its lines, an old hold or a lone payment. */
+/** One problem a check found: an unbalanced entry, an account (or a wallet) off from its lines or its rank, an old hold or a lone payment. */
 export interface IntegrityFinding {
   kind: 'entry' | 'account' | 'hold' | 'payment';
   id: Id;

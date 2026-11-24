@@ -43,7 +43,7 @@ describe('the queue', () => {
     expect(card.getByText('67')).toBeInTheDocument();
     expect(card.getByText(/Paid .*, the customer is waiting/)).toBeInTheDocument();
     expect(card.getByText('New customer, first order above $40')).toBeInTheDocument();
-    expect(card.getByRole('link', { name: 'Tyler Brooks' })).toHaveAttribute('href', '/customers/10');
+    expect(card.getByRole('link', { name: 'Tyler Brooks' })).toHaveAttribute('href', '/accounts/110');
     expect(card.getByText('ty•••@inbox.example')).toBeInTheDocument();
     expect(card.getByText('United States')).toBeInTheDocument();
     expect(card.getByText(/earlier order/)).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('the queue', () => {
       paymentMethod: 'card',
       signals: ['New customer, first order above $40'],
       customer: {
-        id: 10,
+        id: 110,
         name: 'Tyler Brooks',
         email: 'tyler@inbox.example',
         country: 'US',

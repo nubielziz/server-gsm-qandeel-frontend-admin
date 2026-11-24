@@ -25,6 +25,7 @@ export type ApiErrorInit = {
   detail?: string;
   type?: string;
   fieldErrors?: Record<string, string[]>;
+  fieldCodes?: Record<string, string[]>;
   formErrors?: string[];
   requestId?: string;
   retryAfter?: number;
@@ -48,6 +49,12 @@ export class ApiError extends Error {
   readonly fieldErrors: Record<string, string[]>;
   /** Same data as `fieldErrors`, in the shape Refine's `useForm` maps onto fields. */
   readonly errors: Record<string, string[]>;
+  /**
+   * The `code` of each `errors[]` entry that names a field and carries one, per field, in the order of the entries. A refusal
+   * that lists several reasons on one field (`groupId: ['frozen', 'negative_balance']`) is read from here; the messages stay in
+   * `fieldErrors`. An entry without a code adds nothing.
+   */
+  readonly fieldCodes: Record<string, string[]>;
   /** Messages from `errors[]` that name no field; they belong in the form's general error slot. */
   readonly formErrors: string[];
   /** Value of the `X-Request-Id` response header, to quote when reporting a problem. */
@@ -67,6 +74,7 @@ export class ApiError extends Error {
     this.type = init.type;
     this.fieldErrors = init.fieldErrors ?? {};
     this.errors = this.fieldErrors;
+    this.fieldCodes = init.fieldCodes ?? {};
     this.formErrors = init.formErrors ?? [];
     this.requestId = init.requestId;
     this.retryAfter = init.retryAfter;
@@ -125,8 +133,9 @@ export function fieldPath(raw: unknown): string | undefined {
 const FIELD_KEYS = ['field', 'path', 'pointer', 'name', 'param'] as const;
 const MESSAGE_KEYS = ['message', 'detail', 'title', 'code'] as const;
 
-// One entry of `errors[]`: a plain string, or an object with a field key and a message key (see FIELD_KEYS, MESSAGE_KEYS).
-function readItem(item: unknown): { field?: string; message: string } | undefined {
+// One entry of `errors[]`: a plain string, or an object with a field key and a message key (see FIELD_KEYS, MESSAGE_KEYS), and
+// maybe a `code` of its own.
+function readItem(item: unknown): { field?: string; message: string; code?: string } | undefined {
   if (typeof item === 'string') {
     const message = text(item);
     return message ? { message } : undefined;
@@ -135,32 +144,40 @@ function readItem(item: unknown): { field?: string; message: string } | undefine
   const message = MESSAGE_KEYS.map((key) => text(item[key])).find(Boolean);
   if (!message) return undefined;
   const field = FIELD_KEYS.map((key) => fieldPath(item[key])).find(Boolean);
-  return field ? { field, message } : { message };
+  const code = text(item.code);
+  return { ...(field ? { field } : {}), message, ...(code ? { code } : {}) };
 }
 
-/** Reads `errors[]` (or an `{ field: message(s) }` map) into per-field messages and general messages. */
-function readErrors(raw: unknown): { fieldErrors: Record<string, string[]>; formErrors: string[] } {
+/** Reads `errors[]` (or an `{ field: message(s) }` map) into per-field messages, per-field codes and general messages. */
+function readErrors(raw: unknown): {
+  fieldErrors: Record<string, string[]>;
+  fieldCodes: Record<string, string[]>;
+  formErrors: string[];
+} {
   const fieldErrors: Record<string, string[]> = {};
+  const fieldCodes: Record<string, string[]> = {};
   const formErrors: string[] = [];
-  const add = (field: string | undefined, message: string) => {
-    if (field) (fieldErrors[field] ??= []).push(message);
-    else formErrors.push(message);
+  const add = (field: string | undefined, read: { message: string; code?: string }) => {
+    if (field) {
+      (fieldErrors[field] ??= []).push(read.message);
+      if (read.code) (fieldCodes[field] ??= []).push(read.code);
+    } else formErrors.push(read.message);
   };
   if (Array.isArray(raw)) {
     for (const item of raw) {
       const read = readItem(item);
-      if (read) add(read.field, read.message);
+      if (read) add(read.field, read);
     }
   } else if (isRecord(raw)) {
     for (const [key, value] of Object.entries(raw)) {
       const field = fieldPath(key);
       for (const entry of Array.isArray(value) ? value : [value]) {
         const read = readItem(entry);
-        if (read) add(field, read.message);
+        if (read) add(field, read);
       }
     }
   }
-  return { fieldErrors, formErrors };
+  return { fieldErrors, fieldCodes, formErrors };
 }
 
 /** `Retry-After` is either seconds or an HTTP date; both become whole seconds. */
@@ -191,7 +208,9 @@ export async function parseErrorResponse(res: Response): Promise<ApiError> {
   const raw = await res.text().catch(() => '');
   const json = parseJson(raw);
   const body = isRecord(json) ? json : {};
-  const { fieldErrors, formErrors } = readErrors(body.errors ?? (Array.isArray(json) ? json : undefined));
+  const { fieldErrors, fieldCodes, formErrors } = readErrors(
+    body.errors ?? (Array.isArray(json) ? json : undefined),
+  );
   const plain =
     json === undefined && raw.trim() !== '' && !raw.trimStart().startsWith('<') ? raw.trim() : undefined;
   return new ApiError({
@@ -201,6 +220,7 @@ export async function parseErrorResponse(res: Response): Promise<ApiError> {
     detail: text(body.detail) ?? text(body.message) ?? plain?.slice(0, 300),
     type: text(body.type),
     fieldErrors,
+    fieldCodes,
     formErrors,
     requestId: res.headers.get('X-Request-Id') ?? text(body.requestId) ?? text(body.request_id) ?? undefined,
     retryAfter: parseRetryAfter(res.headers.get('Retry-After')),

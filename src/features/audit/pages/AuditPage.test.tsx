@@ -19,7 +19,7 @@ describe('the list', () => {
     await openAudit();
     expect(
       screen.getByText(
-        'Every change to money, prices, merchants and suppliers, with who and when. Entries can’t be edited or deleted.',
+        'Every change to money, prices, accounts and suppliers, with who and when. Entries can’t be edited or deleted.',
       ),
     ).toBeInTheDocument();
     const rows = await entries();
@@ -95,8 +95,8 @@ describe('Show more', () => {
   });
 
   it('shows no button when everything fits on one page', async () => {
-    await openAudit('/audit?type=merchant');
-    await waitFor(() => expect(countText()).toBe('6 entries'));
+    await openAudit('/audit?type=account');
+    await waitFor(() => expect(countText()).toBe('7 entries'));
     expect(screen.queryByRole('button', { name: /^Show \d+ more/ })).not.toBeInTheDocument();
   });
 });
@@ -107,7 +107,7 @@ describe('states', () => {
     await openAudit();
     expect(await screen.findByText('Nothing recorded yet')).toBeInTheDocument();
     expect(
-      screen.getByText(/Every change to prices, balances, merchants and suppliers is written here/),
+      screen.getByText(/Every change to prices, balances, accounts and suppliers is written here/),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
   });

@@ -15,7 +15,7 @@ import {
 import type { CreateCategoryBody, ServiceCategory, UpdateCategoryBody } from '../types';
 
 /**
- * The service categories with the merchant groups that can see each one.
+ * The service categories with the ranks that can see each one.
  * Rows may carry `serviceCount`.
  * @route GET /admin/service-categories
  */

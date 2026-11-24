@@ -86,7 +86,7 @@ Pages link to each other by address. Each page honours these parameters (pages n
 
 | Address | Opens |
 |---|---|
-| `/orders?tab=…&type=…&channel=b2b\|b2c&pastSla=true&supplierId=…&clientId=…&q=…` | the Orders list with those filters (`ordersListPath` in `@/features/orders`) |
+| `/orders?tab=…&type=…&channel=b2b\|b2c&pastSla=true&supplierId=…&accountId=…&rankId=…&q=…` | the Orders list with those filters (`ordersListPath` in `@/features/orders`; an old `clientId` is read as `accountId`) |
 | `/orders?order=<id>` (on any page that mounts `OrderDrawerHost`) | that order's drawer (`orderPath`) |
 | `/suppliers?supplier=<id>` | Suppliers with that supplier selected |
 | `/products?view=all[&type=…&q=…&group=<id>&api=<id>&show=attention\|offshop\|disabled&page=…&size=…]` | Product / Services, the list of one kind of service with its filters (`productsPath` in `@/features/services` builds every address of the page; `show=attention` is the services that need a person, among them those priced below cost plus minimum profit) |
@@ -99,22 +99,33 @@ Pages link to each other by address. Each page honours these parameters (pages n
 | `/products?view=edit-group&id=<id>` | Product / Services: one group, as the label-left form of +Add Group with Save |
 | `/storefront?tab=landing\|content\|help\|tac\|search` | Shop content on that tab |
 | `/finance?tab=payments` | Finance on the pending deposits |
-| `/merchants`, `/merchants/<id>` | the merchants list (an old `?tab=pending` opens its first tab); one merchant |
-| `/customers/<id>` (`?tab=orders\|account\|support\|consents\|risk`) | one customer |
+| `/accounts[?view=all\|add\|ranks\|add-rank\|edit-rank\|requests&chip=retail\|merchants\|guests&status=…&rank=<id>&country=…&q=…&sort=…&dir=…&page=…&size=…]` | the Accounts page: the list of accounts (the default view), a new account, the ranks, a new rank, one rank (`id`), the data requests (`request`). `accountsListPath` and `ranksPath` in `@/features/accounts` write every address; the keys a view does not use are never written |
+| `/accounts/<id>?tab=overview\|wallet\|profile\|invoices\|payments\|api\|security\|prices\|orders\|support\|statement\|privacy\|audit[&order=<orderId>]` | one account, on one part of its record (`accountPath`; `order` opens the order drawer of the Orders part) |
+| `/accounts/<oldId>?from=customer\|merchant\|client[&tab=…]` | an old customer (or merchant) number: the page asks `GET /admin/legacy-accounts/<type>/<id>` and replaces the entry with the account's address (`legacyAccountPath`) |
 | `/risk` (`?tab=queue`) | the held-orders queue |
 | `/refunds?tab=disputes`, `/refunds?tab=refunds&status=requested\|failed` | disputes; refunds by status |
-| `/support?filter=late`, `/support?customerId=<id>` | late tickets; one customer's tickets |
+| `/audit?type=account&record=<id>` | the audit log filtered to one account (`auditAccountPath`; an old `customer` record goes through the legacy lookup) |
+| `/support?filter=late`, `/support?accountId=<id>` | late tickets; one account's tickets |
 | `/settings?tab=tax` | tax and exchange rates |
 | `/access?tab=…` | an Admins and access tab |
 
-Old addresses keep working for good: `/catalog…`, `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Product / Services addresses above by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decisions 019 and 022; the table of cases is in MISMATCHES M270). The backend's mail about shop price changes still links to `/catalog?view=settings&tab=shop-prices`. Links inside the app use the new addresses.
+Old addresses keep working for good: `/catalog…`, `/services…` and the `/storefront` tabs `publish`, `pricing` and `listings` (and `/storefront` with `q`, `page`, `sort` or `dir` and no tab) are redirected to the Product / Services addresses above, and `/merchants`, `/merchants/<id>`, `/customers` and `/customers/<id>` to the Accounts addresses above (an old customer record carries `from=customer`, because a customer number is not an account number), by `legacyTarget` (`src/app/legacyRedirects.ts`), before the page's permission gate (decisions 019, 022 and 023; the table of cases for the catalog is in MISMATCHES M270, the one for accounts in decision 023). The backend's mail about shop price changes still links to `/catalog?view=settings&tab=shop-prices`. Links inside the app use the new addresses.
+
+### 5.3 A feature with a record of many parts: Accounts (decision 023)
+
+The Accounts feature (`src/features/accounts`) is the largest feature and the model for a page that has a list, several views and a record with a left menu of parts:
+- `pages/` holds the two route components (`AccountsPage`: the strip, the row of views and the view; `AccountPage`: the record and its resolver for old addresses). They only choose what to draw.
+- `components/<area>/` has one folder per area of the page (`list`, `create`, `ranks`, `requests` for the views; `overview`, `wallet`, `profile`, `billing`, `apikeys`, `prices`, `security`, `orders`, `support`, `privacy` and `audit` for the parts of a record; `status` and `rank` for the dialogs that change an account; `frame`, `record` and `shared` for what the areas share). Each folder has an `index.ts` that names what the page imports from it, and a guard test (`shared/areaExports.test.ts`) keeps those names.
+- The record is a table of parts (`record/accountParts.tsx`): for each part its address word, its label, the permission that shows it and the kind of account that has it. A part reads only the record the page has already read, or its own list; an action sits in the part that owns it, as a dialog with one `Idempotency-Key` per opening when it moves money.
+- `lib/paths.ts` is the only builder of an address of the page. The feature's `index.ts` exports the API functions, the types, the paths, the status, rank and rank-change words, the palette source and the list filters, and no component and no hook; another feature never imports a deeper path.
+- Page tests start with `setupMockApi()` and `installAccountMocks()`, render through `pages/test-utils.ts` (`renderAccounts`, `renderAccount`, `renderInApp`) and run against the mock API; the roles of those tests are in `test/roles.ts`.
 
 ## 6. Naming
 
 - Files: components `PascalCase.tsx`, everything else `camelCase.ts`. One component per file.
 - API functions: verb + entity: `listStaff`, `getStaff`, `createStaff`, `updateStaff`, `deleteIpRule`, action endpoints use the action verb: `suspendStaff`, `approvePayment`, `previewBulkPrice`, `applyBulkPrice`.
 - Hooks: `use` + noun/verb: `useStaffList`, `useSuspendStaff`. Types: `StaffUser`, `SuspendStaffBody`, `StaffListFilters`.
-- Refine page resources use the demo page ids (`orders`, `merchants`, `access`…); data resources use the API path segment (`staff`, `ip-rules`, `ledger/transactions`).
+- Refine page resources use the demo page ids (`orders`, `accounts`, `access`…); data resources use the API path segment (`staff`, `ip-rules`, `ledger/transactions`).
 - API JSON is camelCase; money is a 4-decimal string (`Money`), dates are ISO strings (`IsoDateTime`), IDs are numbers (`Id`).
 
 ## 7. Dev mock layer

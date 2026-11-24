@@ -14,13 +14,13 @@ export type PageLoader = () => Promise<ComponentType>;
 
 /** The page a feature fills: one of the page resources of `src/app/resources.ts`, by name. */
 export type FeaturePage = {
-  /** Page resource name (`orders`, `customers`): the sidebar entry and the `/<name>` route. */
+  /** Page resource name (`orders`, `accounts`): the sidebar entry and the `/<name>` route. */
   name: string;
   /** The page's level-1 heading, which the route tests look for (it can differ from the sidebar label). */
   heading: string;
   /** The list view at `/<name>`. */
   list: PageLoader;
-  /** The detail view at `/<name>/:id`, for the pages that have one (merchants, customers). */
+  /** The detail view at `/<name>/:id`, for the pages that have one (accounts, notifications). */
   detail?: PageLoader;
   /**
    * Replaces the page permission set in `src/app/resources.ts`. A list means any one of them opens the page, for pages
@@ -30,7 +30,7 @@ export type FeaturePage = {
 };
 
 export type FeatureManifest = {
-  /** Feature id, as in `docs/feature-plan.json` (`orders`, `customers`). */
+  /** Feature id, as in `docs/feature-plan.json` (`orders`, `accounts`). */
   id: string;
   page?: FeaturePage;
   /** The API functions behind Refine's data hooks for this feature's CRUD resources (decision 005). */

@@ -1,5 +1,5 @@
-// CustomerSegment: the customer group of the audience: all active customers, or only those with an account or guests, narrowed by country. A marketing
-// campaign reaches only customers who agreed to marketing, whatever is chosen here.
+// CustomerSegment: the retail group of the audience (the wire's `customers`): every active account that holds a retail rank and every guest, or only those with a login
+// or only guests, narrowed by country. A marketing campaign reaches only those who agreed to marketing, whatever is chosen here.
 import { SegmentedControl, TextField } from '@/components/ui';
 import { messagesUnder } from '../lib/serverErrors';
 import type { CustomerAccounts } from '../lib/spec';
@@ -8,7 +8,7 @@ import type { SegmentProps } from './StaffSegment';
 
 const ACCOUNT_ITEMS: readonly { value: CustomerAccounts; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'accounts', label: 'With an account' },
+  { value: 'accounts', label: 'With a login' },
   { value: 'guests', label: 'Guests' },
 ];
 
@@ -18,15 +18,15 @@ export function CustomerSegment({ audience, onChange, errors }: SegmentProps) {
     onChange({ ...audience, customers: { ...customers, ...change } });
   return (
     <SegmentCard
-      title="Customers"
-      description="Customers of the storefront. Guests have no account, so they get email only."
+      title="Retail"
+      description="Retail accounts and guests of the storefront. A guest has no login, so gets email only."
       on={customers.on}
       onToggle={(on) => patch({ on })}
     >
       <div>
-        <p className="label">Customers</p>
+        <p className="label">Who</p>
         <SegmentedControl
-          label="Customers with an account or guests"
+          label="Retail accounts with a login or guests"
           items={ACCOUNT_ITEMS}
           value={customers.accounts}
           onChange={(accounts) => patch({ accounts })}

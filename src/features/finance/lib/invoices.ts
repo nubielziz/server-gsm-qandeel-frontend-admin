@@ -1,12 +1,12 @@
 // What the Invoices tab says about an invoice: kind names, status badges, who it is billed to, and the amount typed in the
 // issue dialog. New in the console (MISMATCHES M123), so there is no demo function to port.
 import type { StatusBadge } from './payments';
-import { maskedCustomerLabel, maskEmail } from '@/lib/format';
+import { accountPath } from '@/features/accounts';
+import { maskedAccountLabel, maskEmail } from '@/lib/format';
 import { plainWords } from './kinds';
-import { customerWalletPath } from './payments';
 import type { Invoice, InvoiceStatus } from '../types';
 
-/** The kinds of invoice by name. `receipt` is the tax receipt a storefront customer gets. */
+/** The kinds of invoice by name. `receipt` is the tax receipt a shop buyer gets. */
 export const INVOICE_KIND_LABEL: Readonly<Record<string, string>> = {
   topup: 'Top-up',
   manual: 'Manual',
@@ -32,17 +32,17 @@ export function invoiceStatusBadge(status: string): StatusBadge {
 }
 
 /**
- * Who the invoice is billed to: a merchant (linked to its page), a storefront customer who topped up their store balance (their
- * name, linked to their wallet; feature 21), or a storefront customer's tax receipt (email masked, as in Orders).
+ * Who the invoice is billed to: a merchant wallet's account (linked to its wallet), an account that topped up its store balance
+ * (its name, linked to its wallet), or a shop buyer's tax receipt (email masked, as in Orders).
  */
 export function billedTo(invoice: Pick<Invoice, 'client' | 'customer'> & Partial<Pick<Invoice, 'kind'>>): {
   name: string;
   href?: string;
 } {
-  if (invoice.client) return { name: invoice.client.name, href: `/merchants/${invoice.client.id}` };
+  if (invoice.client) return { name: invoice.client.name, href: accountPath(invoice.client.id, 'wallet') };
   if (invoice.customer) {
     return invoice.kind === 'topup'
-      ? { name: maskedCustomerLabel(invoice.customer), href: customerWalletPath(invoice.customer.id) }
+      ? { name: maskedAccountLabel(invoice.customer), href: accountPath(invoice.customer.id, 'wallet') }
       : { name: maskEmail(invoice.customer.email) };
   }
   return { name: '–' };

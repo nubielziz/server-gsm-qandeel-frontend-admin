@@ -1,6 +1,6 @@
 // IssueInvoiceDialog: "Issue manual invoice": pick a merchant, type an amount and what it is for. New in the console
 // (MISMATCHES M123). The server checks the amount, adds tax and numbers the invoice; its message shows under the field it names, or
-// in the dialog's error slot. The merchant names come from a private lookup (needs `clients:read`).
+// in the dialog's error slot. The merchant names come from the accounts list, merchant ranks only (needs `clients:read`).
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextareaField, TextField, dialogSubmit } from '@/components/ui';
 import { useCreateInvoice } from '../hooks/useCreateInvoice';

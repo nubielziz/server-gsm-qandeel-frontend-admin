@@ -15,7 +15,7 @@ import { OrdersHeader } from '../components/OrdersHeader';
 import { OrderTable } from '../components/OrderTable';
 import { OrdersToolbar } from '../components/OrdersToolbar';
 import { useBulkSend } from '../hooks/useBulkSend';
-import { useClientOptions, useSupplierOptions } from '../hooks/useLookups';
+import { useMerchantOptions, useRankOptions, useSupplierOptions } from '../hooks/useLookups';
 import { useOrderCounts } from '../hooks/useOrderCounts';
 import { useOrderDrawer } from '../hooks/useOrderDrawer';
 import { useOrderExport } from '../hooks/useOrderExport';
@@ -60,7 +60,8 @@ export function OrdersPage() {
   const exporter = useOrderExport();
   const retry = useDispatchOrder();
   const suppliers = useSupplierOptions(grants.can('suppliers:read'));
-  const clients = useClientOptions(grants.can('clients:read'));
+  const merchants = useMerchantOptions(grants.can('clients:read'));
+  const ranks = useRankOptions(grants.can('groups:read'));
 
   const open = (order: Order) => {
     setCursor(order.id);
@@ -134,7 +135,8 @@ export function OrdersPage() {
           onClear={clearFilters}
           total={list.total}
           suppliers={grants.can('suppliers:read') ? (suppliers.data ?? []) : undefined}
-          clients={grants.can('clients:read') ? (clients.data ?? []) : undefined}
+          merchants={grants.can('clients:read') ? (merchants.data ?? []) : undefined}
+          ranks={grants.can('groups:read') ? (ranks.data ?? []) : undefined}
         />
         <BulkBar
           orders={picked.orders}

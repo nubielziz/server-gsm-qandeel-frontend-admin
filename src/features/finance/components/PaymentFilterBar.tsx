@@ -1,6 +1,6 @@
 // PaymentFilterBar: the Pending / Approved / Rejected / All switch with a count on each, and the note about card deposits.
-// Ports the `seg` row of paymentsTab in 45-p-finance.js. A count shows once the server has answered it. Since feature 21 a select
-// keeps merchants' deposits or customers' store balance top-ups only.
+// Ports the `seg` row of paymentsTab in 45-p-finance.js. A count shows once the server has answered it. A select keeps the
+// merchant wallets' top-ups or the store balances' only.
 import { SelectField } from '@/components/ui';
 import type { PaymentCounts } from '../hooks/usePaymentCounts';
 import {
@@ -16,7 +16,7 @@ export interface PaymentFilterBarProps {
   value: PaymentFilter;
   counts: PaymentCounts;
   onChange: (filter: PaymentFilter) => void;
-  /** Whose top-ups are listed (feature 21). */
+  /** Whose top-ups are listed. */
   owner: PaymentOwnerFilter;
   onOwnerChange: (owner: PaymentOwnerFilter) => void;
 }

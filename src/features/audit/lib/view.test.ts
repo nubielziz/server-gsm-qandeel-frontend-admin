@@ -33,6 +33,22 @@ describe('parseView', () => {
   });
 });
 
+describe('the old words of an account', () => {
+  it('reads merchant and client as the record type account, with the number kept', () => {
+    expect(parseView(params('type=merchant&record=5'))).toMatchObject({ type: 'account', record: '5' });
+    expect(parseView(params('type=clients&record=5'))).toMatchObject({ type: 'account', record: '5' });
+  });
+
+  it('reads customer as account and drops the number: it belongs to the old record, not to an account', () => {
+    expect(parseView(params('type=customer&record=19'))).toMatchObject({ type: 'account', record: '' });
+  });
+
+  it('leaves every other type as written', () => {
+    expect(parseView(params('type=order'))).toMatchObject({ type: 'order' });
+    expect(parseView(params('type=export_job'))).toMatchObject({ type: 'export_job' });
+  });
+});
+
 describe('toFilters', () => {
   it('sends a person as staff with an id and the system as its own type', () => {
     expect(toFilters(parseView(params('actor=3')))).toEqual({ actorType: 'staff', actorId: 3 });
@@ -49,11 +65,16 @@ describe('toFilters', () => {
   });
 
   it('sends a record id only beside its type, as a number', () => {
-    expect(toFilters(parseView(params('type=merchant&record=7')))).toEqual({
-      entityType: 'merchant',
+    expect(toFilters(parseView(params('type=order&record=7')))).toEqual({
+      entityType: 'order',
       entityId: 7,
     });
     expect(toFilters(parseView(params('record=7')))).toEqual({});
+  });
+
+  it('asks for one account by its number, not by a type and an id', () => {
+    expect(toFilters(parseView(params('type=account&record=7')))).toEqual({ accountId: 7 });
+    expect(toFilters(parseView(params('type=account')))).toEqual({ entityType: 'account' });
   });
 
   it('counts a record id as a filter', () => {
@@ -85,10 +106,13 @@ describe('writeView', () => {
   });
 
   it('keeps the record id when other filters change, and clears it with the rest', () => {
-    expect(writeView(params('type=merchant&record=7'), { actor: '2' }).toString()).toBe(
-      'type=merchant&record=7&actor=2',
+    expect(writeView(params('type=account&record=7'), { actor: '2' }).toString()).toBe(
+      'type=account&record=7&actor=2',
     );
-    expect(writeView(params('type=merchant&record=7'), { record: '' }).toString()).toBe('type=merchant');
+    expect(writeView(params('type=account&record=7'), { record: '' }).toString()).toBe('type=account');
+    expect(writeView(params('type=merchant&record=7'), { actor: '2' }).toString()).toBe(
+      'type=account&record=7&actor=2',
+    );
   });
 
   it('clears every filter but leaves other parameters', () => {

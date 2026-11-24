@@ -2,7 +2,9 @@
 // permission, for a completed order that has to be redone. Built in the demo's dialog style (MISMATCHES M31).
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, TextField } from '@/components/ui';
+import { isApiError } from '@/lib/api';
 import { useReopenOrder } from '../hooks/useOrderMutations';
+import { RANK_CHANGED_CODE, RANK_CHANGED_TEXT } from '../lib/reopen';
 import { orderLabel } from '../lib/status';
 import type { Order } from '../types';
 
@@ -17,7 +19,13 @@ export function ReopenDialog({ order, onClose }: { order: Order; onClose: () => 
     form,
     async (values) => {
       const reason = values.reason.trim();
-      await reopen.mutateAsync({ order, body: reason ? { reason } : {} });
+      try {
+        await reopen.mutateAsync({ order, body: reason ? { reason } : {} });
+      } catch (error) {
+        // The account's live wallet is not a merchant wallet any more: say why and point to the refund (a returned sentence keeps the dialog open).
+        if (isApiError(error) && error.code === RANK_CHANGED_CODE) return RANK_CHANGED_TEXT;
+        throw error;
+      }
     },
     { fields: ['reason'] },
   );

@@ -1,5 +1,5 @@
 // Tests for the Merchant price rules tab of the Price Rules view (the old Rules and groups tab), run through the whole app against the
-// dev mock API: the merchant groups (read-only, with a link to the merchants page), the pricing rules table with New rule, Edit, Turn
+// dev mock API: the ranks (read-only, with a link to the Ranks view of the Accounts page), the pricing rules table with New rule, Edit, Turn
 // off and Delete, the server's refusals, and the notes.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -15,7 +15,7 @@ import { dialogOf, openProducts } from '../test/productsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
-// The merchants feature serves the group list; these tests bring their own copy of it.
+// The accounts feature serves the rank list; these tests bring their own copy of it.
 beforeEach(() => mockServer.use(...groupHandlers));
 
 const RULES = '/products?view=rules&tab=merchant';
@@ -28,10 +28,12 @@ async function ruleRow(text: string) {
   return within((await table.findByText(text)).closest('tr') as HTMLElement);
 }
 
-describe('merchant groups', () => {
-  it('lists the groups with their discount and merchants, read-only, and links to where they are managed', async () => {
+describe('ranks', () => {
+  it('lists the ranks with their discount and accounts, read-only, and links to where they are managed', async () => {
     await openProducts(RULES);
-    const table = within(await screen.findByRole('table', { name: 'Price groups' }));
+    const table = within(await screen.findByRole('table', { name: 'Ranks' }));
+    expect(table.getByRole('columnheader', { name: 'Rank' })).toBeInTheDocument();
+    expect(table.getByRole('columnheader', { name: 'Accounts' })).toBeInTheDocument();
     expect(
       within(table.getByText('Standard').closest('tr') as HTMLElement).getByText('None'),
     ).toBeInTheDocument();
@@ -39,16 +41,26 @@ describe('merchant groups', () => {
     expect(wholesale.getByText('-4%')).toBeInTheDocument();
     expect(wholesale.getByText('6')).toBeInTheDocument();
     expect(within(table.getByText('VIP').closest('tr') as HTMLElement).getByText('-8%')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Manage groups' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Manage ranks' })).toHaveAttribute(
       'href',
-      '/merchants?tab=groups',
+      '/accounts?view=ranks',
     );
+  });
+
+  it('points to the Accounts page, not the old merchants page, for a merchant’s own price', async () => {
+    await openProducts(RULES);
+    await screen.findByRole('table', { name: 'Ranks' });
+    const note = within(
+      screen.getByText(/Prices part of that merchant’s account/).closest('p') as HTMLElement,
+    );
+    expect(note.getByRole('link', { name: 'Accounts' })).toHaveAttribute('href', '/accounts?chip=merchants');
+    expect(document.querySelector('a[href^="/merchants"]')).toBeNull();
   });
 
   it('needs groups:read to show the groups', async () => {
     await openProducts(RULES, { permissions: ['pricing:read'] });
     expect(
-      await screen.findByText('You need the groups:read permission to see the merchant groups.'),
+      await screen.findByText('You need the groups:read permission to see the ranks.'),
     ).toBeInTheDocument();
   });
 });
@@ -148,14 +160,14 @@ describe('New rule and Edit rule', () => {
     });
   });
 
-  it('adds a margin rule for one merchant group with a fixed amount and rounding', async () => {
+  it('adds a margin rule for one rank with a fixed amount and rounding', async () => {
     const user = userEvent.setup();
     await openProducts(RULES);
     const dialog = await openNewRule(user);
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Applies to' }), 'Every service');
     expect(dialog.queryByRole('combobox', { name: 'Category' })).not.toBeInTheDocument();
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Type' }), 'Margin (adds to the price)');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Merchant group' }), 'Wholesale');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Rank' }), 'Wholesale');
     await user.type(dialog.getByRole('textbox', { name: 'Fixed amount (USD)' }), '0.50');
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Rounding' }), 'Nearest $0.05');
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
@@ -201,7 +213,7 @@ describe('New rule and Edit rule', () => {
     expect(dialog.getByRole('textbox', { name: 'Percentage' })).toHaveAttribute('aria-invalid', 'true');
   });
 
-  it('shows the server’s messages under the type, the merchant group and the rounding', async () => {
+  it('shows the server’s messages under the type, the rank and the rounding', async () => {
     const user = userEvent.setup();
     mockServer.use(
       http.post('*/admin/pricing-rules', () =>
@@ -220,7 +232,7 @@ describe('New rule and Edit rule', () => {
     expect(await dialog.findByText('Promos need dates.')).toBeInTheDocument();
     expect(dialog.getByRole('combobox', { name: 'Type' })).toHaveAttribute('aria-invalid', 'true');
     expect(dialog.getByText('That group has no rules.')).toBeInTheDocument();
-    expect(dialog.getByRole('combobox', { name: 'Merchant group' })).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('combobox', { name: 'Rank' })).toHaveAttribute('aria-invalid', 'true');
     expect(dialog.getByText('That rounding is not offered.')).toBeInTheDocument();
     expect(dialog.getByRole('combobox', { name: 'Rounding' })).toHaveAttribute('aria-invalid', 'true');
   });
@@ -253,7 +265,7 @@ describe('New rule and Edit rule', () => {
     await openProducts(RULES);
     await user.click(await screen.findByRole('button', { name: 'New rule' }));
     const dialog = dialogOf('New rule');
-    expect(await dialog.findByText(/Could not load merchant groups\./)).toBeInTheDocument();
+    expect(await dialog.findByText(/Could not load ranks\./)).toBeInTheDocument();
     expect(await dialog.findByText(/Could not load the categories\./)).toBeInTheDocument();
     // Retry on the categories works (the first answer was the only refusal); the groups stay refused.
     await user.click(
@@ -261,7 +273,7 @@ describe('New rule and Edit rule', () => {
     );
     expect(await dialog.findByRole('option', { name: 'Credits' })).toBeInTheDocument();
     expect(dialog.queryByText(/Could not load the categories/)).not.toBeInTheDocument();
-    expect(dialog.getByText(/Could not load merchant groups\./)).toBeInTheDocument();
+    expect(dialog.getByText(/Could not load ranks\./)).toBeInTheDocument();
   });
 
   it('edits a rule, sending only the field that changed', async () => {

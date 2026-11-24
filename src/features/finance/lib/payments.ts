@@ -1,11 +1,11 @@
 // What the Deposits tab says about a payment: the method names, the status badges, the reasons a deposit can be rejected and
 // how they become the one reason the server stores. Ports METHODS, payBadge and the reject dialog of 45-p-finance.js.
 import type { BadgeTone, IconName } from '@/components/ui';
-import { maskedCustomerLabel, money, pct } from '@/lib/format';
+import { maskedAccountLabel, money, pct } from '@/lib/format';
 import { plainWords } from './kinds';
 import type { Payment, PaymentDispute, PaymentStatus } from '../types';
 
-/** The four ways a merchant pays, as the demo names them (METHODS in 10-data.js). */
+/** The four ways an account pays, as the demo names them (METHODS in 10-data.js). */
 export const METHOD_LABEL: Readonly<Record<string, string>> = {
   bank: 'Bank transfer',
   card: 'Card',
@@ -55,7 +55,7 @@ export const REJECT_REASONS: readonly { value: string; label: string }[] = [
 ];
 
 /**
- * The one reason the merchant is shown: the chosen reason, then the message after it ("Receipt amount does not match the
+ * The one reason the account holder is shown: the chosen reason, then the message after it ("Receipt amount does not match the
  * transfer. $60 on the receipt"). With "Other" the message is the whole reason; with neither it is just "Rejected".
  */
 export function rejectReason(reason: string, message: string): string {
@@ -89,26 +89,21 @@ export function disputeChip(dispute: Pick<PaymentDispute, 'status'>): StatusBadg
   }
 }
 
-/** The link to a customer's wallet page (finance cannot import the customers feature: it already imports finance). */
-export function customerWalletPath(customerId: number): string {
-  return `/customers/${customerId}?tab=wallet`;
-}
-
-/** Who paid a deposit, for its dialog's subtitle and the table: the merchant, else the customer, else a plain word. */
+/** Who paid a deposit, for its dialog's subtitle and the table: the merchant account, else the store balance's account, else a plain word. */
 export function payerName(payment: Pick<Payment, 'client' | 'customer'>): string {
   if (payment.client) return payment.client.name;
-  return payment.customer ? maskedCustomerLabel(payment.customer) : '–';
+  return payment.customer ? maskedAccountLabel(payment.customer) : '–';
 }
 
 /**
  * What a top-up's chargeback means for the money, in a sentence for the reviewer (the facts are in the dialog beside it).
- * A customer's balance goes on hold when the dispute is raised and the credit is taken back when it is lost; a merchant's
+ * A store balance goes on hold when the dispute is raised and the credit is taken back when it is lost; a merchant
  * wallet is debited on a loss. A won dispute changes nothing: staff lift the hold themselves. The server does all of it.
  */
 export function disputeText(payment: Pick<Payment, 'customer' | 'dispute'>): string | null {
   const dispute = payment.dispute;
   if (!dispute) return null;
-  const account = payment.customer ? 'The customer’s store balance' : 'The merchant’s wallet';
+  const account = payment.customer ? 'The account’s store balance' : 'The merchant’s wallet';
   switch (dispute.status) {
     case 'needs_response':
     case 'under_review':

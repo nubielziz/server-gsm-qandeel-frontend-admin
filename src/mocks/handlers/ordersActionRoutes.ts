@@ -49,6 +49,10 @@ export const orderActionHandlers: HttpHandler[] = [
         'Only a completed order can be reopened.',
       );
     }
+    // The hold of a reopen is a merchant wallet's: an order of the merchant door whose account holds a retail rank now is refused.
+    if (order.channel === 'b2b' && order.account.rank.kind !== 'merchant') {
+      return problem(409, 'RANK_CHANGED', 'The rank changed', 'Refund the order instead.');
+    }
     await reopenMock(order, actor, textOf(body.reason) || undefined);
   }),
 

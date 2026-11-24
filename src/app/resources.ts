@@ -20,7 +20,7 @@ export type PageMeta = {
   permission: string | readonly string[];
 };
 
-// One page resource. `detail` adds the `/<id>/:id` route of the pages that have a detail view (merchants, customers).
+// One page resource. `detail` adds the `/<id>/:id` route of the pages that have a detail view (accounts, notifications).
 // A built feature may replace the page permission from its manifest (any-of lists for pages with per-tab permissions).
 function page(name: string, meta: PageMeta, detail = false): ResourceProps {
   const permission = featureForPage(name)?.page?.permission ?? meta.permission;
@@ -41,14 +41,16 @@ export const resources: ResourceProps[] = [
     permission: 'dashboard:read',
   }),
   page('orders', { label: 'Orders', group: 'Operations', icon: 'orders', permission: 'orders:read' }),
+  // One Accounts page in the place of Merchants and Customers (decision 023): every account, told apart by its rank. Any one of the two
+  // read permissions opens it; a role that holds only `groups:read` lands on its Ranks view. The accounts feature's manifest fills the page.
   page(
-    'merchants',
-    { label: 'Merchants', group: 'Operations', icon: 'users', permission: 'clients:read' },
-    true,
-  ),
-  page(
-    'customers',
-    { label: 'Customers', group: 'Operations', icon: 'user', permission: 'customers:read' },
+    'accounts',
+    {
+      label: 'Accounts',
+      group: 'Operations',
+      icon: 'users',
+      permission: ['clients:read', 'groups:read'],
+    },
     true,
   ),
   page('support', { label: 'Support', group: 'Operations', icon: 'life', permission: 'support:read' }),
@@ -104,7 +106,7 @@ export type PageResource = {
   meta: PageMeta;
   /** Path of the list view (`/orders`). */
   path: string;
-  /** Path pattern of the detail view (`/merchants/:id`), for the pages that have one. */
+  /** Path pattern of the detail view (`/accounts/:id`), for the pages that have one. */
   detailPath?: string;
 };
 

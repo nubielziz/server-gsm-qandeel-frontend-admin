@@ -1,5 +1,6 @@
 // BlockIpDialog: "Block an IP" (the demo's `blockIpDialog` and `ip-block` action): an address or range, who it applies to,
-// a reason and for how long. Public: the customers page opens it with a customer's last address (scope `store`).
+// a reason and for how long. Public: the Accounts page opens it with an account's last address (scope `store`, the shop's sign-in, for every
+// rank; a merchant's portal session and API are other places, so the Accounts page says so with `note`).
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { FormDialog, SelectField, TextField, dialogSubmit } from '@/components/ui';
@@ -12,20 +13,28 @@ import type { IpScope } from '../types';
 type Values = { ip: string; scope: IpScope; reason: string; hours: string };
 
 export interface BlockIpDialogProps {
-  /** An address to start from (the last address of the admin or customer being looked at). */
+  /** An address to start from (the last address of the admin or account being looked at). */
   ip?: string;
   /** Who the block applies to at first; default the storefront. */
   scope?: IpScope;
   /** The person whose address this is: the dialog says only the address is blocked, not the account. */
   who?: string;
+  /** One more sentence under the title, for what the chosen scope does not stop. */
+  note?: string;
   onClose: () => void;
 }
 
 /**
- * The form for a new block. Public: the customers page opens it with the last address of a customer. A
+ * The form for a new block. Public: the Accounts page opens it with the last address of an account. A
  * range that includes the caller's own address is refused here for the console.
  */
-export function BlockIpDialog({ ip = '', scope = 'store', who = '', onClose }: BlockIpDialogProps) {
+export function BlockIpDialog({
+  ip = '',
+  scope = 'store',
+  who = '',
+  note = '',
+  onClose,
+}: BlockIpDialogProps) {
   const { myIp } = useAccessGrants();
   const create = useCreateIpRule();
   const form = useForm<Values>({
@@ -74,7 +83,7 @@ export function BlockIpDialog({ ip = '', scope = 'store', who = '', onClose }: B
       title="Block an IP"
       sub={
         who
-          ? `Last used by ${who}. Only this address is blocked, the account is not touched.`
+          ? `Last used by ${who}. Only this address is blocked, the account is not touched.${note ? ` ${note}` : ''}`
           : 'Requests from it get a plain “Access denied”.'
       }
       confirm="Block IP"

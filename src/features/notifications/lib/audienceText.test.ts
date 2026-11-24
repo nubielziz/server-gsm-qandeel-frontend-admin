@@ -19,7 +19,7 @@ describe('small helpers', () => {
     expect(sentenceList(['A', 'B'])).toBe('A and B');
     expect(sentenceList(['A', 'B', 'C'])).toBe('A, B and C');
     expect(plural(1, 'person', 'people')).toBe('1 person');
-    expect(plural(1204, 'customer', 'customers')).toBe('1,204 customers');
+    expect(plural(1204, 'retail account', 'retail accounts')).toBe('1,204 retail accounts');
   });
 });
 
@@ -28,19 +28,17 @@ describe('the audience in words', () => {
     expect(audienceLines({ staff: {}, merchants: {}, customers: { hasAccount: true } })).toEqual([
       { label: 'Staff', text: 'All active staff' },
       { label: 'Merchants', text: 'Active merchants' },
-      { label: 'Customers', text: 'Customers with an account' },
+      { label: 'Retail', text: 'Retail accounts with a login' },
     ]);
-    expect(audienceLines({ customers: {} })).toEqual([{ label: 'Customers', text: 'All active customers' }]);
+    expect(audienceLines({ customers: {} })).toEqual([
+      { label: 'Retail', text: 'All active retail accounts and guests' },
+    ]);
   });
 
-  it('names roles and groups when it knows them and counts them when it does not', () => {
+  it('names roles and ranks when it knows them and counts them when it does not', () => {
     const spec = {
       staff: { roleIds: [1, 2] },
-      merchants: {
-        groupIds: [3],
-        statuses: ['active' as const, 'pending' as const],
-        countries: ['JO', 'SA'],
-      },
+      merchants: { groupIds: [3], countries: ['JO', 'SA'] },
     };
     const names = {
       roles: new Map([
@@ -51,9 +49,16 @@ describe('the audience in words', () => {
     };
     expect(audienceLines(spec, names)).toEqual([
       { label: 'Staff', text: 'Active staff with the role Owner and Support' },
-      { label: 'Merchants', text: 'Active and pending merchants in Gold from JO and SA' },
+      { label: 'Merchants', text: 'Active merchants in the rank Gold from JO and SA' },
     ]);
     expect(audienceLines(spec)[0].text).toBe('Active staff with the role 2 roles');
+    expect(audienceLines(spec)[1].text).toBe('Active merchants in 1 rank from JO and SA');
+  });
+
+  it('says active merchants for a stored status filter, which reads as active now', () => {
+    expect(audienceLines({ merchants: { statuses: ['pending'] } })).toEqual([
+      { label: 'Merchants', text: 'Active merchants' },
+    ]);
   });
 
   it('describes guests, countries, added and left-out people', () => {
@@ -62,12 +67,12 @@ describe('the audience in words', () => {
         customers: { hasAccount: false, countries: ['JO'] },
         include: [
           { type: 'staff', id: 1 },
-          { type: 'client', id: 2 },
+          { type: 'account', id: 2 },
         ],
-        exclude: [{ type: 'customer', id: 3 }],
+        exclude: [{ type: 'account', id: 3 }],
       }),
     ).toEqual([
-      { label: 'Customers', text: 'Guest customers from JO' },
+      { label: 'Retail', text: 'Guests from JO' },
       { label: 'Added', text: '2 people' },
       { label: 'Left out', text: '1 person' },
     ]);
@@ -82,18 +87,18 @@ describe('the audience in words', () => {
 describe('the live count in words', () => {
   it('says who is left out and why, only for the reasons that apply', () => {
     expect(exclusionLines({ noConsent: 1204, optedOut: 1, noAccount: 2 })).toEqual([
-      '1,204 customers did not agree to marketing',
+      '1,204 retail accounts did not agree to marketing',
       '1 person has switched announcement emails off',
-      '2 customers have no account, so no inbox',
+      '2 guests have no login, so no inbox',
     ]);
     expect(exclusionLines({ noConsent: 0, optedOut: 0, noAccount: 0 })).toEqual([]);
   });
 
   it('breaks the reach down by kind and channel', () => {
-    expect(byTypeText({ staff: 6, client: 402, customer: 800 })).toBe(
-      '6 staff, 402 merchants and 800 customers',
+    expect(byTypeText({ staff: 6, merchant: 402, retail: 800 })).toBe(
+      '6 staff, 402 merchants and 800 retail accounts',
     );
-    expect(byTypeText({ staff: 0, client: 0, customer: 1 })).toBe('1 customer');
+    expect(byTypeText({ staff: 0, merchant: 0, retail: 1 })).toBe('1 retail account');
     expect(byChannelText({ inApp: 1208, email: 1190 }, ['in_app', 'email'])).toBe(
       '1,208 in the app and 1,190 by email',
     );
@@ -104,7 +109,7 @@ describe('the live count in words', () => {
     expect(plannedText({ inApp: 0, email: 0 })).toBe('No messages planned');
     expect(skippedLines({ optedOut: 2, noAccount: 1 })).toEqual([
       '2 people have switched announcement emails off',
-      '1 customer has no account, so no inbox item',
+      '1 guest has no login, so no inbox item',
     ]);
   });
 });

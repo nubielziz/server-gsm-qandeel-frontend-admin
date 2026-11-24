@@ -37,7 +37,7 @@ export function CampaignsEmpty({ filtered, canWrite, onClear, onCreate }: Campai
         ) : undefined
       }
     >
-      A campaign is a message you write once and send to staff, merchants or customers, in the app or by
+      A campaign is a message you write once and send to staff, merchants or retail accounts, in the app or by
       email.
     </EmptyState>
   );

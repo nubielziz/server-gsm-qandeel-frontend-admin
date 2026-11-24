@@ -196,6 +196,14 @@ describe('maintenance', () => {
     const report = await apiGet<IntegrityReport>('/admin/system/integrity');
     expect(report.running).toBe(false);
     expect(report.lastRun).toMatchObject({ job: 'ledger_integrity', trigger: 'manual', status: 'succeeded' });
+    // The five checks of the server: the four of the ledger and the one that looks at the wallets of the accounts.
+    expect(report.checks.map((check) => check.key)).toEqual([
+      'entries_balanced',
+      'accounts_match_lines',
+      'stuck_holds',
+      'payments_without_entry',
+      'wallets_follow_rank',
+    ]);
     const failed = report.checks.filter((check) => check.status === 'fail');
     expect(failed.map((check) => check.key)).toEqual(['accounts_match_lines']);
     expect(failed[0]).toMatchObject({ count: 1, difference: '-37.5000' });

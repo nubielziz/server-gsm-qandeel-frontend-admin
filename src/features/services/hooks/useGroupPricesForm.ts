@@ -1,4 +1,4 @@
-// The form behind the rank prices of the edit view's Set Pricing part: one box per merchant group, filled from the service's saved prices,
+// The form behind the rank prices of the edit view's Set Pricing part: one box per rank, filled from the service's saved prices,
 // and the save that replaces the whole list and always sends `retailPriceSeen`.
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -16,7 +16,7 @@ import { useReplaceGroupPrices } from './useServicePartMutations';
 
 export interface GroupPricesFormArgs {
   service: Service;
-  /** Every merchant group, the retail group included: it tells which saved row is the retail price. */
+  /** Every rank, the retail group included: it tells which saved row is the retail price. */
   groups: readonly ClientGroup[];
   /** The service's saved prices when the form opened. */
   saved: readonly ServiceGroupPrice[];

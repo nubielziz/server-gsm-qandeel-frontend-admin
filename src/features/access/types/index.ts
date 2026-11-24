@@ -112,9 +112,18 @@ export type PermissionsAnswer = readonly (string | { key: string; label?: string
 
 // ---- Sessions ----
 
-/** One open sign-in session, as `GET /admin/sessions` sends it (assumed contract). `current` marks the caller's own. */
+/**
+ * Who a session belongs to: a staff member, or an account (a merchant and a retail account are both `account`; the subject's id is the
+ * account's id). The list has no other word: a record of the old model (`client`, `customer`) is not sent.
+ */
+export type SessionSubjectType = 'staff' | 'account';
+
+/**
+ * One open sign-in session, as `GET /admin/sessions` sends it (assumed contract). `current` marks the caller's own. The email of an
+ * account is masked by the server unless the caller holds `clients:read`.
+ */
 export type Session = Omit<SessionRow, 'subjectType' | 'subjectId' | 'revokedAt' | 'updatedAt'> & {
-  subjectType: 'staff';
+  subjectType: SessionSubjectType;
   subject: { id: Id; name: string; email?: string };
   current?: boolean;
 };

@@ -4,8 +4,12 @@
 import type { Id, JsonValue } from '@/lib/api';
 import type { AuditLogRow } from '@/lib/api/schema.gen';
 
-/** The two kinds of actor the console filters by: a staff member, or the system itself (a sync, a scheduled job). */
-export type AuditActorType = 'staff' | 'system';
+/**
+ * The kinds of actor an entry names. The console filters by a staff member or the system itself (a sync, a scheduled job); an
+ * account is the actor of what it did on its own (new rows say `account`). Old rows keep the words of the old model: `client`
+ * (a merchant, whose number is an account number) and `customer` (an old customer number, not an account number).
+ */
+export type AuditActorType = 'staff' | 'account' | 'client' | 'customer' | 'system';
 
 /**
  * One audit entry, as `GET /admin/audit-logs` and `GET /admin/audit-logs/:id` send it (assumed contract). The row's
@@ -24,6 +28,11 @@ export type AuditLog = Omit<
   actorId: Id | null;
   actorName?: string | null;
   entityLabel?: string | null;
+  /**
+   * The account the entry is about, resolved by the server (`account` rows, `merchant` rows and old `customer` rows through the
+   * legacy map): the link of an "Open record" goes through it. Null or absent when the server could not name one.
+   */
+  account?: { id: Id } | null;
   before?: JsonValue;
   after?: JsonValue;
   ip: string | null;
@@ -32,14 +41,16 @@ export type AuditLog = Omit<
 /**
  * The filters of `GET /admin/audit-logs` (assumed contract), on top of the list query's `q`, range and sort:
  * `actorType` and `actorId` pick a person or the system, `entityType` one kind of record (with `entityId`, one record of
- * that kind: the merchant page's Audit tab uses `entityType=merchant&entityId=7`), `from` and `to` a range of days
- * (`YYYY-MM-DD`, both included).
+ * that kind), `from` and `to` a range of days (`YYYY-MM-DD`, both included). `accountId` lists everything about one account:
+ * the rows that say `account` or `merchant` with its number and the old `customer` rows of its old number (the server joins
+ * them); it replaces `entityType` and `entityId` for an account.
  */
 export type AuditFilters = {
   actorType?: string;
   actorId?: Id;
   entityType?: string;
   entityId?: Id;
+  accountId?: Id;
   q?: string;
   from?: string;
   to?: string;

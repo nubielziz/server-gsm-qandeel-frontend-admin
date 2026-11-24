@@ -1,4 +1,4 @@
-// Tests for the Integrity tab, run through the whole app against the dev mock API: the last run and its facts, the four
+// Tests for the Integrity tab, run through the whole app against the dev mock API: the last run and its facts, the five
 // checks (problems first, passed ones folded), the findings with their link to Finance, Run check now and its dialog, the
 // running state, read-only staff, and the states of a read that fails.
 import { screen, waitFor, within } from '@testing-library/react';
@@ -71,7 +71,7 @@ function answerWith(report: IntegrityReport) {
 }
 
 describe('a healthy ledger', () => {
-  it('shows a passed last run, one quiet line for the four passed checks, no findings and the note', async () => {
+  it('shows a passed last run, one quiet line for the five passed checks, no findings and the note', async () => {
     const { lastRun } = await openTab();
     expect(lastRun.getByText('Pass')).toBeInTheDocument();
     expect(lastRun.getByText('Scheduled')).toBeInTheDocument();
@@ -79,30 +79,33 @@ describe('a healthy ledger', () => {
     expect(lastRun.getByRole('button', { name: 'Run check now' })).toBeEnabled();
 
     const checks = await checksCard();
-    expect(await checks.findByText('All 4 checks passed', undefined, SLOW)).toBeInTheDocument();
+    expect(await checks.findByText('All 5 checks passed', undefined, SLOW)).toBeInTheDocument();
     expect(checks.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Findings' })).not.toBeInTheDocument();
     expect(screen.getByText(/^This check only reads the ledger/)).toHaveTextContent(NOTE);
   });
 
-  it('lists the four checks with Pass, a count and a difference after Show, and folds them up again with Hide', async () => {
+  it('lists the five checks with Pass, a count and a difference after Show, and folds them up again with Hide', async () => {
     const user = userEvent.setup();
     await openTab();
     const checks = await checksCard();
     await user.click(await checks.findByRole('button', { name: 'Show the passed checks' }, SLOW));
 
     const table = checks.getByRole('table', { name: 'Ledger checks' });
-    expect(within(table).getAllByRole('row')).toHaveLength(5);
-    expect(within(table).getAllByText('Pass')).toHaveLength(4);
+    expect(within(table).getAllByRole('row')).toHaveLength(6);
+    expect(within(table).getAllByText('Pass')).toHaveLength(5);
     // The server's sentence in sans, the check's key in mono.
     expect(within(table).getByText('Every entry sums to zero')).toBeInTheDocument();
     expect(within(table).getByText('entries_balanced')).toHaveClass('mono');
-    // Three checks count money (a zero difference is printed as dollars); the holds check does not.
-    expect(within(table).getAllByText('$0.00')).toHaveLength(3);
+    // Four checks count money (a zero difference is printed as dollars); the holds check does not.
+    expect(within(table).getAllByText('$0.00')).toHaveLength(4);
+    // The fifth check is the one that looks at the wallets of the accounts.
+    expect(within(table).getByText('Every wallet follows the rank of its account')).toBeInTheDocument();
+    expect(within(table).getByText('wallets_follow_rank')).toHaveClass('mono');
 
     await user.click(checks.getByRole('button', { name: 'Hide the passed checks' }));
     expect(checks.queryByRole('table')).not.toBeInTheDocument();
-    expect(checks.getByText('All 4 checks passed')).toBeInTheDocument();
+    expect(checks.getByText('All 5 checks passed')).toBeInTheDocument();
   });
 });
 
@@ -121,14 +124,14 @@ describe('a ledger that does not match (the maintenance scenario)', () => {
     const checks = await checksCard();
     const table = await checks.findByRole('table', { name: 'Ledger checks' }, SLOW);
     const rows = within(table).getAllByRole('row');
-    // The header and one row: the failing check. The three passed checks are one quiet line.
+    // The header and one row: the failing check. The four passed checks are one quiet line.
     expect(rows).toHaveLength(2);
     const failing = within(rows[1]);
     expect(failing.getByText(FAILING_LABEL)).toBeInTheDocument();
     expect(failing.getByText('Fail')).toBeInTheDocument();
     expect(failing.getByText('-$37.50')).toBeInTheDocument();
     expect(failing.getByText('1')).toBeInTheDocument();
-    expect(checks.getByText('3 checks passed')).toBeInTheDocument();
+    expect(checks.getByText('4 checks passed')).toBeInTheDocument();
   });
 
   it('lists the finding with its reference linked to the Finance ledger, its difference and its last entry', async () => {
@@ -343,7 +346,7 @@ describe('what a failing or empty read shows', () => {
     await openTab();
     const checks = await checksCard();
     expect(await checks.findByText('No data', undefined, SLOW)).toBeInTheDocument();
-    expect(checks.getByText('The four ledger checks appear here after the first run.')).toBeInTheDocument();
+    expect(checks.getByText('The ledger checks appear here after the first run.')).toBeInTheDocument();
   });
 
   it('says the run failed, with the server’s error text, and shows Failed and not a result', async () => {

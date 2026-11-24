@@ -1,10 +1,9 @@
-// The people the picker dialog lists: staff, merchants or customers, a page at a time with a search, through the existing list functions of the access,
-// merchants and customers features (each needs its own read permission). A row is cut down to what the picker shows.
+// The people the picker dialog lists: staff or accounts (a merchant, a shop buyer and a guest are all accounts), a page at a time with a search,
+// through the existing list functions of the access and accounts features (each needs its own read permission). A row is cut down to what the picker shows.
 import { keepPreviousData } from '@tanstack/react-query';
 import { listStaff } from '@/features/access';
-import { listCustomers } from '@/features/customers';
-import { listClients } from '@/features/merchants';
-import { customerLabel, hasCustomerName } from '@/lib/format';
+import { isMerchantRank, listAccounts } from '@/features/accounts';
+import { accountLabel, hasAccountName } from '@/lib/format';
 import { useApiQuery } from '@/lib/query';
 import type { ListQuery, ListResult } from '@/lib/api';
 import type { PickedPerson } from '../lib/spec';
@@ -14,8 +13,7 @@ import { PEOPLE_PAGE_SIZE } from './keys';
 /** The permission each kind of person's list needs; a tab is hidden when the role lacks it. */
 export const PEOPLE_PERMISSION: Record<PersonType, string> = {
   staff: 'staff:read',
-  client: 'clients:read',
-  customer: 'customers:read',
+  account: 'clients:read',
 };
 
 async function load(
@@ -28,23 +26,17 @@ async function load(
     const { data, total } = await listStaff(query, init);
     return { total, data: data.map((row) => ({ type, id: row.id, name: row.name, detail: row.email })) };
   }
-  if (type === 'client') {
-    const { data, total } = await listClients(query, init);
-    return {
-      total,
-      data: data.map((row) => ({ type, id: row.id, name: row.company || row.name, detail: row.email })),
-    };
-  }
-  const { data, total } = await listCustomers(query, init);
+  const { data, total } = await listAccounts(query, init);
   return {
     total,
-    // A customer can have an empty name: the picker and the audience list show the email (or Customer #id) instead.
     data: data.map((row) => ({
       type,
       id: row.id,
-      name: customerLabel(row),
-      // The email is already the name for a customer without one, so it is not said twice.
-      detail: hasCustomerName(row) ? row.email : undefined,
+      // A merchant is named by its company; an account can have an empty name (a guest): the picker and the audience list show the email (or Account #id) instead.
+      name: isMerchantRank(row.rank) && row.company ? row.company : accountLabel(row),
+      // The email is already the name for an account without one, so it is not said twice.
+      detail: hasAccountName(row) ? row.email : undefined,
+      rank: { name: row.rank.name, kind: row.rank.kind },
     })),
   };
 }

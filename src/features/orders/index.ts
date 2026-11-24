@@ -1,6 +1,6 @@
 // Public surface of the orders feature: the `/admin/orders*` and `/admin/files/:id` API functions, their types, the data-provider
-// registry, the palette source and what other pages need to show orders: `OrdersTable` (a list with fixed filters, for a merchant's
-// or customer's page), `OrderDrawerHost` with `useOrderDrawer` / `orderPath` (the drawer in the address as `?order=<id>`) and
+// registry, the palette source and what other pages need to show orders: `OrdersTable` (a list with fixed filters, for an account's
+// page), `OrderDrawerHost` with `useOrderDrawer` / `orderPath` (the drawer in the address as `?order=<id>`) and
 // `OrderStatusBadge`, and `ordersListPath` for links to a filtered list. The page itself is not re-exported here: it
 // loads lazily from `./pages`.
 export * from './api';

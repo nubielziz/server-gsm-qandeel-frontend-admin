@@ -3,6 +3,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { orderStore } from '@/mocks/orders';
 import { openOrders } from '@/test/ordersPage';
 import { setupMockApi } from '@/test/renderApp';
 
@@ -64,6 +65,24 @@ describe('what the drawer shows', () => {
     expect(drawer.queryByRole('button', { name: 'Complete' })).not.toBeInTheDocument();
     expect(drawer.queryByRole('button', { name: /Reject|Cancel and refund/ })).not.toBeInTheDocument();
     expect(drawer.getByText('Clock starts when it is approved')).toBeInTheDocument();
+  });
+
+  it('links the buyer to its account record with its rank, for a merchant and for a storefront customer', async () => {
+    const merchant = await openDrawer(NORMAL, 'ORD-48859');
+    expect(merchant.drawer.getByText('Account', { selector: 'dt' })).toBeInTheDocument();
+    expect(merchant.drawer.getByRole('link', { name: 'Muscat Mobile Clinic' })).toHaveAttribute(
+      'href',
+      '/accounts/13',
+    );
+  });
+
+  it('links a storefront order to the account the customer became, never to the old customer page', async () => {
+    const { drawer } = await openDrawer(STOREFRONT_DONE, 'SF-20400');
+    const label = drawer.getByText('Account', { selector: 'dt' });
+    const link = within(label.nextElementSibling as HTMLElement).getByRole('link');
+    expect(link.getAttribute('href')).toMatch(/^\/accounts\/1\d\d$/);
+    expect(drawer.queryByText('Customer', { selector: 'dt' })).not.toBeInTheDocument();
+    expect(drawer.queryByText('Merchant', { selector: 'dt' })).not.toBeInTheDocument();
   });
 
   it('shows a delivered merchant order with its result, Reopen and Refund', async () => {
@@ -283,6 +302,22 @@ describe('actions', () => {
     expect(await screen.findByText('ORD-48101 reopened')).toBeInTheDocument();
     await waitFor(() => expect(status(drawer, 'Processing')).toBeInTheDocument());
     expect(drawer.getByRole('button', { name: 'Complete' })).toBeInTheDocument();
+  });
+
+  it('says why a reopen is refused after the account moved to a retail rank, and keeps the order delivered', async () => {
+    const user = userEvent.setup();
+    const { drawer } = await openDrawer(DELIVERED, 'ORD-48101');
+    // The merchant became a retail account after the sale (the rank change of the Accounts page).
+    const stored = (await orderStore()).find(DELIVERED);
+    if (!stored) throw new Error('The delivered order is missing from the mock seed.');
+    stored.account = { ...stored.account, rank: { id: 4, name: 'Storefront retail', kind: 'retail' } };
+    await user.click(drawer.getByRole('button', { name: 'Reopen…' }));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Reopen ORD-48101?' }));
+    await user.click(dialog.getByRole('button', { name: 'Reopen order' }));
+    expect(await dialog.findByText(/The rank of this account changed after the sale/)).toBeInTheDocument();
+    expect(dialog.getByText(/Refund the order instead/)).toBeInTheDocument();
+    expect(screen.queryByText('ORD-48101 reopened')).not.toBeInTheDocument();
+    expect(status(drawer, 'Completed')).toBeInTheDocument();
   });
 
   it('refunds a delivered merchant order, after asking for a reason and warning about the supplier cost', async () => {

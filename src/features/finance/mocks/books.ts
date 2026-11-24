@@ -1,9 +1,11 @@
-// Mock books: the trial balance and the merchants' wallets, worked out from the shared ledger store (`@/mocks/ledger`) in whole
-// ten-thousandths so the totals add up exactly, as the real server's would. Mock data only (decision 014): the real balances
-// are the server's. A deposit approved in the mock posts to that store, so these figures follow it.
+// Mock books: the trial balance and the merchant wallets, worked out from the shared ledger store (`@/mocks/ledger`) in whole
+// ten-thousandths so the totals add up exactly, as the real server's would, and the totals of the store balances beside them. Mock
+// data only (decision 014): the real balances are the server's. A deposit approved in the mock posts to that store, so these
+// figures follow it.
+import { storeBalanceRows } from '@/features/accounts/mocks';
 import { ledgerStore } from '@/mocks/ledger';
 import { demoNumericId, demoRows, loadDemoState, toMoney } from '@/mocks/seed';
-import type { TrialBalance, WalletExposure, WalletExposureRow } from '../types';
+import type { StoreBalanceTotals, TrialBalance, WalletExposure, WalletExposureRow } from '../types';
 
 const UNIT = 10_000;
 const units = (amount: string): number => Math.round(Number(amount) * UNIT);
@@ -33,14 +35,14 @@ export async function trialBalanceOf(): Promise<TrialBalance> {
 
 type DemoMerchant = { id: string; name: string; credit: number };
 
-/** What each merchant's wallet holds now (and the amount reserved for open orders), by merchant id, in ten-thousandths. */
+/** What each merchant wallet holds now (and the amount reserved for open orders), by account id, in ten-thousandths. */
 export async function walletsOf(): Promise<Map<number, { balance: number; reserved: number }>> {
   const ledger = await ledgerStore();
   const wallets = new Map<number, { balance: number; reserved: number }>();
   for (const entry of ledger.list()) {
     for (const line of entry.entries) {
       const { kind, ownerType, ownerId } = line.account;
-      if (ownerType !== 'client' || ownerId === null) continue;
+      if (ownerType !== 'account' || ownerId === null) continue;
       if (kind !== 'client_wallet' && kind !== 'client_hold') continue;
       const wallet = wallets.get(ownerId) ?? { balance: 0, reserved: 0 };
       // Both are liabilities, so a credit (negative line) is money the merchant holds.
@@ -52,9 +54,25 @@ export async function walletsOf(): Promise<Map<number, { balance: number; reserv
   return wallets;
 }
 
-/** The wallet exposure report: totals and the largest wallets first (at most 50). The overdraft allowed is the merchant's credit. */
+/** The totals of the store balances: how many accounts hold one, what they hold, and how many are below zero or on hold. */
+async function storeBalancesOf(): Promise<StoreBalanceTotals> {
+  const rows = await storeBalanceRows();
+  const held = rows.reduce((sum, row) => sum + units(row.balance), 0);
+  return {
+    accounts: rows.length,
+    balance: money(held),
+    negative: rows.filter((row) => units(row.balance) < 0).length,
+    frozen: rows.filter((row) => row.frozen !== null).length,
+  };
+}
+
+/** The wallet exposure report: merchant totals and the largest merchant wallets first (at most 50), then the store balances' totals. The overdraft allowed is the merchant's credit. */
 export async function exposureOf(): Promise<WalletExposure> {
-  const [wallets, state] = await Promise.all([walletsOf(), loadDemoState()]);
+  const [wallets, state, storeBalances] = await Promise.all([
+    walletsOf(),
+    loadDemoState(),
+    storeBalancesOf(),
+  ]);
   const merchants = new Map(
     demoRows<DemoMerchant>(state, 'merchants').map((merchant) => [demoNumericId(merchant.id), merchant]),
   );
@@ -87,6 +105,7 @@ export async function exposureOf(): Promise<WalletExposure> {
       overdraftUsed: money(total((person) => person.used)),
       inOverdraft: people.filter((person) => person.balance < 0).length,
     },
+    storeBalances,
     rows,
   };
 }

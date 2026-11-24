@@ -95,13 +95,13 @@ describe('the dev mock of GET /admin/dashboard', () => {
     const all = await getDashboard({ scope: 'all', days: 7 });
     expect(all.revenueByChannel).not.toBeNull();
     expect(all.storefront).not.toBeNull();
-    expect(all.topCustomers).not.toBeNull();
     expect(all.ordersByType.monthly).toHaveLength(12);
+    // The best buyers come from the top accounts report; the payload carries no list of them.
+    expect(all).not.toHaveProperty('topCustomers');
 
     const merchants = await getDashboard({ scope: 'b2b', days: 7 });
     expect(merchants.revenueByChannel).toBeNull();
     expect(merchants.storefront).toBeNull();
-    expect(merchants.topCustomers).toBeNull();
     expect(merchants.ordersByType.monthly).toHaveLength(12);
 
     const storefront = await getDashboard({ scope: 'b2c', days: 7 });
@@ -154,7 +154,9 @@ describe('the dev mock and the session', () => {
     resetSession();
     const error = await getDashboard({ scope: 'all', days: 7 }).catch((caught: unknown) => caught);
     expect(error).toMatchObject({ status: 401, code: 'UNAUTHORIZED' });
-    const topError = await getTopClients({ days: 7, limit: 6 }).catch((caught: unknown) => caught);
+    const topError = await getTopClients({ days: 7, limit: 6, scope: 'all' }).catch(
+      (caught: unknown) => caught,
+    );
     expect(topError).toMatchObject({ status: 401 });
   });
 
@@ -167,26 +169,50 @@ describe('the dev mock and the session', () => {
 });
 
 describe('getTopClients', () => {
-  it('asks for the period and the number of merchants', async () => {
+  it('asks for the period, the number of accounts and the channel', async () => {
     const seen = answerTopClients([]);
-    await getTopClients({ days: 14, limit: 6 });
+    await getTopClients({ days: 14, limit: 6, scope: 'b2c' });
     expect(seen[0].pathname).toBe('/admin/reports/top-clients');
-    expect(Object.fromEntries(seen[0].searchParams)).toEqual({ days: '14', limit: '6' });
+    expect(Object.fromEntries(seen[0].searchParams)).toEqual({ days: '14', limit: '6', scope: 'b2c' });
   });
 
-  it('returns the merchants of the mock, best spend first, with their wallets', async () => {
-    const clients = await getTopClients({ days: 7, limit: 6 });
-    expect(clients).toHaveLength(6);
-    const spends = clients.map((client) => Number(client.spend));
+  it('returns the accounts of the mock, best spend first, with their rank, their kind of buyer and their wallets', async () => {
+    const accounts = await getTopClients({ days: 7, limit: 6, scope: 'all' });
+    expect(accounts).toHaveLength(6);
+    const spends = accounts.map((account) => Number(account.spend));
     expect(spends).toEqual([...spends].sort((a, b) => b - a));
-    expect(clients[0]).toEqual(
+    expect(accounts[0]).toEqual(
       expect.objectContaining({
         id: expect.any(Number),
         name: expect.any(String),
+        rank: {
+          id: expect.any(Number),
+          name: expect.any(String),
+          kind: expect.stringMatching(/^(merchant|retail)$/),
+        },
+        hasAccount: expect.any(Boolean),
         walletBalance: expect.any(String),
       }),
     );
-    expect(await getTopClients({ days: 7, limit: 2 })).toHaveLength(2);
+    expect(await getTopClients({ days: 7, limit: 2, scope: 'all' })).toHaveLength(2);
+  });
+
+  it('follows the door of the channel: merchant ranks for the merchants, the retail rank for the storefront', async () => {
+    const merchants = await getTopClients({ days: 14, limit: 20, scope: 'b2b' });
+    const storefront = await getTopClients({ days: 14, limit: 20, scope: 'b2c' });
+    expect(merchants.length).toBeGreaterThan(0);
+    expect(storefront.length).toBeGreaterThan(0);
+    expect(merchants.every((account) => account.rank.kind === 'merchant' && account.hasAccount)).toBe(true);
+    expect(storefront.every((account) => account.rank.kind === 'retail')).toBe(true);
+    // A storefront buyer is an account with a number above the merchants' (customer cN is account 100 + N).
+    expect(Math.min(...storefront.map((account) => account.id))).toBeGreaterThan(100);
+  });
+
+  it('refuses a channel outside the choices the way the server does', async () => {
+    const error = await getTopClients({ days: 7, limit: 6, scope: 'everyone' as 'all' }).catch(
+      (caught: unknown) => caught,
+    );
+    expect(error).toMatchObject({ status: 422, code: 'VALIDATION_FAILED' });
   });
 });
 

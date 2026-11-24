@@ -1,5 +1,5 @@
 // The pure side of the Pricing view: what an edited cell of the price grid is, the request each edited row needs, and how a refusal of the
-// server finds its cell. The console works out no price here (decision 022): the cost, the margins and the price of each merchant group
+// server finds its cell. The console works out no price here (decision 022): the cost, the margins and the price of each rank
 // are the server's; this file only reshapes text, picks the rows to send and prints a sign. The server judges every price.
 import type { ApiError, Id, ListQuery, Money } from '@/lib/api';
 import { price } from '@/lib/format';
@@ -10,10 +10,10 @@ import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
 
 // ---- Cells and edits ----
 
-/** One cell of a grid row a person can type in: the base price, the shop price, or the fixed price of one merchant group. */
+/** One cell of a grid row a person can type in: the base price, the shop price, or the fixed price of one rank. */
 export type GridCell = 'base' | 'retail' | `group:${number}`;
 
-/** The cell of a merchant group. */
+/** The cell of a rank. */
 export const groupCell = (groupId: Id): GridCell => `group:${groupId}`;
 
 /** What was typed in one row, only for the cells that differ from what the server sent. */
@@ -122,7 +122,7 @@ export const PRICE_PROBLEM = 'Enter a price greater than zero.';
 /** The message under a shop price box that was emptied: the grid does not take a shop price away. */
 export const RETAIL_BLANK_PROBLEM = 'Type a shop price, or put the old one back.';
 
-/** The message when the shop group of the merchant groups is not known, so the shop price cannot be sent back. */
+/** The message when the shop group of the ranks is not known, so the shop price cannot be sent back. */
 export const RETAIL_GROUP_PROBLEM = 'The shop group could not be read. Reload the page and try again.';
 
 /** The group prices of one row as one replace-all request: the cells in the order of `body.prices`, and the cells that were edited. */

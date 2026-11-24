@@ -1,7 +1,7 @@
-// The roles and merchant groups the audience builder offers as checkbox lists (`GET /admin/roles`, `GET /admin/client-groups`), each needing its own
+// The roles and merchant ranks the audience builder offers as checkbox lists (`GET /admin/roles`, `GET /admin/client-groups`), each needing its own
 // read permission. They change rarely, so they are kept for a few minutes; `names` turns an id into a name for the sentences.
 import { listRoles } from '@/features/access';
-import { listClientGroups } from '@/features/merchants';
+import { listRanks, ranksOfKind } from '@/features/accounts';
 import { useApiQuery } from '@/lib/query';
 import { OPTION_LIMIT } from './keys';
 
@@ -23,13 +23,16 @@ export function useRoleOptions(enabled: boolean) {
   return { options: query.data ?? [], query };
 }
 
-/** The merchant groups (merchant segment filter). Needs `groups:read`. */
-export function useGroupOptions(enabled: boolean) {
+/** The merchant ranks (merchant segment filter): the ranks of the merchant kind, in their own order. Needs `groups:read`. */
+export function useRankOptions(enabled: boolean) {
   const query = useApiQuery({
-    queryKey: ['api', 'notifications', 'options', 'groups'],
+    queryKey: ['api', 'notifications', 'options', 'ranks'],
     queryFn: async ({ signal }): Promise<Option[]> => {
-      const { data } = await listClientGroups({ start: 0, end: OPTION_LIMIT }, { signal });
-      return data.map(({ id, name }) => ({ id, name }));
+      const { data } = await listRanks(
+        { start: 0, end: OPTION_LIMIT, sort: ['sort'], order: ['asc'] },
+        { signal },
+      );
+      return ranksOfKind(data, 'merchant').map(({ id, name }) => ({ id, name }));
     },
     enabled,
     staleTime: FIVE_MINUTES,

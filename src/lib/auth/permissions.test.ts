@@ -1,6 +1,6 @@
 // Tests for permission matching (wildcards, any-of) and the CRUD operation mapping.
 import { describe, expect, it } from 'vitest';
-import { crudPermission, hasPermission } from './permissions';
+import { crudPermission, hasPermission, isOwnerRole } from './permissions';
 
 describe('hasPermission', () => {
   it('matches an exact permission', () => {
@@ -32,6 +32,19 @@ describe('hasPermission', () => {
 
   it('grants nothing without permissions', () => {
     expect(hasPermission([], 'orders:read')).toBe(false);
+  });
+});
+
+describe('isOwnerRole', () => {
+  it('is true only for an exact * entry', () => {
+    expect(isOwnerRole(['*'])).toBe(true);
+    expect(isOwnerRole(['orders:read', '*'])).toBe(true);
+  });
+
+  it('is false for a role that merely covers everything', () => {
+    expect(isOwnerRole(['*:*'])).toBe(false);
+    expect(isOwnerRole(['clients:*', 'wallet:*'])).toBe(false);
+    expect(isOwnerRole([])).toBe(false);
   });
 });
 

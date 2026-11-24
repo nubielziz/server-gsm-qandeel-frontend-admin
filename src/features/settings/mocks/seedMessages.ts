@@ -107,7 +107,8 @@ export function notificationRows(templates: NotificationTemplate[]): Notificatio
     const at = toIso(now - (index + 1) * HOUR_MS * 1.5);
     return {
       id: 48 - index,
-      recipientType: template.audience === 'customer' ? 'customer' : 'client',
+      // A new line names its recipient an `account`, whatever the rank (the lines written before the merge keep their old words).
+      recipientType: 'account',
       recipientId: 100 + (index % 9),
       channel: template.channel,
       event: template.event,

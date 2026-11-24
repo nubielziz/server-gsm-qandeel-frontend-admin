@@ -6,7 +6,7 @@ import { num } from '@/lib/format';
 import { useDebouncedCommit } from '../hooks/useDebouncedCommit';
 import { hasActiveFilters, type OrderFilters } from '../lib/filters';
 import { CHANNEL_OPTIONS, SERVICE_TYPES, TYPE_LABEL } from '../lib/status';
-import type { ClientOption, SupplierOption } from '../types';
+import type { AccountOption, RankOption, SupplierOption } from '../types';
 import { PastSlaChip } from './PastSlaChip';
 
 export interface OrdersToolbarProps {
@@ -15,9 +15,10 @@ export interface OrdersToolbarProps {
   onClear: () => void;
   /** The number of orders that match, from the server. */
   total: number | undefined;
-  /** The names for the supplier and merchant menus; `undefined` leaves the menu out. */
+  /** The names for the supplier, merchant and rank menus; `undefined` leaves the menu out. */
   suppliers?: readonly SupplierOption[];
-  clients?: readonly ClientOption[];
+  merchants?: readonly AccountOption[];
+  ranks?: readonly RankOption[];
 }
 
 // A select shows its first option when the value is not among them; keep the chosen id visible while the names load.
@@ -26,7 +27,15 @@ function withChosen(options: readonly SelectOption[], chosen: string, label: str
   return [...options, { value: chosen, label: `${label} ${chosen}` }];
 }
 
-export function OrdersToolbar({ filters, onChange, onClear, total, suppliers, clients }: OrdersToolbarProps) {
+export function OrdersToolbar({
+  filters,
+  onChange,
+  onClear,
+  total,
+  suppliers,
+  merchants,
+  ranks,
+}: OrdersToolbarProps) {
   const search = useDebouncedCommit(filters.q, (q) => onChange({ q }));
   const supplierOptions = withChosen(
     [
@@ -36,10 +45,19 @@ export function OrdersToolbar({ filters, onChange, onClear, total, suppliers, cl
     filters.supplierId,
     'Supplier',
   );
-  const clientOptions = withChosen(
-    [{ value: '', label: 'All merchants' }, ...(clients ?? []).map((c) => ({ value: c.id, label: c.name }))],
-    filters.clientId,
-    'Merchant',
+  // The menu lists merchants only; an account that is not one (an address from a retail account's page) stays shown as chosen.
+  const merchantOptions = withChosen(
+    [
+      { value: '', label: 'All merchants' },
+      ...(merchants ?? []).map((c) => ({ value: c.id, label: c.name })),
+    ],
+    filters.accountId,
+    'Account',
+  );
+  const rankOptions = withChosen(
+    [{ value: '', label: 'All ranks' }, ...(ranks ?? []).map((r) => ({ value: r.id, label: r.name }))],
+    filters.rankId,
+    'Rank',
   );
 
   return (
@@ -74,13 +92,22 @@ export function OrdersToolbar({ filters, onChange, onClear, total, suppliers, cl
         options={CHANNEL_OPTIONS}
         onChange={(event) => onChange({ channel: event.target.value as OrderFilters['channel'] })}
       />
-      {clients && (
+      {merchants && (
         <SelectField
           aria-label="Filter by merchant"
-          value={filters.clientId}
-          options={clientOptions}
+          value={filters.accountId}
+          options={merchantOptions}
           selectWrapClassName="hidden md:inline-flex"
-          onChange={(event) => onChange({ clientId: event.target.value })}
+          onChange={(event) => onChange({ accountId: event.target.value })}
+        />
+      )}
+      {ranks && (
+        <SelectField
+          aria-label="Filter by rank"
+          value={filters.rankId}
+          options={rankOptions}
+          selectWrapClassName="hidden md:inline-flex"
+          onChange={(event) => onChange({ rankId: event.target.value })}
         />
       )}
       <PastSlaChip active={filters.pastSla} onToggle={() => onChange({ pastSla: !filters.pastSla })} />

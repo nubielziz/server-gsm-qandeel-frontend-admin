@@ -8,12 +8,12 @@ export function isAutomatic(refund: Pick<Refund, 'requestedBy'>): boolean {
   return refund.requestedBy.type === 'system';
 }
 
-/** The name under the "When" column: the person who decided it, else who asked ("Customer", "System", a staff name). */
+/** The name under the "When" column: the person who decided it, else who asked ("Customer" for the buyer's account, "System", a staff name). */
 export function refundActor(refund: Pick<Refund, 'approvedBy' | 'requestedBy'>): string {
   if (refund.approvedBy) return refund.approvedBy.name;
   const { type, name } = refund.requestedBy;
   if (name) return name;
-  return type === 'customer' ? 'Customer' : type === 'system' ? 'System' : 'Staff';
+  return type === 'account' ? 'Customer' : type === 'system' ? 'System' : 'Staff';
 }
 
 /** When it last changed: the moment it was completed, else when it was opened. */

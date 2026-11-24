@@ -38,7 +38,7 @@ export type HealthState = {
   runs: Collection<JobRun>;
   /** Runs that have started: when each will finish, and whether it will find the ledger put right (settled by the next read). */
   pending: Map<number, { at: number; fixed: boolean }>;
-  /** The four ledger checks as of the last finished integrity run, and the last time they all passed. */
+  /** The ledger checks as of the last finished integrity run, and the last time they all passed. */
   checks: IntegrityCheck[];
   lastSuccessAt: string | null;
 };

@@ -77,7 +77,7 @@ describe('pricing rules', () => {
     const known = await createPricingRule({ ...promo, groupId: 3 });
     expect(known.group).toEqual({ id: 3, name: 'VIP' });
     const bad = await createPricingRule({ ...promo, groupId: 0 }).catch((e: unknown) => e);
-    expect((bad as ApiError).fieldErrors.groupId).toEqual(['Choose a merchant group.']);
+    expect((bad as ApiError).fieldErrors.groupId).toEqual(['Choose a rank.']);
   });
 
   it('turns a rule off and changes it with a partial body', async () => {

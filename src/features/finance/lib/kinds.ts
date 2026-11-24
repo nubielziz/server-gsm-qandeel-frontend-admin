@@ -1,5 +1,5 @@
 // The names of ledger entry kinds. Ports KIND_LABEL of 10-data.js (used by the ledger table and the order drawer's money trail).
-import { customerLabel } from '@/lib/format';
+import { accountLabel, customerLabel } from '@/lib/format';
 import type { LedgerActor } from '../types';
 
 /** Entry kind to the words the console shows. */
@@ -18,6 +18,8 @@ export const LEDGER_KIND_LABEL: Readonly<Record<string, string>> = {
   gateway_fee: 'Gateway fee',
   refund: 'Customer refund',
   chargeback: 'Chargeback',
+  // A rank change across kinds moves the whole balance from one wallet of the account to the other in one entry.
+  wallet_transfer: 'Rank change transfer',
 };
 
 /** The words of a snake_case id: `order_refund` reads "Order refund". `empty` stands in for an id with no letters. */
@@ -38,10 +40,12 @@ export function journalLabel(id: number): string {
 }
 
 /**
- * Who posted a ledger entry, as the console says it. A customer can have an empty name and the backend then sends
- * `name: null` (its owner lookup skips empty names), so a customer actor reads "Customer #31", never "System". Staff and
- * merchants keep their name; an actor with no name at all is the system.
+ * Who posted a ledger entry, as the console says it. An account can have an empty name and the backend then sends
+ * `name: null` (its owner lookup skips empty names), so an account actor reads "Account #31" (a `client` actor of an old entry
+ * carries a merchant number, which is its account id, so it reads the same way), never "System". An old `customer` actor carries
+ * the old customer number, so it reads "Customer #31". Staff keep their name; an actor with no name at all is the system.
  */
 export function postedBy(actor: LedgerActor): string {
+  if (actor.type === 'account' || actor.type === 'client') return accountLabel(actor);
   return actor.type === 'customer' ? customerLabel(actor) : (actor.name ?? 'System');
 }

@@ -1,4 +1,4 @@
-// OrdersTable: a self-contained list of orders for other pages (a merchant's or a customer's orders). Pass the filters that always
+// OrdersTable: a self-contained list of orders for other pages (an account's orders). Pass the filters that always
 // apply (`fixed`) and it fetches, sorts and pages by itself; a click opens the order's drawer in the address (`?order=`), so the page
 // also mounts `<OrderDrawerHost />`. The Orders page uses the same `OrderTable` with its own URL-driven state.
 import { useState, type ReactNode } from 'react';
@@ -11,7 +11,7 @@ import type { OrderListFilters } from '../types';
 import { OrderTable } from './OrderTable';
 
 export interface OrdersTableProps {
-  /** The filters that always apply, for example `{ clientId: 7 }` on a merchant's page. */
+  /** The filters that always apply, for example `{ accountId: 7 }` on an account's page. */
   fixed: OrderListFilters;
   pageSize?: number;
   caption?: string;

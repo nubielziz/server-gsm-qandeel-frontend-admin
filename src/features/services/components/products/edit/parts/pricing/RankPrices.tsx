@@ -16,7 +16,7 @@ export type RankSave = (event: FormEvent<HTMLFormElement>) => Promise<FormDialog
 
 export interface RankPricesProps {
   service: ServiceDetail;
-  /** Every merchant group, the retail one included: it tells which saved row is the retail price. */
+  /** Every rank, the retail one included: it tells which saved row is the retail price. */
   groups: readonly ClientGroup[];
   /** Off, with the missing permission in its title, for a role that may not change prices. */
   lock: PermissionLock;

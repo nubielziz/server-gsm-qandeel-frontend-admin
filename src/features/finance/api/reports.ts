@@ -12,7 +12,7 @@ import type {
 } from '../types';
 
 /**
- * Profit split by day, service, supplier or merchant, for a date range. Why a report route: profit is revenue minus
+ * Profit split by day, service, supplier or merchant (an account of a merchant rank), for a date range. Why a report route: profit is revenue minus
  * what the supplier cost, worked out from orders and ledger entries, so only the server can say it.
  * Assumed contract: query `groupBy` (`day`, `service`, `supplier` or `client`), `from` and `to` (`YYYY-MM-DD`, both
  * included); the answer has one row per group and the totals.
@@ -27,9 +27,11 @@ export function getProfitReport(query: ProfitQuery, init?: ApiInit): Promise<Pro
 }
 
 /**
- * What the merchants' wallets hold: balances, reserved amounts (held for open orders) and the overdraft allowed and
- * used. The header's wallet figures read the totals of this report too.
- * Assumed contract: the answer has the totals and the largest wallets first (the server caps the list).
+ * What the merchant wallets hold: balances, reserved amounts (held for open orders) and the overdraft allowed and
+ * used, and beside them the totals of the store balances (`storeBalances`). The header's wallet figures read the totals of this
+ * report too.
+ * Assumed contract: the answer has the merchant totals, the store balance totals and the largest merchant wallets first (the server
+ * caps the list); `clientId` of a row is the account id.
  * @route GET /admin/reports/wallet-exposure
  */
 export function getWalletExposure(init?: ApiInit): Promise<WalletExposure> {

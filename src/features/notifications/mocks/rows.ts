@@ -1,22 +1,22 @@
 // What the mock fan-out makes for a campaign: one recipient row per person and channel, with a status that depends on how far the send is. The counters of the
 // campaign (planned, skipped, delivery) are counted from these rows, so the detail, the recipients table and the progress meter always agree.
 import { maskEmail } from '@/lib/format';
-import type { CampaignChannel, CampaignDetail, CampaignRecipient, PersonType } from '../types';
-import { eligiblePeople, type MockPerson } from './audience';
+import type { CampaignChannel, CampaignDetail, CampaignRecipient } from '../types';
+import { eligiblePeople, type MockKind, type MockPerson } from './audience';
 
 /** How far a send is: the fan-out just made the rows (`sending`), or the worker finished them (`done`). */
 export type Phase = 'sending' | 'done';
 
-const DOMAIN: Record<PersonType, string> = {
+const DOMAIN: Record<MockKind, string> = {
   staff: 'gsm-supply.example',
-  client: 'merchant.example',
-  customer: 'mail.example',
+  merchant: 'merchant.example',
+  retail: 'mail.example',
 };
-const NAME: Record<PersonType, string> = { staff: 'staff', client: 'shop', customer: 'buyer' };
+const NAME: Record<MockKind, string> = { staff: 'staff', merchant: 'shop', retail: 'buyer' };
 
 function recipientText(person: MockPerson, channel: CampaignChannel): string {
-  if (channel === 'in_app') return `${NAME[person.type]}${person.id}`;
-  return maskEmail(`${NAME[person.type]}${person.id}@${DOMAIN[person.type]}`);
+  if (channel === 'in_app') return `${NAME[person.kind]}${person.id}`;
+  return maskEmail(`${NAME[person.kind]}${person.id}@${DOMAIN[person.kind]}`);
 }
 
 /** The status of one message: in-app items are delivered (every third read); email messages are sent, a few fail, and while sending some still wait. */

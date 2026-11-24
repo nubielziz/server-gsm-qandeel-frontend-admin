@@ -4,8 +4,8 @@ import { apiGet, apiPost, type ApiInit } from '@/lib/api';
 import type { IntegrityReport, JobRun } from '../types';
 
 /**
- * The four ledger checks (entries sum to zero, balances equal their lines, holds stuck over 24 hours, confirmed
- * payments without an entry) with the first findings of each, and the last run. While a run works, `running` is true
+ * The ledger checks (entries sum to zero, balances equal their lines, holds stuck over 24 hours, confirmed
+ * payments without an entry, wallets follow the rank of their account) with the first findings of each, and the last run. While a run works, `running` is true
  * and the tab reads this again every few seconds.
  * Assumed contract: answer `IntegrityReport`; no query.
  * @route GET /admin/system/integrity

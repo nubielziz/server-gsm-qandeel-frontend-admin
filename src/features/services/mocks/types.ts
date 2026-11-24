@@ -49,7 +49,7 @@ export type MockCategory = {
   isActive: boolean;
 };
 
-/** A merchant group (the demo's `GROUPS`), with its discount in percent. */
+/** A rank (the demo's `GROUPS`), with its discount in percent. */
 export type MockGroup = { id: number; name: string; kind: string; discountPercent: number };
 
 /** A merchant, only as far as pricing needs it: its name and group. */

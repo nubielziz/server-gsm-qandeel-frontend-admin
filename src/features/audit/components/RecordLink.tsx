@@ -16,7 +16,7 @@ export interface RecordLinkProps {
 export function RecordLink({ row, canOpen, onOpenOrder }: RecordLinkProps) {
   if (entityKind(row.entityType) === 'session') return null;
   const label = recordText(row);
-  const target = recordTarget(row.entityType, row.entityId, row.entityLabel);
+  const target = recordTarget(row.entityType, row.entityId, row.entityLabel, row.account);
   if (!target || !canOpen(target.page)) return <span className="font-medium">{label}</span>;
   if (target.page === 'orders') {
     return (

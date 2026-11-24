@@ -1,6 +1,5 @@
-// WalletsTable: the customer wallets list (customer, balance, state, updated). Each customer links to the Wallet tab of their page, a
-// plain link because the customers feature already imports finance (feature 21). It only draws what it is given: the tab owns the
-// data, the sort and the page.
+// WalletsTable: the store balances list (account, balance, state, updated). Each account links to the Financial part of its record
+// (`accountPath(id, 'wallet')`). It only draws what it is given: the tab owns the data, the sort and the page.
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import {
@@ -10,8 +9,8 @@ import {
   type PaginationState,
   type SortState,
 } from '@/components/ui';
-import { ago, hasCustomerName, maskedCustomerLabel, maskEmail, money, toAmount } from '@/lib/format';
-import { customerWalletPath } from '../lib/payments';
+import { accountPath } from '@/features/accounts';
+import { ago, hasAccountName, maskedAccountLabel, maskEmail, money, toAmount } from '@/lib/format';
 import { walletStateOf } from '../lib/walletView';
 import type { CustomerWalletRow } from '../types';
 
@@ -69,15 +68,15 @@ export function WalletsTable({
 }: WalletsTableProps) {
   const columns: DataTableColumn<CustomerWalletRow>[] = [
     {
-      key: 'customer',
-      label: 'Customer',
+      key: 'account',
+      label: 'Account',
       render: (row) => (
         <>
-          <Link className="link font-medium" to={customerWalletPath(row.customer.id)}>
-            {maskedCustomerLabel(row.customer)}
+          <Link className="link font-medium" to={accountPath(row.customer.id, 'wallet')}>
+            {maskedAccountLabel(row.customer)}
           </Link>
           <p className="text-xs text-ink3">
-            {hasCustomerName(row.customer) ? maskEmail(row.customer.email) : 'No name'}
+            {hasAccountName(row.customer) ? maskEmail(row.customer.email) : 'No name'}
           </p>
         </>
       ),
@@ -116,7 +115,7 @@ export function WalletsTable({
 
   return (
     <DataTable
-      caption="Customer wallets"
+      caption="Store balances"
       columns={columns}
       rows={rows}
       rowKey={(row) => row.customer.id}
@@ -126,7 +125,7 @@ export function WalletsTable({
       onPageChange={onPageChange}
       state={state}
       error={error}
-      errorTitle="Could not load the customer wallets"
+      errorTitle="Could not load the store balances"
       onRetry={onRetry}
       empty={empty}
     />

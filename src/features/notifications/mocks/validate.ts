@@ -21,6 +21,9 @@ function textProblems(field: string, value: string): ProblemError[] {
   return errors;
 }
 
+// The kinds of person a request may name (decision 023): the words of the old model are refused.
+const PERSON_TYPES = new Set<string>(['staff', 'account']);
+
 /** The audience rules that one field cannot say. */
 export function audienceProblems(audience: AudienceSpec): ProblemError[] {
   const errors: ProblemError[] = [];
@@ -28,8 +31,13 @@ export function audienceProblems(audience: AudienceSpec): ProblemError[] {
   if (!audience.staff && !audience.merchants && !audience.customers && include.length === 0) {
     errors.push({
       field: 'audience',
-      message: 'Choose at least one group of people (staff, merchants or customers) or add people.',
+      message: 'Choose at least one group of people (staff, merchants or retail accounts) or add people.',
     });
+  }
+  for (const key of ['include', 'exclude'] as const) {
+    if ((audience[key] ?? []).some((person) => !PERSON_TYPES.has(person.type))) {
+      errors.push({ field: `audience.${key}`, message: 'A person is a staff member or an account.' });
+    }
   }
   for (const key of ['merchants', 'customers'] as const) {
     for (const code of audience[key]?.countries ?? []) {

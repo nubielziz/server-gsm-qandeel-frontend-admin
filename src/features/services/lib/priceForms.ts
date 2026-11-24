@@ -29,10 +29,10 @@ export function priceChanges(values: PriceValues, saved: PriceFigures): UpdateSe
   return body;
 }
 
-/** The boxes of Group prices, one text per merchant group, under the name {@link groupFieldOf} gives. */
+/** The boxes of Group prices, one text per rank, under the name {@link groupFieldOf} gives. */
 export type GroupValues = Record<string, string>;
 
-/** The box name of a merchant group. */
+/** The box name of a rank. */
 export const groupFieldOf = (group: Pick<ClientGroup, 'id'>) => `group_${group.id}`;
 
 /**

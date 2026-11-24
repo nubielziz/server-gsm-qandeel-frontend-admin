@@ -46,7 +46,7 @@ const SUBJECT_KIND: Record<string, string> = {
   queue: 'Queue',
   gateway: 'Gateway',
   ledger_account: 'Ledger account',
-  client: 'Merchant',
+  account: 'Account',
 };
 
 export interface SubjectText {

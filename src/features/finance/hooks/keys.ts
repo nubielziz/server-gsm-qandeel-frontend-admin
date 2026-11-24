@@ -1,7 +1,7 @@
 // Query keys of the finance reads that are not Refine resources (decision 005: they start with `['api', 'finance']`), and
 // what a decision on a deposit makes stale. React Query matches the keys as prefixes.
 import type { QueryKey } from '@tanstack/react-query';
-import { DASHBOARD_KEY, type InvalidateTarget, MERCHANT_WALLET_KEY } from '@/lib/query';
+import { ACCOUNT_WALLET_KEY, DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
 import type { Payment } from '../types';
 
 /** The Pending / Approved / Rejected / All counts of the Deposits tab, and the header's "waiting" figure. */
@@ -13,22 +13,23 @@ export const TRIAL_BALANCE_KEY = ['api', 'finance', 'trial-balance'] as const;
 /** The three reports (the header's wallet figures read the wallet exposure one). */
 export const REPORT_KEY = ['api', 'finance', 'reports'] as const;
 
-/** The customer wallets list (feature 21), and what an approved customer top-up makes stale besides it. */
-export const CUSTOMER_WALLETS_KEY = ['api', 'finance', 'customer-wallets'] as const;
+/** The store balances list, and what an approved store balance top-up makes stale besides it. */
+export const STORE_BALANCES_KEY = ['api', 'finance', 'store-balances'] as const;
 
 /**
- * The customers feature's balance reads (`['api', 'customers', 'wallet']`): finance cannot import them, so the prefix is written
- * out here and kept in step with `CUSTOMER_WALLET_KEY` there.
+ * The statement rows of each account's wallet, which the accounts feature reads (`['api', 'accounts', 'statement']`): finance cannot
+ * import its keys, so the prefix is written out here and kept in step with `STATEMENT_KEY` there. The wallet figures themselves
+ * (both kinds) are `ACCOUNT_WALLET_KEY` of `@/lib/query`, shared by both features.
  */
-export const CUSTOMER_BALANCE_KEY = ['api', 'customers', 'wallet'] as const;
+export const ACCOUNT_STATEMENT_KEY = ['api', 'accounts', 'statement'] as const;
 
-/** The statement rows of each customer's balance (same note as above). */
-export const CUSTOMER_BALANCE_STATEMENT_KEY = ['api', 'customers', 'wallet-statement'] as const;
+/** The payments listed on each account's record (same note as above; `PAYMENTS_KEY` there). */
+export const ACCOUNT_PAYMENTS_KEY = ['api', 'accounts', 'payments'] as const;
 
 /** The ledger entries posted for each deposit (its "View ledger entries" dialog). */
 export const PAYMENT_ENTRIES_KEY = ['api', 'finance', 'payment-entries'] as const;
 
-/** Merchant names for the issue-invoice dialog. */
+/** Merchant-rank account names for the issue-invoice dialog. */
 export const MERCHANT_LOOKUP_KEY = ['api', 'finance', 'lookups', 'merchants'] as const;
 
 /** How often the deposit queue, the counts and the header ask again while the page is open. */
@@ -43,11 +44,11 @@ export const APPROVE_STALE_KEYS: QueryKey[] = [
   TRIAL_BALANCE_KEY,
   REPORT_KEY,
   PAYMENT_ENTRIES_KEY,
-  MERCHANT_WALLET_KEY,
-  // A customer's top-up credits their store balance (feature 21): the wallet figures, statement and list change.
-  CUSTOMER_WALLETS_KEY,
-  CUSTOMER_BALANCE_KEY,
-  CUSTOMER_BALANCE_STATEMENT_KEY,
+  // The credit lands on the account's live wallet, of either kind: its figures, its statement, its payments and the store balances list change.
+  ACCOUNT_WALLET_KEY,
+  ACCOUNT_STATEMENT_KEY,
+  ACCOUNT_PAYMENTS_KEY,
+  STORE_BALANCES_KEY,
 ];
 
 /**
@@ -59,9 +60,7 @@ export function staleDeposit(payment: Pick<Payment, 'id' | 'client' | 'customer'
     { resource: 'payments', id: payment.id },
     { resource: 'ledger/transactions' },
     { resource: 'invoices' },
-    // The merchant's record carries its wallet figures, which an approval changes.
-    { resource: 'clients', id: payment.client?.id },
-    // A customer's top-up credits their balance; their record lists the customer's counts.
-    ...(payment.customer ? [{ resource: 'customers', id: payment.customer.id }] : []),
+    // The account's record carries its wallet figures, which an approval changes (a merchant wallet's and a store balance's alike).
+    { resource: 'clients', id: payment.client?.id ?? payment.customer?.id },
   ];
 }

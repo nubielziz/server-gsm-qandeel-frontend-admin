@@ -17,7 +17,7 @@ import type { CreatePricingRuleBody, PricingRule, UpdatePricingRuleBody } from '
 
 /**
  * The pricing rules. Filters: `scope`, `kind`, `isActive`; sort with `_sort`/`_order` (for example by `priority`).
- * Assumed contract: rows carry the target, service or category, and the merchant group as `{ id, name }` joins, and
+ * Assumed contract: rows carry the target, service or category, and the rank as `{ id, name }` joins, and
  * promos carry `startsAt` and `endsAt`.
  * @route GET /admin/pricing-rules
  */

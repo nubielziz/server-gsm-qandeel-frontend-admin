@@ -19,8 +19,7 @@ const ALL_PANELS = [
   'Storefront funnel',
   'Open queue by type',
   'Supplier health',
-  'Top merchants',
-  'Top customers',
+  'Top accounts',
 ];
 
 const pressed = (group: string, name: string) =>
@@ -123,7 +122,7 @@ describe('channel', () => {
         'Orders by type',
         'Open queue by type',
         'Supplier health',
-        'Top merchants',
+        'Top accounts',
       ]),
     );
     expect(screen.getByText(/Showing merchants\./)).toBeInTheDocument();
@@ -137,7 +136,7 @@ describe('channel', () => {
         'Storefront funnel',
         'Open queue by type',
         'Supplier health',
-        'Top customers',
+        'Top accounts',
       ]),
     );
     expect(screen.getByText(/Showing the storefront\./)).toBeInTheDocument();
@@ -169,7 +168,6 @@ describe('period', () => {
     expect(app.location()).toBe('/dashboard?days=14');
     expect(await screen.findByRole('region', { name: 'Key figures for the last 14D' })).toBeInTheDocument();
     expect(await screen.findByText('By spend, last 14 days')).toBeInTheDocument();
-    expect(screen.getByText('Storefront, by spend, last 14 days')).toBeInTheDocument();
 
     await user.click(control('Period').getByRole('button', { name: '24h' }));
     expect(app.location()).toBe('/dashboard?days=1');

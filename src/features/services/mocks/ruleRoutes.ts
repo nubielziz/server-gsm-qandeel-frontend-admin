@@ -33,10 +33,10 @@ function applyFields(
   }
   if ('targetId' in body) draft.targetId = body.targetId === null ? null : idOf(body.targetId);
   if ('groupId' in body) {
-    // The merchants feature owns the groups, so any positive whole number is taken as a group.
+    // The accounts feature owns the groups, so any positive whole number is taken as a group.
     draft.groupId = body.groupId === null ? null : idOf(body.groupId);
     if (body.groupId !== null && draft.groupId === null) {
-      problems.push({ field: 'groupId', message: 'Choose a merchant group.' });
+      problems.push({ field: 'groupId', message: 'Choose a rank.' });
     }
   }
   if ('kind' in body) {

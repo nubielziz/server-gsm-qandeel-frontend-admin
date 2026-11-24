@@ -37,7 +37,9 @@ async function profitReport(groupBy: ProfitGroup, from: string, to: string): Pro
           ? { key: String(order.service.id), label: order.service.name }
           : groupBy === 'supplier'
             ? { key: String(order.supplier?.id ?? 0), label: order.supplier?.name ?? 'No supplier' }
-            : { key: String(order.client?.id ?? 0), label: order.client?.name ?? 'Storefront customers' };
+            : order.channel === 'b2b'
+              ? { key: String(order.account.id), label: order.account.name }
+              : { key: '0', label: 'Retail accounts' };
     const bucket = buckets.get(group.key) ?? { ...group, orders: 0, revenue: 0, cost: 0 };
     bucket.orders += 1;
     bucket.revenue += Number(order.totalPrice);

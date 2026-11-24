@@ -25,7 +25,8 @@ describe('toTrialLines', () => {
 
 describe('helpers', () => {
   it('names an account kind', () => {
-    expect(accountName('client_wallet')).toBe('Client wallets');
+    expect(accountName('client_wallet')).toBe('Merchant wallets');
+    expect(accountName('client_hold')).toBe('Merchant holds');
     expect(accountName('chargeback_reserve')).toBe('Chargeback reserve');
   });
 
@@ -41,12 +42,12 @@ describe('helpers', () => {
   });
 });
 
-describe('customer wallets (feature 21)', () => {
+describe('store balances', () => {
   it('names the account kind and counts it as a liability', () => {
-    expect(accountName('customer_wallet')).toBe('Customer wallets');
+    expect(accountName('customer_wallet')).toBe('Store balances');
     const [line] = toTrialLines([{ kind: 'customer_wallet', balance: '-50.0000', accounts: 2 }]);
     expect(line).toMatchObject({
-      name: 'Customer wallets',
+      name: 'Store balances',
       type: 'Liability',
       debit: null,
       credit: '50.0000',

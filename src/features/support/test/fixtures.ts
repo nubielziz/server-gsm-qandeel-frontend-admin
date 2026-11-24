@@ -1,13 +1,13 @@
 // Plain ticket and message values for the unit tests of the live code (no app, no mock API). Import them from tests only.
 import type { SupportTicket, SupportTicketDetail, TicketMessage } from '../types';
 
-/** A message of the staff view; a requester's (customer) unless `change` says otherwise. */
+/** A message of the staff view; the requester account's unless `change` says otherwise. */
 export function message(id: number, change: Partial<TicketMessage> = {}): TicketMessage {
   return {
     id,
     ticketId: 10,
-    authorType: 'customer',
-    authorId: 28,
+    authorType: 'account',
+    authorId: 128,
     authorName: 'Victor Silva',
     body: `Message ${id}`,
     isInternal: false,
@@ -29,9 +29,9 @@ export function row(change: Partial<SupportTicket> = {}): SupportTicket {
     number: 'T-10',
     subject: 'Phone still locked',
     channel: 'web',
-    requesterType: 'customer',
-    requesterId: 28,
-    requester: { name: 'Victor Silva', email: null },
+    requesterType: 'account',
+    requesterId: 128,
+    requester: { name: 'Victor Silva', email: null, rankKind: 'retail' },
     orderId: null,
     category: 'failed_unlock',
     priority: 'normal',

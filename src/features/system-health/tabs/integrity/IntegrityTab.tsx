@@ -1,4 +1,4 @@
-// IntegrityTab: the Integrity tab of the System health page: the last run with Run check now, the four ledger checks, what the
+// IntegrityTab: the Integrity tab of the System health page: the last run with Run check now, the ledger checks, what the
 // failing ones found, and a note that the check never changes anything. Route group health (GET /admin/system/integrity).
 import { PartBoundary } from '../../header/PartBoundary';
 import { POLL, useIntegrity } from '../../hooks';

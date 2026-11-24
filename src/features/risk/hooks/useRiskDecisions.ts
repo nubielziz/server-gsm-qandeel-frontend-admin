@@ -6,7 +6,7 @@ import { useApiMutation } from '@/lib/query';
 import { approveHeldOrder, refundHeldOrder } from '../api';
 import type { HeldOrder, RefundHeldBody } from '../types';
 import { DECISION_STALE_KEYS } from './keys';
-import { maskedCustomerLabel } from '@/lib/format';
+import { maskedAccountLabel } from '@/lib/format';
 
 const label = (order: HeldOrder) => orderLabel({ id: order.orderId, channel: 'b2c' });
 
@@ -33,8 +33,8 @@ export function useRefundHeldOrder() {
     invalidates: (_result, { order, body }) => [
       { resource: 'orders', id: order.orderId },
       { resource: 'blocklist' },
-      // Blocking an email can change the customer's standing, so the customer's own page is read again.
-      ...(body.blockEmail ? [{ resource: 'customers', id: order.customer.id }] : []),
+      // Blocking an email can change the account's standing, so the account's own record is read again.
+      ...(body.blockEmail ? [{ resource: 'clients', id: order.customer.id }] : []),
     ],
     invalidateKeys: DECISION_STALE_KEYS,
     // The demo told this with a quiet "info" toast, which the success notifications cannot draw.
@@ -44,7 +44,7 @@ export function useRefundHeldOrder() {
         title: `${label(order)} refunded`,
         body:
           body.blockEmail || body.blockDevice
-            ? `${maskedCustomerLabel(order.customer)} is blocked.`
+            ? `${maskedAccountLabel(order.customer)} is blocked.`
             : 'The customer was told by email.',
         ttl: 3000,
       });
