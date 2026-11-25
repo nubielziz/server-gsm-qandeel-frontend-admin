@@ -117,7 +117,8 @@ describe('describeAttention', () => {
     expect(view(sample('deposits_pending'))).toEqual({
       title: '2 deposits are waiting for review',
       meta: '$720 total, oldest 3h ago',
-      action: { label: 'Review deposits', page: 'finance', to: '/finance?tab=payments' },
+      // The Money page opens for many permissions, so the button also names the view it needs.
+      action: { label: 'Review deposits', page: 'money', to: '/money?view=deposits', view: 'deposits' },
     });
   });
 
@@ -157,7 +158,7 @@ describe('describeAttention', () => {
     expect(view(sample('disputes_due'))).toEqual({
       title: '2 card disputes need evidence',
       meta: `DP-2005 is due in 2d${NBSP}3h. Missing the date loses the dispute and $15.59 plus a $15 fee`,
-      action: { label: 'Open disputes', page: 'refunds', to: '/refunds?tab=disputes' },
+      action: { label: 'Open disputes', page: 'money', to: '/money?view=disputes', view: 'disputes' },
     });
     const late = { ...sample('disputes_due'), dueAt: '2026-10-30T06:00:00.000Z', count: 1 } as AttentionItem;
     expect(view(late)).toMatchObject({ title: '1 card dispute needs evidence' });
@@ -176,12 +177,22 @@ describe('describeAttention', () => {
     expect(view(sample('refunds_requested'))).toEqual({
       title: '1 refund request needs a decision',
       meta: '$19.99 if all are approved',
-      action: { label: 'Review', page: 'refunds', to: '/refunds?tab=refunds&status=requested' },
+      action: {
+        label: 'Review',
+        page: 'money',
+        to: '/money?view=refunds&status=requested',
+        view: 'refunds',
+      },
     });
     expect(view(sample('refunds_failed'))).toEqual({
       title: '2 refunds failed at the gateway',
       meta: 'RF-1011: Gateway timeout',
-      action: { label: 'Retry', page: 'refunds', to: '/refunds?tab=refunds&status=failed' },
+      action: {
+        label: 'Retry',
+        page: 'money',
+        to: '/money?view=refunds&status=failed',
+        view: 'refunds',
+      },
     });
   });
 

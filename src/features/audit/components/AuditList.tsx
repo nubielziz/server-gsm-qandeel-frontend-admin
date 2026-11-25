@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui';
 import { num, useNow } from '@/lib/format';
 import { groupByDay } from '../lib/days';
-import type { RecordPage } from '../lib/link';
+import type { RecordAccess } from '../lib/link';
 import { AUDIT_PAGE_SIZE } from '../lib/view';
 import type { AuditLog } from '../types';
 import { AuditRow } from './AuditRow';
@@ -20,7 +20,7 @@ export interface AuditListProps {
   moreFailed: boolean;
   onMore: () => void;
   roleOf: (actorId: number | null) => string | undefined;
-  canOpen: (page: RecordPage) => boolean;
+  canOpen: RecordAccess;
   onOpenOrder: (orderId: number) => void;
 }
 

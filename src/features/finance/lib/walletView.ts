@@ -1,4 +1,4 @@
-// The Store balances tab's search, state filter, page and sort as address parameters, and how they become the list call (feature 21).
+// The Store balances view's search, state filter, page and sort as address parameters, and how they become the list call (feature 21).
 // Nothing here decides which wallets match; it only writes and reads the question.
 import type { SortState } from '@/components/ui';
 import type { CustomerWalletState } from '../types';

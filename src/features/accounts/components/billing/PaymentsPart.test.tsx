@@ -60,7 +60,7 @@ const openPayments = (id = 1, name: string | RegExp = ZAIN, permissions?: string
 const table = () => screen.findByRole('table', { name: 'Payments' });
 
 describe('the list', () => {
-  it('asks the server for this account’s payments by accountId, newest first, and links each row to Finance', async () => {
+  it('asks the server for this account’s payments by accountId, newest first, and links each row to Money', async () => {
     const calls: string[] = [];
     mockServer.use(http.get('*/admin/payments', listOf(4, payment, calls)));
     await openPayments();

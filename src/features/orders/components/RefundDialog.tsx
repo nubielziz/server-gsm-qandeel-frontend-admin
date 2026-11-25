@@ -1,6 +1,6 @@
 // RefundDialog: "Refund <order>" for a completed merchant order (`POST /admin/orders/:id/refund`). Ports the o-refund
 // dialog of 41-p-orders.js, which refunded a storefront order with an amount; the map refunds merchant orders in full from
-// here and sends storefront refunds to the Refunds page (MISMATCHES M25).
+// here and sends storefront refunds to the Refunds view of the Money page (MISMATCHES M25).
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, Icon, TextField } from '@/components/ui';
 import { maskedAccountLabel, money } from '@/lib/format';

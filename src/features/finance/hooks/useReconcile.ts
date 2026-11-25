@@ -1,5 +1,5 @@
 // "Run reconciliation": asks the server to compare every account with its entries and returns what it found. It replaces the
-// demo's integrity checks, which the browser worked out itself. The result is shown by the page in a dialog.
+// demo's integrity checks, which the browser worked out itself. The result is shown by the Overview in a dialog.
 import { useApiMutation } from '@/lib/query';
 import { reconcileLedger } from '../api';
 import { TRIAL_BALANCE_KEY } from './keys';

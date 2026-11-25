@@ -1,5 +1,5 @@
 // SalesFunnelReport: how far shop sales got over the last 7, 30 or 90 days: a payment started, paid, delivered, each step with its
-// share of the one before. New in the Reports tab (MISMATCHES M124); the server counts every step, the report only shows them.
+// share of the one before. New in Reports (MISMATCHES M124); the server counts every step, the report only shows them.
 import { EmptyState, QueryState, SegmentedControl, SkeletonTable } from '@/components/ui';
 import { useFunnelReport } from '../hooks/useReports';
 import { funnelSteps, isFunnelIdle } from '../lib/funnel';

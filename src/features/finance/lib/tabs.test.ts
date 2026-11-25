@@ -1,79 +1,35 @@
-// Tests for the Finance tabs: which ones a role may open, which one shows, and the addresses other pages link to.
+// Tests for the finance addresses on the Money page: the old Finance tab names still open the right view, with the view's own parameters.
 import { describe, expect, it } from 'vitest';
-import {
-  financeInvoicePath,
-  financeJournalPath,
-  financePath,
-  financePaymentPath,
-  isFinanceTab,
-  resolveTab,
-  visibleTabs,
-} from './tabs';
+import { financeInvoicePath, financeJournalPath, financePath, financePaymentPath } from './tabs';
 
-const ids = (granted: string[]) => visibleTabs(granted).map((tab) => tab.id);
-
-describe('visibleTabs', () => {
-  it('gives every tab to a role with everything', () => {
-    expect(ids(['*'])).toEqual(['ledger', 'payments', 'accounts', 'wallets', 'invoices', 'reports']);
+describe('financePath', () => {
+  it('names the view in the address, the Ledger first', () => {
+    expect(financePath()).toBe('/money?view=ledger');
+    expect(financePath('ledger')).toBe('/money?view=ledger');
+    expect(financePath('payments')).toBe('/money?view=deposits');
+    expect(financePath('invoices')).toBe('/money?view=invoices');
   });
 
-  it('gives each tab only to the permission it needs', () => {
-    expect(ids(['payments:read'])).toEqual(['payments']);
-    expect(ids(['ledger:read'])).toEqual(['ledger', 'accounts']);
-    expect(ids(['wallet:read'])).toEqual(['wallets']);
-    expect(ids(['invoices:*'])).toEqual(['invoices']);
-    expect(ids(['reports:finance'])).toEqual(['reports']);
-    expect(ids(['reports:growth'])).toEqual(['reports']);
-    expect(ids(['orders:read'])).toEqual([]);
+  it('calls the accounts tab the trial balance and the wallets tab Store balances', () => {
+    expect(financePath('accounts')).toBe('/money?view=trial-balance');
+    expect(financePath('wallets', { state: 'negative' })).toBe('/money?view=store-balances&state=negative');
+  });
+
+  it('opens a report by its name, and Profit when none is named', () => {
+    expect(financePath('reports')).toBe('/money?view=profit');
+    expect(financePath('reports', { report: 'vat', period: undefined })).toBe('/money?view=vat');
+    expect(financePath('reports', { report: 'funnel', range: '7' })).toBe('/money?view=funnel&range=7');
+  });
+
+  it('adds the view’s own parameters and skips empty ones', () => {
+    expect(financePath('ledger', { account: 'bank', q: '' })).toBe('/money?view=ledger&account=bank');
   });
 });
 
-describe('the tab names', () => {
-  it('calls the wallets tab Store balances, and keeps its address id', () => {
-    const wallets = visibleTabs(['wallet:read'])[0];
-    expect(wallets).toMatchObject({ id: 'wallets', label: 'Store balances' });
-    expect(financePath('wallets', { state: 'negative' })).toBe('/finance?tab=wallets&state=negative');
-  });
-});
-
-describe('resolveTab', () => {
-  const tabs = visibleTabs(['payments:read', 'invoices:read']);
-
-  it('shows the tab in the address when the role may open it', () => {
-    expect(resolveTab('invoices', tabs)).toBe('invoices');
-  });
-
-  it('falls back to the first tab the role may open', () => {
-    expect(resolveTab('ledger', tabs)).toBe('payments');
-    expect(resolveTab(null, tabs)).toBe('payments');
-    expect(resolveTab('nonsense', tabs)).toBe('payments');
-    expect(resolveTab('ledger', [])).toBeUndefined();
-  });
-
-  it('knows a tab id when it sees one', () => {
-    expect(isFinanceTab('reports')).toBe(true);
-    expect(isFinanceTab('withdrawals')).toBe(false);
-    expect(isFinanceTab(null)).toBe(false);
-  });
-});
-
-describe('addresses', () => {
-  it('leaves the default tab out of the address', () => {
-    expect(financePath()).toBe('/finance');
-    expect(financePath('ledger')).toBe('/finance');
-    expect(financePath('payments')).toBe('/finance?tab=payments');
-  });
-
-  it('adds the tab’s own parameters and skips empty ones', () => {
-    expect(financePath('ledger', { account: 'bank', q: '' })).toBe('/finance?account=bank');
-    expect(financePath('reports', { report: 'vat', period: undefined })).toBe(
-      '/finance?tab=reports&report=vat',
-    );
-  });
-
-  it('opens one record', () => {
-    expect(financePaymentPath(1048)).toBe('/finance?tab=payments&status=all&payment=1048');
-    expect(financeJournalPath(25)).toBe('/finance?journal=25');
-    expect(financeInvoicePath(7)).toBe('/finance?tab=invoices&invoice=7');
+describe('the record addresses', () => {
+  it('open one deposit, journal entry or invoice', () => {
+    expect(financePaymentPath(1048)).toBe('/money?view=deposits&status=all&payment=1048');
+    expect(financeJournalPath(25)).toBe('/money?view=ledger&journal=25');
+    expect(financeInvoicePath(7)).toBe('/money?view=invoices&invoice=7');
   });
 });

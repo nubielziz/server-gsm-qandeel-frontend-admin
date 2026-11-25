@@ -1,5 +1,5 @@
-// Refine resources of the app: the pages of the demo's ROUTES (90-app.js), with Product / Services in place of Services & pricing, plus Notifications
-// and System health (no demo page), with the data the sidebar, palette and access checks need, and the registry that serves Refine's data hooks.
+// Refine resources of the app: the pages of the demo's ROUTES (90-app.js), with Product / Services in place of Services & pricing and Money in
+// place of Finance and Refunds & disputes, plus Notifications and System health (no demo page), with the data the sidebar, palette and access checks need, and the registry that serves Refine's data hooks.
 import type { IResourceItem, ResourceProps } from '@refinedev/core';
 import type { IconName } from '@/components/ui';
 import { mergeRegistries } from '@/lib/api';
@@ -70,8 +70,9 @@ export const resources: ResourceProps[] = [
     permission: 'catalog:read',
   }),
   page('suppliers', { label: 'Suppliers', group: 'Catalog', icon: 'server', permission: 'suppliers:read' }),
-  page('finance', { label: 'Finance', group: 'Money', icon: 'wallet', permission: 'ledger:read' }),
-  page('refunds', { label: 'Refunds & disputes', group: 'Money', icon: 'undo', permission: 'refunds:read' }),
+  // One Money page in the place of Finance and Refunds & disputes (decision 026): the ledger, deposits, invoices, reports, refunds and card
+  // disputes are its views. Any one of their read permissions opens it; the money feature's manifest fills the page and widens this.
+  page('money', { label: 'Money', group: 'Money', icon: 'wallet', permission: 'ledger:read' }),
   // The access feature's manifest widens this to any tab's read permission (MISMATCHES M19).
   page('access', { label: 'Admins & access', group: 'System', icon: 'lock', permission: 'staff:read' }),
   page('settings', { label: 'Settings', group: 'System', icon: 'sliders', permission: 'settings:read' }),

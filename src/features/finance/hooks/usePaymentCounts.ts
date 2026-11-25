@@ -1,4 +1,4 @@
-// The numbers on the Deposits sub-tabs and in the header: one count per sub-tab, each the list call with `_start=0&_end=1`
+// The numbers on the Deposits sub-tabs and in the Overview: one count per sub-tab, each the list call with `_start=0&_end=1`
 // read from `x-total-count`, so the server does the counting. Ports the `cnt(...)` figures of paymentsTab (45-p-finance.js).
 import { useQueries } from '@tanstack/react-query';
 import { useApiQuery } from '@/lib/query';
@@ -48,8 +48,8 @@ export function usePaymentCounts(enabled = true, owner: PaymentOwnerFilter = 'al
 }
 
 /**
- * Only the deposits waiting for review: the figure the page header needs on every tab. It shares its key with the
- * Pending count above, so the Deposits tab and the header never ask twice.
+ * Only the deposits waiting for review: the figure the Overview and the page's links need. It shares its key with the
+ * Pending count above, so the Deposits view, the Overview and the page's links never ask twice.
  */
 export function usePendingDeposits(enabled = true) {
   return useApiQuery({

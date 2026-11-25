@@ -1,4 +1,4 @@
-// RefundStrip: the four figures above the tabs (refunded in 30 days, waiting for you, card disputes open, lost to chargebacks).
+// RefundStrip: the four figures of the Money Overview (refunded in 30 days, waiting for you, card disputes open, lost to chargebacks).
 // Ports `refundStrip` of 53-p-refunds.js. The figures are built by `stripCells` from server counts and totals; a figure the
 // staff member may not read is left out.
 import { StatGrid } from '@/components/ui';

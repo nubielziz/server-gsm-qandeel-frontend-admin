@@ -35,7 +35,7 @@ export function getInvoice(id: Id, init?: ApiInit): Promise<Invoice> {
 /**
  * Issues a manual invoice for an account of a merchant rank (`clientId` is its account id). The server checks the amount, adds tax,
  * numbers the invoice and answers the new one; its message (a retail account: 422 on `clientId` with the code `not_merchant`, a
- * merchant without a billing country, an amount out of range) is shown in the dialog.
+ * merchant without a billing country, an amount out of range) is shown in the Issue invoice view.
  * Assumed contract: the body is `{ clientId, amount, description }`.
  * @route POST /admin/invoices
  */

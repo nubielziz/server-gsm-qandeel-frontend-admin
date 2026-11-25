@@ -37,19 +37,45 @@ describe('sidebar counts', () => {
     await waitFor(() => expect(within(link(/^Orders/)).getByText('12')).toBeInTheDocument());
     expect(within(link(/^Orders/)).getByText('12')).toHaveClass('count');
     expect(within(link(/^Orders/)).getByText('3 past SLA')).toHaveClass('sr-only');
-    expect(within(link(/^Finance/)).getByText('2')).toBeInTheDocument();
     expect(within(link(/^Support/)).getByText('7')).toBeInTheDocument();
     expect(within(link(/^Support/)).getByText('2 past the reply target')).toBeInTheDocument();
-    expect(within(link(/^Refunds/)).getByText('5')).toBeInTheDocument();
-    expect(within(link(/^Refunds/)).getByText('1 dispute deadlines within 3 days')).toBeInTheDocument();
+    // One Money count: 2 deposits waiting for review + 5 open refunds, with the dot of the dispute deadlines within 3 days.
+    expect(within(link(/^Money/)).getByText('7')).toBeInTheDocument();
+    expect(within(link(/^Money/)).getByText('1 dispute deadlines within 3 days')).toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: /^Finance/ })).not.toBeInTheDocument();
+    expect(nav.queryByRole('link', { name: /^Refunds/ })).not.toBeInTheDocument();
     expect(within(link(/^Risk/)).getByText('4')).toBeInTheDocument();
-    // Finance and Risk have nothing late: a number and no dot.
-    expect(link(/^Finance/).querySelector('.dot')).toBeNull();
+    // Risk has nothing late: a number and no dot.
     expect(link(/^Risk/).querySelector('.dot')).toBeNull();
     // Pages the dashboard has no count for show none.
     for (const name of [/^Dashboard/, /^Accounts/, /^Settings/, /^Audit log/]) {
       expect(link(name).querySelector('.count')).toBeNull();
     }
+  });
+
+  it('counts in Money only what the role may use: deposits with payments:read, and no dot without disputes:read', async () => {
+    answerDashboard(dashboardFixture());
+    await signInAs();
+    mockMe({ permissions: ['dashboard:read', 'payments:read'] });
+    renderApp('/dashboard');
+    const nav = await primaryNav();
+    // The fixture says 2 deposits waiting, 5 open refunds and 1 dispute due soon: this role sees the 2 only.
+    await waitFor(() =>
+      expect(within(nav.getByRole('link', { name: /^Money/ })).getByText('2')).toBeInTheDocument(),
+    );
+    expect(nav.getByRole('link', { name: /^Money/ }).querySelector('.dot')).toBeNull();
+  });
+
+  it('shows no Money count to a role that may read none of its parts', async () => {
+    answerDashboard(dashboardFixture());
+    await signInAs();
+    mockMe({ permissions: ['dashboard:read', 'orders:read', 'ledger:read'] });
+    renderApp('/dashboard');
+    const nav = await primaryNav();
+    await waitFor(() =>
+      expect(within(nav.getByRole('link', { name: /^Orders/ })).getByText('12')).toBeInTheDocument(),
+    );
+    expect(nav.getByRole('link', { name: /^Money/ }).querySelector('.count')).toBeNull();
   });
 
   it('ignores the count of merchants waiting for approval that an older server still sends', async () => {

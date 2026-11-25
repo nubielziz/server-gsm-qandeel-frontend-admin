@@ -12,7 +12,7 @@ export function WalletExposureReport() {
   const report = useWalletExposure();
   const data = report.data;
   return (
-    <div className="border-t border-line">
+    <div>
       <QueryState
         isLoading={report.isLoading}
         isError={report.isError}

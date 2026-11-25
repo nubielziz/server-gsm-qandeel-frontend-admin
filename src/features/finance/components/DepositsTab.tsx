@@ -1,4 +1,4 @@
-// DepositsTab: the deposit review queue of the Finance page: the Pending / Approved / Rejected / All switch with counts,
+// DepositsTab: the deposit review queue of the Money page's Deposits view: the Pending / Approved / Rejected / All switch with counts,
 // the table, and the review dialog (also opened by `?payment=<id>`). Ports paymentsTab of 45-p-finance.js.
 import { usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';

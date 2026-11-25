@@ -1,12 +1,13 @@
-// Tests for the Invoices tab, run through the whole app against the dev mock API: the list with filters, the drawer, issuing a
-// manual invoice (success, and the server’s refusal under its field) and what the staff member’s permissions allow.
-import { screen, waitFor, within } from '@testing-library/react';
+// Tests for the Invoices view and the Issue invoice view (Books), run through the whole app against the dev mock API: the list with filters
+// and the drawer, issuing a manual invoice as a full view (success opens its drawer, the server’s refusal under its field, the question
+// asked before typing is left behind) and what the staff member’s permissions allow.
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
+import { delay, http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi } from '@/test/renderApp';
-import { openFinance, rowWith, tableNamed } from '../test/financePage';
+import { moneyLink, openFinance, rowWith, tableNamed } from '../test/financePage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -14,7 +15,7 @@ vi.setConfig({ testTimeout: 20_000 });
 describe('the list', () => {
   it('lists the newest invoices first with who they are billed to, their kind, total and status', async () => {
     const user = userEvent.setup();
-    await openFinance('/finance?tab=invoices');
+    await openFinance('/money?view=invoices');
     const table = await tableNamed('Invoices');
     expect(await table.findAllByRole('row')).toHaveLength(26);
     expect(await screen.findByText('71 invoices')).toBeInTheDocument();
@@ -32,7 +33,7 @@ describe('the list', () => {
 
   it('masks the email of a storefront customer on a tax receipt', async () => {
     const user = userEvent.setup();
-    await openFinance('/finance?tab=invoices');
+    await openFinance('/money?view=invoices');
     await user.selectOptions(await screen.findByRole('combobox', { name: 'Filter by kind' }), 'receipt');
     expect(await screen.findByText('12 invoices')).toBeInTheDocument();
     const rows = (await tableNamed('Invoices')).getAllByRole('row');
@@ -42,23 +43,23 @@ describe('the list', () => {
 
   it('filters by status through the server and keeps it in the address', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=invoices');
+    const app = await openFinance('/money?view=invoices');
     await screen.findByText('71 invoices');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by status' }), 'void');
-    expect(app.location()).toBe('/finance?tab=invoices&status=void');
+    expect(app.location()).toBe('/money?view=invoices&status=void');
     expect(await screen.findByText('2 invoices')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(app.location()).toBe('/finance?tab=invoices');
+    expect(app.location()).toBe('/money?view=invoices');
     expect(await screen.findByText('71 invoices')).toBeInTheDocument();
   });
 
   it('searches by number after a pause', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=invoices');
+    const app = await openFinance('/money?view=invoices');
     await screen.findByText('71 invoices');
     const box = screen.getByRole('searchbox', { name: 'Search number or account' });
     await user.type(box, 'Istanbul');
-    await waitFor(() => expect(app.location()).toBe('/finance?tab=invoices&q=Istanbul'));
+    await waitFor(() => expect(app.location()).toBe('/money?view=invoices&q=Istanbul'));
     await waitFor(() => expect(screen.queryByText('71 invoices')).not.toBeInTheDocument());
     const rows = (await tableNamed('Invoices')).getAllByRole('row').slice(1);
     expect(rows.every((row) => row.textContent?.includes('Istanbul GSM Care'))).toBe(true);
@@ -70,7 +71,7 @@ describe('the list', () => {
 
   it('opens an invoice in a drawer with the amounts the server worked out', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=invoices&kind=receipt');
+    const app = await openFinance('/money?view=invoices&kind=receipt');
     const first = (await tableNamed('Invoices')).getAllByRole('row')[1];
     const number = within(first).getAllByRole('button')[0];
     await user.click(number);
@@ -91,14 +92,26 @@ describe('the list', () => {
   });
 
   it('opens an invoice that is not on the page from a link', async () => {
-    await openFinance('/finance?tab=invoices&invoice=1');
+    await openFinance('/money?view=invoices&invoice=1');
     expect(await screen.findByRole('dialog', { name: /^INV-\d{4}-0001$/ })).toBeInTheDocument();
   });
 });
 
-describe('Issue manual invoice', () => {
-  it('bills a merchant: the invoice is created, the toast names it and the list grows', async () => {
-    const user = userEvent.setup();
+describe('the Issue invoice view', () => {
+  const ISSUE = '/money?view=issue-invoice';
+
+  // Opens the view and waits until the merchant menu holds the merchant-rank accounts (slow under a full parallel run).
+  async function openForm(options: { permissions?: string[] } = {}) {
+    const app = await openFinance(ISSUE, options);
+    await screen.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 10_000 });
+    return { app, user: userEvent.setup() };
+  }
+  const merchant = () => screen.getByRole('combobox', { name: 'Merchant' });
+  const amount = () => screen.getByRole('textbox', { name: 'Amount (USD)' });
+  const purpose = () => screen.getByRole('textbox', { name: 'What it is for' });
+  const issueButton = () => screen.getByRole('button', { name: 'Issue invoice' });
+
+  it('bills a merchant: the toast names the invoice and its drawer opens on the Invoices view', async () => {
     let body: unknown;
     mockServer.use(
       http.post('*/admin/invoices', async ({ request }) => {
@@ -106,28 +119,70 @@ describe('Issue manual invoice', () => {
         return undefined;
       }),
     );
-    await openFinance('/finance?tab=invoices');
-    await screen.findByText('71 invoices');
-    await user.click(screen.getByRole('button', { name: 'Issue manual invoice' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    // The merchant list loads after the dialog opens; under a full parallel run it can take a while.
-    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
-    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
-    await user.type(dialog.getByLabelText('Amount (USD)'), '125.5');
-    await user.type(dialog.getByLabelText('What it is for'), 'Setup fee');
-    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
+    const { app, user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '125.5');
+    await user.type(purpose(), 'Setup fee');
+    await user.click(issueButton());
 
     expect(await screen.findByText(/^Invoice INV-\d{4}-0072 issued$/)).toBeInTheDocument();
     expect(screen.getByText('$125.50 billed to Zain Mobile Hub.')).toBeInTheDocument();
     expect(body).toEqual({ clientId: 1, amount: '125.5000', description: 'Setup fee' });
+    // The new invoice opens in its drawer on the Invoices view.
+    expect(await screen.findByRole('dialog', { name: /^INV-\d{4}-0072$/ })).toBeInTheDocument();
+    expect(app.location()).toMatch(/^\/money\?view=invoices&invoice=\d+$/);
     expect(await screen.findByText('72 invoices')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Issue manual invoice' })).not.toBeInTheDocument(),
+  });
+
+  it('sends one request when the form is submitted twice at once (a fast double click, Enter twice)', async () => {
+    let posts = 0;
+    mockServer.use(
+      http.post('*/admin/invoices', async () => {
+        posts += 1;
+        await delay(150);
+        return undefined;
+      }),
     );
+    const { user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '125.5');
+    await user.type(purpose(), 'Setup fee');
+    // Two submit events in the same tick: the form's own checks are asynchronous, so both pass them before the first request is sent.
+    const form = issueButton().closest('form') as HTMLFormElement;
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(await screen.findByText(/^Invoice INV-\d{4}-0072 issued$/)).toBeInTheDocument();
+    expect(posts).toBe(1);
+  });
+
+  it('shows the button busy while the request runs, and sends again after a refusal', async () => {
+    let posts = 0;
+    mockServer.use(
+      http.post('*/admin/invoices', async () => {
+        posts += 1;
+        await delay(100);
+        if (posts > 1) return undefined;
+        return HttpResponse.json(
+          { title: 'Cannot bill', status: 409, code: 'CONFLICT', detail: 'Try again in a moment.' },
+          { status: 409, headers: { 'Content-Type': 'application/problem+json' } },
+        );
+      }),
+    );
+    const { user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '10');
+    await user.type(purpose(), 'Setup fee');
+    await user.click(issueButton());
+    expect(issueButton()).toHaveAttribute('aria-busy', 'true');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Try again in a moment.');
+    // The refusal frees the form: a second press sends a second request.
+    await waitFor(() => expect(issueButton()).toBeEnabled());
+    await user.click(issueButton());
+    expect(await screen.findByText(/^Invoice INV-\d{4}-0072 issued$/)).toBeInTheDocument();
+    expect(posts).toBe(2);
   });
 
   it('offers only the accounts of a merchant rank, asked of the accounts list', async () => {
-    const user = userEvent.setup();
     let asked: URL | undefined;
     mockServer.use(
       http.get('*/admin/clients', ({ request }) => {
@@ -135,18 +190,16 @@ describe('Issue manual invoice', () => {
         return undefined;
       }),
     );
-    await openFinance('/finance?tab=invoices');
-    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
+    await openForm();
     expect(asked?.searchParams.get('rankKind')).toBe('merchant');
-    const names = dialog.getAllByRole('option').map((option) => option.textContent);
+    const names = within(merchant())
+      .getAllByRole('option')
+      .map((option) => option.textContent);
     expect(names).toHaveLength(21); // the prompt and the twenty merchant-rank accounts
     expect(names).not.toContain('Lukas Brandt');
   });
 
-  it('shows the refusal of a retail account under the merchant field', async () => {
-    const user = userEvent.setup();
+  it('shows the refusal of a retail account under the merchant field and stays on the view', async () => {
     mockServer.use(
       http.post('*/admin/invoices', () =>
         HttpResponse.json(
@@ -167,37 +220,30 @@ describe('Issue manual invoice', () => {
         ),
       ),
     );
-    await openFinance('/finance?tab=invoices');
-    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
-    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
-    await user.type(dialog.getByLabelText('Amount (USD)'), '10');
-    await user.type(dialog.getByLabelText('What it is for'), 'Setup fee');
-    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
+    const { app, user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '10');
+    await user.type(purpose(), 'Setup fee');
+    await user.click(issueButton());
     expect(
-      await dialog.findByText('Only an account with a merchant rank can be billed.'),
+      await screen.findByText('Only an account with a merchant rank can be billed.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Issue manual invoice' })).toBeInTheDocument();
+    expect(app.location()).toBe(ISSUE);
   });
 
   it('checks the fields before it asks the server', async () => {
-    const user = userEvent.setup();
-    await openFinance('/finance?tab=invoices');
-    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
-    expect(await dialog.findByText('Choose the merchant to bill.')).toBeInTheDocument();
-    expect(dialog.getByText('Enter an amount, for example 125.50.')).toBeInTheDocument();
-    expect(dialog.getByText('Say what the invoice is for.')).toBeInTheDocument();
+    const { user } = await openForm();
+    await user.click(issueButton());
+    expect(await screen.findByText('Choose the merchant to bill.')).toBeInTheDocument();
+    expect(screen.getByText('Enter an amount, for example 125.50.')).toBeInTheDocument();
+    expect(screen.getByText('Say what the invoice is for.')).toBeInTheDocument();
 
-    await user.type(dialog.getByLabelText('Amount (USD)'), '0');
-    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
-    expect(await dialog.findByText('Enter an amount greater than zero.')).toBeInTheDocument();
+    await user.type(amount(), '0');
+    await user.click(issueButton());
+    expect(await screen.findByText('Enter an amount greater than zero.')).toBeInTheDocument();
   });
 
-  it('shows the server’s refusal under the field it names and keeps the dialog open', async () => {
-    const user = userEvent.setup();
+  it('shows the server’s refusal under the field it names and keeps the typing', async () => {
     mockServer.use(
       http.post('*/admin/invoices', () =>
         HttpResponse.json(
@@ -212,30 +258,67 @@ describe('Issue manual invoice', () => {
         ),
       ),
     );
-    await openFinance('/finance?tab=invoices');
-    await user.click(await screen.findByRole('button', { name: 'Issue manual invoice' }));
-    const dialog = within(await screen.findByRole('dialog', { name: 'Issue manual invoice' }));
-    // The merchant list loads after the dialog opens (slow under a full parallel run): wait for it, as the test above does.
-    await dialog.findByRole('option', { name: 'Zain Mobile Hub' }, { timeout: 5_000 });
-    await user.selectOptions(dialog.getByLabelText('Merchant'), 'Zain Mobile Hub');
-    await user.type(dialog.getByLabelText('Amount (USD)'), '99999999');
-    await user.type(dialog.getByLabelText('What it is for'), 'Too much');
-    await user.click(dialog.getByRole('button', { name: 'Issue invoice' }));
-    expect(await dialog.findByText('The amount is above the invoice limit.')).toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Issue manual invoice' })).toBeInTheDocument();
+    const { app, user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '99999999');
+    await user.type(purpose(), 'Too much');
+    await user.click(issueButton());
+    expect(await screen.findByText('The amount is above the invoice limit.')).toBeInTheDocument();
+    expect(app.location()).toBe(ISSUE);
+    expect(amount()).toHaveValue('99999999');
   });
 
-  it('is disabled, with the missing permission in its title, without invoices:create or clients:read', async () => {
-    await openFinance('/finance?tab=invoices', { permissions: ['invoices:read'] });
-    const button = await screen.findByRole('button', { name: 'Issue manual invoice' });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', 'You need the invoices:create permission');
+  it('shows what the server said beside the button when it names no field', async () => {
+    mockServer.use(
+      http.post('*/admin/invoices', () =>
+        HttpResponse.json(
+          {
+            title: 'Cannot bill',
+            status: 409,
+            code: 'CONFLICT',
+            detail: 'This merchant has no billing country.',
+          },
+          { status: 409, headers: { 'Content-Type': 'application/problem+json' } },
+        ),
+      ),
+    );
+    const { user } = await openForm();
+    await user.selectOptions(merchant(), 'Zain Mobile Hub');
+    await user.type(amount(), '10');
+    await user.type(purpose(), 'Setup fee');
+    await user.click(issueButton());
+    expect(await screen.findByRole('alert')).toHaveTextContent('This merchant has no billing country.');
   });
 
-  it('asks for clients:read too, since the merchant names come from it', async () => {
-    await openFinance('/finance?tab=invoices', { permissions: ['invoices:read', 'invoices:create'] });
-    const button = await screen.findByRole('button', { name: 'Issue manual invoice' });
-    expect(button).toBeDisabled();
-    expect(button).toHaveAttribute('title', 'You need the clients:read permission');
+  it('asks before the view is left with typing in it', async () => {
+    const { app, user } = await openForm();
+    await user.type(amount(), '10');
+    await user.click(await moneyLink('Invoices'));
+    const dialog = within(await screen.findByRole('dialog', { name: 'Discard your unsaved changes?' }));
+    await user.click(dialog.getByRole('button', { name: 'Keep editing' }));
+    expect(app.location()).toBe(ISSUE);
+    await user.click(screen.getByRole('link', { name: 'Invoices' }));
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Discard your unsaved changes?' })).getByRole(
+        'button',
+        {
+          name: 'Discard changes',
+        },
+      ),
+    );
+    await waitFor(() => expect(app.location()).toBe('/money?view=invoices'));
+  });
+
+  it('is not offered without invoices:create or clients:read: the Invoices view shows instead', async () => {
+    await openFinance(ISSUE, { permissions: ['invoices:read', 'invoices:create'] });
+    expect(await screen.findByRole('table', { name: 'Invoices' })).toBeInTheDocument();
+    expect(await moneyLink('Invoices')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Issue invoice/ })).not.toBeInTheDocument();
+  });
+
+  it('is offered, and has no button on the list, for a role that may issue invoices', async () => {
+    await openFinance('/money?view=invoices');
+    expect(await moneyLink(/Issue invoice/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Issue manual invoice/ })).not.toBeInTheDocument();
   });
 });

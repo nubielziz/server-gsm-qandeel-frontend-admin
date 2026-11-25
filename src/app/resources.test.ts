@@ -22,9 +22,10 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
       ['catalog:read', 'pricing:read', 'inventory:read', 'storefront:read'],
     ],
     ['suppliers', 'Suppliers', 'Catalog', 'server', 'suppliers:read'],
+    // One Money page in the place of Finance and Refunds & disputes (decision 026): any one of the read permissions of its views opens it (the money manifest).
     [
-      'finance',
-      'Finance',
+      'money',
+      'Money',
       'Money',
       'wallet',
       [
@@ -35,9 +36,10 @@ const EXPECTED: [name: string, label: string, group: string, icon: string, permi
         'reports:read',
         'reports:finance',
         'reports:growth',
+        'refunds:read',
+        'disputes:read',
       ],
     ],
-    ['refunds', 'Refunds & disputes', 'Money', 'undo', ['refunds:read', 'disputes:read', 'reports:finance']],
     // Any one tab permission opens Admins & access (MISMATCHES M19).
     [
       'access',
@@ -76,6 +78,18 @@ describe('page resources', () => {
     // A `can` check for a resource that does not exist answers yes, so a left-over name would let anyone through.
     expect(resources.some((resource) => resource.name === 'services')).toBe(false);
     expect(resources.some((resource) => resource.name === 'catalog')).toBe(false);
+  });
+
+  it('keep one Money page, alone in the Money group, and no page for Finance or Refunds & disputes', () => {
+    // The old pages' addresses are redirected; a resource left under either name would keep a sidebar entry and let a name-keyed check pass.
+    const names = resources.map((resource) => resource.name);
+    expect(names.filter((name) => name === 'money')).toHaveLength(1);
+    expect(names).not.toContain('finance');
+    expect(names).not.toContain('refunds');
+    const money = resources
+      .filter((resource) => resource.meta?.group === 'Money')
+      .map((resource) => resource.name);
+    expect(money).toEqual(['money']);
   });
 
   it('keep one Accounts page and no page for Merchants or Customers', () => {

@@ -1,5 +1,5 @@
 // The command palette's journal search: type a memo or a journal number and get up to five entries, newest first, each
-// opening its drawer on the Ledger tab. New in the console; the server does the matching (`q` on the ledger list).
+// opening its drawer on the Ledger view. New in the console; the server does the matching (`q` on the ledger list).
 import type { PaletteSource } from '@/app/palette';
 import { listLedgerTransactions } from '../api/ledger';
 import { ledgerKindLabel, journalLabel } from './kinds';

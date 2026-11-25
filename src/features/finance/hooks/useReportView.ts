@@ -1,35 +1,20 @@
-// The Reports tab's open report and its choices (split, range, period), kept in the address
-// (`?tab=reports&report=vat&period=last-quarter`), limited to the reports the staff member may open. New (MISMATCHES M124).
+// The choices inside a report (split, range, period), kept in the address (`?view=vat&period=last-quarter`). Which report is open is
+// the Money page's view, so this hook no longer picks one. New (MISMATCHES M124).
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
-import {
-  parseReportChoices,
-  resolveReport,
-  visibleReports,
-  writeReportChoices,
-  type ReportChoices,
-  type ReportId,
-} from '../lib/reportView';
-import { withParams } from '../lib/url';
+import { parseReportChoices, writeReportChoices, type ReportChoices } from '../lib/reportView';
 
-export function useReportView(permissions: readonly string[]) {
+/**
+ * `choices` are read from the address (anything unknown is the default); `setChoices` writes some of them back and replaces the
+ * history entry, so a change of split or period does not fill the Back button. Every other parameter stays as it is.
+ */
+export function useReportView() {
   const [params, setParams] = useSearchParams();
-  const reports = useMemo(() => visibleReports(permissions), [permissions]);
-  const report = resolveReport(params.get('report'), reports);
   const choices = useMemo(() => parseReportChoices(params), [params]);
-
-  /** Opens a report; the first one the staff member may open is the default and leaves no trace in the address. */
-  const setReport = useCallback(
-    (next: ReportId) =>
-      setParams((prev) => withParams(prev, { report: next === reports[0]?.id ? undefined : next }), {
-        replace: true,
-      }),
-    [reports, setParams],
-  );
   const setChoices = useCallback(
     (patch: Partial<ReportChoices>) =>
       setParams((prev) => writeReportChoices(prev, patch), { replace: true }),
     [setParams],
   );
-  return { report, reports, choices, setReport, setChoices };
+  return { choices, setChoices };
 }

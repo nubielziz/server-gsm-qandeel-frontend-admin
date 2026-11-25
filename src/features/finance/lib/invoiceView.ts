@@ -1,4 +1,4 @@
-// The Invoices tab's search, status and kind filters and sort as address parameters, and how they become API filters. New
+// The Invoices view's search, status and kind filters and sort as address parameters, and how they become API filters. New
 // in the console (MISMATCHES M123). Nothing here decides which invoices match; it only writes and reads the question.
 import type { SortState } from '@/components/ui';
 import type { InvoiceKind, InvoiceStatus } from '../types';

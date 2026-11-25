@@ -30,7 +30,7 @@ function items(pages: PageResource[], overrides: Partial<Parameters<typeof build
 describe('buildPaletteItems', () => {
   it('offers a "Go to" row per permitted page, in the demo’s order, then the actions', () => {
     const rows = items(ALL_PAGES);
-    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(15);
+    expect(rows.filter((row) => row.group === 'Go to')).toHaveLength(14);
     expect(rows.slice(0, 3).map((row) => row.label)).toEqual(['Dashboard', 'Orders', 'Accounts']);
     expect(rows.filter((row) => row.group === 'Actions').map((row) => row.label)).toEqual([
       'Open the risk review queue',
@@ -39,6 +39,20 @@ describe('buildPaletteItems', () => {
       'Review orders that need attention',
       'Review pending deposits',
     ]);
+  });
+
+  it('offers each Money action only to a role that may use its view', () => {
+    const actions = (permissions: string[]) =>
+      items(pagesNamed('money'), { permissions })
+        .filter((row) => row.group === 'Actions')
+        .map((row) => row.label);
+    // The Money page opens for ledger:read, but neither action's view does.
+    expect(actions(['ledger:read'])).not.toContain('Review refund requests');
+    expect(actions(['ledger:read'])).not.toContain('Review pending deposits');
+    expect(actions(['refunds:read'])).toContain('Review refund requests');
+    expect(actions(['refunds:read'])).not.toContain('Review pending deposits');
+    expect(actions(['payments:read'])).toContain('Review pending deposits');
+    expect(actions(['payments:read'])).not.toContain('Review refund requests');
   });
 
   it('offers Product / Services and Shop content, not the old page names', () => {
@@ -72,6 +86,29 @@ describe('buildPaletteItems', () => {
     expect(go).toHaveBeenCalledExactlyOnceWith('/accounts');
   });
 
+  it('offers one Money row in the place of Finance and Refunds & disputes, which opens the Money page', () => {
+    const goTo = items(ALL_PAGES)
+      .filter((row) => row.group === 'Go to')
+      .map((row) => row.label);
+    expect(goTo.filter((label) => label === 'Money')).toHaveLength(1);
+    expect(goTo).not.toContain('Finance');
+    expect(goTo).not.toContain('Refunds & disputes');
+    const go = vi.fn();
+    items(pagesNamed('money'), { go })
+      .find((row) => row.label === 'Money')
+      ?.run();
+    expect(go).toHaveBeenCalledExactlyOnceWith('/money');
+  });
+
+  it('offers the two money actions with the Money page, and with no other page', () => {
+    expect(items(pagesNamed('money')).map((row) => row.label)).toEqual([
+      'Money',
+      'Review refund requests',
+      'Toggle dark mode',
+      'Review pending deposits',
+    ]);
+  });
+
   it('leaves out the demo’s simulations', () => {
     expect(items(ALL_PAGES).some((row) => /simulate/i.test(row.label))).toBe(false);
   });
@@ -94,13 +131,13 @@ describe('buildPaletteItems', () => {
     run('Review refund requests');
     run('Review orders that need attention');
     run('Review pending deposits');
-    run('Finance');
+    run('Money');
     expect(go.mock.calls.map(([path]) => path)).toEqual([
       '/risk?tab=queue',
-      '/refunds?tab=refunds&status=requested',
+      '/money?view=refunds&status=requested',
       '/orders?tab=review',
-      '/finance?tab=payments',
-      '/finance',
+      '/money?view=deposits',
+      '/money',
     ]);
   });
 
@@ -344,7 +381,7 @@ describe('AppCommandPalette', () => {
   it('shows at most 14 rows, like the demo', async () => {
     renderPalette([]);
     await screen.findByRole('combobox');
-    // 15 pages and 5 actions are available; the list stops at 14.
+    // 14 pages and 5 actions are available; the list stops at 14.
     await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(14));
   });
 });

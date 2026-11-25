@@ -1,7 +1,9 @@
 // IntegrityChecks: the panel beside the trial balance: do debits equal credits, and what reconciliation checks. Ports the
 // "Integrity checks" list of accountsTab in 45-p-finance.js. The demo worked out three checks in the browser; the first stays
-// (a comparison of the server's two totals) and the other two are the server's reconciliation, run from the page header.
+// (a comparison of the server's two totals) and the other two are the server's reconciliation, run from the Money page's Overview.
+import { Link } from 'react-router';
 import { Icon } from '@/components/ui';
+import { moneyPath } from '@/features/money';
 import { money } from '@/lib/format';
 import { booksBalance } from '../lib/accounts';
 import type { TrialBalance } from '../types';
@@ -32,8 +34,11 @@ export function IntegrityChecks({ trial }: { trial: Pick<TrialBalance, 'totalDeb
           <div className="min-w-0">
             <p className="text-sm font-medium">Accounts match their entries</p>
             <p className="text-xs text-ink3">
-              Run reconciliation (top right) compares every account with the entries behind it and lists any
-              difference.
+              Run reconciliation on the{' '}
+              <Link className="link" to={moneyPath()}>
+                Overview
+              </Link>{' '}
+              compares every account with the entries behind it and lists any difference.
             </p>
           </div>
         </li>

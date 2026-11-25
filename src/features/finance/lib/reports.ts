@@ -1,4 +1,4 @@
-// The Reports tab's choices and how they become dates and chart rows: the profit split and range, the VAT period, day and
+// The report views' choices and how they become dates and chart rows: the profit split and range, the VAT period, day and
 // month labels, country names. New in the console (MISMATCHES M124). Nothing here adds money up: the server sends the figures.
 import type { SeriesDef, StackedRow } from '@/components/charts';
 import { toAmount } from '@/lib/format';

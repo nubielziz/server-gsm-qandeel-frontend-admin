@@ -1,5 +1,5 @@
 // InvoicesPart: the "Invoices" part of the record, a list: the invoices of one account, newest first, with the number linking to the invoice
-// in Finance, its kind, its status as a square with a word, the total and the day. The page and its size are the part's own state; the footer
+// in Money, its kind, its status as a square with a word, the total and the day. The page and its size are the part's own state; the footer
 // pager is pinned. Every figure and word is the server's; the console only formats.
 import { useState } from 'react';
 import { Link } from 'react-router';

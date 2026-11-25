@@ -9,7 +9,7 @@ export interface TrialBalanceTableProps {
   /** The server's totals; the two are equal when the books balance. */
   totalDebit: string;
   totalCredit: string;
-  /** Opens the Ledger tab on one account kind. */
+  /** Opens the Ledger view on one account kind. */
   onEntries: (kind: string) => void;
 }
 

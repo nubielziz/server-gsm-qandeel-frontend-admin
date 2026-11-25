@@ -1,4 +1,4 @@
-// Tests for the refund decisions on the Refunds tab, run through the whole app against the dev mock API: approve in full and
+// Tests for the refund decisions on the Refunds view (Money back), run through the whole app against the dev mock API: approve in full and
 // in part, what the server refuses (shown in the dialog), decline with its message, retry, and the toast that opens the order.
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -8,7 +8,7 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { approveRefund, getRefund } from '../api';
-import { dialogNamed, openRefunds, rowWith, sectionTabs, tableNamed } from '../test/refundsPage';
+import { REFUNDS_VIEW, dialogNamed, openRefunds, rowWith, tableNamed } from '../test/refundsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -39,7 +39,7 @@ describe('approve', () => {
     expect(dialog.queryByText(/of VAT/)).not.toBeInTheDocument();
   });
 
-  it('refunds the amount on the request, says so in a toast and updates the row, the chip and the strip', async () => {
+  it('refunds the amount on the request, says so in a toast and updates the row and the count on the Refunds link', async () => {
     const user = userEvent.setup();
     await openRefunds();
     const dialog = await openApprove(user, 'RF-1008');
@@ -58,9 +58,8 @@ describe('approve', () => {
       expect(row.getByText('Rami K.')).toBeInTheDocument();
       expect(row.queryByRole('button', { name: 'Approve…' })).not.toBeInTheDocument();
     });
-    await waitFor(() =>
-      expect(sectionTabs().getByRole('tab', { name: /^Refunds/ })).toHaveTextContent('Refunds3'),
-    );
+    // The page's link counts the refunds that wait (requested and failed): 4 before the approval, 3 after it.
+    expect(await screen.findByRole('link', { name: 'Refunds (3)' })).toBeInTheDocument();
   });
 
   it('refunds only a part when the amount is lowered', async () => {
@@ -179,13 +178,13 @@ describe('approve', () => {
     const dialog = await openApprove(user, 'RF-1008');
     await user.click(dialog.getByRole('button', { name: 'Refund now' }));
     await user.click(await screen.findByRole('button', { name: 'Show entries' }));
-    expect(app.location()).toBe('/refunds?order=20478');
+    expect(app.location()).toBe('/money?view=refunds&order=20478');
     expect(await dialogNamed('SF-20478')).toBeTruthy();
   });
 
   it('leaves out Show entries for a staff member who cannot read the ledger', async () => {
     const user = userEvent.setup();
-    await openRefunds('/refunds', {
+    await openRefunds(REFUNDS_VIEW, {
       permissions: ['refunds:read', 'refunds:approve', 'orders:read'],
     });
     const dialog = await openApprove(user, 'RF-1008');

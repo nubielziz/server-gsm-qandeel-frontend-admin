@@ -1,7 +1,10 @@
 // The words and the button of each "Needs attention" row. The server sends facts (a kind and its numbers) and decides which
 // rows exist, how severe they are and their order; this file writes the demo's sentence for each kind and picks where its
 // button goes. Ports the `title`, `meta`, `cta` and `go` of attention() and attentionB2C() in 11-state.js and 12-state-b2c.js.
+import { financePath } from '@/features/finance';
+import type { MoneyViewId } from '@/features/money';
 import { ordersListPath } from '@/features/orders';
+import { refundsPath } from '@/features/refunds';
 import { productsPath } from '@/features/services';
 import { ageText, ago, money, money0, pct } from '@/lib/format';
 import type { AttentionItem, DashboardScope } from '../types';
@@ -31,6 +34,13 @@ export const UNKNOWN_ATTENTION: AttentionView = { title: 'Needs attention', meta
 const some = (count: number, one: string, many: string): string => `${count} ${count === 1 ? one : many}`;
 
 const go = (label: string, page: string, to: string): AttentionAction => ({ label, page, to });
+// A button into one view of the Money page: it is shown only to staff who may use that view, not just the page.
+const goMoney = (label: string, view: MoneyViewId, to: string): AttentionAction => ({
+  label,
+  page: 'money',
+  to,
+  view,
+});
 const goTo = (label: string, target: PageTarget): AttentionAction => ({ label, ...target });
 
 // "Supplier returned X" reads better mid-sentence as "supplier returned X".
@@ -89,7 +99,7 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
       return {
         title: `${some(item.count, 'deposit is', 'deposits are')} waiting for review`,
         meta: `${money0(item.total)} total, oldest ${ago(item.oldestAt, now)}`,
-        action: go('Review deposits', 'finance', '/finance?tab=payments'),
+        action: goMoney('Review deposits', 'deposits', financePath('payments')),
       };
     case 'wallets_negative':
       return {
@@ -109,7 +119,7 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
       return {
         title: `${some(item.count, 'card dispute needs', 'card disputes need')} evidence`,
         meta: `DP-${item.firstDisputeId} ${dueText(item.dueAt, now)}. Missing the date loses the dispute and ${money(item.amount)} plus a ${money0(item.fee)} fee`,
-        action: go('Open disputes', 'refunds', '/refunds?tab=disputes'),
+        action: goMoney('Open disputes', 'disputes', refundsPath({ tab: 'disputes' })),
       };
     case 'tickets_late':
       return {
@@ -121,13 +131,13 @@ export function describeAttention(item: AttentionItem, { now, scope }: Attention
       return {
         title: `${some(item.count, 'refund request needs', 'refund requests need')} a decision`,
         meta: `${money(item.total)} if all are approved`,
-        action: go('Review', 'refunds', '/refunds?tab=refunds&status=requested'),
+        action: goMoney('Review', 'refunds', refundsPath({ tab: 'refunds', status: 'requested' })),
       };
     case 'refunds_failed':
       return {
         title: `${some(item.count, 'refund failed', 'refunds failed')} at the gateway`,
         meta: `RF-${item.firstRefundId}: ${item.reason}`,
-        action: go('Retry', 'refunds', '/refunds?tab=refunds&status=failed'),
+        action: goMoney('Retry', 'refunds', refundsPath({ tab: 'refunds', status: 'failed' })),
       };
     case 'fx_stale':
       return {

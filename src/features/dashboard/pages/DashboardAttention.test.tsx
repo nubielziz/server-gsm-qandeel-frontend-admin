@@ -15,6 +15,15 @@ vi.setConfig({ testTimeout: 20_000 });
 // Gives the access checks (one small query per button) time to answer before a test asserts that a button is absent.
 const settle = () => act(() => new Promise<void>((resolve) => setTimeout(resolve, 150)));
 
+// The four Money buttons: each opens one view of the page, and the page opens for many permissions.
+const MONEY_ITEMS = ['deposits_pending', 'disputes_due', 'refunds_requested', 'refunds_failed'].map(
+  (kind) => {
+    const found = ATTENTION_SAMPLES.find((item) => item.kind === kind);
+    if (!found) throw new Error(`No sample for ${kind}`);
+    return found;
+  },
+);
+
 describe('needs attention', () => {
   it('shows the first six items, most urgent first, with their severity, words and buttons', async () => {
     answerDashboard(dashboardFixture({ attention: ATTENTION_SAMPLES }));
@@ -151,5 +160,49 @@ describe('needs attention', () => {
     await settle();
     expect(panel.queryByRole('link')).not.toBeInTheDocument();
     expect(panel.getByText('3 orders are past SLA')).toBeInTheDocument();
+  });
+
+  it('offers a Money button only when the staff member may use the view it opens, not just the page', async () => {
+    // refunds:read opens the Money page, but not its Deposits or Card disputes views.
+    answerDashboard(dashboardFixture({ attention: MONEY_ITEMS }));
+    await openDashboard('/dashboard', { permissions: ['dashboard:read', 'refunds:read'] });
+    const panel = await panelOf('Needs attention');
+    const rows = await panel.findAllByRole('listitem');
+    expect(rows).toHaveLength(4);
+    // The positive control: the refund buttons appear...
+    expect(await within(rows[2]).findByRole('link', { name: 'Review' })).toHaveAttribute(
+      'href',
+      '/money?view=refunds&status=requested',
+    );
+    expect(await within(rows[3]).findByRole('link', { name: 'Retry' })).toHaveAttribute(
+      'href',
+      '/money?view=refunds&status=failed',
+    );
+    // ...and the other two do not, though their rows are there.
+    await settle();
+    expect(within(rows[0]).getByText('2 deposits are waiting for review')).toBeInTheDocument();
+    expect(within(rows[0]).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(rows[1]).getByText('2 card disputes need evidence')).toBeInTheDocument();
+    expect(within(rows[1]).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('offers Review deposits with payments:read and Open disputes with disputes:read, and no refund button', async () => {
+    answerDashboard(dashboardFixture({ attention: MONEY_ITEMS }));
+    await openDashboard('/dashboard', {
+      permissions: ['dashboard:read', 'payments:read', 'disputes:read'],
+    });
+    const panel = await panelOf('Needs attention');
+    const rows = await panel.findAllByRole('listitem');
+    expect(await within(rows[0]).findByRole('link', { name: 'Review deposits' })).toHaveAttribute(
+      'href',
+      '/money?view=deposits',
+    );
+    expect(await within(rows[1]).findByRole('link', { name: 'Open disputes' })).toHaveAttribute(
+      'href',
+      '/money?view=disputes',
+    );
+    await settle();
+    expect(within(rows[2]).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(rows[3]).queryByRole('link')).not.toBeInTheDocument();
   });
 });

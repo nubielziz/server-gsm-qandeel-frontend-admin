@@ -1,6 +1,6 @@
-// RefundsTab: the "Refunds" tab. Ports tabRefunds and the rf-status / rf-retry / rf-approve / rf-decline actions of
-// 53-p-refunds.js: the status filter, the table of refunds, and the approve and decline dialogs. Status, page and sort live in
-// the address; the server filters, sorts and counts.
+// RefundsTab: the content of the Refunds view (Money back). Ports tabRefunds and the rf-status / rf-retry / rf-approve / rf-decline
+// actions of 53-p-refunds.js: the status filter, the table of refunds, and the approve and decline dialogs. Status, page and sort
+// live in the address; the server filters, sorts and counts.
 import { useState } from 'react';
 import { Button, EmptyState, Panel, SegmentedControl, usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';

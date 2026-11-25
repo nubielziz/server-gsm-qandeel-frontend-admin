@@ -1,5 +1,5 @@
 // DisputesTable: the card disputes table (dispute and order, customer, reason, amount at stake, evidence due, status, action).
-// Ports the `cols` of tabDisputes in 53-p-refunds.js. It only draws what it is given: the tab owns the data, the sort and the page.
+// Ports the `cols` of tabDisputes in 53-p-refunds.js. It only draws what it is given: the view owns the data, the sort and the page.
 import type { ReactNode } from 'react';
 import {
   Button,

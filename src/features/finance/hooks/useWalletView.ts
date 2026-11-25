@@ -1,4 +1,4 @@
-// The Store balances tab's search, state filter, page and sort, kept in the address (`?tab=wallets&state=negative&q=…`). Changes
+// The Store balances view's search, state filter, page and sort, kept in the address (`?view=store-balances&state=negative&q=…`). Changes
 // replace the history entry, as on the other lists (feature 21).
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';

@@ -1,5 +1,5 @@
-// "Issue manual invoice": bills an account of a merchant rank for an amount. The dialog shows a failed call itself (under the field the server
-// named, or in its error slot), so this toasts only the success.
+// "Issue manual invoice": bills an account of a merchant rank for an amount. The Issue invoice view shows a failed call itself (under the field the server
+// named, or beside its button), so this toasts only the success.
 import { useApiMutation } from '@/lib/query';
 import { money } from '@/lib/format';
 import { createInvoice } from '../api';

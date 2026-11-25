@@ -64,5 +64,5 @@ export type InvoiceFilters = {
  */
 export type CreateInvoiceBody = { clientId: Id; amount: Money; description: string };
 
-/** The merchant-rank accounts the issue dialog offers (a private lookup on the accounts list). */
+/** The merchant-rank accounts the Issue invoice view offers (a private lookup on the accounts list). */
 export type MerchantOption = { id: Id; name: string };

@@ -1,8 +1,9 @@
 // Tests for the old addresses and where they go: one row per case of the table (the Catalog page, Services & pricing, the Storefront tabs
-// that moved to Product / Services, the Shop content addresses that must stay, the retired Commissions and Abandoned checkouts pages, and
-// the Merchants and Customers pages that became Accounts: one row per line of the redirect table), plus the checks that the answers are
-// addresses the page knows (`productsPath` writes them, its views, parts and tabs are the ones named; `financePath` writes the funnel
-// report's; `accountPath`, `accountsListPath`, `legacyAccountPath` and `ranksPath` write the Accounts ones).
+// that moved to Product / Services, the Shop content addresses that must stay, the retired Commissions and Abandoned checkouts pages, the
+// Merchants and Customers pages that became Accounts, and the Finance and Refunds & disputes pages that became Money: one row per line of
+// the redirect table), plus the checks that the answers are addresses the page knows (`productsPath` writes them, its views, parts and tabs
+// are the ones named; `financePath`, `refundsPath` and `moneyPath` write the Money ones; `accountPath`, `accountsListPath`,
+// `legacyAccountPath` and `ranksPath` write the Accounts ones).
 import { describe, expect, it } from 'vitest';
 import {
   ACCOUNT_TABS,
@@ -11,7 +12,9 @@ import {
   legacyAccountPath,
   ranksPath,
 } from '@/features/accounts';
-import { financePath } from '@/features/finance';
+import { financeInvoicePath, financeJournalPath, financePath, financePaymentPath } from '@/features/finance';
+import { MONEY_VIEWS, moneyPath } from '@/features/money';
+import { refundsPath } from '@/features/refunds';
 import { PRODUCTS_VIEWS, productsPath, RULES_TABS, SERVICE_PARTS } from '@/features/services';
 import { legacyTarget } from './legacyRedirects';
 
@@ -412,54 +415,179 @@ const STOREFRONT_STAYS: Case[] = [
   ['an empty tab with a page type and no list key', '/storefront', '?tab=&kind=carrier', null],
 ];
 
-// The Commissions page is gone; every old address of it, with any tab or filter it had, leads to Finance and carries nothing.
+// The Commissions page is gone; every old address of it, with any tab or filter it had, leads to the ledger of Money and carries nothing.
 const COMMISSIONS: Case[] = [
-  ['the bare Commissions page', '/commissions', '', '/finance'],
-  ['an empty query', '/commissions', '?', '/finance'],
-  ['a trailing slash', '/commissions/', '', '/finance'],
-  ['another letter case', '/Commissions', '', '/finance'],
-  ['the Accruals tab with its status filter', '/commissions', '?tab=accruals&status=accrued', '/finance'],
-  ['the Agents tab', '/commissions', '?tab=agents', '/finance'],
-  ['the Plans tab', '/commissions', '?tab=plans', '/finance'],
+  ['the bare Commissions page', '/commissions', '', '/money?view=ledger'],
+  ['an empty query', '/commissions', '?', '/money?view=ledger'],
+  ['a trailing slash', '/commissions/', '', '/money?view=ledger'],
+  ['another letter case', '/Commissions', '', '/money?view=ledger'],
+  [
+    'the Accruals tab with its status filter',
+    '/commissions',
+    '?tab=accruals&status=accrued',
+    '/money?view=ledger',
+  ],
+  ['the Agents tab', '/commissions', '?tab=agents', '/money?view=ledger'],
+  ['the Plans tab', '/commissions', '?tab=plans', '/money?view=ledger'],
   [
     'one agent’s ready accruals',
     '/commissions',
     '?agent=3&status=accrued&page=2&sort=amount&dir=desc',
-    '/finance',
+    '/money?view=ledger',
   ],
 ];
 
 const CHECKOUTS: Case[] = [
-  ['the bare Abandoned checkouts page', '/checkouts', '', '/finance?tab=reports&report=funnel'],
-  ['an empty query', '/checkouts', '?', '/finance?tab=reports&report=funnel'],
-  ['a trailing slash', '/checkouts/', '', '/finance?tab=reports&report=funnel'],
-  ['another letter case', '/Checkouts', '', '/finance?tab=reports&report=funnel'],
+  ['the bare Abandoned checkouts page', '/checkouts', '', '/money?view=funnel'],
+  ['an empty query', '/checkouts', '?', '/money?view=funnel'],
+  ['a trailing slash', '/checkouts/', '', '/money?view=funnel'],
+  ['another letter case', '/Checkouts', '', '/money?view=funnel'],
   [
     'the list’s filter, search, page and sort are dropped',
     '/checkouts',
     '?filter=all&q=sam&page=2&sort=grossAmount&dir=desc',
-    '/finance?tab=reports&report=funnel',
+    '/money?view=funnel',
   ],
-  ['the funnel period of 90 days', '/checkouts', '?days=90', '/finance?tab=reports&report=funnel&range=90'],
-  ['the funnel period of 7 days', '/checkouts', '?days=7', '/finance?tab=reports&report=funnel&range=7'],
-  [
-    'the default period of 30 days leaves no trace',
-    '/checkouts',
-    '?days=30',
-    '/finance?tab=reports&report=funnel',
-  ],
-  [
-    'a period the report does not offer is dropped',
-    '/checkouts',
-    '?days=5',
-    '/finance?tab=reports&report=funnel',
-  ],
+  ['the funnel period of 90 days', '/checkouts', '?days=90', '/money?view=funnel&range=90'],
+  ['the funnel period of 7 days', '/checkouts', '?days=7', '/money?view=funnel&range=7'],
+  ['the default period of 30 days leaves no trace', '/checkouts', '?days=30', '/money?view=funnel'],
+  ['a period the report does not offer is dropped', '/checkouts', '?days=5', '/money?view=funnel'],
   [
     'the period is kept and the list’s keys are not',
     '/checkouts',
     '?filter=all&days=90&q=x',
-    '/finance?tab=reports&report=funnel&range=90',
+    '/money?view=funnel&range=90',
   ],
+];
+
+// ---- Finance and Refunds & disputes, which are one Money page (decision 026) ----
+
+// `/finance`: the tab (and a report's `report`) is the view; every other key is carried in its order, because each view reads the keys its
+// old tab read.
+const FINANCE: Case[] = [
+  ['the bare Finance page is the ledger, its first tab', '/finance', '', '/money?view=ledger'],
+  ['an empty query', '/finance', '?', '/money?view=ledger'],
+  ['a trailing slash', '/finance/', '', '/money?view=ledger'],
+  ['another letter case', '/Finance', '', '/money?view=ledger'],
+  ['the Ledger tab by name', '/finance', '?tab=ledger', '/money?view=ledger'],
+  [
+    'the ledger’s search and kind',
+    '/finance',
+    '?q=hold&kind=order_hold',
+    '/money?view=ledger&q=hold&kind=order_hold',
+  ],
+  ['the ledger filtered to an account kind', '/finance', '?account=bank', '/money?view=ledger&account=bank'],
+  ['an open journal entry', '/finance', '?journal=25', '/money?view=ledger&journal=25'],
+  [
+    'the ledger’s page and sort',
+    '/finance',
+    '?page=2&sort=id&dir=asc',
+    '/money?view=ledger&page=2&sort=id&dir=asc',
+  ],
+  ['the Deposits tab', '/finance', '?tab=payments', '/money?view=deposits'],
+  [
+    'the Deposits tab’s status filter',
+    '/finance',
+    '?tab=payments&status=pending',
+    '/money?view=deposits&status=pending',
+  ],
+  [
+    'the Deposits tab with the owner and an open deposit',
+    '/finance',
+    '?tab=payments&status=all&owner=customer&payment=1048',
+    '/money?view=deposits&status=all&owner=customer&payment=1048',
+  ],
+  ['the Trial balance tab', '/finance', '?tab=accounts', '/money?view=trial-balance'],
+  ['the Store balances tab', '/finance', '?tab=wallets', '/money?view=store-balances'],
+  [
+    'the Store balances tab’s state',
+    '/finance',
+    '?tab=wallets&state=negative',
+    '/money?view=store-balances&state=negative',
+  ],
+  ['the Invoices tab', '/finance', '?tab=invoices', '/money?view=invoices'],
+  [
+    'the Invoices tab with a filter and an open invoice',
+    '/finance',
+    '?tab=invoices&status=void&invoice=7',
+    '/money?view=invoices&status=void&invoice=7',
+  ],
+  ['the Reports tab is the Profit report, its first', '/finance', '?tab=reports', '/money?view=profit'],
+  [
+    'the Profit report with its range and grouping',
+    '/finance',
+    '?tab=reports&report=profit&by=client&range=7',
+    '/money?view=profit&by=client&range=7',
+  ],
+  ['the Wallet exposure report', '/finance', '?tab=reports&report=exposure', '/money?view=exposure'],
+  [
+    'the VAT report with its period',
+    '/finance',
+    '?tab=reports&report=vat&period=last-quarter',
+    '/money?view=vat&period=last-quarter',
+  ],
+  [
+    'the Sales funnel report with its range',
+    '/finance',
+    '?tab=reports&report=funnel&range=90',
+    '/money?view=funnel&range=90',
+  ],
+  [
+    'a report that does not exist is the first report',
+    '/finance',
+    '?tab=reports&report=nothing',
+    '/money?view=profit',
+  ],
+  ['a tab that does not exist is the ledger', '/finance', '?tab=nothing', '/money?view=ledger'],
+  [
+    'a report key on a tab that has no reports is dropped',
+    '/finance',
+    '?tab=payments&report=vat',
+    '/money?view=deposits',
+  ],
+];
+
+// `/refunds`: the tab is the view (Refunds, Card disputes, and the Payments tab is Shop payments); status, method, page, sort and an open
+// order are carried.
+const REFUNDS: Case[] = [
+  ['the bare Refunds page is the Refunds view', '/refunds', '', '/money?view=refunds'],
+  ['an empty query', '/refunds', '?', '/money?view=refunds'],
+  ['a trailing slash', '/refunds/', '', '/money?view=refunds'],
+  ['another letter case', '/Refunds', '', '/money?view=refunds'],
+  ['the Refunds tab by name', '/refunds', '?tab=refunds', '/money?view=refunds'],
+  [
+    'the Refunds tab’s status, from the dashboard and the palette',
+    '/refunds',
+    '?tab=refunds&status=requested',
+    '/money?view=refunds&status=requested',
+  ],
+  [
+    'the Refunds tab’s status and page',
+    '/refunds',
+    '?tab=refunds&status=failed&page=2',
+    '/money?view=refunds&status=failed&page=2',
+  ],
+  [
+    'a status with no tab, and an open order',
+    '/refunds',
+    '?status=requested&order=20467',
+    '/money?view=refunds&status=requested&order=20467',
+  ],
+  ['the Card disputes tab', '/refunds', '?tab=disputes', '/money?view=disputes'],
+  [
+    'the Card disputes tab’s sort',
+    '/refunds',
+    '?tab=disputes&sort=evidenceDueAt&dir=desc',
+    '/money?view=disputes&sort=evidenceDueAt&dir=desc',
+  ],
+  ['the Payments tab is Shop payments', '/refunds', '?tab=payments', '/money?view=shop-payments'],
+  [
+    'the Payments tab’s method and page',
+    '/refunds',
+    '?tab=payments&method=card&page=3',
+    '/money?view=shop-payments&method=card&page=3',
+  ],
+  ['a tab that does not exist is the Refunds view', '/refunds', '?tab=nothing', '/money?view=refunds'],
 ];
 
 // ---- Merchants and Customers, which are one Accounts page ----
@@ -694,16 +822,22 @@ const NOT_OLD: Case[] = [
   ['an address below the old Catalog page', '/catalog/5', '?open=7', null],
   ['an address below the old checkouts page', '/checkouts/5', '', null],
   ['an address that only starts with the old checkouts name', '/checkouts-old', '', null],
-  ['Finance itself', '/finance', '?tab=reports&report=funnel', null],
+  ['the Money page itself, with a view', '/money', '?view=vat&period=last-quarter', null],
   ['an address that only starts with the old name', '/services-old', '', null],
   ['an address that only starts with the Catalog name', '/catalogue', '', null],
   ['a Shop content address below the page', '/storefront/5', '?tab=publish', null],
   ['an address below the retired Commissions page', '/commissions/5', '', null],
   ['an address that only starts with the retired name', '/commissions-old', '', null],
-  ['Finance itself', '/finance', '?tab=payments', null],
+  ['the Money overview, which is the page itself', '/money', '', null],
+  ['an address below the old Finance page', '/finance/5', '?tab=payments', null],
+  ['an address that only starts with the old Finance name', '/finance-old', '', null],
+  ['an address below the old Refunds page', '/refunds/5', '', null],
+  ['an address that only starts with the old Refunds name', '/refundsx', '', null],
 ];
 
 const ACCOUNTS_MOVED = [...MERCHANTS_LIST, ...MERCHANT_RECORDS, ...CUSTOMERS_LIST, ...CUSTOMER_RECORDS];
+
+const MONEY_MOVED = [...FINANCE, ...REFUNDS, ...COMMISSIONS, ...CHECKOUTS];
 
 const MOVED = [
   ...SERVICES,
@@ -724,9 +858,11 @@ describe('legacyTarget', () => {
     ['the Catalog settings', CATALOG_SETTINGS],
     ['the Catalog publish view', CATALOG_PUBLISH],
     ['the Storefront tabs that moved to Product / Services', STOREFRONT_MOVED],
-    ['the Abandoned checkouts page, which is the funnel report now', CHECKOUTS],
+    ['the Abandoned checkouts page, which is the Sales funnel view of Money now', CHECKOUTS],
     ['the Shop content addresses that stay', STOREFRONT_STAYS],
-    ['the retired Commissions page', COMMISSIONS],
+    ['the retired Commissions page, which is the ledger of Money now', COMMISSIONS],
+    ['the Finance page, which is the Money page now', FINANCE],
+    ['the Refunds & disputes page, which is the Money page now', REFUNDS],
     ['the Merchants list, which is the Merchants chip of Accounts', MERCHANTS_LIST],
     ['one merchant, whose number is the account number', MERCHANT_RECORDS],
     ['the Customers list, which is the Retail chip of Accounts', CUSTOMERS_LIST],
@@ -759,7 +895,9 @@ describe('legacyTarget', () => {
     expect(legacyTarget('/services')).toBe('/products?view=all');
     expect(legacyTarget('/catalog')).toBe('/products?view=all');
     expect(legacyTarget('/storefront')).toBeNull();
-    expect(legacyTarget('/commissions')).toBe('/finance');
+    expect(legacyTarget('/commissions')).toBe('/money?view=ledger');
+    expect(legacyTarget('/finance')).toBe('/money?view=ledger');
+    expect(legacyTarget('/refunds')).toBe('/money?view=refunds');
   });
 
   it('answers with the same addresses as productsPath (the order of the keys aside)', () => {
@@ -816,7 +954,7 @@ describe('legacyTarget', () => {
     }
   });
 
-  it('builds the same funnel addresses as financePath', () => {
+  it('builds the same funnel addresses as financePath and moneyPath', () => {
     expect(legacyTarget('/checkouts')).toBe(financePath('reports', { report: 'funnel' }));
     expect(legacyTarget('/checkouts', '?days=90')).toBe(
       financePath('reports', { report: 'funnel', range: 90 }),
@@ -824,6 +962,43 @@ describe('legacyTarget', () => {
     expect(legacyTarget('/checkouts', '?days=7')).toBe(
       financePath('reports', { report: 'funnel', range: 7 }),
     );
+    expect(legacyTarget('/checkouts', '?days=90')).toBe(moneyPath('funnel', { range: 90 }));
+    expect(legacyTarget('/commissions')).toBe(moneyPath('ledger'));
+  });
+
+  it('answers the Finance and Refunds addresses with the same addresses as the builders the other pages link with', () => {
+    // The keys are written by `moneyPath` in the order the old address had them, so the rows below use the same order.
+    expect(legacyTarget('/finance')).toBe(financePath());
+    expect(legacyTarget('/finance', '?tab=payments&status=pending')).toBe(
+      financePath('payments', { status: 'pending' }),
+    );
+    expect(legacyTarget('/finance', '?tab=payments&status=all&payment=1048')).toBe(financePaymentPath(1048));
+    expect(legacyTarget('/finance', '?journal=25')).toBe(financeJournalPath(25));
+    expect(legacyTarget('/finance', '?tab=invoices&invoice=7')).toBe(financeInvoicePath(7));
+    expect(legacyTarget('/finance', '?tab=reports&report=vat&period=last-quarter')).toBe(
+      financePath('reports', { report: 'vat', period: 'last-quarter' }),
+    );
+    expect(legacyTarget('/refunds')).toBe(refundsPath());
+    expect(legacyTarget('/refunds', '?tab=disputes')).toBe(refundsPath({ tab: 'disputes' }));
+    expect(legacyTarget('/refunds', '?tab=refunds&status=requested')).toBe(
+      refundsPath({ tab: 'refunds', status: 'requested' }),
+    );
+    expect(legacyTarget('/refunds', '?tab=payments&method=card')).toBe(
+      refundsPath({ tab: 'payments', method: 'card' }),
+    );
+  });
+
+  it('only answers with views the Money page has, and never with the old tab or report keys', () => {
+    const views = MONEY_VIEWS.map((spec) => spec.id);
+    for (const [, pathname, search] of MONEY_MOVED) {
+      const target = legacyTarget(pathname, search) ?? '';
+      expect(target.startsWith('/money?')).toBe(true);
+      const params = new URLSearchParams(target.split('?')[1]);
+      expect(views).toContain(params.get('view'));
+      expect(params.has('tab')).toBe(false);
+      expect(params.has('report')).toBe(false);
+      expect([...params.keys()].filter((key) => key === 'view')).toHaveLength(1);
+    }
   });
 
   it('answers the Merchants and Customers addresses with the same addresses as the builders of the Accounts feature', () => {
@@ -898,7 +1073,7 @@ describe('legacyTarget', () => {
   });
 
   it('never answers with an address that is itself an old one', () => {
-    for (const [, pathname, search] of [...MOVED, ...ACCOUNTS_MOVED, ...COMMISSIONS, ...CHECKOUTS]) {
+    for (const [, pathname, search] of [...MOVED, ...ACCOUNTS_MOVED, ...MONEY_MOVED]) {
       const target = legacyTarget(pathname, search);
       const [path, query = ''] = (target ?? '').split('?');
       expect(legacyTarget(path, query)).toBeNull();

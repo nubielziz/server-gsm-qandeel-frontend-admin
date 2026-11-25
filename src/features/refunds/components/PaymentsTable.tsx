@@ -1,5 +1,5 @@
 // PaymentsTable: the storefront payments table (order, customer, method, paid, fee, payment status, when). Ports the `cols` of
-// tabPayments in 53-p-refunds.js. It only draws what it is given: the tab owns the data, the sort and the page.
+// tabPayments in 53-p-refunds.js. It only draws what it is given: the view owns the data, the sort and the page.
 import type { ReactNode } from 'react';
 import { DataTable, type DataTableColumn, type PaginationState, type SortState } from '@/components/ui';
 import { ago, lm, money } from '@/lib/format';

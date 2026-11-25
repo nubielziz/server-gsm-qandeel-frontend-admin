@@ -3,6 +3,7 @@
 // Rule"): on an order stopped by a supplier timeout it is Fetch or Retry, not Complete. Buttons the staff member lacks the
 // permission for are disabled with the reason; the server decides in the end.
 import { Button, ButtonLink, Icon, toast } from '@/components/ui';
+import { refundsPath } from '@/features/refunds';
 import type { OrderGrants } from '../hooks/useOrderGrants';
 import { useAcceptOrder, useFetchOrderResult, useReplyOrder } from '../hooks/useOrderMutations';
 import { orderActions } from '../lib/actions';
@@ -166,7 +167,7 @@ export function OrderFooter({ order, grants, reply, onDialog, onClose }: OrderFo
         </Button>
       )}
       {can.refundsLink && (
-        <ButtonLink to="/refunds">
+        <ButtonLink to={refundsPath()}>
           <Icon name="undo" className="ic-sm" />
           Open Refunds
         </ButtonLink>

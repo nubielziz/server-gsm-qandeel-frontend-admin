@@ -1,4 +1,4 @@
-// TrialBalanceTab: the accounts tab of the Finance page: the trial balance beside the integrity checks. Ports accountsTab of
+// TrialBalanceTab: the trial balance of the Money page's Trial balance view, beside the integrity checks. Ports accountsTab of
 // 45-p-finance.js. The server sends the balances and the totals; the tab only splits each balance into debit or credit.
 import { QueryState, SkeletonTable } from '@/components/ui';
 import { useNavigate } from 'react-router';
@@ -13,7 +13,7 @@ export function TrialBalanceTab() {
   const navigate = useNavigate();
   const data = trial.data;
   return (
-    <div className="border-t border-line">
+    <div>
       <QueryState
         isLoading={trial.isLoading}
         isError={trial.isError}

@@ -1,5 +1,5 @@
 // Tests for the Integrity tab, run through the whole app against the dev mock API: the last run and its facts, the five
-// checks (problems first, passed ones folded), the findings with their link to Finance, Run check now and its dialog, the
+// checks (problems first, passed ones folded), the findings with their link to the ledger of Money, Run check now and its dialog, the
 // running state, read-only staff, and the states of a read that fails.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -18,7 +18,7 @@ setupHealthMocks();
 vi.setConfig({ testTimeout: 30_000 });
 
 const ROUTE = '/system-health?tab=integrity';
-const NOTE = 'This check only reads the ledger. Fix a difference with a reversing entry in Finance.';
+const NOTE = 'This check only reads the ledger. Fix a difference with a reversing entry in Money.';
 const FAILING_LABEL = 'Every account balance equals the sum of its lines';
 
 /** Opens the tab and waits until its first card has the report. */
@@ -134,7 +134,7 @@ describe('a ledger that does not match (the maintenance scenario)', () => {
     expect(checks.getByText('4 checks passed')).toBeInTheDocument();
   });
 
-  it('lists the finding with its reference linked to the Finance ledger, its difference and its last entry', async () => {
+  it('lists the finding with its reference linked to the Money ledger, its difference and its last entry', async () => {
     await openTab({ scenario: 'maintenance' });
     const findings = within(await screen.findByRole('region', { name: 'Findings' }, SLOW));
     expect(findings.getByText('1 finding')).toBeInTheDocument();
@@ -146,7 +146,7 @@ describe('a ledger that does not match (the maintenance scenario)', () => {
     ).toEqual(['Reference', 'Description', 'Difference', 'Age', 'Last entry']);
 
     const ref = within(table).getByRole('link', { name: 'client_wallet:4' });
-    expect(ref).toHaveAttribute('href', '/finance?account=client_wallet');
+    expect(ref).toHaveAttribute('href', '/money?view=ledger&account=client_wallet');
     expect(ref).toHaveClass('mono');
     expect(within(table).getByText('Wallet · Basra Unlock Center')).toBeInTheDocument();
     expect(within(table).getByText('-$37.50')).toBeInTheDocument();
@@ -158,12 +158,15 @@ describe('a ledger that does not match (the maintenance scenario)', () => {
     const findings = within(await screen.findByRole('region', { name: 'Findings' }, SLOW));
     expect(findings.getByText('client_wallet:4')).toHaveClass('mono');
     expect(findings.queryByRole('link')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Finance' })).not.toBeInTheDocument();
+    // The note names Money as plain text (the sidebar has a Money link of its own for a role that may open the page, so ask the note).
+    const note = screen.getByText(/^This check only reads the ledger/);
+    expect(within(note).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('links Finance in the note when the role may read the ledger', async () => {
+  it('links Money in the note when the role may read the ledger', async () => {
     await openTab({ scenario: 'maintenance' });
-    expect(screen.getByRole('link', { name: 'Finance' })).toHaveAttribute('href', '/finance');
+    const note = screen.getByText(/^This check only reads the ledger/);
+    expect(within(note).getByRole('link', { name: 'Money' })).toHaveAttribute('href', '/money?view=ledger');
   });
 });
 

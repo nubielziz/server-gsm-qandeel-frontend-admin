@@ -1,4 +1,4 @@
-// LedgerTab: the journal list of the Finance page with its search, type and account filters, sort, paging and the entry
+// LedgerTab: the journal list of the Money page's Ledger view with its search, type and account filters, sort, paging and the entry
 // drawer. Ports ledgerTab of 45-p-finance.js. The server filters, sorts and counts; the tab only composes.
 import { usePageClamp } from '@/components/ui';
 import { useLedgerList } from '../hooks/useLedgerList';

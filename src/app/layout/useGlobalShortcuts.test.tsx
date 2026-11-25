@@ -75,8 +75,8 @@ describe('useGlobalShortcuts', () => {
     for (const page of Object.values(GO_SHORTCUTS)) expect(pages).toContain(page);
   });
 
-  it('matches the demo’s map less the retired Customers key: 11 pages, with audit on "a" and no key for settings or admins', () => {
-    expect(Object.keys(GO_SHORTCUTS)).toHaveLength(11);
+  it('matches the demo’s map less the retired Customers and Refunds keys: 10 pages, with audit on "a" and no key for settings or admins', () => {
+    expect(Object.keys(GO_SHORTCUTS)).toHaveLength(10);
     expect(GO_SHORTCUTS.a).toBe('audit');
     expect(Object.values(GO_SHORTCUTS)).not.toContain('settings');
     expect(Object.values(GO_SHORTCUTS)).not.toContain('access');
@@ -92,6 +92,16 @@ describe('useGlobalShortcuts', () => {
     expect(Object.values(GO_SHORTCUTS)).not.toContain('customers');
     const { handlers, user } = setup();
     await user.keyboard('gk');
+    expect(handlers.goTo).not.toHaveBeenCalled();
+  });
+
+  it('opens Money on "f", where Finance was, and has no key for Refunds & disputes, which is part of Money: "g" then "r" does nothing', async () => {
+    expect(GO_SHORTCUTS.f).toBe('money');
+    expect(GO_SHORTCUTS.r).toBeUndefined();
+    expect(Object.values(GO_SHORTCUTS)).not.toContain('finance');
+    expect(Object.values(GO_SHORTCUTS)).not.toContain('refunds');
+    const { handlers, user } = setup();
+    await user.keyboard('gr');
     expect(handlers.goTo).not.toHaveBeenCalled();
   });
 

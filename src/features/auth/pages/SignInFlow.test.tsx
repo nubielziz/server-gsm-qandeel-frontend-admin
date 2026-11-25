@@ -246,11 +246,11 @@ describe('reasons on the sign-in screen', () => {
         problem(403, 'ACCOUNT_SUSPENDED', 'Account suspended', 'This account is suspended.'),
       ),
     );
-    const app = renderApp('/finance');
+    const app = renderApp('/money?view=deposits');
     expect(
       await screen.findByRole('heading', { level: 1, name: 'This account is suspended' }),
     ).toBeInTheDocument();
-    await waitFor(() => expect(app.location()).toBe('/login?reason=suspended&to=%2Ffinance'));
+    await waitFor(() => expect(app.location()).toBe('/login?reason=suspended&to=%2Fmoney%3Fview%3Ddeposits'));
   });
 
   it('sends a signed-in visitor of the sign-in screen to the page they asked for', async () => {

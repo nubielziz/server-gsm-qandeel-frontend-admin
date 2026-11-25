@@ -1,4 +1,4 @@
-// The Deposits tab's status sub-tab, page and sort, kept in the address (`?tab=payments&status=all&page=2`). Ports
+// The Deposits view's status sub-tab, page and sort, kept in the address (`?view=deposits&status=all&page=2`). Ports
 // `ui.finance.payTab` and `ui.fp` (11-state.js). Changes replace the history entry, as on the other lists.
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';

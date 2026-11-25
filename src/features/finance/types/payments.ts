@@ -4,7 +4,7 @@
 import type { Id, IsoDateTime, Money } from '@/lib/api';
 import type { PaymentRow } from '@/lib/api/schema.gen';
 
-/** Why the money came: an account topping up its wallet (the Deposits tab) or a shop buyer paying an order. */
+/** Why the money came: an account topping up its wallet (the Deposits view) or a shop buyer paying an order. */
 export type PaymentPurpose = 'topup' | 'order';
 
 /** Where a deposit is in review. Card deposits are credited when paid, so they arrive already `approved`. */

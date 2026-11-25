@@ -26,7 +26,7 @@ export type OrderActions = {
   reopen: boolean;
   /** Refund a completed merchant order from here. */
   refund: boolean;
-  /** A completed storefront order is refunded from the Refunds page instead. */
+  /** A completed storefront order is refunded from the Refunds view of the Money page instead. */
   refundsLink: boolean;
   /** The risk decision lives on the Risk page. */
   riskLink: boolean;

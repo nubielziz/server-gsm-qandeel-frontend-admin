@@ -2,6 +2,7 @@
 // ARCHITECTURE §5.2. A record the console has no page for (a deposit, a ticket, a setting) gets no link, and neither does
 // an entry whose id is 0 (the server had no record to point at).
 import { accountPath, legacyAccountPath } from '@/features/accounts';
+import type { MoneyViewId } from '@/features/money';
 import { refundsPath } from '@/features/refunds';
 import { productsPath } from '@/features/services';
 import { supplierPath } from '@/features/suppliers';
@@ -9,17 +10,24 @@ import type { Id } from '@/lib/api';
 import { entityKind, isOldCustomerWord } from './entities';
 
 /** The console pages an entry can lead to, named like the page resources (they decide whether the staff member may open it). */
-export type RecordPage = 'orders' | 'accounts' | 'suppliers' | 'products' | 'risk' | 'refunds' | 'access';
+export type RecordPage = 'orders' | 'accounts' | 'suppliers' | 'products' | 'risk' | 'money' | 'access';
 
-/** An order opens its drawer here (`?order=<id>`, shown by `OrderDrawerHost`); every other record is a link to its page. */
+/**
+ * An order opens its drawer here (`?order=<id>`, shown by `OrderDrawerHost`); every other record is a link to its page. A record on
+ * the Money page also names its `view` (a refund, a dispute): that page opens for many permissions, so the link needs the view's own.
+ */
 export type RecordTarget =
-  { page: 'orders'; orderId: number } | { page: Exclude<RecordPage, 'orders'>; to: string };
+  | { page: 'orders'; orderId: number }
+  | { page: Exclude<RecordPage, 'orders'>; to: string; view?: MoneyViewId };
 
 /** The blocklist is a tab of the Risk page (ARCHITECTURE §5.2: `/risk?tab=…`). */
 export const BLOCKLIST_PATH = '/risk?tab=block';
 
 /** The Admin accounts tab of the access page. */
 export const ADMINS_PATH = '/access?tab=admins';
+
+/** Whether the staff member may open a page, and the Money view a record sits on when it has one (a hint only; the page checks again). */
+export type RecordAccess = (page: RecordPage, view?: MoneyViewId) => boolean;
 
 /** A number that can name a record: a whole number above zero. */
 const idOf = (value: number | null | undefined): number | null =>
@@ -67,9 +75,9 @@ export function recordTarget(
     case 'blocklist':
       return { page: 'risk', to: BLOCKLIST_PATH };
     case 'refund':
-      return { page: 'refunds', to: refundsPath({ tab: 'refunds' }) };
+      return { page: 'money', to: refundsPath({ tab: 'refunds' }), view: 'refunds' };
     case 'dispute':
-      return { page: 'refunds', to: refundsPath({ tab: 'disputes' }) };
+      return { page: 'money', to: refundsPath({ tab: 'disputes' }), view: 'disputes' };
     case 'staff':
       return { page: 'access', to: ADMINS_PATH };
     default:

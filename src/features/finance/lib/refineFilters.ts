@@ -1,5 +1,5 @@
 // Turns a tab's list filters into the filters Refine's list hooks take; the data provider writes them back into the query
-// string (`purpose=topup&status=pending&q=…`). Shared by the Ledger, Deposits and Invoices tabs.
+// string (`purpose=topup&status=pending&q=…`). Shared by the Ledger, Deposits and Invoices views.
 import type { CrudFilters } from '@refinedev/core';
 import type { FilterValue } from '@/lib/api';
 

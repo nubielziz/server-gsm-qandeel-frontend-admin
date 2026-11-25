@@ -1,5 +1,5 @@
-// Tests for the store balances inside Finance, run through the whole app against the dev mock API: the top-ups of store balances on the
-// Deposits tab (the account instead of a merchant, the payer filter, the dispute chip, approving one), the Store balances tab, and the
+// Tests for the store balances inside the Money page, run through the whole app against the dev mock API: the top-ups of store balances on
+// the Deposits view (the account instead of a merchant, the payer filter, the dispute chip, approving one), the Store balances view, and the
 // trial balance line for store balances. A store balance belongs to an account, so every link goes to the account's record.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,14 +7,14 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { setupMockApi } from '@/test/renderApp';
-import { financeTabs, openFinance, rowWith, tableNamed } from '../test/financePage';
+import { moneyLink, openFinance, rowWith, tableNamed } from '../test/financePage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 
-describe('top-ups of store balances on the Deposits tab', () => {
+describe('top-ups of store balances on the Deposits view', () => {
   it('shows the account, a link to its wallet and a masked email where a merchant would be', async () => {
-    await openFinance('/finance?tab=payments&owner=customer');
+    await openFinance('/money?view=deposits&owner=customer');
     const table = await tableNamed('Deposits');
     const row = (await table.findByText('First top-up of this account.')).closest('tr') as HTMLElement;
     const link = within(row).getByRole('link', { name: /\w+/ });
@@ -24,7 +24,7 @@ describe('top-ups of store balances on the Deposits tab', () => {
   });
 
   it('names the two kinds of wallet in the payer filter', async () => {
-    await openFinance('/finance?tab=payments');
+    await openFinance('/money?view=deposits');
     const filter = await screen.findByRole('combobox', { name: 'Filter by payer' });
     expect(
       within(filter)
@@ -35,7 +35,7 @@ describe('top-ups of store balances on the Deposits tab', () => {
 
   it('filters by payer through the server and keeps it in the address', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=payments&status=all');
+    const app = await openFinance('/money?view=deposits&status=all');
     await screen.findByRole('button', { name: 'All 56' });
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by payer' }), 'customer');
     expect(app.location()).toContain('owner=customer');
@@ -93,13 +93,13 @@ describe('top-ups of store balances on the Deposits tab', () => {
         );
       }),
     );
-    await openFinance('/finance?tab=payments&status=all&owner=customer');
+    await openFinance('/money?view=deposits&status=all&owner=customer');
     expect(await screen.findByText('Dispute: evidence needed')).toBeInTheDocument();
   });
 
   it('approves the top-up of a store balance and credits the account', async () => {
     const user = userEvent.setup();
-    await openFinance('/finance?tab=payments&payment=2002');
+    await openFinance('/money?view=deposits&payment=2002');
     const dialog = within(await screen.findByRole('dialog', { name: 'Review deposit PAY-2002' }));
     expect(await dialog.findByRole('link', { name: 'Lukas Brandt' })).toHaveAttribute(
       'href',
@@ -114,16 +114,16 @@ describe('top-ups of store balances on the Deposits tab', () => {
   });
 });
 
-describe('the Store balances tab', () => {
+describe('the Store balances view', () => {
   it('lists the seeded balances with a state each and counts them', async () => {
-    await openFinance('/finance?tab=wallets');
+    await openFinance('/money?view=store-balances');
     const table = await tableNamed('Store balances');
     expect(await table.findAllByText('$50.00')).toHaveLength(1);
     expect(await screen.findByText('1 balance')).toBeInTheDocument();
   });
 
   it('links each account to the Financial part of its record', async () => {
-    await openFinance('/finance?tab=wallets');
+    await openFinance('/money?view=store-balances');
     const table = await tableNamed('Store balances');
     const link = (await table.findAllByRole('link'))[0];
     expect(link.getAttribute('href')).toMatch(/^\/accounts\/1\d\d\?tab=wallet$/);
@@ -131,7 +131,7 @@ describe('the Store balances tab', () => {
 
   it('filters by state through the server and keeps it in the address', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=wallets');
+    const app = await openFinance('/money?view=store-balances');
     await screen.findByText('1 balance');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Filter by state' }), 'frozen');
     expect(app.location()).toContain('state=frozen');
@@ -141,10 +141,9 @@ describe('the Store balances tab', () => {
   });
 
   it('is offered only with wallet:read', async () => {
-    await openFinance('/finance', { permissions: ['payments:read', 'wallet:read'] });
-    await waitFor(() =>
-      expect(financeTabs().getByRole('tab', { name: 'Store balances' })).toBeInTheDocument(),
-    );
+    // The row of links lists the views of the open tab, so the link is looked for on Books.
+    await openFinance('/money?view=store-balances', { permissions: ['payments:read', 'wallet:read'] });
+    expect(await moneyLink('Store balances')).toBeInTheDocument();
   });
 });
 
@@ -167,7 +166,7 @@ describe('an account with no name', () => {
         ),
       ),
     );
-    await openFinance('/finance?tab=wallets');
+    await openFinance('/money?view=store-balances');
     const table = await tableNamed('Store balances');
     const nameless = within(
       (await table.findByRole('link', { name: 'ma•••@example.com' })).closest('tr') as HTMLElement,
@@ -199,7 +198,7 @@ describe('the trial balance', () => {
         }),
       ),
     );
-    await openFinance('/finance?tab=accounts');
+    await openFinance('/money?view=trial-balance');
     const wallets = await rowWith('Trial balance', 'Store balances');
     expect(wallets.getByText('Liability')).toBeInTheDocument();
   });

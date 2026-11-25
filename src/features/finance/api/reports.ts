@@ -1,4 +1,4 @@
-// Report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`, `/funnel`): the Reports tab and the header's wallet figures. New
+// Report routes (`/admin/reports/profit`, `/wallet-exposure`, `/vat`, `/funnel`): the report views and the Overview's wallet figures. New
 // in the console (MISMATCHES M124); the map gives no bodies (MISMATCHES M10). The server adds everything up.
 import { apiGet, type ApiInit } from '@/lib/api';
 import type {
@@ -28,7 +28,7 @@ export function getProfitReport(query: ProfitQuery, init?: ApiInit): Promise<Pro
 
 /**
  * What the merchant wallets hold: balances, reserved amounts (held for open orders) and the overdraft allowed and
- * used, and beside them the totals of the store balances (`storeBalances`). The header's wallet figures read the totals of this
+ * used, and beside them the totals of the store balances (`storeBalances`). The Overview's wallet figures read the totals of this
  * report too.
  * Assumed contract: the answer has the merchant totals, the store balance totals and the largest merchant wallets first (the server
  * caps the list); `clientId` of a row is the account id.

@@ -1,4 +1,4 @@
-// FinanceStrip: the five key figures under the page title. Ports finStrip of 45-p-finance.js. Every figure comes from the
+// FinanceStrip: the five key figures of the Overview. Ports finStrip of 45-p-finance.js. Every figure comes from the
 // server (the trial balance, the wallet exposure report, the pending-deposit count); a figure the staff member may not
 // read is left out, and one still loading shows a grey bar.
 import { Skeleton } from '@/components/ui';

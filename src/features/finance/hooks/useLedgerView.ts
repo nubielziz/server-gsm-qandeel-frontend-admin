@@ -1,4 +1,4 @@
-// The Ledger tab's search, filters, page and sort, kept in the address (`?q=…&kind=deposit&page=2`), so a link or a reload
+// The Ledger view's search, filters, page and sort, kept in the address (`?q=…&kind=deposit&page=2`), so a link or a reload
 // shows the same list. Filter changes replace the history entry: Back should leave the page, not walk through every keystroke.
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';

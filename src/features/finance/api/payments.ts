@@ -13,8 +13,8 @@ import {
 import type { Payment, RejectPaymentBody } from '../types';
 
 /**
- * Payments, one page of them, with the total in `x-total-count`. The Deposits tab asks for `purpose=topup` and one
- * `status` (`pending`, `approved`, `rejected`); its sub-tab counts and the header's "waiting for review" figure are
+ * Payments, one page of them, with the total in `x-total-count`. The Deposits view asks for `purpose=topup` and one
+ * `status` (`pending`, `approved`, `rejected`); its sub-tab counts and the Overview's "waiting for review" figure are
  * this call with `_start=0&_end=1`. Sort with `_sort`/`_order` (`createdAt`, `id`, `amount`, `status`). The list carries the
  * top-ups of both wallet kinds: `owner=merchant|customer` keeps the merchant wallets' or the store balances'; the buyer filter is
  * `accountId` (`clientId` is its alias, and `customerId` is refused with 422); `q` searches the reference and the account's name

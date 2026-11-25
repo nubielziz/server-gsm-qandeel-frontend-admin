@@ -23,8 +23,7 @@ const OWNER_PAGES = [
   'Notifications',
   'Product / Services',
   'Suppliers',
-  'Finance',
-  'Refunds & disputes',
+  'Money',
   'Admins & access',
   'Settings',
   'Shop content',
@@ -41,7 +40,7 @@ async function primaryNav() {
 const labelOf = (link: HTMLElement) => (link.textContent ?? '').replace(/\d.*$/, '');
 
 describe('sidebar', () => {
-  it('lists the 15 pages (the demo’s, with Accounts in the place of Merchants and Customers, Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
+  it('lists the 14 pages (the demo’s, with Accounts in the place of Merchants and Customers, Money in the place of Finance and Refunds & disputes, Product / Services, Notifications and System health) in four groups, and marks the current one', async () => {
     mockMe({ permissions: ['*'] });
     renderApp('/orders');
     const nav = await primaryNav();
@@ -73,9 +72,10 @@ describe('sidebar', () => {
     mockMe({ permissions: ['dashboard:read', 'orders:read', 'ledger:*'] });
     renderApp('/dashboard');
     const nav = await primaryNav();
-    expect(nav.getAllByRole('link').map(labelOf)).toEqual(['Dashboard', 'Orders', 'Finance']);
+    expect(nav.getAllByRole('link').map(labelOf)).toEqual(['Dashboard', 'Orders', 'Money']);
     expect(nav.getByText('Operations')).toBeInTheDocument();
-    expect(nav.getByText('Money')).toBeInTheDocument();
+    // The group heading and the page link are both called Money.
+    expect(nav.getByText('Money', { selector: 'p' })).toBeInTheDocument();
     expect(nav.queryByText('Catalog')).not.toBeInTheDocument();
     expect(nav.queryByText('System')).not.toBeInTheDocument();
   });
@@ -248,10 +248,12 @@ describe('breadcrumb and tab title', () => {
 
   it('shows Group / Page on a list page', async () => {
     mockMe({ permissions: ['*'] });
-    renderApp('/finance');
+    renderApp('/money');
     const crumb = await screen.findByRole('navigation', { name: 'Breadcrumb' });
-    expect(crumb).toHaveTextContent('Money');
-    expect(within(crumb).getByText('Finance')).toHaveAttribute('aria-current', 'page');
+    // The group and the page are both called Money: the page is the last crumb.
+    const names = within(crumb).getAllByText('Money');
+    expect(names).toHaveLength(2);
+    expect(names[1]).toHaveAttribute('aria-current', 'page');
   });
 
   it('adds the record name set by a detail page, and clears it when that page closes', async () => {
@@ -305,6 +307,28 @@ describe('keyboard shortcuts in the shell', () => {
     expect(app.location()).toBe('/accounts');
   }, 20_000);
 
+  it('"g" then "f" opens the Money page', async () => {
+    await signInAs();
+    mockMe({ permissions: ['*'] });
+    const user = userEvent.setup();
+    const app = renderApp('/dashboard');
+    await primaryNav();
+    await user.keyboard('gf');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Money' }, { timeout: 10_000 }),
+    ).toBeInTheDocument();
+    expect(app.location()).toBe('/money');
+  }, 20_000);
+
+  it('"g" then "r" opens nothing: Refunds & disputes is part of Money', async () => {
+    mockMe({ permissions: ['*'] });
+    const user = userEvent.setup();
+    const app = renderApp('/dashboard');
+    await primaryNav();
+    await user.keyboard('gr');
+    expect(app.location()).toBe('/dashboard');
+  });
+
   it('"g" then "k" opens nothing: Customers is retired', async () => {
     mockMe({ permissions: ['*'] });
     const user = userEvent.setup();
@@ -356,6 +380,10 @@ describe('keyboard shortcuts in the shell', () => {
       .getByRole('heading', { name: 'Keyboard shortcuts' })
       .closest('dialog') as HTMLElement;
     expect(within(shortcuts).queryByText(/customers/i)).not.toBeInTheDocument();
+    // Finance and Refunds & disputes are the one Money page: "r" is retired and "f" opens Money.
+    expect(within(shortcuts).getByText('g then f / a')).toBeInTheDocument();
+    expect(within(shortcuts).getByText('Go to money / audit')).toBeInTheDocument();
+    expect(within(shortcuts).queryByText(/refunds/i)).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('heading', { name: 'Keyboard shortcuts' })).not.toBeInTheDocument();
 
@@ -382,21 +410,21 @@ describe('command palette', () => {
     await user.click(screen.getByRole('button', { name: 'Search or jump to, command palette' }));
     const input = await screen.findByRole('combobox');
 
-    // Only what this staff member may open: no risk, refund or orders shortcuts.
+    // Only what this staff member may open: no risk or orders shortcuts, and neither money action, whose views (Refunds, Deposits)
+    // need refunds:read and payments:read; ledger:read opens the Money page only.
     expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
       'Dashboard',
-      'Finance',
+      'Money',
       'Toggle dark mode',
-      'Review pending deposits',
     ]);
-    await user.type(input, 'fin');
+    await user.type(input, 'mon');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     await user.keyboard('{Enter}');
     // Pages are lazy chunks: the first load in a busy test run can take more than a second.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Finance' }, { timeout: 10_000 }),
+      await screen.findByRole('heading', { level: 1, name: 'Money' }, { timeout: 10_000 }),
     ).toBeInTheDocument();
-    expect(app.location()).toBe('/finance');
+    expect(app.location()).toBe('/money');
   });
 
   it('starts empty again after a second ⌘K closed it with text typed', async () => {
@@ -405,13 +433,13 @@ describe('command palette', () => {
     renderApp('/dashboard');
     await primaryNav();
     await user.keyboard('{Control>}k{/Control}');
-    await user.type(await screen.findByRole('combobox'), 'fin');
+    await user.type(await screen.findByRole('combobox'), 'mon');
     expect(screen.getAllByRole('option')).toHaveLength(1);
     // Closed from outside (the shortcut), not through the palette's own close path.
     await user.keyboard('{Control>}k{/Control}');
     await user.keyboard('{Control>}k{/Control}');
     expect(await screen.findByRole('combobox')).toHaveValue('');
-    expect(screen.getAllByRole('option')).toHaveLength(4);
+    expect(screen.getAllByRole('option')).toHaveLength(3);
   });
 
   it('opens the demo’s quick actions with their deep links', async () => {
@@ -422,9 +450,9 @@ describe('command palette', () => {
     await user.keyboard('{Control>}k{/Control}');
     await user.type(await screen.findByRole('combobox'), 'refund requests');
     await user.keyboard('{Enter}');
-    // Refunds is a lazy chunk now.
-    await screen.findByRole('heading', { level: 1, name: 'Refunds & disputes' }, { timeout: 10_000 });
-    expect(app.location()).toBe('/refunds?tab=refunds&status=requested');
+    // Money is a lazy chunk.
+    await screen.findByRole('heading', { level: 1, name: 'Money' }, { timeout: 10_000 });
+    expect(app.location()).toBe('/money?view=refunds&status=requested');
   });
 });
 
@@ -615,7 +643,7 @@ describe('account menu', () => {
     await signInAs();
     const user = userEvent.setup();
     renderApp('/dashboard');
-    expect((await primaryNav()).getAllByRole('link')).toHaveLength(15);
+    expect((await primaryNav()).getAllByRole('link')).toHaveLength(14);
     expect(await screen.findByRole('button', { name: 'Account menu for Rami K.' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Account menu for/ }));
@@ -631,7 +659,7 @@ describe('account menu', () => {
     const nav = await primaryNav();
     await screen.findByRole('button', { name: 'Account menu for Omar T.' });
     const links = nav.getAllByRole('link').map(labelOf);
-    expect(links).toContain('Finance');
+    expect(links).toContain('Money');
     expect(links).not.toContain('Audit log');
     expect(links).not.toContain('Admins & access');
     expect(links).not.toContain('Support');

@@ -3,7 +3,8 @@ import { useEffect, useRef } from 'react';
 
 /**
  * "g then …" jumps: the key after `g` and the page it opens. The demo's map: `p` (pricing) opens Product / Services, `t` opens Shop content,
- * and `m` opens Accounts, the one page that Merchants and Customers became (so `k`, which opened Customers, is retired).
+ * and `m` opens Accounts, the one page that Merchants and Customers became (so `k`, which opened Customers, is retired). `f` opens Money,
+ * the one page that Finance and Refunds & disputes became (decision 026), so `r`, which opened Refunds, is retired too.
  */
 export const GO_SHORTCUTS: Readonly<Record<string, string>> = {
   d: 'dashboard',
@@ -14,8 +15,7 @@ export const GO_SHORTCUTS: Readonly<Record<string, string>> = {
   p: 'products',
   u: 'suppliers',
   t: 'storefront',
-  f: 'finance',
-  r: 'refunds',
+  f: 'money',
   a: 'audit',
 };
 

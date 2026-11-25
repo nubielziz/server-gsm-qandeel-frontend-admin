@@ -10,7 +10,7 @@ import { formatDifference, ledgerAccountKind, NONE } from './format';
 import { When } from './When';
 
 /**
- * The reference in mono. An account finding links to the Finance ledger filtered to that kind of account, when the staff
+ * The reference in mono. An account finding links to the Money ledger filtered to that kind of account, when the staff
  * member may read the ledger and the reference starts with an account kind (the ledger cannot filter to one owner).
  */
 function FindingRef({ finding, canOpenLedger }: { finding: IntegrityFinding; canOpenLedger: boolean }) {
@@ -20,7 +20,7 @@ function FindingRef({ finding, canOpenLedger }: { finding: IntegrityFinding; can
     <Link
       className="link mono"
       to={financePath('ledger', { account: kind })}
-      title="Open the Finance ledger, filtered to this kind of account"
+      title="Open the Money ledger, filtered to this kind of account"
     >
       {finding.ref}
     </Link>

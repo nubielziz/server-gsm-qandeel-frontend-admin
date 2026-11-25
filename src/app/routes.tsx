@@ -1,6 +1,6 @@
 // The route table: the sign-in screens (public) and every page inside the shell (protected), each behind its permission gate, with the
-// old addresses of Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants and Customers redirected before
-// that gate (legacyRedirects.ts).
+// old addresses of Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants, Customers, Finance and
+// Refunds & disputes redirected before that gate (legacyRedirects.ts).
 import { Authenticated } from '@refinedev/core';
 import { lazy, type ComponentType } from 'react';
 import { Outlet, Route, Routes } from 'react-router';
@@ -35,12 +35,15 @@ const DETAIL_PAGES: Partial<Record<string, ComponentType>> = Object.fromEntries(
 );
 
 // The addresses of pages that are gone: they have a route (and no resource) only to be redirected. The Merchants and Customers pages
-// had a detail view, so their `/:id` addresses are routes of their own.
+// had a detail view, so their `/:id` addresses are routes of their own. Finance and Refunds & disputes became the one Money page (decision
+// 026) and are no resources any more, so their addresses need these routes too.
 const LEGACY_PAGE_PATHS = [
   '/services',
   '/catalog',
   '/commissions',
   '/checkouts',
+  '/finance',
+  '/refunds',
   '/merchants',
   '/merchants/:id',
   '/customers',
@@ -83,9 +86,10 @@ export function AppRoutes() {
             element={<PageRoute page={page} action="show" Page={DETAIL_PAGES[page.name]} />}
           />
         ))}
-        {/* The old Services & pricing and Catalog pages (sent to Product / Services), Commissions (sent to Finance, which still lists the old
-            commission entries), Abandoned checkouts (sent to the sales funnel report that sat on it) and Merchants and Customers (sent to
-            Accounts, the one page of both) have no resource any more; their addresses are redirected for good. */}
+        {/* The old Services & pricing and Catalog pages (sent to Product / Services), Commissions (sent to the ledger of Money, which still
+            lists the old commission entries), Abandoned checkouts (sent to the sales funnel of Money), Merchants and Customers (sent to
+            Accounts, the one page of both) and Finance and Refunds & disputes (sent to Money, the one page of both) have no resource any
+            more; their addresses are redirected for good. */}
         {LEGACY_PAGE_PATHS.map((path) => (
           <Route
             key={path}

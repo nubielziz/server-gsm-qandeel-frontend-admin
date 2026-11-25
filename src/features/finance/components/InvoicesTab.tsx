@@ -1,6 +1,6 @@
-// InvoicesTab: the invoice list of the Finance page with its search and filters, sort, paging, the invoice drawer and the
-// Issue manual invoice dialog. New in the console (MISMATCHES M123). The server filters, sorts and counts; the tab only composes.
-import { useState } from 'react';
+// InvoicesTab: the invoice list of the Money page's Invoices view with its search and filters, sort, paging and the invoice drawer.
+// Issuing an invoice is its own view (IssueInvoiceView). New in the console (MISMATCHES M123). The server filters, sorts and counts; the
+// tab only composes.
 import { usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';
 import type { FinanceGrants } from '../hooks/useFinanceGrants';
@@ -13,13 +13,11 @@ import { InvoiceDrawer } from './InvoiceDrawer';
 import { InvoicesEmpty } from './InvoicesEmpty';
 import { InvoiceTable } from './InvoiceTable';
 import { InvoicesToolbar } from './InvoicesToolbar';
-import { IssueInvoiceDialog } from './IssueInvoiceDialog';
 
 export function InvoicesTab({ grants }: { grants: FinanceGrants }) {
   const view = useInvoiceView();
   const drawer = useOpenRecord('invoice');
   const now = useNow();
-  const [issuing, setIssuing] = useState(false);
   const list = useInvoicesList({
     filters: toInvoiceListFilters(view.filters),
     page: view.page,
@@ -35,11 +33,6 @@ export function InvoicesTab({ grants }: { grants: FinanceGrants }) {
     setPage: view.setPage,
   });
 
-  // Issuing needs `invoices:create`, and the merchant picker needs `clients:read` to list who can be billed.
-  const issue = grants.can('invoices:create')
-    ? grants.needs('clients:read')
-    : grants.needs('invoices:create');
-
   return (
     <>
       <InvoicesToolbar
@@ -47,8 +40,6 @@ export function InvoicesTab({ grants }: { grants: FinanceGrants }) {
         onChange={view.setFilters}
         onClear={view.clearFilters}
         total={list.total}
-        issue={issue}
-        onIssue={() => setIssuing(true)}
       />
       <div className="border-t border-line">
         <InvoiceTable
@@ -74,7 +65,6 @@ export function InvoicesTab({ grants }: { grants: FinanceGrants }) {
           onClose={drawer.close}
         />
       )}
-      {issuing && <IssueInvoiceDialog onClose={() => setIssuing(false)} />}
     </>
   );
 }

@@ -45,6 +45,35 @@ describe('featureManifests', () => {
     expect(accounts?.page?.permission).toEqual(['clients:read', 'groups:read']);
   });
 
+  // The money feature's manifest holds the Money page; the finance and refunds features keep their data and palette but no page.
+  it('fills the Money page with one feature, and no page with the finance or refunds feature', () => {
+    const pages = featureManifests.flatMap((manifest) => (manifest.page ? [manifest.page.name] : []));
+    expect(pages.filter((name) => name === 'money')).toHaveLength(1);
+    expect(pages).not.toContain('finance');
+    expect(pages).not.toContain('refunds');
+    const money = featureManifests.find((manifest) => manifest.id === 'money');
+    expect(money?.page).toMatchObject({ name: 'money', heading: 'Money' });
+    expect(money?.page?.list).toBeTypeOf('function');
+    expect(money?.page?.detail).toBeUndefined();
+    // The same any-of permission as the page resource: each of the views then checks its own.
+    expect(money?.page?.permission).toEqual([
+      'ledger:read',
+      'payments:read',
+      'wallet:read',
+      'invoices:read',
+      'reports:read',
+      'reports:finance',
+      'reports:growth',
+      'refunds:read',
+      'disputes:read',
+    ]);
+    for (const id of ['finance', 'refunds']) {
+      const manifest = featureManifests.find((candidate) => candidate.id === id);
+      expect(manifest?.page).toBeUndefined();
+      expect(manifest?.registry).toBeDefined();
+    }
+  });
+
   it('gives the Notifications page a list and a detail view, and the staff bell to the top bar', () => {
     const notifications = featureManifests.find((manifest) => manifest.id === 'notifications');
     expect(notifications?.page).toMatchObject({ name: 'notifications', heading: 'Notifications' });

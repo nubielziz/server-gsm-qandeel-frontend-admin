@@ -60,7 +60,7 @@ const openInvoices = (permissions?: string[]) =>
 const table = () => screen.findByRole('table', { name: 'Invoices' });
 
 describe('the list', () => {
-  it('asks the server for this account’s invoices, newest first, fifty a page, and links each row to Finance', async () => {
+  it('asks the server for this account’s invoices, newest first, fifty a page, and links each row to Money', async () => {
     const calls: string[] = [];
     mockServer.use(http.get('*/admin/invoices', listOf(23, invoice, calls)));
     await openInvoices();

@@ -1,5 +1,5 @@
 // The trial balance: every account kind with its balance, read from the server. Ports the data side of accountsTab
-// (45-p-finance.js), which added the balances up in the browser. The tab and the header's Bank and Supplier prepaid share it.
+// (45-p-finance.js), which added the balances up in the browser. The Trial balance view and the Overview's Bank and Supplier prepaid share it.
 import { getTrialBalance } from '../api';
 import { useApiQuery } from '@/lib/query';
 import { REFRESH_MS, TRIAL_BALANCE_KEY } from './keys';

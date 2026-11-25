@@ -8,10 +8,10 @@ import type { Dispute, Refund } from '../types';
 /** Every non-Refine read of this feature. */
 export const REFUNDS_KEY = ['api', 'refunds'] as const;
 
-/** The counts and totals of the strip and the tab chips. */
+/** The counts and totals of the Overview figures and of the Money back counts. */
 export const FIGURES_KEY = [...REFUNDS_KEY, 'figures'] as const;
 
-/** The payments report (the Payments tab). */
+/** The payments report (the Shop payments view). */
 export const REPORT_KEY = [...REFUNDS_KEY, 'report'] as const;
 
 /** How often the lists and figures ask again while the page is open (new requests and disputes arrive by themselves). */

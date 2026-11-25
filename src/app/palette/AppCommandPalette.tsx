@@ -26,12 +26,12 @@ export function AppCommandPalette({ open, onClose, sources = paletteSources }: A
   const [query, setQuery] = useState('');
 
   const go = useCallback((path: string) => void navigate(path), [navigate]);
+  const { data: staff } = useMe();
   const fixed = useMemo(
-    () => buildPaletteItems({ pages: pages ?? [], go, isDark, toggleTheme }),
-    [pages, go, isDark, toggleTheme],
+    () => buildPaletteItems({ pages: pages ?? [], permissions: staff?.permissions, go, isDark, toggleTheme }),
+    [pages, staff, go, isDark, toggleTheme],
   );
   // Only search what the staff member may read: a source they lack the permission for would only answer 403.
-  const { data: staff } = useMe();
   const permittedSources = useMemo(
     () =>
       sources.filter(

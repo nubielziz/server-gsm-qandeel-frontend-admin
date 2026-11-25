@@ -1,4 +1,4 @@
-// The Invoices tab's search, filters, page and sort, kept in the address (`?tab=invoices&status=open&q=…`). Changes replace
+// The Invoices view's search, filters, page and sort, kept in the address (`?view=invoices&status=open&q=…`). Changes replace
 // the history entry, as on the other lists. New in the console (MISMATCHES M123).
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';

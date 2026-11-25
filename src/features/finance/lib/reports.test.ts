@@ -1,7 +1,7 @@
-// Tests for the Reports tab helpers: the dates behind the choices, labels, and the chart rows.
+// Tests for the report helpers: the dates behind the choices, labels, and the chart rows.
 import { describe, expect, it } from 'vitest';
 import { countryName, dayLabel, monthLabel, profitChartRows, profitDates, vatDates } from './reports';
-import { parseReportChoices, resolveReport, visibleReports, writeReportChoices } from './reportView';
+import { parseReportChoices, writeReportChoices } from './reportView';
 
 const NOON = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12);
 
@@ -79,19 +79,9 @@ describe('report choices in the address', () => {
       range: '30',
       period: 'last-month',
     });
-    expect(writeReportChoices(new URLSearchParams('report=profit'), { by: 'client' }).toString()).toBe(
-      'report=profit&by=client',
+    expect(writeReportChoices(new URLSearchParams('view=profit'), { by: 'client' }).toString()).toBe(
+      'view=profit&by=client',
     );
     expect(writeReportChoices(new URLSearchParams('by=client'), { by: 'day' }).toString()).toBe('');
-  });
-
-  it('offer each role the reports it may read', () => {
-    expect(visibleReports(['reports:read']).map((report) => report.id)).toEqual(['profit', 'exposure']);
-    expect(visibleReports(['reports:finance']).map((report) => report.id)).toEqual(['vat']);
-    expect(visibleReports(['reports:growth']).map((report) => report.id)).toEqual(['funnel']);
-    expect(visibleReports(['*']).map((report) => report.id)).toEqual(['profit', 'exposure', 'vat', 'funnel']);
-    expect(resolveReport('vat', visibleReports(['reports:read']))).toBe('profit');
-    expect(resolveReport('vat', visibleReports(['*']))).toBe('vat');
-    expect(resolveReport(null, [])).toBeUndefined();
   });
 });

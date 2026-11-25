@@ -1,8 +1,9 @@
-// The old addresses of the Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants and Customers pages and where
-// each one goes now (Product / Services, Shop content when the address already names one of its tabs, Finance for the retired Commissions
-// page, the sales funnel report of Finance for the retired checkouts page, and Accounts for the two pages that became one). Pure, so every
-// case is a table row in the tests; `LegacyRedirect` runs it before a page's gate. The addresses stay for good: stored links (mails, the
-// notification bell, bookmarks) still use them; the backend's mail about shop price changes links to `/catalog?view=settings&tab=shop-prices`.
+// The old addresses of the Catalog, Services & pricing, Storefront, Commissions, Abandoned checkouts, Merchants, Customers, Finance and
+// Refunds & disputes pages and where each one goes now (Product / Services, Shop content when the address already names one of its tabs,
+// Accounts for the two pages that became one, and Money for the two money pages that became one: the retired Commissions page opens the
+// ledger of Money, the retired checkouts page its sales funnel). Pure, so every case is a table row in the tests; `LegacyRedirect` runs it
+// before a page's gate. The addresses stay for good: stored links (mails, the notification bell, bookmarks) still use them; the backend's
+// mail about shop price changes links to `/catalog?view=settings&tab=shop-prices`.
 import {
   accountPath,
   accountsListPath,
@@ -11,6 +12,7 @@ import {
   type AccountsListState,
   type AccountTab,
 } from '@/features/accounts';
+import { moneyPath, moneyPathOfFinance, moneyPathOfRefunds } from '@/features/money';
 
 // The Services tabs that are Catalog settings tabs (the Services tab itself is the table), and the Catalog settings tabs.
 const SERVICES_SETTINGS_TABS: ReadonlySet<string> = new Set(['categories', 'rules', 'resolver', 'inventory']);
@@ -164,12 +166,10 @@ function fromStorefront(old: URLSearchParams): string | null {
 const FUNNEL_DAYS: ReadonlySet<string> = new Set(['7', '90']);
 
 // `/checkouts`: the page of abandoned checkouts is gone and no list replaces it. What stays of it is the sales funnel, which is the
-// Funnel report of the Finance page now; its `days` period is that report's `range`. The list's own filter, search, page and sort are dropped.
+// Sales funnel view of the Money page now; its `days` period is that report's `range`. The list's own filter, search, page and sort are dropped.
 function fromCheckouts(old: URLSearchParams): string {
-  const params = new URLSearchParams({ tab: 'reports', report: 'funnel' });
   const days = old.get('days');
-  if (days && FUNNEL_DAYS.has(days)) params.set('range', days);
-  return `/finance?${params.toString()}`;
+  return moneyPath('funnel', { range: days && FUNNEL_DAYS.has(days) ? days : undefined });
 }
 
 // ---- Merchants and Customers: one Accounts page (decision 023) ----
@@ -292,9 +292,15 @@ const RECORD_PATH = /^\/(merchants|customers)\/([^/]+)$/;
  *   `page`, `sort`, `dir`, is `view=all` with `q` and `page`.
  * - A bare `/storefront` and a `/storefront` that names a tab stay where they are (null): one of the Shop content tabs, a retired one
  *   (`tab=landing`, `tab=tac`, with `kind`, `q`, `page`, `sort` or `dir` too), or one that is not known. The page opens its first tab.
- * - `/commissions` is `/finance` whatever its query: the page is gone, and Finance still lists the old commission entries in its
- *   ledger. Nothing of the old query (tab, status, agent) means anything there, so none of it is carried.
- * - `/checkouts` is `/finance?tab=reports&report=funnel`; `days=7` or `days=90` is `range=7` or `range=90`, any other key is dropped.
+ * - `/finance` is `/money?view=…` (decision 026): `tab=payments` is `view=deposits`, `tab=accounts` `view=trial-balance`, `tab=wallets`
+ *   `view=store-balances`, `tab=invoices` `view=invoices`, `tab=reports&report=profit|exposure|vat|funnel` the view of that name (Profit when no
+ *   report is named), and no tab, or an unknown one, `view=ledger`. Every other key (status, page, sort, period, an open deposit, journal
+ *   entry or invoice) is carried as it was.
+ * - `/refunds` is `/money?view=refunds`; `tab=disputes` is `view=disputes` and `tab=payments` is `view=shop-payments`. Status, method, page,
+ *   sort and an open order are carried.
+ * - `/commissions` is `/money?view=ledger` whatever its query: the page is gone, and the ledger still lists the old commission entries.
+ *   Nothing of the old query (tab, status, agent) means anything there, so none of it is carried.
+ * - `/checkouts` is `/money?view=funnel`; `days=7` or `days=90` is `range=7` or `range=90`, any other key is dropped.
  * - `/merchants` is `/accounts?chip=merchants` (`q`, `page` and `sort=name|status` with `dir` stay, `group` is `rank`); `tab=suspended` adds
  *   `status=suspended`, `tab=groups` is `view=ranks`, any other tab is `chip=merchants`.
  * - `/customers` is `/accounts?chip=retail` (`q`, `country` and `page` stay); `tab=suspended|blocked` adds `status=suspended|blocked`,
@@ -311,7 +317,9 @@ export function legacyTarget(pathname: string, search = ''): string | null {
   if (path === '/services') return fromServices(old);
   if (path === '/catalog') return fromCatalog(old);
   if (path === '/storefront') return fromStorefront(old);
-  if (path === '/commissions') return '/finance';
+  if (path === '/finance') return moneyPathOfFinance(old);
+  if (path === '/refunds') return moneyPathOfRefunds(old);
+  if (path === '/commissions') return moneyPath('ledger');
   if (path === '/checkouts') return fromCheckouts(old);
   if (path === '/merchants') return fromMerchants(old);
   if (path === '/customers') return fromCustomers(old);

@@ -1,5 +1,5 @@
 // RefundsTable: the refunds table with the demo's columns (refund and order, customer, reason, amount, status, when, actions).
-// Ports the `cols` of tabRefunds in 53-p-refunds.js. It only draws what it is given: the tab owns the data, the sort and the page.
+// Ports the `cols` of tabRefunds in 53-p-refunds.js. It only draws what it is given: the view owns the data, the sort and the page.
 import type { ReactNode } from 'react';
 import { cx, DataTable, type DataTableColumn, type PaginationState, type SortState } from '@/components/ui';
 import { ago, lm, money } from '@/lib/format';

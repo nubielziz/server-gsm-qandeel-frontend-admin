@@ -1,4 +1,4 @@
-// The Ledger tab's search, type filter, account filter and sort as address parameters, and how they become API filters.
+// The Ledger view's search, type filter, account filter and sort as address parameters, and how they become API filters.
 // Ports `ledgerRows` and the `ui.finance` state of 45-p-finance.js: the demo filtered an in-memory array, the console asks
 // the server (MISMATCHES M126). Nothing here decides which entries match; it only writes and reads the question.
 import type { SortState } from '@/components/ui';

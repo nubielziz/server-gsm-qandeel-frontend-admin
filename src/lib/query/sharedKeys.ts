@@ -9,7 +9,7 @@ export const DASHBOARD_KEY = ['api', 'dashboard'] as const;
 
 /**
  * An account's wallet figures (the accounts feature reads them, for a merchant wallet and a store balance alike). An action that
- * moves money into or out of a wallet elsewhere (a deposit approved on the Finance page) invalidates this key.
+ * moves money into or out of a wallet elsewhere (a deposit approved on the Money page) invalidates this key.
  */
 export const ACCOUNT_WALLET_KEY = ['api', 'accounts', 'wallet'] as const;
 

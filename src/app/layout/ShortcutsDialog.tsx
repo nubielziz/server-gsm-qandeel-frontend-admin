@@ -8,7 +8,7 @@ const ROWS: readonly (readonly [keys: string, action: string])[] = [
   ['g then d / o / m', 'Go to dashboard / orders / accounts'],
   ['g then s / i', 'Go to support / risk'],
   ['g then p / u / t', 'Go to products and services / suppliers / shop content'],
-  ['g then f / r / a', 'Go to finance / refunds / audit'],
+  ['g then f / a', 'Go to money / audit'],
   ['j / k', 'Move down / up in the orders table'],
   ['Enter', 'Open the highlighted order'],
   ['x', 'Select the highlighted order'],

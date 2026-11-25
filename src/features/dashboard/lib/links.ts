@@ -2,12 +2,16 @@
 // other pages are not built yet, so their addresses are the ones listed in ARCHITECTURE.md §5.2, which those pages honour
 // once they exist. Each link also names the page it opens, so a button is shown only to staff who may open that page.
 import { accountPath, accountsListPath, type AccountsListState, type AccountTab } from '@/features/accounts';
+import type { MoneyViewId } from '@/features/money';
 import { ordersListPath, type OrderChannel, type ServiceType } from '@/features/orders';
 import type { Id } from '@/lib/api';
 import type { DashboardScope } from '../types';
 
-/** Where a link goes and the page resource it needs (`useCanOpenPage`). */
-export type PageTarget = { page: string; to: string };
+/**
+ * Where a link goes and the page resource it needs (`useCanOpenPage`). A link into the Money page also names the `view` it opens:
+ * that page opens for many permissions, so the button is shown only to a staff member who may use that view (decision 026).
+ */
+export type PageTarget = { page: string; to: string; view?: MoneyViewId };
 
 /** The orders channel filter for the dashboard's scope: all channels set no filter. */
 export function channelOf(scope: DashboardScope): OrderChannel | '' {

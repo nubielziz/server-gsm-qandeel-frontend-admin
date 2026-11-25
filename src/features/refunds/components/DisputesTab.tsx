@@ -1,5 +1,6 @@
-// DisputesTab: the "Card disputes" tab. Ports tabDisputes and the dp-open / dp-accept actions of 53-p-refunds.js: the table of
-// disputes with their evidence deadline, the dispute dialog with the evidence pack, and the confirm for accepting the loss.
+// DisputesTab: the content of the Card disputes view (Money back). Ports tabDisputes and the dp-open / dp-accept actions of
+// 53-p-refunds.js: the table of disputes with their evidence deadline, the dispute dialog with the evidence pack, and the confirm
+// for accepting the loss.
 import { useState } from 'react';
 import { EmptyState, Panel, usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';

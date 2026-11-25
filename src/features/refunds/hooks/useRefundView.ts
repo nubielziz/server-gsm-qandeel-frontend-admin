@@ -1,5 +1,6 @@
-// The page's tab, sub-filters, page and sort, kept in the address (`?tab=disputes`, `?status=failed&page=2`), so a link or a
-// reload shows the same list. Changes replace the history entry: Back should leave the page, not walk through every click.
+// The sub-filters, page and sort of one refunds view, kept in the address (`?status=failed&page=2`), so a link or a reload shows the
+// same list. Changes replace the history entry (Back should leave the page, not walk through every click) and keep every other key,
+// the Money page's `view` included.
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router';
 import type { SortState } from '@/components/ui';
@@ -9,27 +10,18 @@ import {
   parseView,
   writePage,
   writeSort,
-  writeTab,
   writeView,
   type RefundTab,
 } from '../lib/view';
 import type { PaymentMethod, RefundStatus } from '../types';
 
-/**
- * `tab` is the tab a table belongs to; it decides which sort is read and written. The page itself leaves it out and reads
- * `view.tab` (the tab the address names).
- */
-export function useRefundView(tab?: RefundTab) {
+/** `tab` is the table the view shows; it decides which sort is read and written. */
+export function useRefundView(tab: RefundTab) {
   const [params, setParams] = useSearchParams();
   const view = useMemo(() => parseView(params), [params]);
-  const owner = tab ?? view.tab;
-  const sort = useMemo(() => parseSort(params, owner), [params, owner]);
+  const sort = useMemo(() => parseSort(params, tab), [params, tab]);
   const page = parsePage(params);
 
-  const setTab = useCallback(
-    (next: RefundTab) => setParams((prev) => writeTab(prev, next), { replace: true }),
-    [setParams],
-  );
   /** A new sub-filter goes back to page 1. */
   const setStatus = useCallback(
     (status: RefundStatus | '') =>
@@ -46,9 +38,9 @@ export function useRefundView(tab?: RefundTab) {
     [setParams],
   );
   const setSort = useCallback(
-    (next: SortState) => setParams((prev) => writeSort(prev, next, owner), { replace: true }),
-    [setParams, owner],
+    (next: SortState) => setParams((prev) => writeSort(prev, next, tab), { replace: true }),
+    [setParams, tab],
   );
 
-  return { view, page, sort, setTab, setStatus, setMethod, setPage, setSort };
+  return { view, page, sort, setStatus, setMethod, setPage, setSort };
 }

@@ -1,4 +1,4 @@
-// Two read-only helpers that borrow routes other features own: the issue-invoice dialog's merchant picker (the accounts list) and the link
+// Two read-only helpers that borrow routes other features own: the Issue invoice view's merchant picker (the accounts list) and the link
 // to a stored file. They stay private and carry no route tag, so the coverage count is not claimed twice.
 import { listAccounts } from '@/features/accounts';
 import { apiUrl, pathOf, type ApiInit, type Id, type ListResult } from '@/lib/api';

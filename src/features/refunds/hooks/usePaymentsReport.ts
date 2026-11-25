@@ -1,4 +1,4 @@
-// The storefront payments report for the Payments tab: the method comparison and one page of the payments. Ports the data side
+// The storefront payments report for the Shop payments view: the method comparison and one page of the payments. Ports the data side
 // of tabPayments (53-p-refunds.js).
 import type { SortState } from '@/components/ui';
 import { useApiQuery } from '@/lib/query';

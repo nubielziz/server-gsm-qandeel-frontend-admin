@@ -1,38 +1,15 @@
-// The Reports tab's choices as address parameters (`?tab=reports&report=profit&by=day&range=30`) and which reports a staff
-// member may open. New in the console (MISMATCHES M124).
-import { hasPermission } from '@/lib/auth/permissions';
+// The choices inside a report as address parameters (`?view=profit&by=day&range=30`). They are the same for every report; which
+// report is open is the Money page's view. New in the console (MISMATCHES M124).
 import type { ProfitGroup } from '../types';
 import { PROFIT_GROUPS, PROFIT_RANGES, VAT_PERIODS, type ProfitRange, type VatPeriod } from './reports';
 import { withParams } from './url';
-
-export type ReportId = 'profit' | 'exposure' | 'vat' | 'funnel';
-
-/**
- * The reports and the permission each needs: profit and wallet exposure `reports:read`, VAT `reports:finance`, the sales funnel
- * `reports:growth`. The funnel takes its period (7, 30 or 90 days) from the same `range` choice as the profit report.
- */
-export const REPORTS: readonly { id: ReportId; label: string; permission: string }[] = [
-  { id: 'profit', label: 'Profit', permission: 'reports:read' },
-  { id: 'exposure', label: 'Wallet exposure', permission: 'reports:read' },
-  { id: 'vat', label: 'VAT', permission: 'reports:finance' },
-  { id: 'funnel', label: 'Sales funnel', permission: 'reports:growth' },
-];
 
 export const DEFAULT_GROUP: ProfitGroup = 'day';
 export const DEFAULT_RANGE: ProfitRange = '30';
 export const DEFAULT_PERIOD: VatPeriod = 'last-month';
 
-/** The choices inside the open report. */
+/** The choices inside the open report. The funnel takes its period (7, 30 or 90 days) from `range`, as the profit report does. */
 export type ReportChoices = { by: ProfitGroup; range: ProfitRange; period: VatPeriod };
-
-export function visibleReports(granted: readonly string[]) {
-  return REPORTS.filter((report) => hasPermission(granted, report.permission));
-}
-
-/** The report in the address when the staff member may open it, else the first they may open. */
-export function resolveReport(requested: string | null, reports: ReturnType<typeof visibleReports>) {
-  return (reports.find((report) => report.id === requested) ?? reports[0])?.id;
-}
 
 /** Reads the report choices from the address; anything unknown falls back to the default. */
 export function parseReportChoices(params: URLSearchParams): ReportChoices {

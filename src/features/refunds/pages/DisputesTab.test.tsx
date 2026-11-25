@@ -1,6 +1,6 @@
-// Tests for the Card disputes tab, run through the whole app against the dev mock API: the table and its deadlines, the dispute
+// Tests for the Card disputes view (Money back), run through the whole app against the dev mock API: the table and its deadlines, the dispute
 // dialog with the evidence pack, submitting evidence, accepting the loss, what the server refuses, and the permission hints.
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,12 +8,10 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { getDispute } from '../api';
-import { dialogNamed, openRefunds, rowWith, tableNamed } from '../test/refundsPage';
+import { DISPUTES_VIEW, dialogNamed, openRefunds, rowWith, tableNamed } from '../test/refundsPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
-
-const DISPUTES = '/refunds?tab=disputes';
 
 /** Opens the dialog of a dispute from its row and waits for the evidence pack. */
 async function openDispute(
@@ -31,7 +29,7 @@ async function openDispute(
 
 describe('the disputes table', () => {
   it('lists the disputes with the soonest deadline first, as the demo does', async () => {
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const table = await tableNamed('Card disputes');
     await table.findByText('DP-2004');
     const ids = table.getAllByRole('row').map((row) => /DP-\d+/.exec(row.textContent ?? '')?.[0]);
@@ -40,7 +38,7 @@ describe('the disputes table', () => {
   });
 
   it('shows the amount at stake with the fee, the reason and the deadline in the critical colour inside three days', async () => {
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const soon = await rowWith('Card disputes', 'DP-2004');
     expect(soon.getByRole('button', { name: 'SF-20405' })).toBeInTheDocument();
     expect(soon.getByRole('link', { name: 'Olivia Grant' })).toHaveAttribute('href', '/accounts/125');
@@ -58,7 +56,7 @@ describe('the disputes table', () => {
   });
 
   it('says when evidence was sent or the dispute closed, instead of a deadline', async () => {
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const review = await rowWith('Card disputes', 'DP-2003');
     expect(review.getByText(/^Sent \d+d ago$/)).toBeInTheDocument();
     expect(review.getByText('With the card network')).toBeInTheDocument();
@@ -71,9 +69,9 @@ describe('the disputes table', () => {
 
   it('sorts on the server and keeps the sort in the address', async () => {
     const user = userEvent.setup();
-    const app = await openRefunds(DISPUTES);
+    const app = await openRefunds(DISPUTES_VIEW);
     await user.click(await screen.findByRole('button', { name: 'Evidence due' }));
-    expect(app.location()).toBe('/refunds?tab=disputes&sort=evidenceDueAt&dir=desc');
+    expect(app.location()).toBe('/money?view=disputes&sort=evidenceDueAt&dir=desc');
     await waitFor(async () =>
       expect((await tableNamed('Card disputes')).getAllByRole('row')[1]).toHaveTextContent('DP-2005'),
     );
@@ -81,9 +79,9 @@ describe('the disputes table', () => {
 
   it('opens an order’s drawer in place from its link', async () => {
     const user = userEvent.setup();
-    const app = await openRefunds(DISPUTES);
+    const app = await openRefunds(DISPUTES_VIEW);
     await user.click((await rowWith('Card disputes', 'DP-2004')).getByRole('button', { name: 'SF-20405' }));
-    expect(app.location()).toBe('/refunds?tab=disputes&order=20405');
+    expect(app.location()).toBe('/money?view=disputes&order=20405');
     expect(await dialogNamed('SF-20405')).toBeTruthy();
   });
 });
@@ -91,7 +89,7 @@ describe('the disputes table', () => {
 describe('the dispute dialog', () => {
   it('shows the deadline, what winning and losing mean, and the evidence pack with its strength', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     expect(dialog.getByText(/^Olivia Grant · SF-20405 · \$11\.99 · opened /)).toBeInTheDocument();
     expect(
@@ -125,7 +123,7 @@ describe('the dispute dialog', () => {
 
   it('is read-only for a dispute that is closed or with the card network', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const won = await openDispute(user, 'DP-2002', 'View', 'DP-2002 · Product unacceptable (13.3)');
     expect(
       won.getByText(
@@ -153,7 +151,7 @@ describe('the dispute dialog', () => {
 
   it('advises accepting a weak case', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const original = await getDispute(2005);
     mockServer.use(
       http.get('*/admin/disputes/:id', ({ params }) =>
@@ -172,7 +170,7 @@ describe('the dispute dialog', () => {
 
   it('shows the error with Retry when the pack cannot be read, and will not submit', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     mockServer.use(
       http.get('*/admin/disputes/:id', () =>
         problem(500, 'INTERNAL', 'Could not build the pack', 'Try again.'),
@@ -197,7 +195,7 @@ describe('submit evidence', () => {
         return undefined; // the mock route answers
       }),
     );
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('checkbox', { name: 'Include Order history' }));
     await user.type(
@@ -226,7 +224,7 @@ describe('submit evidence', () => {
 
   it('will not submit with nothing ticked', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     for (const box of dialog.getAllByRole('checkbox')) {
       if ((box as HTMLInputElement).checked) await user.click(box);
@@ -248,7 +246,7 @@ describe('submit evidence', () => {
         ),
       ),
     );
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('button', { name: 'Submit evidence' }));
     expect(
@@ -267,7 +265,7 @@ describe('submit evidence', () => {
         ]),
       ),
     );
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('button', { name: 'Submit evidence' }));
     expect(await dialog.findByText('Keep the note under 1000 characters.')).toBeInTheDocument();
@@ -279,10 +277,11 @@ describe('submit evidence', () => {
 });
 
 describe('accept the loss', () => {
-  it('asks first, naming the amount and the fee, then closes the dispute as lost and moves the strip', async () => {
+  it('asks first, naming the amount and the fee, then closes the dispute as lost and lowers the count on the link', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
-    expect(await screen.findByText('$46')).toBeInTheDocument();
+    await openRefunds(DISPUTES_VIEW);
+    // The page's link counts the disputes that wait for evidence: 2 before, 1 once DP-2004 is lost.
+    expect(await screen.findByRole('link', { name: 'Card disputes (2)' })).toBeInTheDocument();
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('button', { name: 'Accept the loss' }));
 
@@ -301,14 +300,35 @@ describe('accept the loss', () => {
     await waitFor(async () =>
       expect((await rowWith('Card disputes', 'DP-2004')).getByText('Lost')).toBeInTheDocument(),
     );
-    // $45.59 before, plus $11.99 and the $15 fee.
-    expect(await screen.findByText('$73')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Card disputes (1)' })).toBeInTheDocument();
     expect((await getDispute(2004)).status).toBe('lost');
+  });
+
+  it('refreshes the "Lost to chargebacks" figure of the Overview once the loss is accepted', async () => {
+    const user = userEvent.setup();
+    await openRefunds('/money');
+    const figures = async () =>
+      within(await screen.findByRole('region', { name: 'Refund and dispute figures' }));
+    // The Overview reads the figure once; the query stays in the cache while the disputes view is on screen (nothing re-reads it by itself).
+    expect(await (await figures()).findByText('$46')).toBeInTheDocument();
+    const sections = () => within(screen.getByRole('navigation', { name: 'Money sections' }));
+    await user.click(sections().getByRole('link', { name: /^Money back/ }));
+    await user.click(await screen.findByRole('link', { name: /^Card disputes/ }));
+    const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
+    await user.click(dialog.getByRole('button', { name: 'Accept the loss' }));
+    const confirm = await dialogNamed('Accept the loss on DP-2004?');
+    await user.click(confirm.getByRole('button', { name: 'Accept the loss' }));
+    expect(await screen.findByText('DP-2004 closed as lost')).toBeInTheDocument();
+
+    // Back on the Overview the figure is read again: $45.59 before, plus $11.99 and the $15 fee.
+    await user.click(sections().getByRole('link', { name: 'Overview' }));
+    expect(await (await figures()).findByText('$73')).toBeInTheDocument();
+    expect((await figures()).queryByText('$46')).not.toBeInTheDocument();
   });
 
   it('can be cancelled without changing anything', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('button', { name: 'Accept the loss' }));
     const confirm = await dialogNamed('Accept the loss on DP-2004?');
@@ -329,7 +349,7 @@ describe('accept the loss', () => {
         ),
       ),
     );
-    await openRefunds(DISPUTES);
+    await openRefunds(DISPUTES_VIEW);
     const dialog = await openDispute(user, 'DP-2004', 'Prepare evidence', 'DP-2004 · Fraudulent (10.4)');
     await user.click(dialog.getByRole('button', { name: 'Accept the loss' }));
     const confirm = await dialogNamed('Accept the loss on DP-2004?');
@@ -341,7 +361,7 @@ describe('accept the loss', () => {
 describe('permissions', () => {
   it('lets a reader look at the pack but not answer: the buttons are disabled and name the permission', async () => {
     const user = userEvent.setup();
-    await openRefunds(DISPUTES, { permissions: ['disputes:read'] });
+    await openRefunds(DISPUTES_VIEW, { permissions: ['disputes:read'] });
     const row = await rowWith('Card disputes', 'DP-2004');
     await user.click(row.getByRole('button', { name: 'Prepare evidence' }));
     const dialog = await dialogNamed('DP-2004 · Fraudulent (10.4)');

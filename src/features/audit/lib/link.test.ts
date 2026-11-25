@@ -80,10 +80,16 @@ describe('recordTarget', () => {
 
   it('sends the other pages to the tab that holds the record', () => {
     expect(recordTarget('blocklist', 5, 'IMEI 35')).toEqual({ page: 'risk', to: '/risk?tab=block' });
-    expect(recordTarget('refund', 1001, 'Goodwill')).toEqual({ page: 'refunds', to: '/refunds' });
+    // A record on the Money page names its view too: the page opens for many permissions, the link needs the view's own.
+    expect(recordTarget('refund', 1001, 'Goodwill')).toEqual({
+      page: 'money',
+      to: '/money?view=refunds',
+      view: 'refunds',
+    });
     expect(recordTarget('dispute', 2004, 'DP-2004')).toEqual({
-      page: 'refunds',
-      to: '/refunds?tab=disputes',
+      page: 'money',
+      to: '/money?view=disputes',
+      view: 'disputes',
     });
     expect(recordTarget('staff', 2, 'Lina S.')).toEqual({ page: 'access', to: '/access?tab=admins' });
   });

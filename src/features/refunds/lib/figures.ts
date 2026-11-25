@@ -1,4 +1,4 @@
-// The four figures above the tabs. Ports `refundStrip` of 53-p-refunds.js. The counts come from list totals, the money from
+// The four figures of the Money Overview. Ports `refundStrip` of 53-p-refunds.js. The counts come from list totals, the money from
 // the payments report's totals, so the console adds no money: it only formats what the server sent. A figure whose source the
 // staff member may not read is left out.
 import type { StatCell } from '@/components/ui';

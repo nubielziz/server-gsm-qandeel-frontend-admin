@@ -3,6 +3,7 @@
 // lacks are shown disabled.
 import { useNavigate } from 'react-router';
 import { Button, copyText, Icon, Menu, usePopover, type MenuItem } from '@/components/ui';
+import { refundsPath } from '@/features/refunds';
 import type { OrderGrants } from '../hooks/useOrderGrants';
 import { orderActions } from '../lib/actions';
 import { orderLabel } from '../lib/status';
@@ -74,7 +75,7 @@ export function OrderRowMenu({
   } else if (can.refundsLink) {
     items.push(
       { separator: true },
-      { label: 'Refund in Refunds', icon: 'undo', run: () => void navigate('/refunds') },
+      { label: 'Refund in Money', icon: 'undo', run: () => void navigate(refundsPath()) },
     );
   }
 

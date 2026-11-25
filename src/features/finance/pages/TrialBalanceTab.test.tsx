@@ -1,4 +1,4 @@
-// Tests for the Trial balance tab, run through the whole app against the dev mock API: the accounts with their debit or
+// Tests for the Trial balance view, run through the whole app against the dev mock API: the accounts with their debit or
 // credit, the totals and integrity check from the server, and the Entries button that opens the ledger on one account.
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -13,7 +13,7 @@ vi.setConfig({ testTimeout: 20_000 });
 
 describe('the trial balance', () => {
   it('lists the accounts in the demo’s order with a debit or a credit each, and the totals', async () => {
-    await openFinance('/finance?tab=accounts');
+    await openFinance('/money?view=trial-balance');
     const table = await tableNamed('Trial balance');
     const names = (await table.findAllByRole('row')).map((row) => row.textContent ?? '');
     expect(names[1]).toMatch(/^Bank/);
@@ -32,11 +32,18 @@ describe('the trial balance', () => {
   });
 
   it('says the books balance, and points to Run reconciliation for the rest', async () => {
-    await openFinance('/finance?tab=accounts');
+    await openFinance('/money?view=trial-balance');
     expect(await screen.findByText('Integrity checks')).toBeInTheDocument();
     expect(screen.getByText('Debits equal credits')).toBeInTheDocument();
     expect(screen.getByText(/^Passes\. \$[\d,.]+ on both sides$/)).toBeInTheDocument();
     expect(screen.getByText('Accounts match their entries')).toBeInTheDocument();
+    // The button lives on the Money page's Overview now, and the sentence says so with a link to it.
+    const sentence = screen.getByText(/^Run reconciliation on the/);
+    expect(sentence).toHaveTextContent(
+      'Run reconciliation on the Overview compares every account with the entries behind it and lists any difference.',
+    );
+    expect(within(sentence).getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/money');
+    expect(sentence).not.toHaveTextContent('top right');
   });
 
   it('flags totals that do not match', async () => {
@@ -53,7 +60,7 @@ describe('the trial balance', () => {
         }),
       ),
     );
-    await openFinance('/finance?tab=accounts');
+    await openFinance('/money?view=trial-balance');
     expect(
       await screen.findByText(/^Does not match\. \$100\.00 of debits against \$90\.00 of credits$/),
     ).toBeInTheDocument();
@@ -61,9 +68,9 @@ describe('the trial balance', () => {
 
   it('opens the ledger on one account with the Entries button', async () => {
     const user = userEvent.setup();
-    const app = await openFinance('/finance?tab=accounts');
+    const app = await openFinance('/money?view=trial-balance');
     await user.click(await screen.findByRole('button', { name: 'View ledger entries for Bank' }));
-    expect(app.location()).toBe('/finance?account=bank');
+    expect(app.location()).toBe('/money?view=ledger&account=bank');
     expect(await screen.findByRole('button', { name: 'Remove account filter Bank' })).toBeInTheDocument();
   });
 
@@ -81,7 +88,7 @@ describe('the trial balance', () => {
         ),
       ),
     );
-    await openFinance('/finance?tab=accounts');
+    await openFinance('/money?view=trial-balance');
     expect(await screen.findByText('Could not load the trial balance')).toBeInTheDocument();
     expect(screen.getByText('You cannot read the ledger.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();

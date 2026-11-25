@@ -1,5 +1,5 @@
-// What the Invoices tab says about an invoice: kind names, status badges, who it is billed to, and the amount typed in the
-// issue dialog. New in the console (MISMATCHES M123), so there is no demo function to port.
+// What the Invoices view says about an invoice: kind names, status badges, who it is billed to, and the amount typed in the
+// Issue invoice view. New in the console (MISMATCHES M123), so there is no demo function to port.
 import type { StatusBadge } from './payments';
 import { accountPath } from '@/features/accounts';
 import { maskedAccountLabel, maskEmail } from '@/lib/format';
@@ -51,7 +51,7 @@ export function billedTo(invoice: Pick<Invoice, 'client' | 'customer'> & Partial
 const AMOUNT = /^(\d{1,12})(?:\.(\d{1,4}))?$/;
 
 /**
- * The amount typed in the issue dialog as the 4-decimal money string the API takes ("125.5" is "125.5000"), or null
+ * The amount typed in the Issue invoice view as the 4-decimal money string the API takes ("125.5" is "125.5000"), or null
  * when it is not an amount. A leading "$" and thousands commas are allowed. Done on the text, with no float maths.
  */
 export function normalizeAmount(text: string): string | null {

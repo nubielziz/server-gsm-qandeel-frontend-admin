@@ -1,4 +1,4 @@
-// The Deposits tab's status sub-tab and sort as address parameters, and the API filters for each sub-tab. Ports `st.payTab`
+// The Deposits view's status sub-tab and sort as address parameters, and the API filters for each sub-tab. Ports `st.payTab`
 // and the row filter of paymentsTab in 45-p-finance.js; the demo filtered in memory, the console asks the server.
 import type { SortState } from '@/components/ui';
 import type { PaymentOwner, PaymentStatus } from '../types';

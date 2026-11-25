@@ -1,4 +1,4 @@
-// The report reads of the Reports tab. Each report has its own route and its own query key, so opening one asks
+// The report reads of the report views. Each report has its own route and its own query key, so opening one asks
 // only for it, and the server does all the adding up. New in the console (MISMATCHES M124).
 import { useApiQuery } from '@/lib/query';
 import { getFunnel, getProfitReport, getVatReport, getWalletExposure } from '../api';
@@ -16,7 +16,7 @@ export function useProfitReport(by: ProfitGroup, range: ProfitRange, enabled = t
   });
 }
 
-/** The merchant wallets and the store balances. The header's wallet figures share this read, so it asks again as the header does. */
+/** The merchant wallets and the store balances. The Overview's wallet figures share this read, so it asks again as the Overview does. */
 export function useWalletExposure(enabled = true) {
   return useApiQuery({
     queryKey: [...REPORT_KEY, 'wallet-exposure'],

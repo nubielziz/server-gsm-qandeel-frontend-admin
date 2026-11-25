@@ -1,5 +1,5 @@
 // PaymentsPart: the "Payments" part of the record, a list: the wallet top-ups of one account (either wallet kind; the server lists nothing else, so
-// a guest, who never tops up, has no such part), newest first, with the number linking to the payment in Finance, the method, the status, the
+// a guest, who never tops up, has no such part), newest first, with the number linking to the payment in Money, the method, the status, the
 // amount and the day. The page and its size are the part's own state; the footer pager is pinned. The read filters by `accountId`, never `customerId`.
 import { useState } from 'react';
 import { Link } from 'react-router';

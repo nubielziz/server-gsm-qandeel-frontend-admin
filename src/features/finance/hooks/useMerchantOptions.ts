@@ -1,5 +1,5 @@
-// The merchant-rank account names behind the issue-invoice dialog's picker (the accounts list, `rankKind=merchant`). They are read once and kept for a few minutes: the list
-// changes rarely, and the dialog should not wait for a request each time it opens.
+// The merchant-rank account names behind the Issue invoice view's picker (the accounts list, `rankKind=merchant`). They are read once and kept for a few minutes: the list
+// changes rarely, and the view should not wait for a request each time it opens.
 import { useApiQuery } from '@/lib/query';
 import { listMerchantOptions } from '../api/lookups';
 import { MERCHANT_LOOKUP_KEY } from './keys';

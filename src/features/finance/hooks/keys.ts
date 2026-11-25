@@ -4,13 +4,13 @@ import type { QueryKey } from '@tanstack/react-query';
 import { ACCOUNT_WALLET_KEY, DASHBOARD_KEY, type InvalidateTarget } from '@/lib/query';
 import type { Payment } from '../types';
 
-/** The Pending / Approved / Rejected / All counts of the Deposits tab, and the header's "waiting" figure. */
+/** The Pending / Approved / Rejected / All counts of the Deposits view, and the "waiting" figure of the Overview and of the page's links. */
 export const PAYMENT_COUNTS_KEY = ['api', 'finance', 'payment-counts'] as const;
 
-/** The trial balance (the tab and the header's Bank and Supplier prepaid figures). */
+/** The trial balance (the Trial balance view and the Overview's Bank and Supplier prepaid figures). */
 export const TRIAL_BALANCE_KEY = ['api', 'finance', 'trial-balance'] as const;
 
-/** The three reports (the header's wallet figures read the wallet exposure one). */
+/** The reports (the Overview's wallet figures read the wallet exposure one). */
 export const REPORT_KEY = ['api', 'finance', 'reports'] as const;
 
 /** The store balances list, and what an approved store balance top-up makes stale besides it. */
@@ -29,10 +29,10 @@ export const ACCOUNT_PAYMENTS_KEY = ['api', 'accounts', 'payments'] as const;
 /** The ledger entries posted for each deposit (its "View ledger entries" dialog). */
 export const PAYMENT_ENTRIES_KEY = ['api', 'finance', 'payment-entries'] as const;
 
-/** Merchant-rank account names for the issue-invoice dialog. */
+/** Merchant-rank account names for the Issue invoice view. */
 export const MERCHANT_LOOKUP_KEY = ['api', 'finance', 'lookups', 'merchants'] as const;
 
-/** How often the deposit queue, the counts and the header ask again while the page is open. */
+/** How often the deposit queue, the counts and the Overview ask again while the page is open. */
 export const REFRESH_MS = 30_000;
 
 /** What any decision on a deposit makes stale besides Refine's own lists: the counts and the sidebar's pending count. */

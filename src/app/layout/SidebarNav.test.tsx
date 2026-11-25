@@ -22,7 +22,7 @@ describe('SidebarNav', () => {
     renderNav({
       orders: { count: 43, late: 17 },
       support: { count: 10, late: 3, lateLabel: 'past the reply target' },
-      refunds: { count: 2 },
+      money: { count: 2 },
     });
     const orders = screen.getByRole('link', { name: /^Orders/ });
     expect(within(orders).getByText('43')).toHaveClass('count');
@@ -33,9 +33,9 @@ describe('SidebarNav', () => {
       within(screen.getByRole('link', { name: /^Support/ })).getByText('3 past the reply target'),
     ).toBeInTheDocument();
 
-    const refunds = screen.getByRole('link', { name: /^Refunds/ });
-    expect(within(refunds).getByText('2')).toBeInTheDocument();
-    expect(refunds.querySelector('.dot')).toBeNull();
+    const money = screen.getByRole('link', { name: /^Money/ });
+    expect(within(money).getByText('2')).toBeInTheDocument();
+    expect(money.querySelector('.dot')).toBeNull();
   });
 
   it('lists one Accounts entry in Operations, after Orders, in the place of Merchants and Customers', () => {
@@ -65,28 +65,30 @@ describe('SidebarNav', () => {
   });
 
   it('shows nothing for a zero count or an unknown page', () => {
-    renderNav({ finance: { count: 0, late: 2 }, nowhere: { count: 9 } });
-    expect(screen.getByRole('link', { name: 'Finance' })).toBeInTheDocument();
+    renderNav({ money: { count: 0, late: 2 }, nowhere: { count: 9 } });
+    expect(screen.getByRole('link', { name: 'Money' })).toBeInTheDocument();
     expect(screen.queryByText('9')).not.toBeInTheDocument();
   });
 
   it('leaves out a group with no page', () => {
     const money = PAGES.filter((page) => page.meta.group === 'Money');
     renderNav({}, money);
-    expect(screen.getByText('Money')).toBeInTheDocument();
+    // The group heading and the one page in it are both called Money.
+    expect(screen.getByText('Money', { selector: 'p' })).toBeInTheDocument();
     expect(screen.queryByText('Operations')).not.toBeInTheDocument();
     // Only the pages handed over show, each by its name: no link of another group comes with them.
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(
       money.map((page) => page.meta.label),
     );
-    expect(screen.getByRole('link', { name: 'Finance' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Refunds/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Money' })).toHaveAttribute('href', '/money');
+    expect(screen.queryByRole('link', { name: 'Finance' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Refunds/ })).not.toBeInTheDocument();
   });
 
   it('tells the shell when a link is followed', async () => {
     const onNavigate = vi.fn();
     renderNav({}, PAGES, onNavigate);
-    await userEvent.click(screen.getByRole('link', { name: 'Finance' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Money' }));
     expect(onNavigate).toHaveBeenCalledOnce();
   });
 });

@@ -1,5 +1,5 @@
-// PaymentsTab: the "Payments" tab. Ports tabPayments and the rf-method action of 53-p-refunds.js: the comparison of payment
-// methods and the storefront payments table with its method filter. Both come from one report call
+// PaymentsTab: the content of the Shop payments view (Money in). Ports tabPayments and the rf-method action of 53-p-refunds.js:
+// the comparison of payment methods and the storefront payments table with its method filter. Both come from one report call
 // (`GET /admin/reports/payments`); the method, page and sort live in the address.
 import { EmptyState, Panel, SegmentedControl, usePageClamp } from '@/components/ui';
 import { useNow } from '@/lib/format';

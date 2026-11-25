@@ -11,11 +11,16 @@ const NO_COUNTS: NavCounts = {};
 
 /**
  * The counts for the sidebar. It makes the dashboard's default call (all channels, 7 days), which the dashboard page
- * shares, and asks again every minute. Without `dashboard:read` it makes no call and the sidebar shows no counts.
+ * shares, and asks again every minute. Without `dashboard:read` it makes no call and the sidebar shows no counts. The Money
+ * count keeps only the parts the staff member's permissions allow (`toNavCounts`).
  */
 export function useDashboardNavCounts(): NavCounts {
   const { data: me } = useMe();
   const allowed = me !== undefined && hasPermission(me.permissions, 'dashboard:read');
   const { data } = useDashboard({ scope: 'all', days: 7 }, { enabled: allowed });
-  return useMemo(() => (allowed && data ? toNavCounts(data.navCounts) : NO_COUNTS), [allowed, data]);
+  const permissions = me?.permissions;
+  return useMemo(
+    () => (allowed && data && permissions ? toNavCounts(data.navCounts, permissions) : NO_COUNTS),
+    [allowed, data, permissions],
+  );
 }

@@ -1,4 +1,4 @@
-// What the signed-in staff member may do on the refunds page. Hiding a tab or disabling a button is a hint only: the server
+// What the signed-in staff member may do in the refunds views. Hiding a view or disabling a button is a hint only: the server
 // still checks every permission (ARCHITECTURE §3).
 import { useMemo } from 'react';
 import { useMe } from '@/features/auth';

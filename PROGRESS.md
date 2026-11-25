@@ -11,6 +11,20 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-25): one Money page (decision 026)
+
+The owner asked to merge Finance and Refunds & disputes into one page, **Money** (`/money`), in the layout of the Accounts page, frontend only.
+The page has a strip of Overview, Money in (Deposits, Shop payments), Money back (Refunds, Card disputes), Books (Ledger, Trial balance,
+Store balances, Invoices, +Issue invoice) and Reports (Profit, Wallet exposure, VAT, Sales funnel), then the text links of the open tab; every
+link is a full view (`?view=`). The Overview carries both pages' figures, "Run reconciliation" and a "Waiting for you" list; "+Issue invoice"
+is a full view. The views stay in the finance and refunds features (`views.ts`, loaded on demand); the `money` feature holds the frame and
+the one address builder (`src/features/money/lib/moneyViews.ts`). `/finance`, `/refunds`, `/commissions` and `/checkouts` redirect for
+good with their keys. Links from the palette, the dashboard and the audit log, and the sidebar count, follow each view's own permissions.
+No route, type or line of an API function moved, so the backend's contract of the console is unchanged.
+Built by four Sonnet agents in parallel worktrees on a contract the lead wrote first, merged by the lead, reviewed by an Opus reviewer (four
+findings, fixed by a Sonnet agent and checked by the lead); plan in `/home/saifi/gsm-project/.money-page/PLAN.md`.
+**Checks:** typecheck, lint, build and the whole suite (see the merge commit).
+
 ## Status (2026-11-25): Shop content trimmed (decision 025)
 
 The owner asked to remove the Landing pages tab and the TAC catalogue tab of Shop content and to keep only the index section of its

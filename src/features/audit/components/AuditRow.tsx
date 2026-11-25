@@ -4,7 +4,7 @@ import { Avatar, Button, cx, Icon } from '@/components/ui';
 import { fmtDate, fmtTime } from '@/lib/format';
 import { actorText } from '../lib/actor';
 import { diffOf, valueText } from '../lib/diff';
-import type { RecordPage } from '../lib/link';
+import type { RecordAccess } from '../lib/link';
 import { actionText, auditCode } from '../lib/verb';
 import type { AuditLog } from '../types';
 import { AuditDetails } from './AuditDetails';
@@ -15,7 +15,7 @@ export interface AuditRowProps {
   open: boolean;
   onToggle: (id: number) => void;
   role: string | undefined;
-  canOpen: (page: RecordPage) => boolean;
+  canOpen: RecordAccess;
   onOpenOrder: (orderId: number) => void;
 }
 

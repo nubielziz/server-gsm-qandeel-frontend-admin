@@ -1,6 +1,6 @@
 // Mock deposits: the demo's `S.payments` as the API's payment DTO (a merchant account, a method, an amount, a fee, a status), plus the
 // top-ups of store balances from the accounts mock, kept in memory so approving and rejecting in the dev layer changes what the
-// Deposits tab shows. Mock data only (decision 014).
+// Deposits view shows. Mock data only (decision 014).
 import { accountTopUps, walletOfAccount, type MockTopUp } from '@/features/accounts/mocks';
 import { Collection } from '@/mocks/db';
 import { demoNumericId, demoRows, loadDemoState, toIso, toMoney } from '@/mocks/seed';

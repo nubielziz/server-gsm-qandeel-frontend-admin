@@ -1,8 +1,8 @@
-// Small helpers every Finance tab uses to keep its page, sort and filters in the address (`?tab=ledger&page=2`), the way
+// Small helpers every finance view uses to keep its page, sort and filters in the address (`?view=ledger&page=2`), the way
 // the orders page does (MISMATCHES M22). Nothing here decides what a filter means; it only reads and writes the question.
 import type { SortState } from '@/components/ui';
 
-/** Rows per page of the Finance lists. */
+/** Rows per page of the finance lists. */
 export const PAGE_SIZE = 25;
 
 /** Digits only, else empty: an id or page from the address that is not a number is dropped. */

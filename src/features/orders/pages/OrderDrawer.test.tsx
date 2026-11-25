@@ -96,12 +96,12 @@ describe('what the drawer shows', () => {
     expect(drawer.getByRole('button', { name: 'Refund…' })).toBeEnabled();
   });
 
-  it('sends a delivered storefront order to the Refunds page', async () => {
+  it('sends a delivered storefront order to the Refunds view of Money', async () => {
     const { drawer } = await openDrawer(STOREFRONT_DONE, 'SF-20400');
     expect(drawer.getByText('Storefront')).toBeInTheDocument();
     expect(drawer.getByText('Result sent to customer')).toBeInTheDocument();
     expect(drawer.getByText('Storefront orders are refunded from Refunds.')).toBeInTheDocument();
-    expect(drawer.getByRole('link', { name: /Open Refunds/ })).toHaveAttribute('href', '/refunds');
+    expect(drawer.getByRole('link', { name: /Open Refunds/ })).toHaveAttribute('href', '/money?view=refunds');
     expect(drawer.queryByRole('button', { name: 'Refund…' })).not.toBeInTheDocument();
   });
 

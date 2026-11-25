@@ -1,4 +1,4 @@
-// Types for the refunds feature (`/refunds`): refunds, card disputes and the storefront payments report, with the bodies of
+// Types for the refunds feature (the Money page's refunds views): refunds, card disputes and the storefront payments report, with the bodies of
 // their actions. The map gives the tables but no bodies (MISMATCHES M10), so every shape below is an assumed contract, built
 // from the generated rows in `src/lib/api/schema.gen.ts` and narrowed to what the screens use.
 import type { NamedRef } from '@/features/orders';

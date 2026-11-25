@@ -1,4 +1,4 @@
-// What the Deposits tab says about a payment: the method names, the status badges, the reasons a deposit can be rejected and
+// What the Deposits view says about a payment: the method names, the status badges, the reasons a deposit can be rejected and
 // how they become the one reason the server stores. Ports METHODS, payBadge and the reject dialog of 45-p-finance.js.
 import type { BadgeTone, IconName } from '@/components/ui';
 import { maskedAccountLabel, money, pct } from '@/lib/format';

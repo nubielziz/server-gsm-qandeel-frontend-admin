@@ -1,5 +1,5 @@
 // Tests for the command palette's journal search, run against the dev mock API: it asks the server for up to five entries and
-// each result opens the entry’s drawer on the Ledger tab.
+// each result opens the entry’s drawer on the Ledger view.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { ledgerPaletteSource, PALETTE_JOURNAL_LIMIT } from './paletteSource';
@@ -20,7 +20,7 @@ describe('ledgerPaletteSource', () => {
       icon: 'receipt',
     });
     items[0].run();
-    expect(go).toHaveBeenCalledWith('/finance?journal=25');
+    expect(go).toHaveBeenCalledWith('/money?view=ledger&journal=25');
   });
 
   it('lists at most five entries', async () => {

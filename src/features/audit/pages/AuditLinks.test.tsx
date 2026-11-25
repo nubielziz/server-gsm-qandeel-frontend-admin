@@ -54,7 +54,7 @@ describe('the links', () => {
     expect(await link('account', 'Jack Turner')).toBe('/accounts/119');
     expect(await link('service', 'T-Mobile USA Unlock')).toBe('/products?view=edit&id=6');
     expect(await link('blocklist', 'IMEI 35 389011 884201 9')).toBe('/risk?tab=block');
-    expect(await link('refund', 'Goodwill refund on a delayed unlock')).toBe('/refunds');
+    expect(await link('refund', 'Goodwill refund on a delayed unlock')).toBe('/money?view=refunds');
   });
 
   it('sends an old customer row the server could not resolve through the lookup of the Accounts page', async () => {
@@ -153,6 +153,52 @@ describe('permissions', () => {
     await openAudit('/audit?type=service', { permissions: [...AUDIT_ONLY, 'orders:read'] });
     const row = await entryWith('T-Mobile USA Unlock');
     expect(row.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('links a refund only to a role that may use Refunds, and a dispute only to one that may use Card disputes', async () => {
+    answerWith([
+      entry({
+        id: 7,
+        entityType: 'refund',
+        entityId: 1001,
+        entityLabel: 'Goodwill refund',
+        action: 'approved',
+      }),
+      entry({ id: 8, entityType: 'dispute', entityId: 2004, entityLabel: 'DP-2004', action: 'lost' }),
+    ]);
+    // disputes:read opens the Money page, but not its Refunds view: the refund stays text, the dispute is a link.
+    await openAudit('/audit', { permissions: [...AUDIT_ONLY, 'disputes:read'] });
+    const refund = await entryWith('Goodwill refund');
+    const dispute = await entryWith('DP-2004');
+    await waitFor(() =>
+      expect(dispute.getByRole('link', { name: 'DP-2004' })).toHaveAttribute('href', '/money?view=disputes'),
+    );
+    expect(refund.queryByRole('link')).not.toBeInTheDocument();
+    expect(refund.getByText('Goodwill refund')).toHaveClass('font-medium');
+  });
+
+  it('links a refund to a role with refunds:read, and leaves a dispute as text', async () => {
+    answerWith([
+      entry({
+        id: 7,
+        entityType: 'refund',
+        entityId: 1001,
+        entityLabel: 'Goodwill refund',
+        action: 'approved',
+      }),
+      entry({ id: 8, entityType: 'dispute', entityId: 2004, entityLabel: 'DP-2004', action: 'lost' }),
+    ]);
+    await openAudit('/audit', { permissions: [...AUDIT_ONLY, 'refunds:read'] });
+    const refund = await entryWith('Goodwill refund');
+    const dispute = await entryWith('DP-2004');
+    await waitFor(() =>
+      expect(refund.getByRole('link', { name: 'Goodwill refund' })).toHaveAttribute(
+        'href',
+        '/money?view=refunds',
+      ),
+    );
+    expect(dispute.queryByRole('link')).not.toBeInTheDocument();
+    expect(dispute.getByText('DP-2004')).toHaveClass('font-medium');
   });
 
   it('offers an account link with the accounts permission', async () => {

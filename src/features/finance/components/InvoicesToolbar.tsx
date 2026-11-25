@@ -1,6 +1,6 @@
-// InvoicesToolbar: the search box, the status and kind filters, Clear filters, the live count and the Issue manual invoice
-// button above the invoice list. New in the console (MISMATCHES M123). The search text is sent after a pause.
-import { Button, Icon, SearchInput, SelectField, useDebouncedCommit } from '@/components/ui';
+// InvoicesToolbar: the search box, the status and kind filters, Clear filters and the live count above the invoice list. New in the
+// console (MISMATCHES M123). The search text is sent after a pause. Issuing an invoice is the Issue invoice view, not a button here.
+import { Button, SearchInput, SelectField, useDebouncedCommit } from '@/components/ui';
 import { num } from '@/lib/format';
 import {
   hasInvoiceFilters,
@@ -16,9 +16,6 @@ export interface InvoicesToolbarProps {
   onClear: () => void;
   /** The number of invoices that match, from the server. */
   total: number | undefined;
-  /** The props of the Issue button: disabled, with the missing permission as its title, when it is not allowed. */
-  issue: { disabled: boolean; title?: string };
-  onIssue: () => void;
 }
 
 const STATUS_OPTIONS = [
@@ -30,7 +27,7 @@ const KIND_OPTIONS = [
   ...INVOICE_KINDS.map((kind) => ({ value: kind, label: invoiceKindLabel(kind) })),
 ];
 
-export function InvoicesToolbar({ filters, onChange, onClear, total, issue, onIssue }: InvoicesToolbarProps) {
+export function InvoicesToolbar({ filters, onChange, onClear, total }: InvoicesToolbarProps) {
   const search = useDebouncedCommit(filters.q, (q) => onChange({ q }));
   return (
     <div className="flex flex-wrap items-center gap-2 p-3">
@@ -58,10 +55,6 @@ export function InvoicesToolbar({ filters, onChange, onClear, total, issue, onIs
           {num(total)} {total === 1 ? 'invoice' : 'invoices'}
         </span>
       )}
-      <Button variant="primary" disabled={issue.disabled} title={issue.title} onClick={onIssue}>
-        <Icon name="plus" className="ic-sm" />
-        Issue manual invoice
-      </Button>
     </div>
   );
 }
