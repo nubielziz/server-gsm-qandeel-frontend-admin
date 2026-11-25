@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { DataTable, FooterPager, RefreshTool, usePageClamp, useRowSelection } from '@/components/ui';
 import { useNow } from '@/lib/format';
+import { useTabEnter } from '@/lib/motion';
 import { useAccountCounts } from '../../hooks/useAccountCounts';
 import { useAccountsList } from '../../hooks/useAccountsList';
 import { useRanks } from '../../hooks/useRanks';
@@ -15,7 +16,14 @@ import type { AccountsViewProps, OpenAction } from '../types';
 import { accountColumns } from './accountColumns';
 import { AllEmpty } from './AllEmpty';
 import { BulkStrip } from './BulkStrip';
-import { hasFilters, listFilters, type ListAddress, type ListSort } from './listAddress';
+import {
+  hasFilters,
+  listFilters,
+  STRIP_KEYS,
+  stripKeyOf,
+  type ListAddress,
+  type ListSort,
+} from './listAddress';
 import { QuickSearch } from './QuickSearch';
 import { useListAddress } from './useListAddress';
 
@@ -30,6 +38,13 @@ export function AllView({ grants }: AccountsViewProps) {
     sort: { field: address.sort, order: address.dir },
     enabled: grants.ready,
   });
+  // A change of the strip's population fades the list in from the side of the tab that was clicked. The list keeps its old rows while the
+  // new population loads, so the enter waits for the new rows. (A change of view is the page's: it mounts this view afresh.)
+  const viewBox = useTabEnter<HTMLDivElement>(
+    stripKeyOf(address.chip),
+    STRIP_KEYS,
+    !list.query.isPlaceholderData,
+  );
   const counts = useAccountCounts(grants.can('clients:read'));
   const canRanks = grants.can('groups:read');
   const ranks = useRanks(canRanks);
@@ -66,7 +81,7 @@ export function AllView({ grants }: AccountsViewProps) {
   const rankName = ranks.ranks.find((rank) => rank.id === address.rank)?.name;
 
   return (
-    <div className="view-frame">
+    <div ref={viewBox} className="view-frame">
       <div>
         <QuickSearch
           address={address}

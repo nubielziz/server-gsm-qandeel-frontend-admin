@@ -374,7 +374,7 @@
     @apply bg-surface text-ink border border-line2;
   }
   .tabs {
-    @apply flex items-center gap-1 border-b border-line overflow-x-auto;
+    @apply relative flex items-center gap-1 border-b border-line overflow-x-auto;
   }
   .tabs button {
     @apply relative h-9 px-2.5 text-sm font-medium text-ink3 hover:text-ink whitespace-nowrap inline-flex items-center gap-1.5;
@@ -385,6 +385,31 @@
   .tabs button[aria-selected='true']::after {
     content: '';
     @apply absolute inset-x-1.5 -bottom-px h-0.5 bg-ink rounded-full;
+  }
+  /* Once the sliding line is placed (src/lib/motion; it sets data-indicator) it replaces the tab's own line, drawn on the same pixels. */
+  .tabs[data-indicator] button[aria-selected='true']::after {
+    display: none;
+  }
+  .tabs-mark::after {
+    content: '';
+    @apply absolute inset-x-1.5 -bottom-px h-0.5 bg-ink rounded-full;
+  }
+  /*
+   * The mark that slides under the selected tab or link (src/lib/motion/SlidingMark.tsx): the first child of a positioned row, sized and
+   * placed by script to the selected item's box, so it scrolls with the row. Hidden until placed (data-indicator on the row). A change of
+   * the selected item slides it (translate, width and height, --duration-slow and --ease-glide); the script switches the transition off
+   * for the first placement and for a resize. Width and height transition too, which the rule elsewhere (transform and opacity only) does
+   * not allow: this is the exception on purpose, because the mark is absolutely positioned and its size change lays out nothing else.
+   * Reduced motion: the global rule below makes the slide instant.
+   */
+  .slide-mark {
+    @apply pointer-events-none absolute left-0 top-0 hidden;
+    transition-property: translate, width, height;
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--ease-glide);
+  }
+  [data-indicator] > .slide-mark {
+    @apply block;
   }
   .count {
     @apply inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-sunken text-2xs font-medium text-ink2 tabular-nums;
@@ -596,17 +621,33 @@
     }
   }
 
+  /* Positioned, so the links paint above the sliding highlight (.nav-mark), which is the first child of the nav. A focused link is raised, so its
+     outline is not covered by the hover background of a neighbour. */
   .nav-link {
-    @apply flex items-center gap-2.5 h-8 px-2.5 rounded-md text-sm font-medium text-ink2 hover:bg-hover hover:text-ink;
+    @apply relative flex items-center gap-2.5 h-8 px-2.5 rounded-md text-sm font-medium text-ink2 hover:bg-hover hover:text-ink;
   }
+  .nav-link:focus-visible {
+    z-index: 1;
+  }
+  /* The current link's background is the line colour at 60 %, not --sunken: in the light theme --sunken (242 242 238) is almost the sidebar's own
+     colour (--side 243 243 239), so the highlight could not be seen there. This one reads on the sidebar in both themes. */
   .nav-link[aria-current='page'] {
-    @apply bg-sunken text-ink;
+    @apply bg-line/60 text-ink;
+  }
+  /* Once the highlight is placed (data-indicator on the nav) it draws the current link's background; text and icon colours stay. */
+  [data-indicator] .nav-link[aria-current='page'] {
+    @apply bg-transparent;
+  }
+  /* The sliding highlight draws the same background as the link's own (see above), so nothing changes when it takes over. */
+  .nav-mark {
+    @apply rounded-md bg-line/60;
   }
   .nav-link[aria-current='page'] .ic {
     @apply text-accent-ink;
   }
+  /* Positioned, so the group heading paints above the sliding highlight as it passes. */
   .nav-h {
-    @apply px-2.5 pt-4 pb-1 text-2xs font-medium uppercase tracking-wider text-ink3;
+    @apply relative px-2.5 pt-4 pb-1 text-2xs font-medium uppercase tracking-wider text-ink3;
   }
 
   .dl {
@@ -776,6 +817,9 @@ body:has(.pinned-bar) #toasts {
   --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
   /* A pendulum: slow at each end of a swing. */
   --ease-swing: cubic-bezier(0.37, 0, 0.63, 1);
+  /* The two lengths below are mirrored by DURATION_FAST and DURATION_BASE in src/lib/motion/tokens.ts: change both together. */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
   --duration-slow: 300ms;
   --duration-ring: 600ms;
   --duration-count: 250ms;
@@ -905,13 +949,20 @@ body:has(.pinned-bar) #toasts {
 @layer components {
   /* level 1: one tab per kind of service; the current one is raised on the surface colour and joins the rule under the strip */
   .strip-tabs {
-    @apply flex items-end gap-1 overflow-x-auto border-b border-line;
+    @apply relative flex items-end gap-1 overflow-x-auto border-b border-line;
   }
   .strip-tabs a {
     @apply relative inline-flex h-9 items-center whitespace-nowrap rounded-t-md border border-transparent px-4 text-sm font-medium text-ink3 hover:bg-hover hover:text-ink;
   }
   .strip-tabs a[aria-current='page'] {
     @apply -mb-px border-line border-b-surface bg-surface text-ink;
+  }
+  /* Once the sliding box is placed it draws the raised tab (same border, colour and radius); the link keeps its text colour and its 1 px drop. */
+  .strip-tabs[data-indicator] a[aria-current='page'] {
+    @apply border-transparent bg-transparent;
+  }
+  .strip-mark {
+    @apply rounded-t-md border border-line border-b-surface bg-surface;
   }
   /* The strip scrolls sideways on a phone, which would clip an outside focus ring: draw it inside. */
   .strip-tabs a:focus-visible,

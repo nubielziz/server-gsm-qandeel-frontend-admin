@@ -5,6 +5,7 @@ import { useCan, useResourceParams } from '@refinedev/core';
 import { Suspense, type ComponentType } from 'react';
 import { ErrorState, Panel } from '@/components/ui';
 import { ForbiddenPage } from '../pages/ForbiddenPage';
+import { PageEnterMark } from '../layout/PageEnterMark';
 import { PageLoading } from '../pages/PageLoading';
 import { PagePlaceholder } from '../pages/PagePlaceholder';
 import type { PageResource } from '../resources';
@@ -26,11 +27,20 @@ export function PageRoute({ page, action, Page }: PageRouteProps) {
   const { resource } = useResourceParams({ resource: page.name });
   const { data, isError, error, refetch } = useCan({ resource: page.name, action, params: { resource } });
 
-  if (data?.can === false) return <ForbiddenPage page={page} />;
+  if (data?.can === false) {
+    return (
+      <>
+        <PageEnterMark pageKey={`${page.name}:forbidden`} />
+        <ForbiddenPage page={page} />
+      </>
+    );
+  }
   if (data?.can) {
     return (
-      // Feature pages are lazy (one chunk per feature), so the first visit waits for the chunk here.
+      // Feature pages are lazy (one chunk per feature), so the first visit waits for the chunk here. The mark is inside the boundary on
+      // purpose: it mounts when the page itself shows, so the enter plays on the page and not on the loading skeleton.
       <Suspense fallback={<PageLoading />}>
+        <PageEnterMark pageKey={`${page.name}:${action}`} />
         {Page ? <Page /> : <PagePlaceholder title={page.meta.label} />}
       </Suspense>
     );

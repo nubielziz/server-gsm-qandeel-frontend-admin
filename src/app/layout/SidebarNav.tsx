@@ -1,6 +1,9 @@
 // SidebarNav: the grouped page links with their counts. Ports the <nav> part of renderNav() in 90-app.js.
+// The highlight of the current page is one element that slides from the old link to the new one.
+import { useRef } from 'react';
 import { NavLink } from 'react-router';
 import { Count, Icon } from '@/components/ui';
+import { LINK_INDICATOR, SlidingMark, useSlidingIndicator } from '@/lib/motion';
 import { NAV_GROUPS, type PageResource } from '../resources';
 import type { NavCount, NavCounts } from './useNavCounts';
 
@@ -30,8 +33,13 @@ export interface SidebarNavProps {
 }
 
 export function SidebarNav({ pages, counts, onNavigate }: SidebarNavProps) {
+  const nav = useRef<HTMLElement>(null);
+  // The nav scrolls and is positioned, so the highlight scrolls with the links. It is placed when the nav has a size (the menu of a
+  // phone is laid out while closed, so it is ready when it opens).
+  useSlidingIndicator(nav, LINK_INDICATOR);
   return (
-    <nav className="flex-1 overflow-y-auto px-2 pb-2" aria-label="Primary">
+    <nav ref={nav} className="relative flex-1 overflow-y-auto px-2 pb-2" aria-label="Primary">
+      <SlidingMark className="nav-mark" />
       {NAV_GROUPS.map((group) => {
         const inGroup = pages.filter((page) => page.meta.group === group);
         if (inGroup.length === 0) return null;

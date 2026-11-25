@@ -4,6 +4,7 @@
 // `?tab=webhooks`) opens the first tab. The page only composes; each tab owns its data.
 import { EmptyState, PageHeader, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
 import { useNow } from '@/lib/format';
+import { useTabEnter } from '@/lib/motion';
 import { EmailsTab } from '../components/EmailsTab';
 import { NotificationLogTab } from '../components/NotificationLogTab';
 import { PaymentsTab } from '../components/PaymentsTab';
@@ -33,6 +34,11 @@ export function SettingsPage() {
     label: spec.label,
     count: spec.id === 'tax' && stale > 0 ? stale : undefined,
   }));
+  // The tab's content fades in from the side of the tab that was clicked.
+  const panel = useTabEnter<HTMLDivElement>(
+    current?.id ?? '',
+    visible.map((spec) => spec.id),
+  );
 
   return (
     <>
@@ -55,7 +61,7 @@ export function SettingsPage() {
           <div className="mb-4">
             <Tabs items={items} value={current.id} onChange={setTab} label="Settings sections" />
           </div>
-          <div role="tabpanel" aria-label={current.label}>
+          <div ref={panel} role="tabpanel" aria-label={current.label}>
             {current.id === 'payments' && <PaymentsTab />}
             {current.id === 'tax' && <TaxTab />}
             {current.id === 'policies' && <PoliciesTab />}

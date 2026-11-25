@@ -2,6 +2,7 @@
 // the fired alerts, the alert rules and the incidents with their drawer (`?incident=<id>`). No demo page; routes
 // `/admin/alerts`, `/admin/alert-rules` and `/admin/incidents` (docs/system-health-design.md, "Tabs").
 import { EmptyState, Panel, SectionTabs } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { PartBoundary } from '../../header/PartBoundary';
 import { AlertsView } from './AlertsView';
 import { IncidentsView } from './IncidentsView';
@@ -16,6 +17,11 @@ import { useAlertsView } from './useAlertsView';
  */
 export function AlertsTab() {
   const { views, view, setView, incident, openIncident, closeIncident } = useAlertsView();
+  // The open view fades in from the side of the view that was clicked.
+  const viewBox = useTabEnter<HTMLDivElement>(
+    view ?? '',
+    views.map((item) => item.id),
+  );
   const current = views.find((item) => item.id === view);
   if (!view || !current) {
     // The page offers this tab only to roles that read alerts or incidents, and draws it once the permissions are known, so
@@ -40,13 +46,16 @@ export function AlertsTab() {
           label="Alerts and incidents views"
         />
       )}
-      <PartBoundary name={`The ${current.label.toLowerCase()} view`} resetKey={view}>
-        {view === 'alerts' && <AlertsView />}
-        {view === 'rules' && <RulesView />}
-        {view === 'incidents' && (
-          <IncidentsView openId={incident} onOpen={openIncident} onClose={closeIncident} />
-        )}
-      </PartBoundary>
+      {/* The same spacing as the strip's: a view draws several cards that rely on the gap between siblings. */}
+      <div ref={viewBox} className="space-y-3">
+        <PartBoundary name={`The ${current.label.toLowerCase()} view`} resetKey={view}>
+          {view === 'alerts' && <AlertsView />}
+          {view === 'rules' && <RulesView />}
+          {view === 'incidents' && (
+            <IncidentsView openId={incident} onOpen={openIncident} onClose={closeIncident} />
+          )}
+        </PartBoundary>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
-// Tabs: controlled tab strip with counts. Ports tabsEl() of 20-ui.js and adds arrow-key navigation.
+// Tabs: controlled tab strip with counts. Ports tabsEl() of 20-ui.js and adds arrow-key navigation; the line under the selected tab slides.
 import { useEffect, useRef, type KeyboardEvent } from 'react';
+import { SlidingMark, TAB_INDICATOR, useSlidingIndicator } from '@/lib/motion';
 import { cx } from './cx';
 import { Count } from './Count';
 
@@ -35,6 +36,8 @@ export function Tabs<V extends string = string>({ items, value, onChange, label,
   const strip = useRef<HTMLDivElement>(null);
   const buttons = useRef(new Map<V, HTMLButtonElement>());
   const selected = items.findIndex((item) => item.value === value);
+  // The line under the selected tab is one element that slides to the clicked tab (src/lib/motion); until it is placed the tab draws its own.
+  useSlidingIndicator(strip, TAB_INDICATOR);
 
   // On a phone the strip scrolls sideways. Keep the selected tab in view (after a load from an address, and after a
   // change), moving only the strip, never the page.
@@ -67,6 +70,7 @@ export function Tabs<V extends string = string>({ items, value, onChange, label,
       aria-label={label}
       onKeyDown={onKeyDown}
     >
+      <SlidingMark className="tabs-mark" />
       {items.map((item, index) => (
         <button
           key={item.value}

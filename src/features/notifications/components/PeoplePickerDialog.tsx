@@ -11,6 +11,7 @@ import {
   type DataTableColumn,
   type RowSelection,
 } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { usePeople } from '../hooks/usePeople';
 import { PEOPLE_PAGE_SIZE } from '../hooks/keys';
 import { useSettledValue } from '../hooks/useSettledValue';
@@ -57,6 +58,8 @@ export function PeoplePickerDialog({ mode, initial, types, onClose, onConfirm }:
   const [picked, setPicked] = useState(() => new Map(initial.map((person) => [keyOf(person), person])));
   const q = useSettledValue(text.trim(), 300);
   const list = usePeople({ type, q, page });
+  // The list fades in from the side of the tab that was clicked, once the new rows are there (the old rows stay while they load).
+  const listBox = useTabEnter<HTMLDivElement>(type, types, !list.query.isPlaceholderData);
 
   // A DataTable selection over the picked map, for the rows of the open tab. Rows are looked up on the page on screen: only visible rows can be ticked.
   const selection = useMemo<RowSelection<number>>(() => {
@@ -130,7 +133,7 @@ export function PeoplePickerDialog({ mode, initial, types, onClose, onConfirm }:
             {picked.size} picked
           </span>
         </div>
-        <div className="max-h-[360px] overflow-auto rounded-md border border-line">
+        <div ref={listBox} className="max-h-[360px] overflow-auto rounded-md border border-line">
           <DataTable
             caption={TAB_LABEL[type]}
             columns={COLUMNS}

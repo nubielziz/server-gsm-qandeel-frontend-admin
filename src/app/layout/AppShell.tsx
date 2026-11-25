@@ -6,6 +6,7 @@ import { StreamProvider } from '@/lib/realtime';
 import { AppErrorBoundary } from '../AppErrorBoundary';
 import { AppCommandPalette } from '../palette';
 import { BreadcrumbTitleContext } from './breadcrumbTitle';
+import { PageEnterContext, usePageEnterTarget } from './pageEnter';
 import { ShellBanners } from './ShellBanners';
 import { ShortcutsDialog } from './ShortcutsDialog';
 import { Sidebar } from './Sidebar';
@@ -37,6 +38,7 @@ function ShellFrame({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
+  const pageEnter = usePageEnterTarget(mainRef);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [record, setRecord] = useState<string>();
@@ -85,7 +87,9 @@ function ShellFrame({ children }: { children: ReactNode }) {
           onOpenShortcuts={() => setShortcutsOpen(true)}
           sidebarRef={nav.sidebarRef}
         />
-        <div className="flex min-h-dvh min-w-0 flex-col">
+        {/* overflow-clip, not hidden: it makes no scroll container, so the sticky top bar and table heads keep working. It stops an enter
+            (a 6 px rise, an 8 px sideways move) from growing the page or the width for a moment and flashing a scrollbar. */}
+        <div className="flex min-h-dvh min-w-0 flex-col overflow-clip">
           <Topbar
             navOpen={nav.open}
             onOpenNav={nav.openNav}
@@ -99,7 +103,9 @@ function ShellFrame({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="mx-auto w-full min-w-0 max-w-[1480px] flex-1 px-4 py-4 outline-none lg:px-6 lg:py-5"
           >
-            <AppErrorBoundary resetKey={pathname}>{children}</AppErrorBoundary>
+            <PageEnterContext.Provider value={pageEnter}>
+              <AppErrorBoundary resetKey={pathname}>{children}</AppErrorBoundary>
+            </PageEnterContext.Provider>
           </main>
         </div>
       </div>

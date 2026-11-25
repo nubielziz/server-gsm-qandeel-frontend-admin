@@ -91,4 +91,15 @@ describe('SidebarNav', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Money' }));
     expect(onNavigate).toHaveBeenCalledOnce();
   });
+
+  it('has the sliding highlight as the first child of the nav, hidden from assistive technology', () => {
+    renderNav({});
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    expect(nav.firstElementChild).toHaveAttribute('data-slide-mark');
+    expect(nav.firstElementChild).toHaveAttribute('aria-hidden', 'true');
+    expect(nav.firstElementChild).toHaveClass('nav-mark');
+    // Never placed in jsdom (no layout), so the current link keeps drawing its own background.
+    expect(nav).not.toHaveAttribute('data-indicator');
+    expect(screen.getByRole('link', { name: /^Orders/ })).toHaveAttribute('aria-current', 'page');
+  });
 });

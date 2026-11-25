@@ -1,8 +1,10 @@
-// Tests for Tabs: roles, counts, roving tabindex and arrow-key navigation that moves the selection.
-import { render, screen } from '@testing-library/react';
+// Tests for Tabs: roles, counts, roving tabindex and arrow-key navigation that moves the selection, and the line that slides under the selected tab.
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Box } from '@/lib/motion/slidingIndicator';
+import { FakeResizeObserver, installLayout } from '@/lib/motion/testing/layout';
 import { Tabs, type TabItem } from './Tabs';
 
 type Tab = 'open' | 'review' | 'done';
@@ -99,5 +101,47 @@ describe('Tabs', () => {
     await user.tab();
     await user.keyboard('a{ArrowDown}');
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('Tabs sliding line', () => {
+  let undo = () => {};
+  afterEach(() => {
+    undo();
+    vi.unstubAllGlobals();
+  });
+
+  it('has one line element before the tabs, hidden from assistive technology, and each tab keeps its own look until it is placed', () => {
+    render(<Harness />);
+    const list = screen.getByRole('tablist', { name: 'Order status' });
+    const mark = list.firstElementChild;
+    expect(mark).toHaveAttribute('data-slide-mark');
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(mark).toHaveClass('slide-mark', 'tabs-mark');
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    // jsdom has no layout, so the line is never placed and the CSS keeps drawing the selected tab's own underline.
+    expect(list).not.toHaveAttribute('data-indicator');
+  });
+
+  it('is placed on the selected tab and moves to the tab that is clicked', async () => {
+    FakeResizeObserver.install();
+    const user = userEvent.setup();
+    render(<Harness />);
+    const list = screen.getByRole('tablist', { name: 'Order status' });
+    const mark = list.firstElementChild as HTMLElement;
+    const [open, review, done] = screen.getAllByRole('tab');
+    const boxes = new Map<Element, Box>([
+      [open, { x: 0, y: 0, w: 70, h: 36 }],
+      [review, { x: 74, y: 0, w: 110, h: 36 }],
+      [done, { x: 188, y: 0, w: 50, h: 36 }],
+    ]);
+    undo = installLayout(list, boxes);
+    FakeResizeObserver.fire();
+    expect(list).toHaveAttribute('data-indicator');
+    expect(mark.style.width).toBe('70px');
+
+    await user.click(review);
+    await waitFor(() => expect(mark.style.width).toBe('110px'));
+    expect(screen.getByRole('tab', { name: /Needs review/ })).toHaveAttribute('aria-selected', 'true');
   });
 });

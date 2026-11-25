@@ -3,6 +3,7 @@
 // the review queue. The page only composes; each tab loads its own data. The order drawer (`?order=<id>`) opens in place from
 // any order number on the page. `modeGate` of the demo is dropped.
 import { PageHeader, Tabs, type TabItem } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { OrderDrawerHost } from '@/features/orders';
 import { BlocklistTab } from '../components/BlocklistTab';
 import { QueueTab } from '../components/QueueTab';
@@ -30,6 +31,11 @@ export function RiskPage() {
     count: counts[tab.id],
   }));
   const current = RISK_TABS.find((tab) => tab.id === view.tab) ?? RISK_TABS[0];
+  // The content under the tabs fades in from the side of the tab that was clicked.
+  const panel = useTabEnter<HTMLDivElement>(
+    view.tab,
+    RISK_TABS.map((tab) => tab.id),
+  );
 
   return (
     <>
@@ -40,7 +46,7 @@ export function RiskPage() {
       <div className="mb-4">
         <Tabs items={items} value={view.tab} onChange={view.setTab} label="Risk sections" />
       </div>
-      <div role="tabpanel" aria-label={current.label}>
+      <div ref={panel} role="tabpanel" aria-label={current.label}>
         {view.tab === 'queue' && <QueueTab grants={grants} />}
         {view.tab === 'block' && <BlocklistTab view={view} grants={grants} />}
         {view.tab === 'rules' && <RulesTab grants={grants} />}

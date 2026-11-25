@@ -4,6 +4,7 @@
 // role may not read is hidden. The services on the shop, publishing and retail pricing live on the Product / Services page. The page only
 // composes; each tab owns its data, and the server decides every status and refusal.
 import { EmptyState, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { ContentTab } from '../components/ContentTab';
 import { HelpTab } from '../components/HelpTab';
 import { SearchTab } from '../components/SearchTab';
@@ -24,6 +25,11 @@ export function StorefrontPage() {
   // in an address without one: such an address reads as an old listings link.
   usePinTab(current?.id ?? (grants.ready ? undefined : tab));
   const items: TabItem<StorefrontTab>[] = visible.map((spec) => ({ value: spec.id, label: spec.label }));
+  // The tab's content fades in from the side of the tab that was clicked.
+  const panel = useTabEnter<HTMLDivElement>(
+    current?.id ?? '',
+    visible.map((spec) => spec.id),
+  );
 
   return (
     <>
@@ -43,7 +49,7 @@ export function StorefrontPage() {
           <div className="mb-4">
             <Tabs items={items} value={current.id} onChange={setTab} label="Shop content sections" />
           </div>
-          <div role="tabpanel" aria-label={current.label}>
+          <div ref={panel} role="tabpanel" aria-label={current.label}>
             {current.id === 'content' && <ContentTab grants={grants} />}
             {current.id === 'help' && <HelpTab grants={grants} />}
             {current.id === 'search' && <SearchTab grants={grants} />}

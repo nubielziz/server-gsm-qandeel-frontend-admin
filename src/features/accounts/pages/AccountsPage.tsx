@@ -6,6 +6,7 @@
 // the view fills what is left (index.css, .page-frame).
 import { useSearchParams } from 'react-router';
 import { EmptyState, PageHeader, SkeletonTable } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { AccountsNav } from '../components/frame/AccountsNav';
 import { ACCOUNTS_HEADING } from '../components/frame/accountsPage';
 import { ACCOUNTS_VIEW_SPECS, usableViews } from '../components/frame/accountsViews';
@@ -20,6 +21,13 @@ export function AccountsPage() {
   const { view } = useAccountsAddress(usable);
   const [params] = useSearchParams();
   const spec = view ? usable?.find((candidate) => candidate.id === view) : undefined;
+  const chip = parseListAddress(params).chip;
+  // The view fades in from the side of the link that was clicked. A change of the strip's population inside the All view is the list's own
+  // (AllView), because only it knows when the new rows are there. A hook, so it comes before the early returns below.
+  const viewBox = useTabEnter(
+    view ?? '',
+    (usable ?? []).map((candidate) => candidate.id),
+  );
 
   if (view === null) {
     return (
@@ -42,8 +50,8 @@ export function AccountsPage() {
   return (
     <div className="page-frame">
       <PageHeader title={ACCOUNTS_HEADING} />
-      <AccountsNav grants={grants} usable={usable} view={view} chip={parseListAddress(params).chip} />
-      <section aria-label={spec.label} className="flex flex-1 flex-col">
+      <AccountsNav grants={grants} usable={usable} view={view} chip={chip} />
+      <section ref={viewBox} aria-label={spec.label} className="flex flex-1 flex-col">
         {/* A new view starts with fresh state; what a view keeps (page, filters) lives in the address. */}
         <spec.Component key={view} grants={grants} />
       </section>

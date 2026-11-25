@@ -2,12 +2,14 @@
 import { ButtonLink, EmptyState, PageHeader, Panel } from '@/components/ui';
 import { AUTH_PATHS } from '@/features/auth';
 import { useBreadcrumbTitle } from '../layout/breadcrumbTitle';
+import { PageEnterMark } from '../layout/PageEnterMark';
 
 export function NotFoundPage() {
   // Names the tab and the breadcrumb, since no page resource matches this address.
   useBreadcrumbTitle('Page not found');
   return (
     <>
+      <PageEnterMark pageKey="not-found" />
       <PageHeader title="Page not found" />
       <Panel flush>
         <EmptyState

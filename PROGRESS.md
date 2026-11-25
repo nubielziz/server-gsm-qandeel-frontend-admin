@@ -11,6 +11,17 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): motion in the whole console (decision 028)
+
+The owner asked for animation when switching pages in the sidebar and when switching tabs. Built as decision 028: a new page fades in
+and rises (200 ms), the sidebar's highlight, the tab line and the strip tabs' raised box slide to the new item (300 ms), and the content
+under a tab comes in from the side of the tab (8 px, 200 ms). Enter only, nothing remounted, none of it with "reduce motion"; tables and
+live numbers do not animate. The kit is `src/lib/motion` (no library). The sidebar's highlight uses `line` at 60 % so it can be seen in
+the light theme. Agents: one Sonnet 5.5 implementer (two rounds), one Opus 5.5 review (six findings, all fixed: a scrollbar flash, the
+enter on kept old rows, the highlight over the group headings, sub-pixel placement, a hidden focus ring, a comment); the lead (Fable 5.2)
+planned it and checked every page in a browser on the mock data (the 14 sidebar pages, every tab strip, both themes, reduced motion).
+Checks: typecheck, lint, the whole test suite and a production build.
+
 ## Status (2026-11-25): code-stock services and a service's own cost (decision 027)
 
 The owner sells their own gift-card codes. A service now says whether it is **Delivered from code stock** (only then does it hold codes,

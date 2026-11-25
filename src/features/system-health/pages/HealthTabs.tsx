@@ -2,6 +2,7 @@
 // read; each tab loads as its own chunk (docs/system-health-design.md, "Tabs" and "Permission map").
 import { Suspense } from 'react';
 import { Panel, Tabs } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { CardSkeleton } from '../components/CardSkeleton';
 import { PartBoundary } from '../header/PartBoundary';
 import type { HealthGrants } from '../hooks';
@@ -32,6 +33,11 @@ export function HealthTabs({ grants }: HealthTabsProps) {
   const visible = HEALTH_TABS.filter((tab) => grants.can(tab.permissions));
   const [active, setActive] = useHealthTab(visible.map((tab) => tab.id));
   const current = visible.find((tab) => tab.id === active);
+  // The open tab fades in from the side of the tab that was clicked. A hook, so it comes before the early return below.
+  const panel = useTabEnter<HTMLDivElement>(
+    active ?? '',
+    visible.map((tab) => tab.id),
+  );
   if (active === undefined || current === undefined) return null;
 
   const Tab = TAB_COMPONENTS[active];
@@ -43,7 +49,7 @@ export function HealthTabs({ grants }: HealthTabsProps) {
         onChange={setActive}
         label="System health sections"
       />
-      <div role="tabpanel" aria-label={current.label} className="mt-4">
+      <div ref={panel} role="tabpanel" aria-label={current.label} className="mt-4">
         <PartBoundary name={`The ${current.label} tab`} resetKey={active}>
           <Suspense fallback={<TabLoading />}>
             <Tab />

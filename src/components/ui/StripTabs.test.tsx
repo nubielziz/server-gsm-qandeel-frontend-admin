@@ -40,4 +40,13 @@ describe('StripTabs', () => {
     renderStrip('file');
     expect(document.querySelector('[aria-current]')).toBeNull();
   });
+
+  it('has one sliding box element before the links, hidden from assistive technology and from the list of links', () => {
+    renderStrip('imei');
+    const mark = document.querySelector('.strip-tabs > [data-slide-mark]');
+    expect(mark).toBeInTheDocument();
+    expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(mark?.nextElementSibling?.querySelector('a')).toHaveAttribute('href', '/products?type=imei');
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+  });
 });

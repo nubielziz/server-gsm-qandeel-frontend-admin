@@ -5,6 +5,8 @@
 // services list is never mounted or read. The page is one frame as tall as the window: the heading and the two rows of links keep their
 // height and the view fills what is left, so a short view ends with its bar at the foot and nothing scrolls (index.css, .page-frame).
 import { EmptyState, PageHeader, SkeletonTable } from '@/components/ui';
+import { SERVICE_TYPES } from '@/lib/serviceTypes';
+import { useTabEnter } from '@/lib/motion';
 import { ProductsNav } from '../components/products/ProductsNav';
 import { useProductsAddress } from '../hooks/useProductsAddress';
 import { useServiceGrants } from '../hooks/useServiceGrants';
@@ -17,6 +19,12 @@ export function ProductsPage() {
   const usable = grants.ready ? usableViews(grants, PRODUCTS_VIEW_SPECS) : undefined;
   const { type, view } = useProductsAddress(usable);
   const spec = view ? usable?.find((candidate) => candidate.id === view) : undefined;
+  // The view fades in from the side of the kind or link that was clicked: the kinds of the strip come first in the order, and the views
+  // of the row in each kind. A hook, so it comes before the early returns below.
+  const viewBox = useTabEnter(
+    view ? `${type}:${view}` : '',
+    SERVICE_TYPES.flatMap((kind) => (usable ?? []).map((candidate) => `${kind}:${candidate.id}`)),
+  );
 
   if (view === null) {
     return (
@@ -41,7 +49,7 @@ export function ProductsPage() {
     <div className="page-frame">
       <PageHeader title={PRODUCTS_HEADING} />
       <ProductsNav type={type} view={view} usable={usable} />
-      <section aria-label={spec.label} className="flex flex-1 flex-col">
+      <section ref={viewBox} aria-label={spec.label} className="flex flex-1 flex-col">
         {/* A new kind or view starts with fresh state; what a view keeps (page, filters) lives in the address. */}
         <spec.Component key={`${view}:${type}`} type={type} grants={grants} />
       </section>

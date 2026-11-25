@@ -4,6 +4,7 @@
 import type { ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { EmptyState, PageHeader, Panel, SkeletonTable, Tabs, type TabItem } from '@/components/ui';
+import { useTabEnter } from '@/lib/motion';
 import { AdminsTab } from '../components/AdminsTab';
 import { AllowedIpsTab } from '../components/AllowedIpsTab';
 import { BlockedIpsTab } from '../components/BlockedIpsTab';
@@ -73,6 +74,11 @@ export function AccessPage() {
     label: tab.label,
     count: tab.count(counts),
   }));
+  // The tab's content fades in from the side of the tab that was clicked.
+  const panel = useTabEnter<HTMLDivElement>(
+    current?.id ?? '',
+    visible.map((tab) => tab.id),
+  );
 
   return (
     <>
@@ -100,7 +106,7 @@ export function AccessPage() {
               label="Access sections"
             />
           </div>
-          <div role="tabpanel" aria-label={current.label}>
+          <div ref={panel} role="tabpanel" aria-label={current.label}>
             {current.body()}
           </div>
         </>

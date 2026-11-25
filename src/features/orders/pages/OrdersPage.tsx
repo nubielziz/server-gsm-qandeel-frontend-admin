@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { Panel, SectionTabs, usePageClamp, type TabItem } from '@/components/ui';
 import { useNow } from '@/lib/format';
+import { useTabEnter } from '@/lib/motion';
 import { BulkBar } from '../components/BulkBar';
 import { BulkSummaryDialog } from '../components/BulkSummaryDialog';
 import { OrderDialogs } from '../components/OrderDialogs';
@@ -102,6 +103,13 @@ export function OrdersPage() {
     count: counts.tabs[tab.id],
   }));
   const filtersOn = hasActiveFilters(view.filters);
+  // The table under the tabs fades in from the side of the tab that was clicked (the toolbar and the bulk bar stay still). The list keeps
+  // the old rows while the new tab loads, so the enter waits for the new rows.
+  const tableBox = useTabEnter<HTMLDivElement>(
+    view.filters.tab,
+    ORDER_TABS.map((tab) => tab.id),
+    !list.query.isPlaceholderData,
+  );
   const noOrders = counts.tabs.all === 0 || (view.filters.tab === 'all' && !filtersOn && list.total === 0);
 
   return (
@@ -149,7 +157,7 @@ export function OrdersPage() {
           onReject={() => setDialog({ kind: 'reject', orders: picked.orders })}
           onClear={() => picked.selection.clear()}
         />
-        <div className="border-t border-line">
+        <div ref={tableBox} className="border-t border-line">
           <OrderTable
             rows={list.orders}
             state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
