@@ -21,7 +21,13 @@ describe('the key figures', () => {
     expect(strip().getByText('Held in open orders')).toBeInTheDocument();
     expect(strip().getByText('Supplier prepaid')).toBeInTheDocument();
     expect(await strip().findByText('deposits to approve or reject')).toBeInTheDocument();
-    expect(strip().getByText('Waiting for review').nextElementSibling).toHaveTextContent('7');
+    // The caption is drawn while the count still loads (a grey bar), so wait for the number itself.
+    await waitFor(
+      () => expect(strip().getByText('Waiting for review').nextElementSibling).toHaveTextContent('7'),
+      {
+        timeout: 10_000,
+      },
+    );
   });
 
   it('leaves out the figures a role may not read', async () => {
