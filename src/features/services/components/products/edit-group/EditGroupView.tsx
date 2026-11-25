@@ -45,6 +45,7 @@ function GroupEditor({ id, type, grants }: ProductsViewProps & { id: Id }) {
       submitLabel="Save"
       initial={valuesOf(group)}
       lock={grants.needs('catalog:update')}
+      type={type}
       canRanks={grants.can('groups:read')}
       withoutRanks="The group keeps the ranks it has now."
       onSubmit={async (values) => {

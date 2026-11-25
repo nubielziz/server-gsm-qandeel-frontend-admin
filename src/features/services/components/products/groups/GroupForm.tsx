@@ -1,11 +1,13 @@
 // GroupForm: the label-left form of a group, shared by Add Group and Edit Group: Group Name, Active (Yes | No) and Visible to (ranks), with its own
 // heading and one primary button in the pinned bar. The server's messages for a field land under that field; any other goes beside the button.
+// A name that is taken is said in the console's words ("A group with this name already exists in Server Service.").
 import { useId, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Button, FormRow, PinnedBar, SectionHeading, TextField, YesNo } from '@/components/ui';
 import { applyServerErrors } from '@/lib/api';
+import type { ServiceType } from '@/lib/serviceTypes';
 import { useGroupOptions } from '../../../hooks/useChoices';
-import type { GroupValues } from '../../../lib/groupForm';
+import { groupFormError, type GroupValues } from '../../../lib/groupForm';
 import { LookupNote } from '../../LookupNote';
 import { RankChecks } from './RankChecks';
 
@@ -21,6 +23,8 @@ export interface GroupFormProps {
   initial: GroupValues;
   /** Keeps the rows and the button off for a role that may not save, and says why beside the button. */
   lock: GroupFormLock;
+  /** The kind on the strip: a name that is taken is said to be taken in this kind. */
+  type: ServiceType;
   /** Whether the ranks can be read (`groups:read`); without it the choice is not offered. */
   canRanks: boolean;
   /** What happens to the ranks when they cannot be chosen: "A new group is visible to every rank." */
@@ -38,6 +42,7 @@ export function GroupForm({
   submitLabel,
   initial,
   lock,
+  type,
   canRanks,
   withoutRanks,
   onSubmit,
@@ -61,7 +66,9 @@ export function GroupForm({
       const saved = await onSubmit(values);
       if (saved) reset(saved);
     } catch (error) {
-      const rest = applyServerErrors(error, setError, { fields: ['name', 'isActive', 'allowedGroupIds'] });
+      const rest = applyServerErrors(groupFormError(error, type), setError, {
+        fields: ['name', 'isActive', 'allowedGroupIds'],
+      });
       setFailure(rest.length > 0 ? rest.join(' ') : null);
     }
   });

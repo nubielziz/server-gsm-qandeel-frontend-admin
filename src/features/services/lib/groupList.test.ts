@@ -1,7 +1,7 @@
 // Tests for the rules of the Group list: the kind's groups in order, one page of them, the page size in the address, and the position writes
-// of the up and down buttons (a plain swap, and the renumbering a tie needs).
+// of the up and down buttons (a plain swap, and the renumbering a tie needs), the search by name and where a group just added shows.
 import { describe, expect, it } from 'vitest';
-import { groupsOfKind, moveChanges, pageOf, parseGroupsSize } from './groupList';
+import { groupsMatching, groupsOfKind, locateGroup, moveChanges, pageOf, parseGroupsSize } from './groupList';
 
 const group = (id: number, sort: number, type: 'imei' | 'server' = 'imei') => ({ id, sort, type });
 
@@ -113,5 +113,59 @@ describe('moveChanges', () => {
       { id: 4, sort: 3 },
       { id: 3, sort: 4 },
     ]);
+  });
+});
+
+describe('groupsMatching', () => {
+  const named = (id: number, name: string) => ({ id, name });
+  const groups = [named(1, 'Apple'), named(2, 'Samsung'), named(3, 'Carrier unlock'), named(4, 'apple pay')];
+
+  it('keeps the groups whose name holds the text anywhere, ignoring case', () => {
+    expect(groupsMatching(groups, 'APPLE').map((g) => g.id)).toEqual([1, 4]);
+    expect(groupsMatching(groups, 'ung').map((g) => g.id)).toEqual([2]);
+    expect(groupsMatching(groups, 'r unl').map((g) => g.id)).toEqual([3]);
+  });
+
+  it('trims the spaces around the text, but not the ones inside it', () => {
+    expect(groupsMatching(groups, '  samsung ').map((g) => g.id)).toEqual([2]);
+    expect(groupsMatching(groups, 'apple p').map((g) => g.id)).toEqual([4]);
+  });
+
+  it('keeps every group, in order and as a new list, for an empty or blank text', () => {
+    expect(groupsMatching(groups, '')).toEqual(groups);
+    expect(groupsMatching(groups, '   ')).toEqual(groups);
+    expect(groupsMatching(groups, '')).not.toBe(groups);
+  });
+
+  it('keeps none when nothing matches, and does not read a text as a pattern', () => {
+    expect(groupsMatching(groups, 'zzz')).toEqual([]);
+    expect(groupsMatching(groups, '.*')).toEqual([]);
+  });
+});
+
+describe('locateGroup', () => {
+  const list = Array.from({ length: 120 }, (_, at) => ({ id: at + 1, name: `Group ${at + 1}` }));
+
+  it('is the page that holds the group at this size', () => {
+    expect(locateGroup(list, 1, '', 50)).toEqual({ page: 1, q: '' });
+    expect(locateGroup(list, 50, '', 50)).toEqual({ page: 1, q: '' });
+    expect(locateGroup(list, 51, '', 50)).toEqual({ page: 2, q: '' });
+    expect(locateGroup(list, 120, '', 50)).toEqual({ page: 3, q: '' });
+    expect(locateGroup(list, 120, '', 25)).toEqual({ page: 5, q: '' });
+  });
+
+  it('counts the place among the matches when the search shows the group, and keeps the search trimmed', () => {
+    // "group 1" matches 1, 10-19 and 100-120 (32 groups); Group 119 is the 31st, so it is on page 4 of 10.
+    expect(locateGroup(list, 119, ' group 1 ', 10)).toEqual({ page: 4, q: 'group 1' });
+  });
+
+  it('drops a search that would hide the group, and counts the place in the whole list', () => {
+    expect(locateGroup(list, 60, 'zzz', 50)).toEqual({ page: 2, q: '' });
+    expect(locateGroup(list, 60, 'Group 1', 50)).toEqual({ page: 2, q: '' });
+  });
+
+  it('is null for a group the list does not hold', () => {
+    expect(locateGroup(list, 999, '', 50)).toBeNull();
+    expect(locateGroup([], 1, '', 50)).toBeNull();
   });
 });

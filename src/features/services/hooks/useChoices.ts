@@ -7,7 +7,13 @@ import { useApiQuery } from '@/lib/query';
 import { listServices } from '../api';
 import { listGroupOptions, listMerchantOptions } from '../api/lookups';
 import type { ServiceCategory, ServiceType } from '../types';
-import { LOOKUP_STALE_MS, PICKER_CAP, SERVICE_LOOKUP_KEY, SERVICE_PICKER_KEY } from './keys';
+import {
+  CATEGORY_READ_CAP,
+  LOOKUP_STALE_MS,
+  PICKER_CAP,
+  SERVICE_LOOKUP_KEY,
+  SERVICE_PICKER_KEY,
+} from './keys';
 
 /**
  * The services by name, for the resolver, the inventory filter and the import dialog. Needs `catalog:read`. With `type` only the
@@ -27,11 +33,15 @@ export function useServiceChoices(enabled = true, type?: ServiceType) {
   });
 }
 
-/** The categories, loaded whole (there are few). Needs `catalog:read`. */
+/**
+ * The categories (groups) of every kind, read in one page of `CATEGORY_READ_CAP` rows and sorted by position; `total` is what the
+ * server counts, so a view can say when the page is short. It stays a Refine list on `service-categories`, so a category change that
+ * invalidates that resource reads it again. Needs `catalog:read`.
+ */
 export function useCategories(enabled = true) {
   const { result, query } = useList<ServiceCategory>({
     resource: 'service-categories',
-    pagination: { currentPage: 1, pageSize: PICKER_CAP },
+    pagination: { currentPage: 1, pageSize: CATEGORY_READ_CAP },
     sorters: [{ field: 'sort', order: 'asc' }],
     queryOptions: { enabled },
     errorNotification: false,

@@ -7,7 +7,7 @@ import type { ServiceCategory } from '../types';
 /** Groups per page when the address names no size. */
 export const GROUPS_DEFAULT_SIZE = 50;
 
-/** The largest page the view accepts (the whole list is read at once, at most 200 groups). */
+/** The largest page size the view accepts (the whole list is read at once; the page size only cuts it for the table). */
 export const GROUPS_MAX_SIZE = 200;
 
 /** The page size an address parameter names; anything that is not a whole number from 1 to 200 is the default. */
@@ -28,11 +28,40 @@ export function groupsOfKind<T extends Pick<ServiceCategory, 'id' | 'type' | 'so
   return all.filter((group) => group.type === type).sort((a, b) => a.sort - b.sort || a.id - b.id);
 }
 
+/** The groups whose name holds the text anywhere, ignoring case and the spaces around the text; an empty text keeps every group. */
+export function groupsMatching<T extends Pick<ServiceCategory, 'name'>>(
+  groups: readonly T[],
+  text: string,
+): T[] {
+  const needle = text.trim().toLowerCase();
+  return needle === '' ? [...groups] : groups.filter((group) => group.name.toLowerCase().includes(needle));
+}
+
 /** One page (1-based) of a list. A page past the end is the last page, and the page it shows is told back. */
 export function pageOf<T>(items: readonly T[], page: number, size: number): { rows: T[]; page: number } {
   const pages = Math.max(1, Math.ceil(items.length / size));
   const shown = Math.min(Math.max(1, page), pages);
   return { rows: items.slice((shown - 1) * size, shown * size), page: shown };
+}
+
+/**
+ * Where a group that was just added shows: the page that holds it at this size, in the list as the search leaves it, and the search to keep.
+ * A search that would hide the group is dropped (the list is then the whole kind). Null when the group is not in `ordered`.
+ */
+export function locateGroup(
+  ordered: readonly Pick<ServiceCategory, 'id' | 'name'>[],
+  id: Id,
+  q: string,
+  size: number,
+): { page: number; q: string } | null {
+  if (!ordered.some((group) => group.id === id)) return null;
+  const found = groupsMatching(ordered, q);
+  const hidden = !found.some((group) => group.id === id);
+  const list = hidden ? ordered : found;
+  return {
+    page: Math.floor(list.findIndex((group) => group.id === id) / size) + 1,
+    q: hidden ? '' : q.trim(),
+  };
 }
 
 /** The new position of one group. */

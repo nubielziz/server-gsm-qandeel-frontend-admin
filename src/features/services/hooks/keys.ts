@@ -41,5 +41,12 @@ export function staleServicesAndCategories(...ids: readonly number[]): Invalidat
 /** How many names one menu loads. A longer list would need a search box; the demo's menus were plain selects. */
 export const PICKER_CAP = 200;
 
+/**
+ * How many groups (service categories) one read asks for: 1000, the largest page the server gives. The server has no kind filter, so
+ * every kind comes in one list sorted by position, and a new group goes last: with a smaller cap the newest groups (and every group past
+ * the cap) were out of the list and out of every group menu. The shop held 265 groups when 200 hid the last 65.
+ */
+export const CATEGORY_READ_CAP = 1000;
+
 /** The five minutes a lookup is kept: the lists change rarely, and a menu should not wait for a request each time. */
 export const LOOKUP_STALE_MS = 5 * 60_000;

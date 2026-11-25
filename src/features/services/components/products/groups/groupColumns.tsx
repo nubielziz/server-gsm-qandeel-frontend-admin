@@ -1,6 +1,6 @@
 // groupColumns: the columns of the Group table in the list skin: Group Name, Order (up and down buttons), Status (a square that is a button),
 // Visible to, Services and Actions (the square-pen link to the edit view). Pure drawing: what a click does is handed in.
-import { Button, ButtonLink, Icon, SquareToggle, type DataTableColumn } from '@/components/ui';
+import { Button, ButtonLink, cx, Icon, SquareToggle, type DataTableColumn } from '@/components/ui';
 import type { Id } from '@/lib/api';
 import type { ServiceType } from '@/lib/serviceTypes';
 import { visibleToText } from '../../../lib/categories';
@@ -20,6 +20,10 @@ export interface GroupColumnsOptions {
   updateLock: Lock;
   /** The group whose switch is being saved, shown as busy. */
   busyId: Id | null;
+  /** The group just added, marked for a moment (the Group view opened on it after Add). */
+  markedId: Id | null;
+  /** A search is on: the list is only some of the groups, so the order buttons are off (the order only makes sense in the whole list). */
+  searching: boolean;
   onToggle: (group: ServiceCategory) => void;
   onMove: (group: ServiceCategory, direction: 'up' | 'down') => void;
 }
@@ -31,6 +35,8 @@ export function groupColumns({
   ranks,
   updateLock,
   busyId,
+  markedId,
+  searching,
   onToggle,
   onMove,
 }: GroupColumnsOptions): DataTableColumn<ServiceCategory>[] {
@@ -44,10 +50,16 @@ export function groupColumns({
         variant="ghost"
         icon
         aria-label={`Move ${group.name} ${direction}`}
-        disabled={updateLock.disabled || edge}
+        disabled={updateLock.disabled || searching || edge}
         title={
           updateLock.title ??
-          (edge ? (direction === 'up' ? 'Already first' : 'Already last') : `Move ${direction}`)
+          (searching
+            ? 'Clear the search to change the order'
+            : edge
+              ? direction === 'up'
+                ? 'Already first'
+                : 'Already last'
+              : `Move ${direction}`)
         }
         onClick={() => onMove(group, direction)}
       >
@@ -62,7 +74,17 @@ export function groupColumns({
       label: 'Group Name',
       // The name takes the spare width, so the other columns pack to the right as in the layout the owner asked for.
       className: 'w-full',
-      render: (group) => <span className={group.isActive ? undefined : 'text-ink3'}>{group.name}</span>,
+      render: (group) => (
+        <span
+          aria-current={group.id === markedId ? 'true' : undefined}
+          className={cx(
+            !group.isActive && 'text-ink3',
+            group.id === markedId && '-mx-1.5 rounded bg-accent-soft px-1.5 py-0.5 font-medium',
+          )}
+        >
+          {group.name}
+        </span>
+      ),
     },
     {
       key: 'order',

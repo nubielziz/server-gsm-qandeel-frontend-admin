@@ -133,6 +133,34 @@ describe('Save', () => {
   });
 });
 
+describe('a name that is taken', () => {
+  it('is said in the words of the console, with the kind of the group, and the other messages stay as they are', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.patch('*/admin/service-categories/:id', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'name', code: 'duplicate', message: 'An IMEI category with this name already exists.' },
+          { field: 'allowedGroupIds', code: 'invalid', message: 'Group 9 is closed.' },
+        ]),
+      ),
+    );
+    await openProducts(EDIT);
+    const box = await nameBox();
+    await waitFor(() => expect(box).toHaveValue('Xiaomi'));
+    await user.clear(box);
+    await user.type(box, 'Apple');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText('A group with this name already exists in IMEI Service.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('An IMEI category with this name already exists.')).not.toBeInTheDocument();
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(
+      within(screen.getByRole('group', { name: 'Visible to' })).getByText('Group 9 is closed.'),
+    ).toBeInTheDocument();
+  });
+});
+
 describe('the address', () => {
   it('corrects the strip to the kind of the group', async () => {
     const app = await openProducts(`/products?view=edit-group&type=server&id=${XIAOMI}`);

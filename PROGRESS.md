@@ -11,6 +11,16 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-25): every group is listed, and the Group view has a search
+
+Found by the owner on production: a new group never showed in Product / Services › Group, and adding it again said the name was taken.
+Production has 265 groups; the console read only the first 200 of all kinds by position and a new group goes last, so every group past
+200 was missing from the Group view and from every group picker (+Add Service, a service's Overview, the All filter, Pricing, bulk
+prices, price rules, and Add from supplier's "Service Listed In Group"). The reads now take the server's largest page (1000; a warning
+above the list says so if there are ever more). The Group view gained a Quick Search (`q`, by name within the kind; the order buttons
+rest while it is on), opens on the page of a group just added and marks it, and says "A group with this name already exists in <kind>."
+Built by a Sonnet agent, reviewed by an Opus reviewer (one more capped read found and fixed by the lead). Console only.
+
 ## Status (2026-11-25): one Money page (decision 026)
 
 The owner asked to merge Finance and Refunds & disputes into one page, **Money** (`/money`), in the layout of the Accounts page, frontend only.

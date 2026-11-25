@@ -2,7 +2,7 @@
 import { HttpResponse } from 'msw';
 
 /** One entry of a problem's `errors[]`. */
-export type ProblemError = { field?: string; message: string };
+export type ProblemError = { field?: string; message: string; code?: string };
 
 let counter = 0;
 

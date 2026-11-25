@@ -525,3 +525,21 @@ describe('the view frame', () => {
     expect(comesAfter(result, addButton())).toBe(true);
   });
 });
+
+describe('the group menu', () => {
+  it('reads up to 1000 groups, so a group past the two-hundredth (a new one goes last) is offered too', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    await openServices(user);
+    await waitFor(() =>
+      expect(
+        requests.sent().some((request) => request.url.pathname.endsWith('/admin/service-categories')),
+      ).toBe(true),
+    );
+    const read = requests
+      .sent()
+      .find((request) => request.url.pathname.endsWith('/admin/service-categories'));
+    expect(read?.url.searchParams.get('_start')).toBe('0');
+    expect(read?.url.searchParams.get('_end')).toBe('1000');
+  });
+});

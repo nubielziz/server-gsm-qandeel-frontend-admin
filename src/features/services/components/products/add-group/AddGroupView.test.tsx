@@ -152,6 +152,26 @@ describe('Add', () => {
     expect(screen.getByRole('textbox', { name: 'Group Name' })).toHaveValue('Apple');
   });
 
+  it('says a name that is taken in the words of the console, with the kind of the strip', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/service-categories', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'name', code: 'duplicate', message: 'A file category with this name already exists.' },
+        ]),
+      ),
+    );
+    const app = await openProducts(`${ADD}&type=file`);
+    await user.type(await nameBox(), 'apple');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+    expect(
+      await screen.findByText('A group with this name already exists in File Service.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('A file category with this name already exists.')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Group Name' })).toHaveAttribute('aria-invalid', 'true');
+    expect(app.location()).toBe(`${ADD}&type=file`);
+  });
+
   it('says when the ranks could not be loaded, with a Retry, and does not offer them until they come', async () => {
     const user = userEvent.setup();
     mockServer.use(

@@ -7,8 +7,11 @@ import type { ServiceType } from '@/lib/serviceTypes';
 /** The newest read of the groups, kept under the suppliers' own keys (one entry for each kind). */
 export const KIND_CATEGORIES_KEY = ['api', 'suppliers', 'kind-categories'] as const;
 
-/** The most groups one read takes: the server's own cap for the list. */
-const CATEGORY_ROWS = 200;
+/**
+ * The most groups one read takes: the server's largest page (1000). Production has more than 200 groups, and a new group goes last,
+ * so a smaller read left the newest groups out of this menu.
+ */
+export const CATEGORY_ROWS = 1000;
 
 /** How long a read of the groups counts as fresh. */
 const FRESH_MS = 30_000;

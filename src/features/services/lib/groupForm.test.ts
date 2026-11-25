@@ -2,7 +2,8 @@
 // of the strip) and the body of a change (only what differs).
 import { describe, expect, it } from 'vitest';
 import type { ServiceCategory } from '../types';
-import { changesOf, createBody, NEW_GROUP, valuesOf } from './groupForm';
+import { ApiError } from '@/lib/api';
+import { changesOf, createBody, duplicateNameText, groupFormError, NEW_GROUP, valuesOf } from './groupForm';
 
 const group: ServiceCategory = {
   id: 5,
@@ -57,5 +58,77 @@ describe('changesOf', () => {
     expect(changesOf({ name: 'Xiaomi', isActive: true, allowedGroupIds: [] }, group)).toEqual({
       allowedGroupIds: [],
     });
+  });
+});
+
+describe('groupFormError', () => {
+  /** A 422 as the server sends it: one entry per message, each with its code when it has one. */
+  const refusal = (fields: Record<string, string[]>, codes: Record<string, string[]> = {}) =>
+    new ApiError({
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      title: 'Check the form',
+      detail: 'Some fields need attention.',
+      fieldErrors: fields,
+      fieldCodes: codes,
+      formErrors: ['A general message.'],
+      requestId: 'req-1',
+    });
+
+  it('says a taken name in groups and in the kind as the strip shows it', () => {
+    const error = refusal(
+      { name: ['A file category with this name already exists.'] },
+      { name: ['duplicate'] },
+    );
+    const mapped = groupFormError(error, 'file') as ApiError;
+    expect(mapped.fieldErrors.name).toEqual(['A group with this name already exists in File Service.']);
+    expect(duplicateNameText('server')).toBe('A group with this name already exists in Server Service.');
+  });
+
+  it('keeps everything else of the error, and leaves the original as it was', () => {
+    const error = refusal(
+      { name: ['A file category with this name already exists.'], allowedGroupIds: ['Group 9 is closed.'] },
+      { name: ['duplicate'], allowedGroupIds: ['invalid'] },
+    );
+    const mapped = groupFormError(error, 'imei') as ApiError;
+    expect(mapped).toBeInstanceOf(ApiError);
+    expect(mapped.fieldErrors.allowedGroupIds).toEqual(['Group 9 is closed.']);
+    expect(mapped.formErrors).toEqual(['A general message.']);
+    expect([mapped.status, mapped.code, mapped.detail, mapped.requestId]).toEqual([
+      422,
+      'VALIDATION_FAILED',
+      'Some fields need attention.',
+      'req-1',
+    ]);
+    expect(error.fieldErrors.name).toEqual(['A file category with this name already exists.']);
+  });
+
+  it('changes only the message that has the code when the name has several', () => {
+    const mapped = groupFormError(
+      refusal({ name: ['Too long.', 'Taken.'] }, { name: ['too_long', 'duplicate'] }),
+      'remote',
+    ) as ApiError;
+    expect(mapped.fieldErrors.name).toEqual([
+      'Too long.',
+      'A group with this name already exists in Remote Service.',
+    ]);
+  });
+
+  it('leaves another message on the name, a message with no code, and a code on another field as the server sent them', () => {
+    const other = refusal({ name: ['Too long.'] }, { name: ['too_long'] });
+    expect(groupFormError(other, 'imei')).toBe(other);
+    const noCode = refusal({ name: ['An IMEI category with this name already exists.'] });
+    expect(groupFormError(noCode, 'imei')).toBe(noCode);
+    const elsewhere = refusal({ sort: ['Taken.'] }, { sort: ['duplicate'] });
+    expect(groupFormError(elsewhere, 'imei')).toBe(elsewhere);
+    // The codes cannot be matched to the messages when one entry has none.
+    const unmatched = refusal({ name: ['One.', 'Two.'] }, { name: ['duplicate'] });
+    expect(groupFormError(unmatched, 'imei')).toBe(unmatched);
+  });
+
+  it('passes anything that is not an API error through', () => {
+    const failure = new Error('offline');
+    expect(groupFormError(failure, 'imei')).toBe(failure);
+    expect(groupFormError('x', 'imei')).toBe('x');
   });
 });

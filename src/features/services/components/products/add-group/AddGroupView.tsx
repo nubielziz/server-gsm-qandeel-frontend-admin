@@ -1,6 +1,7 @@
 // AddGroupView: the "+Add Group" view: a label-left form (Group Name, Active, Visible to) with one "Add" button in the pinned bar. The group is
-// made in the kind on the strip and goes last; after it the list of groups opens, or +Add Service when the view was opened from its "Add New
-// Group" link (the address says so), with the new group chosen. Needs catalog:read and catalog:create.
+// made in the kind on the strip and goes last; after it the list of groups opens on the page that holds the new group (the address carries its
+// id), or +Add Service when the view was opened from its "Add New Group" link (the address says so), with the new group chosen. Needs
+// catalog:read and catalog:create.
 import { useNavigate, useSearchParams } from 'react-router';
 import { useCreateCategory } from '../../../hooks/useCategoryMutations';
 import { createBody, NEW_GROUP } from '../../../lib/groupForm';
@@ -24,6 +25,7 @@ export function AddGroupView({ type, grants }: ProductsViewProps) {
       submitLabel="Add"
       initial={NEW_GROUP}
       lock={grants.needs('catalog:create')}
+      type={type}
       canRanks={grants.can('groups:read')}
       withoutRanks="A new group is visible to every rank."
       onSubmit={async (values) => {
@@ -32,7 +34,8 @@ export function AddGroupView({ type, grants }: ProductsViewProps) {
           chooseDraftGroup(type, group.id);
           void navigate(productsPath({ type, view: 'add' }));
         } else {
-          void navigate(productsPath({ type, view: 'groups' }));
+          // The new group is last, so on a long list it is on the last page: the Group view reads `group` and opens that page.
+          void navigate(productsPath({ type, view: 'groups', group: group.id }));
         }
       }}
     />

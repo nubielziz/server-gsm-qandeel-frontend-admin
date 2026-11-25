@@ -47,8 +47,8 @@ export type RulesTabId = (typeof RULES_TABS)[number];
 
 /**
  * What a link into the page can set. `type` is the kind of service (the strip of tabs); `view` the view. The other keys belong to one
- * view: `group`, `q`, `api`, `show`, `page` and `size` the list (All; `q`, `group` and `page` also the price grid), `id` and `part`
- * the edit view, `supplier` and `from` the add view with a supplier chosen, `run` one publish run and `tab` a sub-view of Price Rules.
+ * view: `group`, `q`, `api`, `show`, `page` and `size` the list (All; `q`, `group` and `page` also the price grid; the Group view takes
+ * `q`, `page` and `size`, and `group` as the id of a group just added, which it opens and marks), `id` and `part` the edit view, `supplier` and `from` the add view with a supplier chosen, `run` one publish run and `tab` a sub-view of Price Rules.
  * `return` says where the +Add Group view goes after Add: `add` is back to +Add Service (its "Add New Group" link), with the new group chosen.
  */
 export type ProductsLink = {

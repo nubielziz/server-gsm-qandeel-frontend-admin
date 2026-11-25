@@ -1,6 +1,7 @@
 // Tests for the Group view, run through the whole app against the dev mock API: the list of the kind on the strip (status squares, ranks, service
 // counts, the edit link), its page and size in the address, the status square, the up and down buttons (a swap, and across a page), the
-// "With selected" strip (Activate, Deactivate, Delete with the server's refusal for a group that services still use) and a role that may only read.
+// "With selected" strip (Activate, Deactivate, Delete with the server's refusal for a group that services still use), the Quick Search by name
+// (its address, the first page, the empty state, the order buttons off) and a role that may only read. A long list is in GroupsView.long.test.tsx.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -165,6 +166,114 @@ describe('the footer', () => {
     expect(screen.getByRole('group', { name: 'With selected (1):' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next page' }));
     expect(await screen.findByRole('group', { name: 'With selected:' })).toBeInTheDocument();
+  });
+});
+
+describe('the Quick Search', () => {
+  const searchBox = () => screen.getByRole('searchbox', { name: 'Search groups by name' });
+  // The app's header has a search button of its own, so the Search button is looked for inside the box.
+  const searchButton = () =>
+    within(screen.getByRole('group', { name: 'Quick Search' })).getByRole('button', { name: 'Search' });
+
+  /** Types a text in the box and presses Enter. */
+  async function search(user: ReturnType<typeof userEvent.setup>, text: string) {
+    await groupTable();
+    await user.clear(searchBox());
+    await user.type(searchBox(), `${text}{Enter}`);
+  }
+
+  it('keeps the groups whose name holds the text anywhere, ignoring case and the spaces around it', async () => {
+    const user = userEvent.setup();
+    const app = await openProducts(GROUPS);
+    await search(user, '  UNLO ');
+    await waitFor(async () => expect(await groupNames()).toEqual(['Carrier unlock']));
+    // The text is trimmed in the address; the kind stays on the strip.
+    expect(app.location()).toBe('/products?view=groups&type=imei&q=UNLO');
+    await search(user, 'ung');
+    await waitFor(async () => expect(await groupNames()).toEqual(['Samsung']));
+  });
+
+  it('searches only the kind on the strip', async () => {
+    const user = userEvent.setup();
+    await openProducts(SERVER_GROUPS);
+    await search(user, 'dit');
+    await waitFor(async () => expect(await groupNames()).toEqual(['Credits']));
+    await search(user, 'Apple');
+    expect(await screen.findByRole('heading', { level: 3, name: 'No groups match' })).toBeInTheDocument();
+  });
+
+  it('reads the text from the address, and the Search button applies it', async () => {
+    const user = userEvent.setup();
+    await openProducts(`${GROUPS}&q=sung`);
+    await waitFor(async () => expect(await groupNames()).toEqual(['Samsung']));
+    expect(searchBox()).toHaveValue('sung');
+    await user.clear(searchBox());
+    await user.type(searchBox(), 'xia');
+    // The text is a draft until Search or Enter.
+    expect(await groupNames()).toEqual(['Samsung']);
+    await user.click(searchButton());
+    await waitFor(async () => expect(await groupNames()).toEqual(['Xiaomi']));
+  });
+
+  it('goes back to the first page for a new search, and the pager counts the matches and keeps the text', async () => {
+    const user = userEvent.setup();
+    const app = await openProducts(`${GROUPS}&size=2&page=3`);
+    await waitFor(async () => expect(await groupNames()).toEqual(['Xiaomi']));
+    // Apple, Generic and Carrier unlock hold an "e".
+    await search(user, 'e');
+    await waitFor(() => expect(app.location()).toBe('/products?view=groups&type=imei&q=e&size=2'));
+    await waitFor(async () => expect(await groupNames()).toEqual(['Apple', 'Generic']));
+    expect(screen.getByText('Results: 1 - 2 of 3')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
+    await waitFor(() => expect(app.location()).toBe('/products?view=groups&type=imei&q=e&page=2&size=2'));
+    await waitFor(async () => expect(await groupNames()).toEqual(['Carrier unlock']));
+    expect(screen.getByText('Results: 3 - 3 of 3')).toBeInTheDocument();
+  });
+
+  it('says no group matches, with a Clear search that brings the whole kind back', async () => {
+    const user = userEvent.setup();
+    const app = await openProducts(GROUPS);
+    await search(user, 'zzz');
+    expect(await screen.findByRole('heading', { level: 3, name: 'No groups match' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /^With selected/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
+    await waitFor(() => expect(app.location()).toBe('/products?view=groups&type=imei'));
+    await waitFor(async () => expect(await groupNames()).toEqual(IMEI_GROUPS));
+    expect(searchBox()).toHaveValue('');
+  });
+
+  it('keeps the order buttons off while a search is on, with the reason, and on again once it is cleared', async () => {
+    const user = userEvent.setup();
+    await openProducts(GROUPS);
+    await search(user, 'e');
+    await waitFor(async () => expect(await groupNames()).toEqual(['Apple', 'Generic', 'Carrier unlock']));
+    for (const [name, direction] of [
+      ['Generic', 'up'],
+      ['Generic', 'down'],
+      ['Apple', 'down'],
+    ]) {
+      const button = (await groupRow(name)).getByRole('button', { name: `Move ${name} ${direction}` });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('title', 'Clear the search to change the order');
+    }
+    await search(user, '');
+    await waitFor(async () => expect(await groupNames()).toEqual(IMEI_GROUPS));
+    expect((await groupRow('Generic')).getByRole('button', { name: 'Move Generic up' })).toBeEnabled();
+  });
+
+  it('starts a new search with no ticks, and the strip acts on the rows that are shown', async () => {
+    const user = userEvent.setup();
+    await openProducts(GROUPS);
+    await user.click((await groupRow('Apple')).getByRole('checkbox'));
+    expect(screen.getByRole('group', { name: 'With selected (1):' })).toBeInTheDocument();
+    await search(user, 'ung');
+    await waitFor(async () => expect(await groupNames()).toEqual(['Samsung']));
+    expect(screen.getByRole('group', { name: 'With selected:' })).toBeInTheDocument();
+    await user.click((await groupRow('Samsung')).getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Deactivate' }));
+    expect(await screen.findByText('1 group deactivated')).toBeInTheDocument();
+    expect((await stored('Samsung')).isActive).toBe(false);
+    expect((await stored('Apple')).isActive).toBe(true);
   });
 });
 
