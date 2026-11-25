@@ -4,28 +4,35 @@ import type { ClientGroup, Service, ServiceGroupPrice, UpdateServiceBody } from 
 import { RETAIL_GROUP_KIND } from './groupPrices';
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from './money';
 
-/** The two boxes of Edit price, as text. */
-export type PriceValues = { basePrice: string; minProfit: string };
+/** The three boxes of Edit price, as text: the credit, the minimum profit and "Your cost" (empty reads as 0). */
+export type PriceValues = { basePrice: string; minProfit: string; ownCost: string };
 
 /** The names of the Edit price boxes, so the server's field messages find their box. */
-export const PRICE_FIELDS = ['basePrice', 'minProfit'] as const;
+export const PRICE_FIELDS = ['basePrice', 'minProfit', 'ownCost'] as const;
 
-/** The two prices of a service the Edit price form starts from and compares with. */
-export type PriceFigures = Pick<Service, 'basePrice' | 'minProfit'>;
+/** The prices of a service the Edit price form starts from and compares with. */
+export type PriceFigures = Pick<Service, 'basePrice' | 'minProfit' | 'ownCost'>;
 
 /** The boxes filled with what the server has now. */
 export function priceDefaults(saved: PriceFigures): PriceValues {
-  return { basePrice: moneyInput(saved.basePrice), minProfit: moneyInput(saved.minProfit) };
+  return {
+    basePrice: moneyInput(saved.basePrice),
+    minProfit: moneyInput(saved.minProfit),
+    ownCost: moneyInput(saved.ownCost),
+  };
 }
 
 /**
  * Only what changed, so a price with more decimals than its box shows is never rounded by a save. An empty object means
  * nothing changed. The check that a price is above the floor is the server's: it answers a refusal that shows under the box.
+ * An empty "Your cost" box means no own cost of its own: 0.
  */
 export function priceChanges(values: PriceValues, saved: PriceFigures): UpdateServiceBody {
   const body: UpdateServiceBody = {};
   if (!sameMoney(values.basePrice, saved.basePrice)) body.basePrice = toMoneyText(values.basePrice);
   if (!sameMoney(values.minProfit, saved.minProfit)) body.minProfit = toMoneyText(values.minProfit);
+  const ownCost = values.ownCost.trim() === '' ? '0' : values.ownCost;
+  if (!sameMoney(ownCost, saved.ownCost)) body.ownCost = toMoneyText(ownCost);
   return body;
 }
 

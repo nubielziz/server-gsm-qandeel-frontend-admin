@@ -9,8 +9,8 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
-import { getService, listCategories } from '../../../api';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { createService, getService, importInventoryCodes, listCategories } from '../../../api';
 import { productsPath } from '../../../lib/productsPath';
 import { lastAllLink } from './lastAllAddress';
 import { openProducts } from '../../../test/productsPage';
@@ -80,6 +80,9 @@ function serviceRow(over: Partial<Service> & Pick<Service, 'id' | 'name'>): Serv
     basePrice: '10.0000',
     cost: '8.0000',
     costChangedFrom: null,
+    ownCost: '0.0000',
+    stockDelivery: false,
+    stockAvailable: 0,
     minProfit: '1.0000',
     floorPrice: '9.0000',
     marginPct: '20.0000',
@@ -195,6 +198,110 @@ describe('the list', () => {
     expect(plain.getByText('#208 · PL-1')).toBeInTheDocument();
     expect(plain.queryByText('No supplier')).not.toBeInTheDocument();
     expect(plain.getAllByRole('cell')[2].textContent).toBe(''); // the API cell is empty
+  });
+
+  it('says how many codes a service delivered from code stock holds, and not "No supplier"', async () => {
+    answerList(
+      serviceRow({
+        id: 301,
+        name: 'iTunes Gift Card 10',
+        code: 'GC-ITUNES-10',
+        type: 'server',
+        stockDelivery: true,
+        stockAvailable: 12,
+      }),
+      serviceRow({ id: 302, name: 'Plain Unlock', code: 'PL-2', attention: ['no_supplier'] }),
+    );
+    await openProducts(SERVER);
+    const table = await servicesTable();
+    const stock = await rowOf(table, 'iTunes Gift Card 10');
+    expect(stock.getByText('Codes: 12 in stock')).toHaveClass('text-good-fg');
+    expect(stock.queryByText('No supplier')).not.toBeInTheDocument();
+    expect(stock.queryByText('No codes in stock')).not.toBeInTheDocument();
+    // A service that is not delivered from stock keeps today's words.
+    const plain = await rowOf(table, 'Plain Unlock');
+    expect(plain.getByText('No supplier')).toHaveClass('text-crit-fg');
+    expect(plain.queryByText(/in stock/)).not.toBeInTheDocument();
+  });
+
+  it('writes "No codes in stock" in the critical colour when the server says no supplier, and works nothing out itself', async () => {
+    answerList(
+      serviceRow({
+        id: 303,
+        name: 'Google Play 25',
+        code: 'GC-GP-25',
+        type: 'server',
+        stockDelivery: true,
+        stockAvailable: 0,
+        attention: ['no_supplier'],
+      }),
+      serviceRow({
+        id: 304,
+        name: 'Steam 20',
+        code: 'GC-ST-20',
+        type: 'server',
+        stockDelivery: true,
+        stockAvailable: 0,
+        supplier: { id: 1, name: 'Nordic GSM' },
+      }),
+      serviceRow({
+        id: 305,
+        name: 'PSN 50',
+        code: 'GC-PSN-50',
+        type: 'server',
+        stockDelivery: true,
+        stockAvailable: 0,
+        executionMode: 'manual',
+      }),
+    );
+    await openProducts(SERVER);
+    const table = await servicesTable();
+    const empty = await rowOf(table, 'Google Play 25');
+    expect(empty.getByText('No codes in stock')).toHaveClass('text-crit-fg');
+    expect(empty.queryByText('No supplier')).not.toBeInTheDocument();
+    // The server did not flag these (a supplier is linked, or the service waits for a person anyway): an empty stock is only a number.
+    const supplied = await rowOf(table, 'Steam 20');
+    expect(supplied.getByText('Codes: 0 in stock')).not.toHaveClass('text-crit-fg');
+    expect(supplied.queryByText('No codes in stock')).not.toBeInTheDocument();
+    const manual = await rowOf(table, 'PSN 50');
+    expect(manual.getByText('Codes: 0 in stock')).toBeInTheDocument();
+  });
+
+  it('counts the codes of a service with no supplier as its supply, and flags it only when the stock is empty', async () => {
+    await signInAs();
+    const credits = (await listCategories()).data.find((category) => category.name === 'Credits');
+    if (!credits) throw new Error('The mock seed has no Credits group.');
+    const body = {
+      categoryId: credits.id,
+      type: 'server',
+      slaMinutes: 5,
+      basePrice: '20.0000',
+      stockDelivery: true,
+    } as const;
+    const steam = await createService({ ...body, name: 'Steam 20', code: 'GC-ST-20' });
+    await createService({ ...body, name: 'PSN 50', code: 'GC-PSN-50' });
+    await importInventoryCodes(steam.id, { codes: ['STEAM-0001-AAAA'] });
+    await openProducts(SERVER);
+    const table = await servicesTable();
+    // Neither service has a supplier. The mock plays the server: one code is supply, so no no_supplier and the count is shown.
+    const supplied = await rowOf(table, 'Steam 20');
+    expect(supplied.getByText('Codes: 1 in stock')).toHaveClass('text-good-fg');
+    expect(supplied.queryByText('No supplier')).not.toBeInTheDocument();
+    expect(supplied.queryByText('No codes in stock')).not.toBeInTheDocument();
+    const empty = await rowOf(table, 'PSN 50');
+    expect(empty.getByText('No codes in stock')).toHaveClass('text-crit-fg');
+    expect(empty.queryByText('No supplier')).not.toBeInTheDocument();
+  });
+
+  it('shows the stock of the services that hold codes in the dev data', async () => {
+    await openProducts(SERVER);
+    const table = await servicesTable();
+    // Z3X Credits holds eighteen codes: four sold, one void, thirteen available. UnlockTool holds twelve: seven available.
+    expect((await rowOf(table, 'Z3X Credits x10')).getByText('Codes: 13 in stock')).toBeInTheDocument();
+    expect(
+      (await rowOf(table, 'UnlockTool 1-Day License')).getByText('Codes: 7 in stock'),
+    ).toBeInTheDocument();
+    expect((await rowOf(table, 'Chimera Tool 1 Month')).queryByText(/in stock/)).not.toBeInTheDocument();
   });
 
   it('writes a switched-off service in the quiet colour with its square off', async () => {

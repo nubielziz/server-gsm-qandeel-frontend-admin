@@ -1,6 +1,7 @@
 // Mock of the code inventory routes: the masked list (`GET /admin/inventory-codes`), the import with duplicate detection
 // (`POST /admin/services/:id/inventory/import`) and the void action (`POST /admin/inventory-codes/void`). The mock plays the server:
-// it masks the codes, counts what it imported, found twice or could not read, and voids only unsold codes.
+// it masks the codes, counts what it imported, found twice or could not read, voids only unsold codes, and refuses an import for a
+// service that is not delivered from code stock.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toCode } from './dto';
 import { bodyOf, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
@@ -27,6 +28,16 @@ export const inventoryRoutes: HttpHandler[] = [
       const stores = await servicesStore();
       const service = stores.services.find(String(params.id));
       if (!service) return notFound('service', params.id);
+      // Only a service delivered from code stock holds codes.
+      if (!service.stockDelivery) {
+        return invalid([
+          {
+            field: 'codes',
+            code: 'not_stock_service',
+            message: 'Turn on Delivered from code stock for this service first.',
+          },
+        ]);
+      }
       const body = await bodyOf(request);
       const codes = Array.isArray(body.codes) ? body.codes.map((code) => String(code).trim()) : [];
       if (codes.length === 0) return invalid([{ field: 'codes', message: 'Add at least one code.' }]);

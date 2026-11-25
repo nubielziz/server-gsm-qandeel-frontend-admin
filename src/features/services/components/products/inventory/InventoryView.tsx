@@ -1,7 +1,7 @@
 // InventoryView: the stored codes (the code inventory), inside the Product / Services frame. It is the existing tab drawn in the list grammar
 // of the page: a Quick Search box, a dense table with status squares, the "With selected" strip and the pinned footer (the same pieces as
-// the Inventory part of the editor); the import and void dialogs stay dialogs in this version. The service menu offers the services of the
-// kind on the strip (the list route has no kind filter).
+// the Inventory part of the editor); the import and void dialogs stay dialogs in this version. The service menu offers the services delivered from code
+// stock of the kind on the strip (the server filters both; the code list itself has no kind filter).
 import { InventoryTab } from '../../InventoryTab';
 import type { ProductsViewProps } from '../types';
 

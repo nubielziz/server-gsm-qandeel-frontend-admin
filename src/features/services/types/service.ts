@@ -56,6 +56,11 @@ export type PublishFailure = { runId: Id; reason: string; detail: string | null;
  * `allowVerify` that a merchant may ask for the verification of a completed order, and `verifyWindowH` for how many hours after
  * completion (0 to 720; `0` means no window). The server always sends the three.
  *
+ * `stockDelivery` is "Delivered from code stock": only such a service holds codes, and only its orders take a code from stock first
+ * (gift cards and other codes, never unlocks). `stockAvailable` is how many of its codes are `available` now (0 for a service with no
+ * codes). `ownCost` is the service's own cost; `cost` stays the cost the server uses, the larger of `ownCost` and the cost of the
+ * first usable supplier link. The server always sends the three.
+ *
  * The shop and attention keys at the end are optional: the server leaves a key out (it is never `null` or `false` instead) when the session
  * may not read it, so a missing key means "not allowed", not "none". `attention` lists the reasons this session may see.
  * `retailPrice` and `retailPriceSource` go to everyone (`null`: no shop price yet). `retailPriceRule` and `retailPriceWaiting`
@@ -83,6 +88,12 @@ export type Service = Pick<
   category: NamedRef | null;
   /** What the supplier charged before its last change, when the cost changed since the price was set. */
   costChangedFrom: Money | null;
+  /** What one unit costs the owner, typed by staff (`0.0000` when none was set); `cost` is the larger of this and the supplier's. */
+  ownCost: Money;
+  /** "Delivered from code stock": the service holds codes and its orders take one from stock first. */
+  stockDelivery: boolean;
+  /** How many of the service's codes are `available` now. */
+  stockAvailable: number;
   minProfit: Money;
   floorPrice: Money;
   marginPct: Decimal;
@@ -180,6 +191,10 @@ export type CreateServiceBody = {
   allowVerify?: boolean;
   /** Hours after completion that a merchant may ask for verification, 0 to 720; `0` means no window. */
   verifyWindowH?: number;
+  /** "Delivered from code stock"; a new service starts with `false`. The server refuses `false` while codes are in stock (`codes_in_stock`). */
+  stockDelivery?: boolean;
+  /** The service's own cost, 0 or more; a new service starts at `0.0000`. */
+  ownCost?: Money;
 };
 
 /** Body of `PATCH /admin/services/:id` (assumed contract): only the fields that change. */
@@ -209,10 +224,11 @@ export type ReplaceGroupPricesBody = { prices: ServiceGroupPrice[]; retailPriceS
  * `needsAttention` is any of the reasons this session may see; `hasSupplier` is an active supplier link; `supplierId` is the
  * primary supplier (the first active link by priority); `isListed` is a shop page that is switched on; `notOnShop` is an active
  * service that is not listed and that nothing blocks. `isListed` and `notOnShop` need `storefront:read`: without it the server
- * answers 403 instead of ignoring them.
+ * answers 403 instead of ignoring them. `stockDelivery` keeps the services that are (or are not) delivered from code stock.
  */
 export type ServiceListFilters = {
   q?: string;
+  stockDelivery?: boolean;
   type?: ServiceType;
   status?: ServiceStatus;
   belowFloor?: boolean;

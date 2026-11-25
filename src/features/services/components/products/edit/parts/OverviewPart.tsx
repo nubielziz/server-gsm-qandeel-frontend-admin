@@ -1,5 +1,5 @@
-// OverviewPart: the "Overview" part of the edit view: status, name, code, group, delivery time, order handling, verification and cancel, in
-// label-left rows with the pinned "Save". It is built on the details form logic of the old edit dialog (the same mapping and mutation).
+// OverviewPart: the "Overview" part of the edit view: status, name, code, group, delivery time, order handling, verification, cancel and
+// delivery from code stock, in label-left rows with the pinned "Save". It is built on the details form logic of the old edit dialog (the same mapping and mutation).
 import { PartForm } from '@/components/ui';
 import { OverviewFields } from '../overview/OverviewFields';
 import { useOverviewForm } from '../overview/useOverviewForm';

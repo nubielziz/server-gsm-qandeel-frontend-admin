@@ -1,13 +1,14 @@
 // OverviewFields: the rows of the Overview part, label on the left and control on the right (the layout the owner asked for), in the order of the
 // +Add Service form: Service Name, Code, Service Listed In Group, Status, Send For Verification (its window in hours is a row of its own,
-// shown when Yes), User Can Cancel Order, Delivery Time and Order handling. It owns no request: the group names are read here and the save
+// shown when Yes), User Can Cancel Order, Delivery Time, Order handling and Delivered from code stock. It owns no request: the group names are read here and the save
 // belongs to the part.
-import { Controller, type UseFormReturn } from 'react-hook-form';
-import { FormRow, SectionHeading, SelectField, TextField, YesNo } from '@/components/ui';
+import type { UseFormReturn } from 'react-hook-form';
+import { FormRow, SectionHeading, SelectField, TextField } from '@/components/ui';
 import { LookupNote } from '../../../LookupNote';
 import { useCategories } from '../../../../hooks/useChoices';
 import { deliveryProblem, DELIVERY_UNITS } from '../../../../lib/delivery';
 import { windowProblem, type OverviewValues } from './overviewForm';
+import { SwitchRow } from './SwitchRow';
 import { withChosen } from '../../../../lib/select';
 import type { Service } from '../../../../types';
 
@@ -16,46 +17,6 @@ export interface OverviewFieldsProps {
   service: Service;
   /** A missing permission: every control is off, and the part says why. */
   lock: { disabled: boolean; title?: string };
-}
-
-// One two-part switch tied to its row.
-function SwitchRow({
-  form,
-  name,
-  label,
-  yes,
-  no,
-  hint,
-  lock,
-}: {
-  form: UseFormReturn<OverviewValues>;
-  name: 'active' | 'auto' | 'verify' | 'cancel';
-  label: string;
-  yes?: string;
-  no?: string;
-  hint?: string;
-  lock: OverviewFieldsProps['lock'];
-}) {
-  const id = `overview-${name}`;
-  return (
-    <FormRow label={label} htmlFor={id} hint={hint} error={form.formState.errors[name]?.message}>
-      <Controller
-        control={form.control}
-        name={name}
-        render={({ field }) => (
-          <YesNo
-            id={id}
-            yes={yes}
-            no={no}
-            value={field.value}
-            onChange={field.onChange}
-            disabled={lock.disabled}
-            title={lock.title}
-          />
-        )}
-      />
-    </FormRow>
-  );
 }
 
 // The ids of the two boxes that sit in a row of their own: the kit's FormRow gives its hint and error `<id>-hint` and `<id>-error`.
@@ -201,6 +162,13 @@ export function OverviewFields({ form, service, lock }: OverviewFieldsProps) {
         yes="Automatic"
         no="Manual"
         hint="Automatic sends new orders to the supplier at once. Manual makes them wait for an operator."
+        lock={lock}
+      />
+      <SwitchRow
+        form={form}
+        name="stockDelivery"
+        label="Delivered from code stock"
+        hint="Orders take a code from this service's stock first. For gift cards and other codes; leave No for unlocks."
         lock={lock}
       />
     </fieldset>

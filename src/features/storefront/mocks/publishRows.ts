@@ -84,7 +84,7 @@ Oppo Unlock | Oppo Unlock | Oppo | | | Generic | 3 | B:service_disabled
 Legacy BlackBerry Unlock | BlackBerry Unlock | BlackBerry | | | Generic | 2 | B:category_inactive
 Wholesale Carrier Unlock | Wholesale Carrier Unlock | Apple | | | Carrier unlock | 5 | B:b2b_only
 Sony Xperia Unlock | Sony Xperia Unlock | Sony | | | Generic | 3 | B:supplier_unavailable
-LG Unlock | LG Unlock | LG | | | Generic | 3 | B:supplier_unavailable
+Google Play Gift Card 25 | Google Play Gift Card 25 | Google | | | Generic | 3 | B:out_of_stock T:server
 ${ARABIC_NAME} | | | | | Generic | 1 | B:title_missing
 ${TOO_LONG} | ${TOO_LONG} | Apple | | | Apple | 5 | B:title_too_long
 Nokia Unlock Code | Nokia Unlock Code | Nokia | | | Generic | 3 | B:price_missing N

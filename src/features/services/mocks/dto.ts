@@ -3,13 +3,14 @@
 // rule and a masked inventory code.
 import { toMoney } from '@/mocks/seed';
 import type { InventoryCode, PricingRule, Service, ServiceCategory, ServiceDetail } from '../types';
-import { factsOf, type ServiceJoin } from './serviceFacts';
-import { floorOf, groupOf, isBelowFloor, marginOf } from './pricing';
+import { factsOf, stockAvailableOf, type ServiceJoin } from './serviceFacts';
+import { costOf, floorOf, groupOf, isBelowFloor, marginOf } from './pricing';
 import type { Stores } from './seed';
 import type { MockCategory, MockCode, MockRule, MockService } from './types';
 
 /**
- * `GET /admin/services` row (also the answer of create and change). The supplier names, the shop page and price and the attention
+ * `GET /admin/services` row (also the answer of create and change). `cost` is the cost used (the larger of the service's own cost and the
+ * supplier's), `stockAvailable` counts its available codes. The supplier names, the shop page and price and the attention
  * reasons are joined from the other mocks at this moment; a key the session may not read is left out, never `null` or `false`.
  */
 export function toService(stores: Stores, row: MockService, join: ServiceJoin): Service {
@@ -25,7 +26,10 @@ export function toService(stores: Stores, row: MockService, join: ServiceJoin): 
     categoryId: row.categoryId,
     category: category ? { id: category.id, name: category.name } : null,
     basePrice: toMoney(row.price),
-    cost: toMoney(row.cost),
+    cost: toMoney(costOf(row)),
+    ownCost: toMoney(row.ownCost),
+    stockDelivery: row.stockDelivery,
+    stockAvailable: stockAvailableOf(stores, row.id),
     costChangedFrom: row.costWas === null ? null : toMoney(row.costWas),
     minProfit: toMoney(row.minProfit),
     floorPrice: toMoney(floorOf(row)),

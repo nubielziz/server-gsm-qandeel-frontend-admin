@@ -1,10 +1,16 @@
 // ServiceTermsRows: the rows of the +Add Service form after the group: Status, Send For Verification (and its window in hours), User Can Cancel Order,
-// Delivery Time with its unit, Credit and Order handling. The two-part switches are the kit's YesNo.
+// Delivery Time with its unit, Credit, Your cost, Delivered from code stock and Order handling. The two-part switches are the kit's YesNo.
 import { useId } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { cx, FormRow, SelectField, YesNo } from '@/components/ui';
 import type { ServiceGrants } from '../../../hooks/useServiceGrants';
-import { creditProblem, deliveryProblem, windowProblem, type AddServiceValues } from './addServiceForm';
+import {
+  creditProblem,
+  deliveryProblem,
+  ownCostProblem,
+  windowProblem,
+  type AddServiceValues,
+} from './addServiceForm';
 import { fieldWiring, INVALID_BORDER } from './fieldWiring';
 import { DELIVERY_UNITS } from '../../../lib/delivery';
 
@@ -32,9 +38,11 @@ export function ServiceTermsRows({ form, grants }: ServiceTermsRowsProps) {
     cancel: `${base}-cancel`,
     delivery: `${base}-delivery`,
     credit: `${base}-credit`,
+    ownCost: `${base}-own-cost`,
+    stock: `${base}-stock`,
     handling: `${base}-handling`,
   };
-  const flip = (field: 'active' | 'automatic' | 'verify' | 'cancel') => (next: boolean) =>
+  const flip = (field: 'active' | 'automatic' | 'verify' | 'cancel' | 'stockDelivery') => (next: boolean) =>
     setValue(field, next, { shouldDirty: true });
 
   return (
@@ -115,6 +123,32 @@ export function ServiceTermsRows({ form, grants }: ServiceTermsRowsProps) {
           />
           <span className={UNIT_NOTE}>USD</span>
         </div>
+      </FormRow>
+      <FormRow
+        label="Your cost"
+        htmlFor={ids.ownCost}
+        hint="What one unit costs you. The cost used is the larger of this and the supplier's."
+        error={errors.ownCost?.message}
+      >
+        <div className="flex items-center gap-2">
+          <input
+            id={ids.ownCost}
+            className={cx('input w-28', INVALID_BORDER)}
+            inputMode="decimal"
+            autoComplete="off"
+            {...fieldWiring(ids.ownCost, { hint: true, error: Boolean(errors.ownCost) })}
+            {...register('ownCost', { validate: ownCostProblem })}
+          />
+          <span className={UNIT_NOTE}>USD</span>
+        </div>
+      </FormRow>
+      <FormRow
+        label="Delivered from code stock"
+        htmlFor={ids.stock}
+        hint="Orders take a code from this service's stock first. For gift cards and other codes; leave No for unlocks."
+        error={errors.stockDelivery?.message}
+      >
+        <YesNo id={ids.stock} value={watch('stockDelivery')} onChange={flip('stockDelivery')} />
       </FormRow>
       <FormRow label="Order handling" htmlFor={ids.handling} error={errors.automatic?.message}>
         <YesNo

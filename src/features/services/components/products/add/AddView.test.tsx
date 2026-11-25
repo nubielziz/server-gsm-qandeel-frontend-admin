@@ -75,9 +75,30 @@ describe('the form', () => {
       'User Can Cancel Order',
       'Delivery Time',
       'Credit',
+      'Your cost',
+      'Delivered from code stock',
       'Order handling',
     ]);
     expect(addButton()).toBeEnabled();
+  });
+
+  it('asks for Your cost in USD with its hint, and for Delivered from code stock with its hint, default No', async () => {
+    await openForm();
+    const cost = box('Your cost');
+    expect(cost).toHaveValue('');
+    expect(cost).not.toBeRequired();
+    expect(cost).toHaveAccessibleDescription(
+      "What one unit costs you. The cost used is the larger of this and the supplier's.",
+    );
+    expect(cost.closest('.flex')).toHaveTextContent('USD');
+    const stock = toggle('Delivered from code stock');
+    expect(stock).toHaveAttribute('aria-checked', 'false');
+    expect(within(stock).getByText('No')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Orders take a code from this service's stock first. For gift cards and other codes; leave No for unlocks.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it('starts as the server starts a service, with the window row hidden', async () => {
@@ -158,6 +179,45 @@ describe('adding a service', () => {
     });
     expect(made.category?.name).toBe('Apple');
     expect(app.location()).toContain(`id=${made.id}`);
+  });
+
+  it('sends Your cost and Delivered from code stock with the create, and the service comes back so', async () => {
+    const { user } = await openForm(SERVER_ADD, 'Credits');
+    await user.type(box('Service Name'), 'iTunes Gift Card 10');
+    await user.type(box('Code'), 'GC-ITUNES-10');
+    await user.selectOptions(menu('Service Listed In Group'), 'Credits');
+    await user.type(box('Delivery Time'), '1');
+    await user.type(box('Credit'), '10');
+    await user.type(box('Your cost'), '4.7');
+    await user.click(toggle('Delivered from code stock'));
+    expect(toggle('Delivered from code stock')).toHaveAttribute('aria-checked', 'true');
+    const requests = recordRequests();
+    await user.click(addButton());
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'iTunes Gift Card 10' })).toBeInTheDocument();
+    const created = calls(requests.sent(), 'POST');
+    expect(created).toHaveLength(1);
+    expect(created[0].body).toMatchObject({ ownCost: '4.7000', stockDelivery: true });
+    const [made] = (await listServices({ q: 'GC-ITUNES-10' })).data;
+    expect(made).toMatchObject({
+      stockDelivery: true,
+      stockAvailable: 0,
+      ownCost: '4.7000',
+      cost: '4.7000',
+    });
+  });
+
+  it('leaves both keys out of the create when the form keeps its defaults', async () => {
+    const { user } = await openForm();
+    await fill(user, { name: 'Pixel Plain', code: 'IMEI-PX-9' });
+    const requests = recordRequests();
+    await user.click(addButton());
+    expect(await screen.findByRole('heading', { level: 2, name: 'Pixel Plain' })).toBeInTheDocument();
+    const [body] = calls(requests.sent(), 'POST').map((request) => request.body);
+    expect(body).not.toHaveProperty('ownCost');
+    expect(body).not.toHaveProperty('stockDelivery');
+    const [made] = (await listServices({ q: 'IMEI-PX-9' })).data;
+    expect(made).toMatchObject({ stockDelivery: false, ownCost: '0.0000' });
   });
 
   it('adds a service of the kind on the strip', async () => {
@@ -246,6 +306,35 @@ describe("the checks and the server's refusals", () => {
     expect(calls(requests.sent(), 'POST')).toHaveLength(0);
   });
 
+  it('asks for an amount in Your cost before it calls the server, and accepts it empty', async () => {
+    const { user } = await openForm();
+    await fill(user, { name: 'Pixel Cost', code: 'IMEI-PX-5' });
+    await user.type(box('Your cost'), 'abc');
+    const requests = recordRequests();
+    await user.click(addButton());
+    expect(await screen.findByText('Enter an amount, 0 or more.')).toBeInTheDocument();
+    expect(box('Your cost')).toHaveAttribute('aria-invalid', 'true');
+    expect(calls(requests.sent(), 'POST')).toHaveLength(0);
+  });
+
+  it("puts the server's message about Your cost or the stock switch under its row", async () => {
+    mockServer.use(
+      http.post('*/admin/services', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'ownCost', message: 'Enter an amount, 0 or more.' },
+          { field: 'stockDelivery', message: 'Use true or false.' },
+        ]),
+      ),
+    );
+    const { user } = await openForm();
+    await fill(user, { name: 'Odd Cost', code: 'IMEI-ODD-2' });
+    await user.click(addButton());
+    expect(await screen.findByText('Enter an amount, 0 or more.')).toBeInTheDocument();
+    expect(box('Your cost')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Use true or false.')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('asks for the verification window in hours, 1 to 720', async () => {
     const { user } = await openForm();
     await fill(user, { name: 'Pixel Window', code: 'IMEI-PX-4' });
@@ -308,6 +397,21 @@ describe('"- Select -"', () => {
     expect(box('Credit')).toHaveValue('5.88');
     expect(box('Service Name')).toHaveValue('My Xiaomi');
     expect(box('Code')).toHaveValue('IMEI-MY-1');
+  });
+
+  it('copies "Delivered from code stock" and Your cost, and puts them in the create call', async () => {
+    const { user } = await openForm(SERVER_ADD, 'Credits');
+    await screen.findByRole('option', { name: 'Z3X Credits x10' });
+    await user.type(box('Service Name'), 'Z3X Credits x20');
+    await user.type(box('Code'), 'SRV-Z3X-20');
+    await user.selectOptions(menu('Copy settings from'), 'Z3X Credits x10');
+    expect(toggle('Delivered from code stock')).toHaveAttribute('aria-checked', 'true');
+    expect(box('Your cost')).toHaveValue('8.50');
+    // A second copy replaces both: Chimera Tool is not delivered from code stock, and its own cost is the supplier's (19.80).
+    await user.selectOptions(menu('Copy settings from'), 'Chimera Tool 1 Month');
+    expect(toggle('Delivered from code stock')).toHaveAttribute('aria-checked', 'false');
+    expect(box('Your cost')).toHaveValue('19.80');
+    expect(box('Service Name')).toHaveValue('Z3X Credits x20');
   });
 
   it('copies a manual service in days, and can be changed after', async () => {

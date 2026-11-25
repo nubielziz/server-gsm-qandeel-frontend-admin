@@ -278,6 +278,7 @@ describe('the status of each flag and blocking reason the mock shows on page one
     [34, 'Its category is switched off.'],
     [35, 'Its category is closed to the public.'],
     [36, 'No supplier can fill it now.'],
+    [37, 'It has no codes in stock and no supplier.'],
     [38, 'It has no title.'],
     [39, 'The title is over 200 characters.'],
     [40, 'It has no price. No pricing rule covers it.'],

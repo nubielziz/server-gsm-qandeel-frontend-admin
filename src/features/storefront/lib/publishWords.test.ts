@@ -47,6 +47,7 @@ describe('the word maps against the unions', () => {
       'b2b_only',
       'not_orderable',
       'supplier_unavailable',
+      'out_of_stock',
       'title_missing',
       'title_too_long',
       'price_missing',
@@ -56,6 +57,12 @@ describe('the word maps against the unions', () => {
     expect(PUBLISH_FLAGS).toHaveLength(17);
     // Every reason a row can be blocked for is also a reason it can end with.
     for (const reason of PUBLISH_BLOCK_REASONS) expect(PUBLISH_RESULT_REASONS).toContain(reason);
+  });
+
+  it('words a service delivered from code stock that has no codes and no supplier', () => {
+    expect(BLOCK_WORDS.out_of_stock).toBe('it has no codes in stock and no supplier');
+    expect(BLOCK_FIX.out_of_stock).toBe('Import codes, then try again.');
+    expect(RESULT_WORDS.out_of_stock).toBe('it has no codes in stock and no supplier');
   });
 
   it('writes every phrase in plain English letters', () => {

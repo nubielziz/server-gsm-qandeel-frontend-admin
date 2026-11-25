@@ -9,8 +9,11 @@ import type { Stores } from './seed';
 export const round = (value: number, decimals = 2): number =>
   Math.round(value * 10 ** decimals) / 10 ** decimals;
 
-/** Supplier cost plus the minimum profit (the demo's `floorOf`). */
-export const floorOf = (service: MockService): number => round(service.cost + service.minProfit, 2);
+/** The cost the service uses: the larger of its own cost and the supplier's (the server's `recomputeEffectiveCost`). */
+export const costOf = (service: MockService): number => Math.max(service.ownCost, service.cost);
+
+/** The cost used plus the minimum profit (the demo's `floorOf`). */
+export const floorOf = (service: MockService): number => round(costOf(service) + service.minProfit, 2);
 
 /** The demo's test: the price is under the floor by more than rounding noise. */
 export const isBelowFloor = (service: MockService, price = service.price): boolean =>
@@ -18,7 +21,7 @@ export const isBelowFloor = (service: MockService, price = service.price): boole
 
 /** Margin of a price over the cost, in percent (the demo's `marginOf`). */
 export const marginOf = (service: MockService, price = service.price): number =>
-  ((price - service.cost) / price) * 100;
+  ((price - costOf(service)) / price) * 100;
 
 /**
  * A rank by id. The accounts feature owns the groups (their ids, names and discounts), so the mock must cope with an id it
@@ -100,7 +103,9 @@ function quote(stores: Stores, service: MockService, groupId: number, override: 
       after: fixed ? null : round(service.price, 2),
       note: fixed
         ? skipped
-        : `Cost ${toMoney(service.cost)} plus ${round((service.price / service.cost - 1) * 100, 1)}% markup`,
+        : costOf(service) === 0
+          ? 'No cost on record'
+          : `Cost ${toMoney(costOf(service))} plus ${round((service.price / costOf(service) - 1) * 100, 1)}% markup`,
     },
   ];
   let running = fixed ? (override ?? gp ?? service.price) : service.price;
@@ -152,14 +157,14 @@ export function resolve(stores: Stores, service: MockService, merchant: MockMerc
     const other = quote(stores, service, group.id, undefined);
     return { group: { id: group.id, name: group.name }, price: toMoney(other.price), clamped: other.clamped };
   });
-  const margin = round(own.price - service.cost, 2);
+  const margin = round(own.price - costOf(service), 2);
   return {
     price: toMoney(own.price),
     rawPrice: toMoney(own.raw),
     floor: toMoney(floorOf(service)),
     clamped: own.clamped,
     source: own.source,
-    cost: toMoney(service.cost),
+    cost: toMoney(costOf(service)),
     minProfit: toMoney(service.minProfit),
     margin: toMoney(margin),
     marginPct: toMoney(own.price > 0 ? (margin / own.price) * 100 : 0),

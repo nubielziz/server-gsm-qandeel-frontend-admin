@@ -11,7 +11,15 @@ import { roleStore } from '@/mocks/roles';
 import { setMockScenario } from '@/mocks/scenario';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import type { ServiceListFilters } from '../types';
-import { createService, getService, listServices, updateService } from '../api';
+import {
+  createService,
+  getService,
+  importInventoryCodes,
+  listInventoryCodes,
+  listServices,
+  updateService,
+  voidInventoryCodes,
+} from '../api';
 
 setupMockApi();
 beforeEach(async () => {
@@ -26,6 +34,8 @@ const ATT = 5;
 const RULE_PRICED = 6;
 const CHIMERA = 17;
 const NO_PAGE = 16;
+const UNLOCKTOOL = 16; // delivered from code stock: seven codes available
+const PLAIN = 18; // no shop page, supplier 2, not delivered from code stock
 const ON_SHOP = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13];
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
@@ -270,14 +280,43 @@ describe('what the other mocks do shows in the next read', () => {
     const data = await suppliersState();
     const own = data.catalogue.list().find((item) => item.supplierId === 6 && !item.imported);
     if (!own) throw new Error('The seed has a supplier 6 service that is not imported.');
-    await replaceSupplierLinks(NO_PAGE, { links: [{ supplierServiceId: own.id, priority: 1 }] });
-    expect(await getService(NO_PAGE)).toMatchObject({ supplier: { id: 6 }, fallbackSupplier: null });
-    expect(await idsOf({ supplierId: 6 })).toContain(NO_PAGE);
-    expect(await idsOf({ supplierId: 2 })).toEqual([15, 17, 18, 19]);
-    await replaceSupplierLinks(NO_PAGE, { links: [] });
-    expect(await getService(NO_PAGE)).toMatchObject({ supplier: null, attention: ['no_supplier'] });
-    expect(await idsOf({ hasSupplier: false })).toEqual([NO_PAGE]);
-    expect(await idsOf({ needsAttention: true })).toEqual([6, 8, 10, NO_PAGE, CHIMERA]);
+    await replaceSupplierLinks(PLAIN, { links: [{ supplierServiceId: own.id, priority: 1 }] });
+    expect(await getService(PLAIN)).toMatchObject({ supplier: { id: 6 }, fallbackSupplier: null });
+    expect(await idsOf({ supplierId: 6 })).toContain(PLAIN);
+    expect(await idsOf({ supplierId: 2 })).toEqual([15, 16, 17, 19]);
+    await replaceSupplierLinks(PLAIN, { links: [] });
+    expect(await getService(PLAIN)).toMatchObject({ supplier: null, attention: ['no_supplier'] });
+    expect(await idsOf({ hasSupplier: false })).toEqual([PLAIN]);
+    expect(await idsOf({ needsAttention: true })).toEqual([6, 8, 10, CHIMERA, PLAIN]);
+  });
+
+  it('a service delivered from code stock is supplied by its codes: no_supplier only while none is available', async () => {
+    await replaceSupplierLinks(UNLOCKTOOL, { links: [] });
+    // Seven codes are available: no supplier, and still nothing to look at.
+    expect(await getService(UNLOCKTOOL)).toMatchObject({ supplier: null, stockAvailable: 7, attention: [] });
+    expect(await idsOf({ needsAttention: true })).not.toContain(UNLOCKTOOL);
+    const available = (await listInventoryCodes({ filters: { serviceId: UNLOCKTOOL, status: 'available' } }))
+      .data;
+    await voidInventoryCodes({ ids: available.slice(1).map((code) => code.id) });
+    // One code left is still supply.
+    expect(await getService(UNLOCKTOOL)).toMatchObject({ stockAvailable: 1, attention: [] });
+    await voidInventoryCodes({ ids: [available[0].id] });
+    expect(await getService(UNLOCKTOOL)).toMatchObject({ stockAvailable: 0, attention: ['no_supplier'] });
+    expect(await idsOf({ needsAttention: true })).toContain(UNLOCKTOOL);
+    // New codes make it supplied again, and the list rows say the same as the record.
+    await importInventoryCodes(UNLOCKTOOL, { codes: ['UT-9001-ZZZ1'] });
+    expect((await listServices({ q: 'UnlockTool' })).data[0]).toMatchObject({
+      stockAvailable: 1,
+      attention: [],
+    });
+  });
+
+  it('the codes of a service that is not delivered from code stock are no supply (it holds none)', async () => {
+    await replaceSupplierLinks(PLAIN, { links: [] });
+    await expect(importInventoryCodes(PLAIN, { codes: ['PLN-0001-AAAA'] })).rejects.toMatchObject({
+      status: 422,
+    });
+    expect((await getService(PLAIN)).attention).toEqual(['no_supplier']);
   });
 
   it('a manual service with no supplier is not flagged', async () => {

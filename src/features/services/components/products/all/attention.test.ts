@@ -2,8 +2,8 @@
 // service without the key has none, and a reason this console does not know is left out instead of breaking the row. Also the words of
 // the reason a service cannot go on the shop.
 import { describe, expect, it } from 'vitest';
-import type { AttentionReason } from '../../../types';
-import { ATTENTION_WORDS, attentionOf, shopBlockOf } from './attention';
+import type { AttentionReason, Service } from '../../../types';
+import { ATTENTION_WORDS, attentionOf, shopBlockOf, stockWordsOf } from './attention';
 
 describe('shopBlockOf', () => {
   it('words each reason the server gives for a service that cannot go on the shop', () => {
@@ -45,5 +45,54 @@ describe('attentionOf', () => {
     expect(attentionOf({ attention: ['no_supplier', ...unknown] }).map((item) => item.reason)).toEqual([
       'no_supplier',
     ]);
+  });
+});
+
+describe('stockWordsOf', () => {
+  const stock: Pick<Service, 'stockDelivery' | 'stockAvailable' | 'attention'> = {
+    stockDelivery: true,
+    stockAvailable: 0,
+    attention: [],
+  };
+
+  it('says nothing for a service that is not delivered from code stock', () => {
+    expect(stockWordsOf({ ...stock, stockDelivery: false, stockAvailable: 9 })).toBeNull();
+    expect(stockWordsOf({ ...stock, stockDelivery: false, attention: ['no_supplier'] })).toBeNull();
+  });
+
+  it('counts the codes in stock, in the good tone', () => {
+    expect(stockWordsOf({ ...stock, stockAvailable: 12 })).toMatchObject({
+      word: 'Codes: 12 in stock',
+      tone: 'good',
+    });
+    expect(stockWordsOf({ ...stock, stockAvailable: 1 })).toMatchObject({
+      word: 'Codes: 1 in stock',
+      tone: 'good',
+    });
+  });
+
+  it("reads the server's no_supplier as no codes left, in the critical tone", () => {
+    expect(stockWordsOf({ ...stock, attention: ['no_supplier'] })).toMatchObject({
+      word: 'No codes in stock',
+      tone: 'crit',
+    });
+  });
+
+  it('works nothing out itself: an empty stock the server did not flag is only a number', () => {
+    // A supplier is linked, or the service waits for a person anyway: the server sent no no_supplier, so it is not critical.
+    expect(stockWordsOf(stock)).toMatchObject({ word: 'Codes: 0 in stock', tone: 'neutral' });
+    expect(stockWordsOf({ ...stock, attention: ['below_floor'] })).toMatchObject({
+      word: 'Codes: 0 in stock',
+      tone: 'neutral',
+    });
+  });
+
+  it('gives every wording a hint that says what happens or what to do', () => {
+    for (const words of [
+      stockWordsOf(stock),
+      stockWordsOf({ ...stock, stockAvailable: 3 }),
+      stockWordsOf({ ...stock, attention: ['no_supplier'] }),
+    ])
+      expect(words?.hint.length).toBeGreaterThan(10);
   });
 });

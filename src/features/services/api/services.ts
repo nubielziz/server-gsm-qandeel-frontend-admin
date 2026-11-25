@@ -17,7 +17,7 @@ import type { CreateServiceBody, Service, ServiceDetail, UpdateServiceBody } fro
 
 /**
  * The services, one page of them, with the total in `x-total-count`. Filters: `q`, `type`, `status`, `belowFloor`, `categoryId`,
- * `needsAttention`, `hasSupplier`, `supplierId` (primary supplier), `isListed`, `notOnShop` (these two need storefront:read, else 403);
+ * `stockDelivery` (delivered from code stock or not), `needsAttention`, `hasSupplier`, `supplierId` (primary supplier), `isListed`, `notOnShop` (these two need storefront:read, else 403);
  * sort on `name`, `type`, `cost`, `basePrice` or `retailPrice`. The counts above the table are this call with `_start=0&_end=1`.
  * Assumed contract: rows carry the server's figures (`floorPrice`, `marginPct`, `belowFloor`), `code`, `slaMinutes`, `executionMode`,
  * `{ id, name }` joins, and the optional shop and attention keys (`attention`, `retailPrice`, `listingId`, `isListed`, `shopBlocked`, see Service).
@@ -41,7 +41,8 @@ export function getService(id: Id, init?: ApiInit): Promise<ServiceDetail> {
  * Creates a service. The price figures come back worked out by the server. Supplier links are made on the Suppliers page.
  * Assumed contract: body `{ name, code, categoryId, type, slaMinutes, basePrice }` plus the optional quantity rule (`minQty`,
  * `maxQty` or `qtyOptions`; all three left out means one per order; with packs the server stores the smallest and largest
- * pack as `minQty` and `maxQty`), answer the new service.
+ * pack as `minQty` and `maxQty`), answer the new service. The optional `stockDelivery` (default false) and `ownCost` (default
+ * `"0"`) say the service is delivered from code stock and what one unit costs the owner.
  * @route POST /admin/services
  */
 export function createService(body: CreateServiceBody, init?: ApiInit): Promise<Service> {
@@ -54,6 +55,8 @@ export function createService(body: CreateServiceBody, init?: ApiInit): Promise<
  * the margin as the server now works them out.
  * The quantity rule (`minQty`, `maxQty`, `qtyOptions`) changes with the keys that are sent; `qtyOptions: []` clears the packs, so a
  * move from packs to a range sends all three.
+ * `stockDelivery: false` is refused (422, field `stockDelivery`, code `codes_in_stock`) while the service has codes in stock; `ownCost`
+ * is the owner's own cost, and the `cost` of the answer is the larger of it and the supplier's.
  * Assumed contract: body is any of the fields of `UpdateServiceBody`, answer the updated service.
  * @route PATCH /admin/services/:id
  */

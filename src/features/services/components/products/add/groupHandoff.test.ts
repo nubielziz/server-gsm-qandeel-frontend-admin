@@ -21,6 +21,8 @@ const TYPED: AddServiceValues = {
   deliveryAmount: '3',
   deliveryUnit: 'hours',
   credit: '3.5',
+  ownCost: '2.25',
+  stockDelivery: true,
 };
 
 describe('the address of +Add Group opened from +Add Service', () => {
@@ -53,7 +55,15 @@ describe('the draft', () => {
   it('is read as untrusted: a field of the wrong shape falls back to the blank form', () => {
     sessionStorage.setItem(
       'gsm-products-add-draft:imei',
-      JSON.stringify({ name: 'Kept', code: 7, active: 'yes', deliveryUnit: 'weeks', credit: '2' }),
+      JSON.stringify({
+        name: 'Kept',
+        code: 7,
+        active: 'yes',
+        deliveryUnit: 'weeks',
+        credit: '2',
+        ownCost: 4.7,
+        stockDelivery: 'yes',
+      }),
     );
     expect(readAddDraft('imei')).toEqual({
       ...addServiceDefaults(),

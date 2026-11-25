@@ -54,6 +54,14 @@ describe('readinessOf', () => {
     });
   });
 
+  it('sends a service with no codes and no supplier to the Inventory: import codes, then try again', () => {
+    expect(readinessOf(item({ state: 'blocked', blockedReason: 'out_of_stock' }))).toEqual({
+      why: 'it has no codes in stock and no supplier',
+      fix: 'Import codes, then try again.',
+      next: null,
+    });
+  });
+
   it('names the flags of a row the server wants a person to look at, and sends them to the run', () => {
     const refusal = readinessOf(item({ state: 'review', flags: ['duplicate_name', 'no_brand'] }));
     expect(refusal).toEqual({
@@ -83,6 +91,10 @@ describe('outcomeOf', () => {
     });
     expect(outcomeOf(run({}), item({ result: 'refused', resultReason: 'brand_new_reason' }))).toMatchObject({
       why: 'brand_new_reason',
+    });
+    expect(outcomeOf(run({}), item({ result: 'refused', resultReason: 'out_of_stock' }))).toMatchObject({
+      why: 'it has no codes in stock and no supplier',
+      next: 'run',
     });
   });
 

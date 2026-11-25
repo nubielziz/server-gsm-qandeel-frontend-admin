@@ -4,26 +4,30 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, SelectField, TextareaField, TextField } from '@/components/ui';
-import { useServiceChoices } from '../hooks/useChoices';
+import { useStockServiceChoices } from '../hooks/useChoices';
 import { useImportCodes } from '../hooks/useInventory';
 import { CODE_FILE_TYPES, codesText, readCodes } from '../lib/codes';
 import { readTextFile } from '../lib/readFile';
 import { withChosen } from '../lib/select';
-import type { ImportCodesResult } from '../types';
+import type { ImportCodesResult, ServiceType } from '../types';
 import { ImportResultDialog } from './ImportResultDialog';
 import { LookupNote } from './LookupNote';
+import { StockMenuNote } from './StockMenuNote';
 
 type Values = { serviceId: string; codes: string; batchRef: string };
 
 export interface ImportCodesDialogProps {
   /** The service chosen in the filter, to start from. */
   serviceId: number | null;
+  /** Only the services of this kind are offered (the Product / Services page's strip); every kind when left out. */
+  type?: ServiceType;
   onClose: () => void;
 }
 
 /** Paste or upload, then show the server's counts in a second dialog. */
-export function ImportCodesDialog({ serviceId, onClose }: ImportCodesDialogProps) {
-  const services = useServiceChoices();
+export function ImportCodesDialog({ serviceId, type, onClose }: ImportCodesDialogProps) {
+  // Only a service delivered from code stock takes codes: the server refuses an import for any other, and it filters the menu.
+  const services = useStockServiceChoices(true, type);
   const importCodes = useImportCodes();
   const [result, setResult] = useState<{ result: ImportCodesResult; serviceName: string } | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -44,7 +48,7 @@ export function ImportCodesDialog({ serviceId, onClose }: ImportCodesDialogProps
       const batchRef = values.batchRef.trim();
       const body = batchRef ? { codes, batchRef } : { codes };
       const answer = await importCodes.mutateAsync({ serviceId: Number(values.serviceId), body });
-      const name = services.data?.find((service) => String(service.id) === values.serviceId)?.name;
+      const name = services.data?.services.find((service) => String(service.id) === values.serviceId)?.name;
       setResult({ result: answer, serviceName: name ?? `Service ${values.serviceId}` });
       // The counts open in their own dialog, so this one stays put until it is replaced.
       return false;
@@ -87,7 +91,10 @@ export function ImportCodesDialog({ serviceId, onClose }: ImportCodesDialogProps
           options={withChosen(
             [
               { value: '', label: services.isLoading ? 'Loading…' : 'Choose a service' },
-              ...(services.data ?? []).map((service) => ({ value: service.id, label: service.name })),
+              ...(services.data?.services ?? []).map((service) => ({
+                value: service.id,
+                label: service.name,
+              })),
             ],
             watch('serviceId'),
             `Service ${watch('serviceId')}`,
@@ -97,6 +104,7 @@ export function ImportCodesDialog({ serviceId, onClose }: ImportCodesDialogProps
           value={watch('serviceId')}
         />
         <LookupNote what="the services" query={services} />
+        <StockMenuNote choices={services.data} />
         <TextareaField
           label="Codes"
           rows={8}

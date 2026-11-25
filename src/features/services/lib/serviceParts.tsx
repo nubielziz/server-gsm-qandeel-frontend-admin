@@ -21,7 +21,7 @@ const holds =
 
 /**
  * The parts, top to bottom: one row each. The edit view itself needs `catalog:read`, which every part reads with; the shop part also needs
- * storefront:read, as the row's shop keys do, and the stored codes need inventory:read. Each control inside a part keeps its own
+ * storefront:read, as the row's shop keys do, and the stored codes need inventory:read and a service delivered from code stock. Each control inside a part keeps its own
  * permission hint.
  */
 export const SERVICE_PART_SPECS: readonly ServicePartSpec[] = [
@@ -35,7 +35,13 @@ export const SERVICE_PART_SPECS: readonly ServicePartSpec[] = [
     show: holds('catalog:read', 'storefront:read'),
     Component: RetailPurchasePart,
   },
-  { id: 'inventory', label: 'Inventory', show: holds('inventory:read'), Component: InventoryPart },
+  {
+    id: 'inventory',
+    label: 'Inventory',
+    // Only a service delivered from code stock holds codes; an address that names this part for another service opens the first part.
+    show: (grants, service) => service.stockDelivery && grants.canAll(['inventory:read']),
+    Component: InventoryPart,
+  },
   { id: 'activity', label: 'Activity', show: holds('catalog:read'), Component: ActivityPart },
 ];
 

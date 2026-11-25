@@ -1,5 +1,5 @@
-// PriceRows: the label-left rows of the Set Pricing part: the credit (the base price) and the minimum profit as boxes, then the server's cost,
-// floor and margin as read-only rows. The figures are the server's, as the service or the last save gave them; nothing is computed here
+// PriceRows: the label-left rows of the Set Pricing part: the credit (the base price), the minimum profit and "Your cost" as boxes, then the
+// cost used, the floor and the margin the server worked out as read-only rows. The figures are the server's, as the service or the last save gave them; nothing is computed here
 // (the console does no pricing maths, MISMATCHES M92), and a refused price shows under its box.
 import { useId, type ReactNode } from 'react';
 import type { UseFormRegisterReturn, UseFormReturn } from 'react-hook-form';
@@ -55,7 +55,7 @@ export interface PriceRowsProps {
   lock: PermissionLock;
 }
 
-/** The credit and the minimum profit, then the cost, the floor and the margin. The form (its defaults and its save) belongs to the part. */
+/** The credit, the minimum profit and your cost, then the cost used, the floor and the margin. The form (its defaults and its save) belongs to the part. */
 export function PriceRows({ saved, form, lock }: PriceRowsProps) {
   const {
     register,
@@ -75,14 +75,26 @@ export function PriceRows({ saved, form, lock }: PriceRowsProps) {
       />
       <MoneyRow
         label="Minimum profit"
-        hint="The floor is the supplier cost plus this amount. The server works it out when you save."
+        hint="The floor is the cost used plus this amount. The server works it out when you save."
         error={errors.minProfit?.message}
         lock={lock}
         field={register('minProfit', {
           validate: (value) => isMoneyText(value) || 'Enter an amount, 0 or more.',
         })}
       />
-      <FormRow label="Supplier cost">
+      <MoneyRow
+        label="Your cost"
+        hint="What one unit costs you. The cost used is the larger of this and the supplier's."
+        error={errors.ownCost?.message}
+        lock={lock}
+        field={register('ownCost', {
+          validate: (value) => value.trim() === '' || isMoneyText(value) || 'Enter an amount, 0 or more.',
+        })}
+      />
+      <FormRow
+        label="Cost used"
+        hint="The larger of your cost and the supplier's cost. Shop price rules and the floor start from it."
+      >
         <Figure>
           {money(saved.cost)}
           {saved.costChangedFrom && (

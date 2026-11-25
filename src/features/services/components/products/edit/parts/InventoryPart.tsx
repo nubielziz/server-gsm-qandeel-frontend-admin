@@ -93,6 +93,7 @@ export function InventoryPart({ service, grants, onDirtyChange }: ServicePartPro
         {voiding && (
           <VoidCodesDialog
             ids={unsold.map((code) => code.id)}
+            serviceIds={[service.id]}
             onClose={() => setVoiding(false)}
             onDone={selection.clear}
           />

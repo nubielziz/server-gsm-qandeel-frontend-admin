@@ -6,13 +6,15 @@ import { codesText } from '../lib/codes';
 
 export interface VoidCodesDialogProps {
   ids: readonly number[];
+  /** The services the codes belong to: their counts of codes in stock change, so the lists and records of them are read again. */
+  serviceIds: readonly number[];
   onClose: () => void;
   /** Called after the codes were voided, so the page can untick them. */
   onDone: () => void;
 }
 
 /** The review step before codes are voided. */
-export function VoidCodesDialog({ ids, onClose, onDone }: VoidCodesDialogProps) {
+export function VoidCodesDialog({ ids, serviceIds, onClose, onDone }: VoidCodesDialogProps) {
   const voided = useVoidCodes();
   return (
     <ConfirmDialog
@@ -28,7 +30,7 @@ export function VoidCodesDialog({ ids, onClose, onDone }: VoidCodesDialogProps) 
       kind="danger"
       onClose={onClose}
       onConfirm={async () => {
-        await voided.mutateAsync([...ids]);
+        await voided.mutateAsync({ ids: [...ids], serviceIds: [...serviceIds] });
         onDone();
       }}
     />

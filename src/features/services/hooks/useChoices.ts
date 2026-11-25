@@ -6,7 +6,7 @@ import { listSuppliers } from '@/features/suppliers';
 import { useApiQuery } from '@/lib/query';
 import { listServices } from '../api';
 import { listGroupOptions, listMerchantOptions } from '../api/lookups';
-import type { ServiceCategory, ServiceType } from '../types';
+import type { Service, ServiceCategory, ServiceType } from '../types';
 import {
   CATEGORY_READ_CAP,
   LOOKUP_STALE_MS,
@@ -31,6 +31,40 @@ export function useServiceChoices(enabled = true, type?: ServiceType) {
     enabled,
     staleTime: LOOKUP_STALE_MS,
   });
+}
+
+/** The services delivered from code stock that a menu lists, and how many the server counts (more than the menu holds when it is capped). */
+export type StockServiceChoices = { services: Service[]; total: number };
+
+/**
+ * The services that are delivered from code stock, by name, for the Inventory view's service menu and its import dialog (only such a
+ * service holds codes). The server does the filtering (`stockDelivery=true`, and the kind when one is given), so a shop with more than
+ * `PICKER_CAP` services still finds its stock services; `total` is what the server counts, so a menu can say when its list is short
+ * (see {@link isStockMenuShort}). The key sits under the picker prefix, so a service change reads it again. Needs `catalog:read`.
+ */
+export function useStockServiceChoices(enabled = true, type?: ServiceType) {
+  return useApiQuery({
+    queryKey: [...SERVICE_PICKER_KEY, 'stock', type ?? 'all'],
+    queryFn: ({ signal }) =>
+      listServices(
+        {
+          start: 0,
+          end: PICKER_CAP,
+          sort: ['name'],
+          order: ['asc'],
+          filters: { stockDelivery: true, ...(type ? { type } : {}) },
+        },
+        { signal },
+      ),
+    select: (result): StockServiceChoices => ({ services: result.data, total: result.total }),
+    enabled,
+    staleTime: LOOKUP_STALE_MS,
+  });
+}
+
+/** True when the server counts more stock services than the menu holds, so the menu should say it is a short list. */
+export function isStockMenuShort(choices: StockServiceChoices | undefined): boolean {
+  return choices !== undefined && choices.total > choices.services.length;
 }
 
 /**

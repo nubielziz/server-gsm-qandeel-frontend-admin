@@ -199,6 +199,22 @@ describe('Import codes', () => {
     expect(onDirtyChange).toHaveBeenLastCalledWith(true);
   });
 
+  it('puts the server’s refusal of a service that is not delivered from code stock under the codes box', async () => {
+    const user = userEvent.setup();
+    // Service 17 (Chimera Tool) is not delivered from code stock: the part is mounted on it directly, as an old link could.
+    const { onDirtyChange } = await show({ serviceId: 17, name: 'Chimera Tool 1 Month' });
+    await user.click(codesBox());
+    await user.paste('CHM-0001-AAAA');
+    await user.click(screen.getByRole('button', { name: 'Import codes' }));
+    expect(
+      await screen.findByText('Turn on Delivered from code stock for this service first.'),
+    ).toBeInTheDocument();
+    expect(codesBox()).toHaveAttribute('aria-invalid', 'true');
+    expect(codesBox()).toHaveValue('CHM-0001-AAAA');
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    expect((await listInventoryCodes({ filters: { serviceId: 17 } })).total).toBe(0);
+  });
+
   it('says false to the host when the part goes away with codes still in the box', async () => {
     const user = userEvent.setup();
     const { onDirtyChange, view } = await show();
@@ -278,5 +294,14 @@ describe('in the edit view', () => {
       .find((link) => link.getAttribute('aria-current') === 'page');
     expect(current).toHaveTextContent('Inventory');
     await waitFor(() => expect(counts()).toHaveTextContent('Available7Reserved0Sold4Void1'));
+  });
+
+  it('is not a part of a service that is not delivered from code stock, even when the address names it', async () => {
+    await openProducts('/products?view=edit&type=server&id=17&part=inventory');
+    expect(await screen.findByRole('heading', { level: 3, name: 'Overview' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 3, name: 'Stored codes' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Parts' })).queryByRole('link', { name: 'Inventory' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -18,28 +18,38 @@ const GROUPS: ClientGroup[] = [
 ];
 
 describe('priceDefaults and priceChanges', () => {
-  const saved = { basePrice: '17.2800', minProfit: '0.8100' };
+  const saved = { basePrice: '17.2800', minProfit: '0.8100', ownCost: '4.7000' };
+  const boxes = { basePrice: '17.28', minProfit: '0.81', ownCost: '4.70' };
 
   it('fills the boxes from the saved prices, with at least two decimals', () => {
-    expect(priceDefaults(saved)).toEqual({ basePrice: '17.28', minProfit: '0.81' });
-    expect(priceDefaults({ basePrice: '9.0000', minProfit: '0.0125' })).toEqual({
+    expect(priceDefaults(saved)).toEqual(boxes);
+    expect(priceDefaults({ basePrice: '9.0000', minProfit: '0.0125', ownCost: '0.0000' })).toEqual({
       basePrice: '9.00',
       minProfit: '0.0125',
+      ownCost: '0.00',
     });
   });
 
   it('sends nothing when the boxes still say what is saved, however it is written', () => {
-    expect(priceChanges({ basePrice: '17.28', minProfit: '0.81' }, saved)).toEqual({});
-    expect(priceChanges({ basePrice: '17.280', minProfit: '0.8100' }, saved)).toEqual({});
+    expect(priceChanges(boxes, saved)).toEqual({});
+    expect(priceChanges({ basePrice: '17.280', minProfit: '0.8100', ownCost: '4.700' }, saved)).toEqual({});
   });
 
   it('sends only the price that changed, as four-decimal text', () => {
-    expect(priceChanges({ basePrice: '15', minProfit: '0.81' }, saved)).toEqual({ basePrice: '15.0000' });
-    expect(priceChanges({ basePrice: '17.28', minProfit: '5' }, saved)).toEqual({ minProfit: '5.0000' });
-    expect(priceChanges({ basePrice: '15', minProfit: '5' }, saved)).toEqual({
+    expect(priceChanges({ ...boxes, basePrice: '15' }, saved)).toEqual({ basePrice: '15.0000' });
+    expect(priceChanges({ ...boxes, minProfit: '5' }, saved)).toEqual({ minProfit: '5.0000' });
+    expect(priceChanges({ ...boxes, basePrice: '15', minProfit: '5' }, saved)).toEqual({
       basePrice: '15.0000',
       minProfit: '5.0000',
     });
+  });
+
+  it('sends the own cost as four-decimal text when it changes, and an empty box as 0', () => {
+    expect(priceChanges({ ...boxes, ownCost: '5.5' }, saved)).toEqual({ ownCost: '5.5000' });
+    expect(priceChanges({ ...boxes, ownCost: '' }, saved)).toEqual({ ownCost: '0.0000' });
+    const none = { ...saved, ownCost: '0.0000' };
+    expect(priceChanges({ ...boxes, ownCost: '' }, none)).toEqual({});
+    expect(priceChanges({ ...boxes, ownCost: '0' }, none)).toEqual({});
   });
 });
 

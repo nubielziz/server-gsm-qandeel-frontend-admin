@@ -13,7 +13,9 @@ import {
   deleteService,
   getCategory,
   getService,
+  importInventoryCodes,
   listCategories,
+  listInventoryCodes,
   listServices,
   replaceServiceFields,
   replaceServiceGroupPrices,
@@ -21,6 +23,7 @@ import {
   servicesResources,
   updateCategory,
   updateService,
+  voidInventoryCodes,
 } from '.';
 
 setupMockApi();
@@ -191,6 +194,203 @@ describe('createService', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 409, code: 'CODE_TAKEN' });
     expect((error as ApiError).fieldErrors.code[0]).toMatch(/already used by AT&T USA Premier Unlock/);
+  });
+});
+
+describe('the code stock fields', () => {
+  const body = {
+    name: 'iTunes Gift Card 10',
+    code: 'GC-ITUNES-10',
+    categoryId: APPLE,
+    type: 'server' as const,
+    slaMinutes: 1,
+    basePrice: '10.0000',
+  };
+  const UT = 16; // UnlockTool 1-Day License: seven codes available, four sold, one void
+
+  it('gives every row whether it is delivered from code stock, its available codes and its own cost', async () => {
+    expect((await listServices({ q: 'Z3X' })).data[0]).toMatchObject({
+      id: Z3X,
+      stockDelivery: true,
+      stockAvailable: 13,
+      ownCost: '8.5000',
+      cost: '8.5000',
+    });
+    expect(await getService(UT)).toMatchObject({ stockDelivery: true, stockAvailable: 7 });
+    expect(await getService(ATT)).toMatchObject({
+      stockDelivery: false,
+      stockAvailable: 0,
+      ownCost: '13.5000',
+    });
+  });
+
+  it('seeds the own cost of a service that has a supplier with the supplier’s cost, as the server’s import does', async () => {
+    const rows = (await listServices({ end: 100 })).data;
+    // Every demo service has a supplier link, so every one starts with its own cost equal to the cost used.
+    expect(rows.length).toBeGreaterThan(20);
+    for (const row of rows) expect(row.ownCost).toBe(row.cost);
+    // A service made by hand has none until staff type one.
+    const own = await createService({ ...body, name: 'Own', code: 'GC-OWN' });
+    expect(own.ownCost).toBe('0.0000');
+  });
+
+  it('keeps the services that are, or are not, delivered from code stock with the stockDelivery filter', async () => {
+    const stock = (await listServices({ end: 100, filters: { stockDelivery: true } })).data;
+    expect(stock.map((row) => row.id).sort((a, b) => a - b)).toEqual([Z3X, UT]);
+    const rest = await listServices({ end: 100, filters: { stockDelivery: false } });
+    expect(rest.total).toBe(25);
+    expect(rest.data.some((row) => row.stockDelivery)).toBe(false);
+    // The kind and the total follow it, like any other filter.
+    const kind = await listServices({ filters: { stockDelivery: true, type: 'imei' } });
+    expect(kind).toMatchObject({ data: [], total: 0 });
+    expect((await listServices({ start: 0, end: 1, filters: { stockDelivery: true } })).total).toBe(2);
+    const error = await listServices({ filters: { stockDelivery: 'maybe' } }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 422 });
+  });
+
+  it('creates a service with the two new keys, and without them as the server starts a service', async () => {
+    const requests = recordRequests();
+    const stock = await createService({ ...body, stockDelivery: true, ownCost: '4.7000' });
+    expect(requests.last()).toMatchObject({
+      method: 'POST',
+      body: { stockDelivery: true, ownCost: '4.7000' },
+    });
+    expect(stock).toMatchObject({
+      stockDelivery: true,
+      stockAvailable: 0,
+      ownCost: '4.7000',
+      cost: '4.7000',
+    });
+    const plain = await createService({ ...body, name: 'Plain', code: 'GC-PLAIN' });
+    expect(plain).toMatchObject({
+      stockDelivery: false,
+      stockAvailable: 0,
+      ownCost: '0.0000',
+      cost: '0.0000',
+    });
+  });
+
+  it('uses the larger of the own cost and the supplier’s cost as the cost, and the floor starts from it', async () => {
+    expect(await updateService(ATT, { ownCost: '5.0000' })).toMatchObject({
+      ownCost: '5.0000',
+      cost: '13.5000',
+      floorPrice: '14.3100',
+    });
+    expect(await updateService(ATT, { ownCost: '20.0000' })).toMatchObject({
+      ownCost: '20.0000',
+      cost: '20.0000',
+      floorPrice: '20.8100',
+      belowFloor: true,
+    });
+    expect(await updateService(ATT, { ownCost: '0' })).toMatchObject({ ownCost: '0.0000', cost: '13.5000' });
+  });
+
+  it('refuses an own cost below zero or that is not an amount, on its own field', async () => {
+    for (const ownCost of ['-1', 'abc']) {
+      const error = await updateService(ATT, { ownCost }).catch((e: unknown) => e);
+      expect(error).toMatchObject({ status: 422 });
+      expect((error as ApiError).fieldErrors.ownCost).toEqual(['Enter an amount, 0 or more.']);
+    }
+    expect((await getService(ATT)).ownCost).toBe('13.5000');
+  });
+
+  it('keeps the first older cost in costChangedFrom when the cost used rises, and not when it falls', async () => {
+    const made = await createService({ ...body, name: 'Cost Check', code: 'GC-COST', ownCost: '5.0000' });
+    expect(made.costChangedFrom).toBeNull();
+    // A fall changes nothing.
+    expect(await updateService(made.id, { ownCost: '4.0000' })).toMatchObject({
+      cost: '4.0000',
+      costChangedFrom: null,
+    });
+    // A rise keeps the cost used before it; a second rise keeps the first.
+    expect(await updateService(made.id, { ownCost: '6.0000' })).toMatchObject({
+      cost: '6.0000',
+      costChangedFrom: '4.0000',
+    });
+    expect(await updateService(made.id, { ownCost: '9.0000' })).toMatchObject({
+      cost: '9.0000',
+      costChangedFrom: '4.0000',
+    });
+    // A fall afterwards leaves the mark, and a change that does not move the cost used does too.
+    expect(await updateService(made.id, { ownCost: '8.0000' })).toMatchObject({ costChangedFrom: '4.0000' });
+    expect(await updateService(made.id, { status: 'disabled' })).toMatchObject({ costChangedFrom: '4.0000' });
+    // Saving a base price answers "the cost changed": the mark goes.
+    expect(await updateService(made.id, { basePrice: '20.0000' })).toMatchObject({
+      cost: '8.0000',
+      costChangedFrom: null,
+    });
+  });
+
+  it('does not mark a rise of the own cost that stays under the supplier’s cost', async () => {
+    // The Z3X credits cost 8.50 at the supplier: an own cost of 9 raises the cost used, one of 7 does not.
+    expect(await updateService(Z3X, { ownCost: '7.0000' })).toMatchObject({
+      cost: '8.5000',
+      costChangedFrom: null,
+    });
+    expect(await updateService(Z3X, { ownCost: '9.0000' })).toMatchObject({
+      cost: '9.0000',
+      costChangedFrom: '8.5000',
+    });
+  });
+
+  it('clears the mark when a base price is sent with the own cost, whatever the order of the keys', async () => {
+    const made = await createService({ ...body, name: 'Cost Check', code: 'GC-COST', ownCost: '5.0000' });
+    expect(await updateService(made.id, { ownCost: '6.0000', basePrice: '20.0000' })).toMatchObject({
+      cost: '6.0000',
+      costChangedFrom: null,
+    });
+  });
+
+  it('turns the stock switch on and off for a service with no codes', async () => {
+    expect(await updateService(ATT, { stockDelivery: true })).toMatchObject({ stockDelivery: true });
+    expect(await updateService(ATT, { stockDelivery: false })).toMatchObject({ stockDelivery: false });
+  });
+
+  it('refuses to turn the switch off while codes are in stock, with the code codes_in_stock and the count', async () => {
+    const error = await updateService(Z3X, { stockDelivery: false }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 422, code: 'VALIDATION_FAILED' });
+    expect((error as ApiError).fieldErrors.stockDelivery).toEqual(['Void the 13 codes in stock first.']);
+    expect((error as ApiError).fieldCodes.stockDelivery).toEqual(['codes_in_stock']);
+    expect((await getService(Z3X)).stockDelivery).toBe(true);
+  });
+
+  it('says "1 code" and "3 codes" in that refusal, as the server does', async () => {
+    await updateService(ATT, { stockDelivery: true });
+    const refusal = async () =>
+      ((await updateService(ATT, { stockDelivery: false }).catch((e: unknown) => e)) as ApiError).fieldErrors
+        .stockDelivery;
+    await importInventoryCodes(ATT, { codes: ['ATT-0001-AAAA'] });
+    expect(await refusal()).toEqual(['Void the 1 code in stock first.']);
+    await importInventoryCodes(ATT, { codes: ['ATT-0002-BBBB', 'ATT-0003-CCCC'] });
+    expect(await refusal()).toEqual(['Void the 3 codes in stock first.']);
+  });
+
+  it('lets the switch go off once the codes in stock are void, and counts only available codes', async () => {
+    const ids = (await listInventoryCodes({ filters: { serviceId: Z3X, status: 'available' } })).data.map(
+      (code) => code.id,
+    );
+    expect(ids).toHaveLength(13);
+    await voidInventoryCodes({ ids });
+    expect(await getService(Z3X)).toMatchObject({ stockAvailable: 0, stockDelivery: true });
+    expect(await updateService(Z3X, { stockDelivery: false })).toMatchObject({ stockDelivery: false });
+  });
+
+  it('refuses an import for a service that is not delivered from code stock, on the codes field', async () => {
+    const error = await importInventoryCodes(ATT, { codes: ['ATT-0001-AAAA'] }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 422 });
+    expect((error as ApiError).fieldErrors.codes).toEqual([
+      'Turn on Delivered from code stock for this service first.',
+    ]);
+    expect((error as ApiError).fieldCodes.codes).toEqual(['not_stock_service']);
+    expect((await listInventoryCodes({ filters: { serviceId: ATT } })).total).toBe(0);
+  });
+
+  it('takes the import once the switch is on, and counts the new codes as available', async () => {
+    await updateService(ATT, { stockDelivery: true });
+    expect(await importInventoryCodes(ATT, { codes: ['ATT-0001-AAAA', 'ATT-0002-BBBB'] })).toMatchObject({
+      imported: 2,
+    });
+    expect(await getService(ATT)).toMatchObject({ stockDelivery: true, stockAvailable: 2 });
   });
 });
 

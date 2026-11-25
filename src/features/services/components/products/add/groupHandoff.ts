@@ -61,11 +61,13 @@ export function readAddDraft(type: ServiceType): AddServiceValues | null {
   if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return null;
   const fields = new Map(Object.entries(saved));
   const blank = addServiceDefaults();
-  const text = (key: 'name' | 'code' | 'categoryId' | 'verifyWindowH' | 'deliveryAmount' | 'credit') => {
+  const text = (
+    key: 'name' | 'code' | 'categoryId' | 'verifyWindowH' | 'deliveryAmount' | 'credit' | 'ownCost',
+  ) => {
     const value = fields.get(key);
     return typeof value === 'string' ? value : blank[key];
   };
-  const flag = (key: 'active' | 'automatic' | 'verify' | 'cancel') => {
+  const flag = (key: 'active' | 'automatic' | 'verify' | 'cancel' | 'stockDelivery') => {
     const value = fields.get(key);
     return typeof value === 'boolean' ? value : blank[key];
   };
@@ -82,6 +84,8 @@ export function readAddDraft(type: ServiceType): AddServiceValues | null {
     deliveryAmount: text('deliveryAmount'),
     deliveryUnit: unit?.value ?? blank.deliveryUnit,
     credit: text('credit'),
+    ownCost: text('ownCost'),
+    stockDelivery: flag('stockDelivery'),
   };
 }
 

@@ -1,6 +1,6 @@
 // Mock of the service routes (`/admin/services` and `/admin/services/:id`): list with the toolbar and Catalog filters, one service with
-// its parts, create, change and delete. The mock plays the server: it works out the floor and refuses a price under it, keeps codes
-// unique, refuses to delete a service that has orders, joins the supplier chain and the shop facts of the other mocks into every row
+// its parts, create, change and delete. The mock plays the server: it works out the floor and refuses a price under it, refuses to
+// turn off "Delivered from code stock" while codes are in stock, keeps codes unique, refuses to delete a service that has orders, joins the supplier chain and the shop facts of the other mocks into every row
 // (catalog.ts), and answers 403 for a shop filter the session may not use.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { money } from '@/lib/format';
@@ -9,7 +9,7 @@ import { serviceJoin, factsOf, passesListFilters, readListFilters } from './serv
 import { toDetail, toService } from './dto';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { storedOrder } from './priceGridRoutes';
-import { floorOf, round } from './pricing';
+import { costOf, floorOf, round } from './pricing';
 import { applyQuantity } from './quantityRule';
 import { servicesStore } from './store';
 import type { MockService } from './types';
@@ -25,7 +25,7 @@ function amountOf(value: unknown): number | null {
   return typeof number === 'number' && Number.isFinite(number) ? number : null;
 }
 
-type Problems = { field: string; message: string }[];
+type Problems = { field: string; message: string; code?: string }[];
 
 /** Applies the fields of a body to a service, collecting the problems; the caller saves nothing when there are any. */
 function applyFields(row: MockService, body: Record<string, unknown>, problems: Problems) {
@@ -68,10 +68,15 @@ function applyFields(row: MockService, body: Record<string, unknown>, problems: 
       draft.auto = body.executionMode === 'auto';
     else problems.push({ field: 'executionMode', message: 'Use auto or manual.' });
   }
-  for (const key of ['allowCancel', 'allowVerify'] as const) {
+  for (const key of ['allowCancel', 'allowVerify', 'stockDelivery'] as const) {
     if (!(key in body)) continue;
     if (typeof body[key] === 'boolean') draft[key] = body[key];
     else problems.push({ field: key, message: 'Use true or false.' });
+  }
+  if ('ownCost' in body) {
+    const own = amountOf(body.ownCost);
+    if (own !== null && own >= 0) draft.ownCost = round(own, 4);
+    else problems.push({ field: 'ownCost', message: 'Enter an amount, 0 or more.' });
   }
   if ('verifyWindowH' in body) {
     const hours = amountOf(body.verifyWindowH);
@@ -130,6 +135,8 @@ export const serviceRoutes: HttpHandler[] = [
         type: 'imei',
         categoryId: categoryId ?? 0,
         cost: 0,
+        ownCost: 0,
+        stockDelivery: false,
         costWas: null,
         price: 0,
         minProfit: 0,
@@ -170,6 +177,17 @@ export const serviceRoutes: HttpHandler[] = [
       const body = await bodyOf(request);
       const problems: Problems = [];
       const draft = applyFields(row, body, problems);
+      // Codes still in stock would have no service that delivers them: the server asks for them to be voided first.
+      const inStock = stores.codes
+        .list()
+        .filter((code) => code.serviceId === row.id && code.status === 'available').length;
+      if (body.stockDelivery === false && inStock > 0) {
+        problems.push({
+          field: 'stockDelivery',
+          code: 'codes_in_stock',
+          message: `Void the ${inStock} ${inStock === 1 ? 'code' : 'codes'} in stock first.`,
+        });
+      }
       if ('categoryId' in body) {
         const categoryId = idOf(body.categoryId);
         if (categoryId !== null && stores.categories.find(categoryId)) draft.categoryId = categoryId;
@@ -183,7 +201,7 @@ export const serviceRoutes: HttpHandler[] = [
       ) {
         problems.push({
           field: 'basePrice',
-          message: `Below the floor. Cost ${money(draft.cost)} plus minimum profit ${money(draft.minProfit)} is ${money(floorOf(draft))}.`,
+          message: `Below the floor. Cost ${money(costOf(draft))} plus minimum profit ${money(draft.minProfit)} is ${money(floorOf(draft))}.`,
         });
       }
       if (problems.length > 0) return invalid(problems);
@@ -194,6 +212,10 @@ export const serviceRoutes: HttpHandler[] = [
         const message = `The code ${draft.code} is already used by ${taken.name}.`;
         return conflict('CODE_TAKEN', 'Code already used', message, [{ field: 'code', message }]);
       }
+      // `cost_was` as the server keeps it: a rise of the cost used (an own cost above the old one) keeps the FIRST older cost, a fall leaves it,
+      // and saving a base price clears it (the answer to "the cost changed").
+      if ('basePrice' in body) draft.costWas = null;
+      else if (costOf(draft) > costOf(row)) draft.costWas = row.costWas ?? costOf(row);
       const { id: _id, ...changes } = draft;
       const changed = stores.services.patch(row.id, changes) ?? row;
       return HttpResponse.json(toService(stores, changed, await serviceJoin()));

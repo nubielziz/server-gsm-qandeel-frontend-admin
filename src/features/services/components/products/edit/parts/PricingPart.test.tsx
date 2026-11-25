@@ -51,10 +51,97 @@ describe('Set Pricing: the price', () => {
     const form = await openPricing();
     expect(form.getByRole('textbox', { name: 'Credit' })).toHaveValue('17.28');
     expect(form.getByRole('textbox', { name: 'Minimum profit' })).toHaveValue('0.81');
-    expect(form.getByText('Supplier cost')).toBeInTheDocument();
+    expect(form.getByText('Cost used')).toBeInTheDocument();
+    expect(form.queryByText('Supplier cost')).not.toBeInTheDocument();
     expect(form.getByText('$13.50')).toBeInTheDocument();
     expect(form.getByText('$14.31')).toBeInTheDocument();
     expect(form.getByText('21.9%')).toBeInTheDocument();
+  });
+
+  it('starts Your cost at the supplier’s cost for a service the supplier import made', async () => {
+    const form = await openPricing();
+    expect(form.getByRole('textbox', { name: 'Your cost' })).toHaveValue('13.50');
+    expect(form.getByText('$13.50')).toBeInTheDocument();
+  });
+
+  it('says what the cost used is, and puts Your cost in a box with its hint, 0.00 when none is set', async () => {
+    // A service of the owner's own (no figure typed): the mock seed gives every demo service its supplier's cost, so this one is cleared.
+    (await servicesStore()).services.patch(AT_T, { ownCost: 0 });
+    const form = await openPricing();
+    const own = form.getByRole('textbox', { name: 'Your cost' });
+    expect(own).toHaveValue('0.00');
+    expect(own).toHaveAccessibleDescription(
+      "What one unit costs you. The cost used is the larger of this and the supplier's.",
+    );
+    expect(
+      form.getByText(
+        "The larger of your cost and the supplier's cost. Shop price rules and the floor start from it.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      form.getByText('The floor is the cost used plus this amount.', { exact: false }),
+    ).toBeInTheDocument();
+  });
+
+  it('saves Your cost alone, and the cost used becomes the larger of the two, with the floor from it', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    const form = await openPricing();
+    await retype(user, form.getByRole('textbox', { name: 'Your cost' }), '20');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Cost updated')).toBeInTheDocument();
+    expect(screen.getByText(/now uses a cost of \$20\.00\. Floor \$20\.81/)).toBeInTheDocument();
+    const patches = requests.sent().filter((one) => one.method === 'PATCH');
+    expect(patches.map((one) => one.body)).toEqual([{ ownCost: '20.0000' }]);
+    expect(await getService(AT_T)).toMatchObject({
+      ownCost: '20.0000',
+      cost: '20.0000',
+      floorPrice: '20.8100',
+    });
+    expect(await form.findByText('$20.81')).toBeInTheDocument();
+    expect(form.getByRole('textbox', { name: 'Your cost' })).toHaveValue('20.00');
+    expect(form.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('keeps the supplier’s cost as the cost used while Your cost is the smaller one', async () => {
+    const user = userEvent.setup();
+    const form = await openPricing();
+    await retype(user, form.getByRole('textbox', { name: 'Your cost' }), '5');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Cost updated')).toBeInTheDocument();
+    expect(await getService(AT_T)).toMatchObject({ ownCost: '5.0000', cost: '13.5000' });
+    expect(form.getByText('$13.50')).toBeInTheDocument();
+  });
+
+  it('sends Your cost with the price in one call when both change, and an emptied box as 0', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    const form = await openPricing();
+    await retype(user, form.getByRole('textbox', { name: 'Your cost' }), '6');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Cost updated')).toBeInTheDocument();
+    await user.clear(form.getByRole('textbox', { name: 'Your cost' }));
+    await retype(user, form.getByRole('textbox', { name: 'Credit' }), '16');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Price updated')).toBeInTheDocument();
+    const bodies = requests
+      .sent()
+      .filter((one) => one.method === 'PATCH')
+      .map((one) => one.body);
+    expect(bodies).toEqual([{ ownCost: '6.0000' }, { basePrice: '16.0000', ownCost: '0.0000' }]);
+    expect(await getService(AT_T)).toMatchObject({ basePrice: '16.0000', ownCost: '0.0000' });
+  });
+
+  it('asks for an amount in Your cost under the box and sends nothing while it is wrong', async () => {
+    const user = userEvent.setup();
+    const requests = recordRequests();
+    const form = await openPricing();
+    const own = form.getByRole('textbox', { name: 'Your cost' });
+    await retype(user, own, 'abc');
+    await user.click(form.getByRole('button', { name: 'Save' }));
+    expect(await form.findByText('Enter an amount, 0 or more.')).toBeInTheDocument();
+    expect(own).toHaveAttribute('aria-invalid', 'true');
+    expect(requests.sent().filter((one) => one.method === 'PATCH')).toHaveLength(0);
   });
 
   it('shows what the supplier changed the cost from', async () => {
@@ -361,6 +448,9 @@ describe('Set Pricing: what a role may change', () => {
     const credit = form.getByRole('textbox', { name: 'Credit' });
     expect(credit).toBeDisabled();
     expect(credit).toHaveAttribute('title', 'You need the catalog:update and pricing:update permission');
+    const own = form.getByRole('textbox', { name: 'Your cost' });
+    expect(own).toBeDisabled();
+    expect(own).toHaveAttribute('title', 'You need the catalog:update and pricing:update permission');
     const vip = await form.findByRole('textbox', { name: 'Fixed price for VIP' });
     expect(vip).toBeDisabled();
     expect(vip).toHaveAttribute('title', 'You need the pricing:update permission');

@@ -51,6 +51,11 @@ const BLOCK: Record<PublishBlockReason, Words> = {
     fix: 'Link or resume a supplier, then try again.',
     next: null,
   },
+  out_of_stock: {
+    why: 'it has no codes in stock and no supplier',
+    fix: 'Import codes, then try again.',
+    next: null,
+  },
   title_missing: { why: 'it has no title', fix: RUN_FIX, next: 'run' },
   title_too_long: { why: 'its title is too long', fix: RUN_FIX, next: 'run' },
   price_missing: {
@@ -85,6 +90,7 @@ const RESULT: Record<PublishResultReason, string> = {
   b2b_only: 'its category is closed to shop buyers',
   not_orderable: 'it cannot be ordered online',
   supplier_unavailable: 'no supplier can fill it now',
+  out_of_stock: 'it has no codes in stock and no supplier',
   title_missing: 'it has no title',
   title_too_long: 'its title is too long',
   price_missing: 'it has no shop price',

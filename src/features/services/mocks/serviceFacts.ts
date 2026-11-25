@@ -1,6 +1,6 @@
 // The Catalog join of the services mock: what a service row says about its supplier chain, its shop page, its shop price and what needs a
-// person, worked out at request time from the suppliers and storefront mock stores (nothing is copied), and the five Catalog filters of
-// `GET /admin/services`. The mock plays the server: it leaves out the keys a session may not read and refuses a filter it may not use.
+// person, worked out at request time from the suppliers and storefront mock stores (nothing is copied), and the Catalog filters of
+// `GET /admin/services` (the stock, attention, supplier and shop ones). The mock plays the server: it leaves out the keys a session may not read and refuses a filter it may not use.
 import { shopFactsReader, type ShopFacts } from '@/features/storefront/mocks';
 import { chainFactsReader, type ChainFacts } from '@/features/suppliers/mocks';
 import { invalid } from './http';
@@ -60,16 +60,27 @@ function shopBlockOf(stores: Stores, row: MockService, shop: ShopFacts): ShopBlo
   return row.type === 'file' ? 'not_orderable' : null;
 }
 
-/** The reasons a live service needs a person, in the server's order, limited to the ones this session may see. */
+/** How many of a service's codes are `available` now (0 for a service with no codes): the row's `stockAvailable`. */
+export function stockAvailableOf(stores: Stores, serviceId: number): number {
+  return stores.codes.list().filter((code) => code.serviceId === serviceId && code.status === 'available')
+    .length;
+}
+
+/**
+ * The reasons a live service needs a person, in the server's order, limited to the ones this session may see. A service delivered from
+ * code stock with at least one available code counts as supplied, as on the server: it gets no `no_supplier` even with no supplier link.
+ */
 function attentionOf(
   row: MockService,
   join: ServiceJoin,
   shop: ShopFacts,
   chain: ChainFacts,
+  stockLeft: number,
 ): AttentionReason[] {
   if (row.status !== 'active') return [];
   const reasons: AttentionReason[] = [];
-  if (row.auto && !chain.linked) reasons.push('no_supplier');
+  const supplied = chain.linked || (row.stockDelivery && stockLeft > 0);
+  if (row.auto && !supplied) reasons.push('no_supplier');
   if (isBelowFloor(row)) reasons.push('below_floor');
   if (join.pricing && shop.proposalWaiting) reasons.push('price_proposal');
   if (join.storefront && shop.publishFailure !== null) reasons.push('publish_failed');
@@ -83,13 +94,14 @@ export function factsOf(stores: Stores, row: MockService, join: ServiceJoin): Ro
   return {
     shop,
     chain,
-    attention: attentionOf(row, join, shop, chain),
+    attention: attentionOf(row, join, shop, chain, stockAvailableOf(stores, row.id)),
     shopBlocked: shopBlockOf(stores, row, shop),
   };
 }
 
 /** The Catalog filters of a request, each only when it was sent. */
 export type MockListFilters = {
+  stockDelivery?: boolean;
   needsAttention?: boolean;
   hasSupplier?: boolean;
   supplierId?: number;
@@ -97,7 +109,7 @@ export type MockListFilters = {
   notOnShop?: boolean;
 };
 
-const BOOLEAN_FILTERS = ['needsAttention', 'hasSupplier', 'isListed', 'notOnShop'] as const;
+const BOOLEAN_FILTERS = ['stockDelivery', 'needsAttention', 'hasSupplier', 'isListed', 'notOnShop'] as const;
 const FILTER_NAMES: string[] = [...BOOLEAN_FILTERS, 'supplierId'];
 const OPERATOR_SUFFIXES = ['_gte', '_lte', '_ne', '_gt', '_lt', '_like'];
 
@@ -145,9 +157,10 @@ export function isNotOnShop(row: MockService, facts: RowFacts): boolean {
 
 /** Whether a service passes the Catalog filters of a request. */
 export function passesListFilters(filters: MockListFilters, row: MockService, facts: RowFacts): boolean {
-  const { needsAttention, hasSupplier, supplierId, isListed, notOnShop } = filters;
+  const { stockDelivery, needsAttention, hasSupplier, supplierId, isListed, notOnShop } = filters;
   const needsAPerson = facts.attention.length > 0;
   return (
+    (stockDelivery === undefined || row.stockDelivery === stockDelivery) &&
     (needsAttention === undefined || needsAPerson === needsAttention) &&
     (hasSupplier === undefined || facts.chain.linked === hasSupplier) &&
     (supplierId === undefined || facts.chain.primary?.id === supplierId) &&

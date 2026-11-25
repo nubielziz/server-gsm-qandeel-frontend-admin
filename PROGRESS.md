@@ -11,6 +11,14 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-25): code-stock services and a service's own cost (decision 027)
+
+The owner sells their own gift-card codes. A service now says whether it is **Delivered from code stock** (only then does it hold codes,
+show Inventory, and take codes for its orders) and has **Your cost** (so shop rules and the floor can price an own service). Code-stock
+services show "Codes: N in stock" instead of "No supplier"; the shop's new reason `out_of_stock` is worded. Backend: decision 069
+(migration 0070). Built by a Sonnet agent (console) and an Opus agent (backend) in parallel on a contract the lead wrote, each reviewed by
+an Opus reviewer, one fix round each. Release: console first, then backend.
+
 ## Status (2026-11-25): every group is listed, and the Group view has a search
 
 Found by the owner on production: a new group never showed in Product / Services › Group, and adding it again said the name was taken.

@@ -3,13 +3,14 @@
 // Import codes… (paste or upload, the server's counts of imported, duplicate and rejected codes) and Void unsold codes.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
-import { listInventoryCodes } from '../api';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { createService, listCategories, listInventoryCodes, listServices } from '../api';
 import { dialogOf, openProducts } from '../test/productsPage';
+import { recordRequests } from '../test/requests';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -17,6 +18,7 @@ vi.setConfig({ testTimeout: 20_000 });
 // The service filter offers the services of the kind on the strip: the stock these tests read is the Server kind's.
 const INVENTORY = '/products?view=inventory&type=server';
 const UNLOCKTOOL = 16;
+const CHIMERA = 17; // a Server service that is not delivered from code stock, so it holds no codes
 
 const table = async () => within(await screen.findByRole('table', { name: 'Code inventory' }));
 // The pinned footer: "Results: a - b of N" is the count of the filtered stock.
@@ -70,6 +72,78 @@ describe('the stock', () => {
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(app.location()).toBe(INVENTORY);
     expect(await results('1 - 25 of 30')).toBeInTheDocument();
+  });
+
+  it('offers only the services delivered from code stock of the kind in the service filter', async () => {
+    await openProducts(INVENTORY);
+    await results('1 - 25 of 30');
+    const filter = screen.getByRole('combobox', { name: 'Filter by service' });
+    await waitFor(() =>
+      expect(
+        within(filter)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['All services', 'UnlockTool 1-Day License', 'Z3X Credits x10']),
+    );
+  });
+
+  it('asks the server for the stock services of the kind, and says nothing while the menu holds them all', async () => {
+    const requests = recordRequests();
+    await openProducts(INVENTORY);
+    await results('1 - 25 of 30');
+    await screen.findByRole('option', { name: 'Z3X Credits x10' });
+    const read = requests
+      .sent()
+      .find((sent) => sent.url.pathname === '/admin/services' && sent.url.searchParams.has('stockDelivery'));
+    expect(Object.fromEntries(read?.url.searchParams ?? [])).toMatchObject({
+      stockDelivery: 'true',
+      type: 'server',
+      _end: '200',
+    });
+    expect(screen.queryByText(/services delivered from code stock are listed/)).not.toBeInTheDocument();
+  });
+
+  it('says the service filter is a short list when the server counts more stock services than it sent', async () => {
+    await signInAs();
+    const rows = (await listServices({ filters: { stockDelivery: true } })).data;
+    mockServer.use(
+      http.get('*/admin/services', () =>
+        HttpResponse.json(rows, {
+          headers: { 'x-total-count': '340', 'access-control-expose-headers': 'x-total-count' },
+        }),
+      ),
+    );
+    await openProducts(INVENTORY);
+    await results('1 - 25 of 30');
+    expect(
+      await screen.findByText('Only the first 2 of 340 services delivered from code stock are listed.'),
+    ).toBeInTheDocument();
+  });
+
+  it('offers a service as soon as it is delivered from code stock, and only of the kind on the strip', async () => {
+    await signInAs();
+    const credits = (await listCategories()).data.find((category) => category.name === 'Credits');
+    if (!credits) throw new Error('The mock seed has no Credits group.');
+    const body = {
+      name: 'Steam 20',
+      code: 'GC-ST-20',
+      categoryId: credits.id,
+      type: 'server',
+      slaMinutes: 5,
+      basePrice: '20.0000',
+    } as const;
+    await createService({ ...body, stockDelivery: true });
+    await createService({ ...body, name: 'PSN 50', code: 'GC-PSN-50' });
+    await openProducts(INVENTORY);
+    await results('1 - 25 of 30');
+    const filter = screen.getByRole('combobox', { name: 'Filter by service' });
+    await waitFor(() =>
+      expect(
+        within(filter)
+          .getAllByRole('option')
+          .map((option) => option.textContent),
+      ).toEqual(['All services', 'Steam 20', 'UnlockTool 1-Day License', 'Z3X Credits x10']),
+    );
   });
 
   it('says so when no code matches', async () => {
@@ -196,6 +270,48 @@ describe('Import codes', () => {
     await user.click(dialog.getByRole('button', { name: 'Retry' }));
     expect(await dialog.findByRole('option', { name: 'UnlockTool 1-Day License' })).toBeInTheDocument();
     expect(dialog.queryByText(/Could not load the services/)).not.toBeInTheDocument();
+  });
+
+  it('offers only the services delivered from code stock in the import menu', async () => {
+    const user = userEvent.setup();
+    await openProducts(INVENTORY);
+    const dialog = await openImport(user);
+    const options = dialog.getAllByRole('option').map((option) => option.textContent);
+    expect(options).toEqual(['Choose a service', 'UnlockTool 1-Day License', 'Z3X Credits x10']);
+  });
+
+  it('shows the server’s refusal of a service that is not delivered from code stock under the codes box', async () => {
+    const user = userEvent.setup();
+    await openProducts(`${INVENTORY}&service=${CHIMERA}`);
+    const dialog = await openImport(user);
+    await user.click(dialog.getByRole('textbox', { name: 'Codes' }));
+    await user.paste('CHM-0001-AAAA\n');
+    await user.click(dialog.getByRole('button', { name: 'Import 1 code' }));
+    expect(
+      await dialog.findByText('Turn on Delivered from code stock for this service first.'),
+    ).toBeInTheDocument();
+    expect(dialog.getByRole('textbox', { name: 'Codes' })).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('textbox', { name: 'Codes' })).toHaveValue('CHM-0001-AAAA\n');
+    expect(screen.queryByRole('dialog', { name: 'Import finished' })).not.toBeInTheDocument();
+    expect((await listInventoryCodes({ filters: { serviceId: CHIMERA } })).total).toBe(0);
+  });
+
+  it('says the import menu is a short list when the server counts more stock services than it sent', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    const rows = (await listServices({ filters: { stockDelivery: true } })).data;
+    mockServer.use(
+      http.get('*/admin/services', () =>
+        HttpResponse.json(rows, {
+          headers: { 'x-total-count': '340', 'access-control-expose-headers': 'x-total-count' },
+        }),
+      ),
+    );
+    await openProducts(INVENTORY);
+    const dialog = await openImport(user);
+    expect(
+      dialog.getByText('Only the first 2 of 340 services delivered from code stock are listed.'),
+    ).toBeInTheDocument();
   });
 
   it('asks for a service and some codes before it calls the server', async () => {

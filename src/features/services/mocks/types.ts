@@ -18,7 +18,12 @@ export type MockService = {
   name: string;
   type: ServiceType;
   categoryId: number;
+  /** What the supplier link charges (the demo's cost). The cost the service uses is the larger of this and `ownCost` (`costOf`). */
   cost: number;
+  /** The service's own cost, typed by staff; 0 when none was set. */
+  ownCost: number;
+  /** "Delivered from code stock": only such a service holds codes (the import is refused for any other). */
+  stockDelivery: boolean;
   /** What the supplier charged before its last change; null when it did not change. */
   costWas: number | null;
   price: number;

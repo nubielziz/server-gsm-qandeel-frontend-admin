@@ -24,6 +24,9 @@ const SERVICE: Service = {
   basePrice: '10.0000',
   cost: '8.0000',
   costChangedFrom: null,
+  ownCost: '0.0000',
+  stockDelivery: false,
+  stockAvailable: 0,
   minProfit: '1.0000',
   floorPrice: '9.0000',
   marginPct: '20.0000',
@@ -57,6 +60,7 @@ describe('overviewDefaults', () => {
       verify: false,
       verifyWindowH: '0',
       cancel: false,
+      stockDelivery: false,
     });
   });
 
@@ -143,6 +147,13 @@ describe('overviewBody', () => {
   it('sends the cancel switch when it changes', () => {
     expect(overviewBody(values({ cancel: true }), SERVICE)).toEqual({ allowCancel: true });
   });
+
+  it('sends "Delivered from code stock" only when it changes, in either direction', () => {
+    expect(overviewBody(values({ stockDelivery: true }), SERVICE)).toEqual({ stockDelivery: true });
+    const stock: Service = { ...SERVICE, stockDelivery: true, stockAvailable: 3 };
+    expect(overviewBody(values({}, stock), stock)).toEqual({});
+    expect(overviewBody(values({ stockDelivery: false }, stock), stock)).toEqual({ stockDelivery: false });
+  });
 });
 
 describe('windowProblem', () => {
@@ -164,7 +175,17 @@ describe('windowProblem', () => {
   });
 });
 
+describe('overviewDefaults for a service delivered from code stock', () => {
+  it('starts the switch on', () => {
+    expect(overviewDefaults({ ...SERVICE, stockDelivery: true }).stockDelivery).toBe(true);
+  });
+});
+
 describe('the names the form shares with the API', () => {
+  it("has a row for the code stock switch, so the server's refusal shows under it", () => {
+    expect(OVERVIEW_FIELDS).toContain('stockDelivery');
+  });
+
   it('gives every API field that has no row of its own name a row', () => {
     for (const row of Object.values(OVERVIEW_ALIASES)) expect(OVERVIEW_FIELDS).toContain(row);
   });

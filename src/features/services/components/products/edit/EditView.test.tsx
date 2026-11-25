@@ -7,7 +7,7 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { renderApp, setupMockApi, signInAs } from '@/test/renderApp';
-import { createService, getService } from '../../../api';
+import { createService, getService, importInventoryCodes, updateService } from '../../../api';
 import { groupHandlers } from '../../../mocks/testGroups';
 import { currentLink, kindStrip, openProducts, viewLinks } from '../../../test/productsPage';
 import { recordRequests } from '../../../test/requests';
@@ -24,7 +24,9 @@ const CHIMERA = 17; // a Server service: SRV-CHM-1M, "Chimera Tool 1 Month"
 const EE_UK = 9; // an IMEI service: IMEI-EE-UK, "EE UK Unlock", in "Carrier unlock", one day, automatic, on
 const Z3X = 15; // a Server service with 38 orders
 const EE_ROUTE = `/products?view=edit&type=imei&id=${EE_UK}`;
-const ALL_PARTS = [
+// The parts of a service that is not delivered from code stock (no Inventory), and of one that is.
+const ALL_PARTS = ['Overview', 'Set Pricing', 'Field', 'API Connection', 'Retail Purchase', 'Activity'];
+const STOCK_PARTS = [
   'Overview',
   'Set Pricing',
   'Field',
@@ -74,6 +76,24 @@ describe('the host', () => {
       'href',
       '/products?view=all&type=server',
     );
+  });
+
+  it('shows the Inventory part only for a service delivered from code stock', async () => {
+    await openProducts(`/products?view=edit&type=server&id=${Z3X}`);
+    expect(await overviewHeading()).toBeInTheDocument();
+    expect(partTexts()).toEqual(STOCK_PARTS);
+    expect(parts().getByRole('link', { name: 'Inventory' })).toHaveAttribute(
+      'href',
+      `/products?view=edit&type=server&id=${Z3X}&part=inventory`,
+    );
+  });
+
+  it('opens the first part when the address names the Inventory part for a service that holds no codes', async () => {
+    await openProducts(`/products?view=edit&type=server&id=${CHIMERA}&part=inventory`);
+    expect(await overviewHeading()).toBeInTheDocument();
+    expect(currentPart()).toBe('Overview');
+    expect(partTexts()).not.toContain('Inventory');
+    expect(screen.queryByRole('heading', { level: 3, name: 'Stored codes' })).not.toBeInTheDocument();
   });
 
   it('shows the part the address names, and links each part with the service in the address', async () => {
@@ -214,6 +234,7 @@ describe('the Overview part', () => {
       'User Can Cancel Order',
       'Delivery Time',
       'Order handling',
+      'Delivered from code stock',
     ]);
     await user.click(screen.getByRole('switch', { name: 'Send For Verification' }));
     expect(await screen.findByRole('textbox', { name: 'Verification window' })).toBeInTheDocument();
@@ -227,6 +248,7 @@ describe('the Overview part', () => {
       'User Can Cancel Order',
       'Delivery Time',
       'Order handling',
+      'Delivered from code stock',
     ]);
   });
 
@@ -349,6 +371,67 @@ describe('the Overview part', () => {
     expect(screen.getByText('Enter a whole number, 1 or more.')).toBeInTheDocument();
     expect(screen.getByText('Enter a name.')).toBeInTheDocument();
     expect(patches(requests)).toHaveLength(0);
+  });
+
+  it('shows Delivered from code stock, off for an unlock and on for a service that holds codes', async () => {
+    await openOverview();
+    const stock = screen.getByRole('switch', { name: 'Delivered from code stock' });
+    expect(stock).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByText(
+        "Orders take a code from this service's stock first. For gift cards and other codes; leave No for unlocks.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the switch on for a service that holds codes', async () => {
+    await openOverview(`/products?view=edit&type=server&id=${Z3X}`);
+    expect(screen.getByRole('switch', { name: 'Delivered from code stock' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  it('saves Delivered from code stock with the part, and the Inventory part appears', async () => {
+    const user = userEvent.setup();
+    await openOverview();
+    expect(partTexts()).not.toContain('Inventory');
+    const requests = recordRequests();
+    await user.click(screen.getByRole('switch', { name: 'Delivered from code stock' }));
+    await user.click(saveButton());
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    const [sent, ...others] = patches(requests);
+    expect(others).toHaveLength(0);
+    expect(sent.body).toEqual({ stockDelivery: true });
+    expect((await getService(EE_UK)).stockDelivery).toBe(true);
+    await waitFor(() => expect(partTexts()).toContain('Inventory'));
+  });
+
+  it('refuses to turn it off while codes are in stock, under the switch, and keeps the change', async () => {
+    const user = userEvent.setup();
+    await openOverview(`/products?view=edit&type=server&id=${Z3X}`);
+    const stock = screen.getByRole('switch', { name: 'Delivered from code stock' });
+    await user.click(stock);
+    expect(stock).toHaveAttribute('aria-checked', 'false');
+    await user.click(saveButton());
+    expect(await screen.findByText('Void the 13 codes in stock first.')).toBeInTheDocument();
+    expect(stock).toHaveAttribute('aria-checked', 'false');
+    expect(saveButton()).toBeEnabled();
+    expect(screen.queryByText(/stockDelivery/)).not.toBeInTheDocument();
+    const saved = await getService(Z3X);
+    expect([saved.stockDelivery, saved.stockAvailable]).toEqual([true, 13]);
+  });
+
+  it('says "1 code", not "1 codes", when one code is in stock', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await updateService(EE_UK, { stockDelivery: true });
+    await importInventoryCodes(EE_UK, { codes: ['EE-0001-AAAA'] });
+    await openOverview();
+    await user.click(screen.getByRole('switch', { name: 'Delivered from code stock' }));
+    await user.click(saveButton());
+    expect(await screen.findByText('Void the 1 code in stock first.')).toBeInTheDocument();
+    expect(screen.queryByText(/1 codes/)).not.toBeInTheDocument();
   });
 
   it('puts the server’s refusal under the row it names and keeps the changes', async () => {

@@ -33,20 +33,25 @@ export function useSetServiceStatus() {
 }
 
 /**
- * Saves a new base price and/or minimum profit. The toast reports the floor and the margin the server worked out, because
- * the console does not (the demo showed them from its own maths).
+ * Saves a new base price, minimum profit and/or own cost. The toast reports the floor and the margin the server worked out, because
+ * the console does not (the demo showed them from its own maths). A save of the own cost alone says the cost used, not a price.
  */
 export function useUpdatePrice() {
   return useApiMutation({
     mutationFn: ({ service, body }: WithBody<UpdateServiceBody>) => updateService(service.id, body),
     invalidates: (_result, { service }) => staleServices(service.id),
     invalidateKeys: SERVICE_STALE_KEYS,
-    onSuccess: (updated, { service }) => {
+    onSuccess: (updated, { service, body }) => {
+      // The cost changes the floor and the margin, not the price: a save that holds nothing but the own cost is not a price update.
+      const costOnly = !('basePrice' in body) && !('minProfit' in body);
       toast({
         kind: 'success',
-        title: 'Price updated',
+        title: costOnly ? 'Cost updated' : 'Price updated',
         body:
-          `${service.name} is now ${money(updated.basePrice)}. Floor ${money(updated.floorPrice)}, ` +
+          (costOnly
+            ? `${service.name} now uses a cost of ${money(updated.cost)}. `
+            : `${service.name} is now ${money(updated.basePrice)}. `) +
+          `Floor ${money(updated.floorPrice)}, ` +
           `margin ${pct(updated.marginPct, 1)}. ` +
           (updated.belowFloor
             ? 'It is still under the floor, so orders are charged the floor price.'

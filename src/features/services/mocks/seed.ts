@@ -1,7 +1,7 @@
 // Builds the mock stores from the demo's own seed (`S.services`, `S.merchants`, `GROUPS`, `S.groupPrices`,
 // `S.clientPrices`, `S.categoryRules`), mapped to the API's shapes. The demo has no categories, option lists, custom fields or code stock as
 // records, so those are made up: categories from the services' category names, a few fields and options, and codes for two
-// digital-code services (Z3X credits and the UnlockTool licence). A service's suppliers are not kept here: the rows join them from the
+// digital-code services (Z3X credits and the UnlockTool licence), which are delivered from code stock. A service's suppliers are not kept here: the rows join them from the
 // suppliers mock's links (catalog.ts).
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
 import { Collection } from '@/mocks/db';
@@ -22,6 +22,9 @@ export type DemoService = {
   sla: number;
   status: 'active' | 'disabled';
   auto: boolean;
+  /** The primary and the fallback supplier; empty for a service of the owner's own. */
+  sup?: string | null;
+  fb?: string | null;
 };
 type DemoNamed = { id: string; name: string };
 type DemoMerchant = DemoNamed & { group: string };
@@ -104,6 +107,9 @@ export function buildStores(state: DemoState): Stores {
     type: s.type.toLowerCase() as ServiceType,
     categoryId: categoryIds.get(s.category) ?? 0,
     cost: s.cost,
+    // The server's supplier import writes the supplier's cost into the service's own cost; a service with no supplier keeps 0.
+    ownCost: s.sup || s.fb ? s.cost : 0,
+    stockDelivery: false,
     costWas: s.costWas,
     price: s.price,
     minProfit: s.minProfit,
@@ -177,6 +183,9 @@ export function buildStores(state: DemoState): Stores {
   const z3xId = z3x?.id ?? 0;
   const utId = byCode('SRV-UT-1D')?.id ?? 0;
   const codes = [...codesFor(z3xId, 'Z3X', 18, 1, now), ...codesFor(utId, 'UT', 12, 19, now)];
+  // The migration's rule: a service with any code that is not void is delivered from stock.
+  const held = new Set(codes.filter((code) => code.status !== 'void').map((code) => code.serviceId));
+  for (const service of services) service.stockDelivery = held.has(service.id);
 
   const clientPrices = new Map<string, number>();
   for (const [key, price] of Object.entries(state.clientPrices as Record<string, number>)) {

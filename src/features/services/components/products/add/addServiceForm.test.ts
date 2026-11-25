@@ -12,6 +12,7 @@ import {
   deliveryProblem,
   followUpBody,
   followUpWords,
+  ownCostProblem,
   windowProblem,
   type AddServiceValues,
 } from './addServiceForm';
@@ -43,6 +44,9 @@ const SERVICE: Service = {
   basePrice: '5.8800',
   cost: '4.2000',
   costChangedFrom: null,
+  ownCost: '0.0000',
+  stockDelivery: false,
+  stockAvailable: 0,
   minProfit: '0.2500',
   floorPrice: '4.4500',
   marginPct: '28.5714',
@@ -107,6 +111,16 @@ describe('the create body', () => {
     });
   });
 
+  it('sends Your cost and Delivered from code stock only when they are given', () => {
+    const plain = createBody(filled(), 'imei');
+    expect(plain).not.toHaveProperty('ownCost');
+    expect(plain).not.toHaveProperty('stockDelivery');
+    expect(createBody(filled({ ownCost: ' 4.7 ' }), 'server')).toMatchObject({ ownCost: '4.7000' });
+    expect(createBody(filled({ ownCost: '0' }), 'server')).toMatchObject({ ownCost: '0.0000' });
+    expect(createBody(filled({ stockDelivery: true }), 'server')).toMatchObject({ stockDelivery: true });
+    expect(createBody(filled({ ownCost: '   ' }), 'server')).not.toHaveProperty('ownCost');
+  });
+
   it('carries the kind of the strip, not a typed one', () => {
     expect(createBody(filled(), 'server').type).toBe('server');
   });
@@ -120,6 +134,17 @@ describe('the create body', () => {
     expect(createBody(filled({ verify: false, verifyWindowH: '48' }), 'imei')).not.toHaveProperty(
       'verifyWindowH',
     );
+  });
+});
+
+describe('Your cost', () => {
+  it('may be left empty or be an amount of 0 or more, up to four decimals', () => {
+    for (const text of ['', '  ', '0', '4.7', '12.3456']) expect(ownCostProblem(text)).toBe(true);
+  });
+
+  it('says what is wrong with anything else', () => {
+    for (const text of ['abc', '-1', '1.23456', '1,5'])
+      expect(ownCostProblem(text)).toBe('Enter an amount, 0 or more.');
   });
 });
 
@@ -158,12 +183,14 @@ describe('the blank form', () => {
       deliveryAmount: '',
       deliveryUnit: 'minutes',
       credit: '',
+      ownCost: '',
+      stockDelivery: false,
     });
   });
 });
 
 describe('the settings a chosen service copies in', () => {
-  it('are its group, switches, delivery time and credit, and never its name or code', () => {
+  it('are its group, switches, delivery time, credit, stock switch and own cost, and never its name or code', () => {
     expect(copiedSettings(SERVICE)).toEqual({
       categoryId: '5',
       active: false,
@@ -174,7 +201,20 @@ describe('the settings a chosen service copies in', () => {
       deliveryAmount: '3',
       deliveryUnit: 'hours',
       credit: '5.88',
+      ownCost: '',
+      stockDelivery: false,
     });
+  });
+
+  it('copy "Delivered from code stock" and a figure of the own cost, and leave the box empty for an own cost of 0', () => {
+    expect(copiedSettings({ ...SERVICE, stockDelivery: true, ownCost: '4.7000' })).toMatchObject({
+      stockDelivery: true,
+      ownCost: '4.70',
+    });
+    expect(copiedSettings({ ...SERVICE, ownCost: '0.0000' })).toMatchObject({ ownCost: '' });
+    // Merged over a form that already holds both, the copy replaces them.
+    const typed = { ...addServiceDefaults(), ownCost: '9', stockDelivery: true };
+    expect({ ...typed, ...copiedSettings(SERVICE) }).toMatchObject({ ownCost: '', stockDelivery: false });
   });
 
   it('leave Status and Order handling out when the role cannot send them', () => {
@@ -189,6 +229,8 @@ describe('the settings a chosen service copies in', () => {
       deliveryAmount: '3',
       deliveryUnit: 'hours',
       credit: '5.88',
+      ownCost: '',
+      stockDelivery: false,
     });
     // Merged over the blank form, the two switches stay as the server starts a service, whatever the copied service was.
     expect({ ...addServiceDefaults(), ...copied }).toMatchObject({ active: true, automatic: true });

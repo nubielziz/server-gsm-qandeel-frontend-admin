@@ -12,7 +12,7 @@ import { applyListQuery } from '@/mocks/crud';
 import type { PriceGridGroupPrice, PriceGridRow } from '../types';
 import { covers, sessionPermissions } from './access';
 import { bodyOf, idOf, invalid, signedIn } from './http';
-import { resolve, round } from './pricing';
+import { costOf, resolve, round } from './pricing';
 import type { Stores } from './seed';
 import { servicesStore } from './store';
 import type { MockService } from './types';
@@ -44,7 +44,7 @@ export function storedOrder(stores: Stores): (a: MockService, b: MockService) =>
 
 /** A price minus the cost as signed money; null while no cost is on record (a new service starts at zero). */
 function marginOver(service: MockService, priceNow: string | number): string | null {
-  return service.cost === 0 ? null : toMoney(round(Number(priceNow) - service.cost, 2));
+  return costOf(service) === 0 ? null : toMoney(round(Number(priceNow) - costOf(service), 2));
 }
 
 /** One column per rank (kind b2b) in the groups' order: the fixed price, the price the resolver gives, and the margin. */
@@ -102,12 +102,12 @@ function toGridRow(
     sort: sortOf(stores, service.id),
     categoryId: service.categoryId,
     supplier,
-    cost: service.cost === 0 ? null : toMoney(service.cost),
-    costChangedFrom: service.cost === 0 || service.costWas === null ? null : toMoney(service.costWas),
+    cost: costOf(service) === 0 ? null : toMoney(costOf(service)),
+    costChangedFrom: costOf(service) === 0 || service.costWas === null ? null : toMoney(service.costWas),
     basePrice: toMoney(service.price),
     baseMargin: marginOver(service, service.price),
-    floorPrice: toMoney(round(service.cost + service.minProfit, 2)),
-    belowFloor: service.price < round(service.cost + service.minProfit, 2) - 0.004,
+    floorPrice: toMoney(round(costOf(service) + service.minProfit, 2)),
+    belowFloor: service.price < round(costOf(service) + service.minProfit, 2) - 0.004,
     retailPrice: retail.price,
     retailPriceSource: retail.source,
     retailMargin: retail.price === null ? null : marginOver(service, retail.price),

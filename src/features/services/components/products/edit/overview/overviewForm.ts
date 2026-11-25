@@ -1,4 +1,4 @@
-// The values of the Overview part's form (status, name, code, group, delivery time, order handling, verification, cancel) and the body a
+// The values of the Overview part's form (status, name, code, group, delivery time, order handling, verification, cancel, code stock) and the body a
 // save sends. The name, code, group and delivery time go through the existing details mapping (lib/serviceDetails.ts), so that one place
 // decides how typed text becomes the API's body; this file adds only the switches the old dialog had no box for. The server stays the authority.
 import { quantityDefaults } from '../../../../lib/quantity';
@@ -11,7 +11,8 @@ export const MAX_VERIFY_WINDOW_H = 720;
 
 /**
  * What the form holds. The switches are booleans: `active` (status), `auto` (order handling: automatic or manual), `verify` (a merchant may
- * ask for verification, with `verifyWindowH` hours as text) and `cancel` (a merchant may cancel an order that was never sent).
+ * ask for verification, with `verifyWindowH` hours as text), `cancel` (a merchant may cancel an order that was never sent) and
+ * `stockDelivery` ("Delivered from code stock": the service holds codes and its orders take one first).
  */
 export type OverviewValues = {
   active: boolean;
@@ -24,6 +25,7 @@ export type OverviewValues = {
   verify: boolean;
   verifyWindowH: string;
   cancel: boolean;
+  stockDelivery: boolean;
 };
 
 /** What the inputs start with: the service's own values. */
@@ -38,6 +40,7 @@ export function overviewDefaults(service: Service): OverviewValues {
     verify: service.allowVerify,
     verifyWindowH: String(service.verifyWindowH),
     cancel: service.allowCancel,
+    stockDelivery: service.stockDelivery,
   };
 }
 
@@ -52,6 +55,7 @@ export const OVERVIEW_FIELDS: readonly string[] = [
   'auto',
   'verify',
   'cancel',
+  'stockDelivery',
 ];
 
 /** The API field names the form names differently: the delivery time is stored as `slaMinutes`, and each switch has its own key. */
@@ -92,6 +96,7 @@ export function overviewBody(values: OverviewValues, service: Service): UpdateSe
     if (hours !== service.verifyWindowH) body.verifyWindowH = hours;
   }
   if (values.cancel !== service.allowCancel) body.allowCancel = values.cancel;
+  if (values.stockDelivery !== service.stockDelivery) body.stockDelivery = values.stockDelivery;
   return body;
 }
 

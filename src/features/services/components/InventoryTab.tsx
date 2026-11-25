@@ -12,7 +12,7 @@ import {
   useRowSelection,
   WithSelected,
 } from '@/components/ui';
-import { useServiceChoices } from '../hooks/useChoices';
+import { useStockServiceChoices } from '../hooks/useChoices';
 import { useInventoryList } from '../hooks/useInventory';
 import { useInventoryView } from '../hooks/useSelectionView';
 import { useServiceGrants } from '../hooks/useServiceGrants';
@@ -21,6 +21,7 @@ import type { InventoryFilters, ServiceType } from '../types';
 import { ImportCodesDialog } from './ImportCodesDialog';
 import { InventoryTable } from './InventoryTable';
 import { InventoryToolbar } from './InventoryToolbar';
+import { StockMenuNote } from './StockMenuNote';
 import { VoidCodesDialog } from './VoidCodesDialog';
 
 export interface InventoryTabProps {
@@ -33,7 +34,8 @@ export function InventoryTab({ type }: InventoryTabProps) {
   const grants = useServiceGrants();
   const view = useInventoryView();
   const canServices = grants.can('catalog:read');
-  const services = useServiceChoices(grants.ready && canServices, type);
+  // Only a service delivered from code stock holds codes, so only those are offered (the server filters them).
+  const services = useStockServiceChoices(grants.ready && canServices, type);
   const selection = useRowSelection<number>();
   const [dialog, setDialog] = useState<'import' | 'void' | null>(null);
   const [size, setSize] = useState(INVENTORY_PAGE_SIZE);
@@ -71,7 +73,7 @@ export function InventoryTab({ type }: InventoryTabProps) {
         <InventoryToolbar
           serviceId={view.serviceId}
           status={view.status}
-          services={canServices ? (services.data ?? []) : undefined}
+          services={canServices ? (services.data?.services ?? []) : undefined}
           onService={(id) => {
             selection.clear();
             view.setServiceId(id);
@@ -84,6 +86,7 @@ export function InventoryTab({ type }: InventoryTabProps) {
           onRefresh={() => void list.query.refetch()}
           busy={list.query.isFetching}
         />
+        {canServices && <StockMenuNote choices={services.data} />}
         <InventoryTable
           rows={list.codes}
           state={list.query.isLoading ? 'loading' : list.query.isError ? 'error' : 'ready'}
@@ -128,11 +131,12 @@ export function InventoryTab({ type }: InventoryTabProps) {
           </Button>
         </WithSelected>
         {dialog === 'import' && (
-          <ImportCodesDialog serviceId={view.serviceId} onClose={() => setDialog(null)} />
+          <ImportCodesDialog serviceId={view.serviceId} type={type} onClose={() => setDialog(null)} />
         )}
         {dialog === 'void' && (
           <VoidCodesDialog
             ids={unsold.map((code) => code.id)}
+            serviceIds={[...new Set(unsold.map((code) => code.service.id))]}
             onClose={() => setDialog(null)}
             onDone={selection.clear}
           />
