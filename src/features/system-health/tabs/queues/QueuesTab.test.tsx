@@ -104,7 +104,8 @@ describe('a platform in trouble', () => {
     expect(within(cells[1]).getByText('Warn')).toBeInTheDocument();
     // The age of the oldest job carries the same state as a word for screen readers, and its unit.
     expect(within(cells[6]).getByText('Warn')).toHaveClass('sr-only');
-    expect(cells[6]).toHaveTextContent(/\d+m \d+s/);
+    // A whole number of minutes is written without its seconds (`3m`), so both forms are right.
+    expect(cells[6]).toHaveTextContent(/\d+m( \d+s)?/);
     expect(cells[5]).toHaveTextContent('23');
     expect(cells[7]).toHaveTextContent(/\/min$/);
     expect(within(row).getByRole('button', { name: 'Pause orders.dispatch' })).toBeEnabled();
