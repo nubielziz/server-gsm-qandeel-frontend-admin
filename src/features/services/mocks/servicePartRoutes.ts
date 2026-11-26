@@ -1,5 +1,5 @@
-// Mock of the three "replace the whole list" routes of a service: custom fields, option lists and group prices
-// (`PUT /admin/services/:id/fields|options|group-prices`). Each checks its list the way a server would and answers with the saved list.
+// Mock of the two "replace the whole list" routes of a service: custom fields and group prices
+// (`PUT /admin/services/:id/fields|group-prices`). Each checks its list the way a server would and answers with the saved list.
 // The fields route plays the server's naming rules: a row with the key of a saved field is that field, a row without a key is new and
 // gets a key made from its name, an unknown key is refused, a name may be used once in a service whatever its letter case, and on an
 // IMEI service a field named IMEI is the main input when no row is flagged.
@@ -7,11 +7,10 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toMoney } from '@/mocks/seed';
 import { bodyOf, idOf, invalid, notFound, signedIn } from './http';
 import { servicesStore } from './store';
-import type { ServiceField, ServiceGroupPrice, ServiceOption } from '../types';
+import type { ServiceField, ServiceGroupPrice } from '../types';
 import { RETAIL_GROUP_KIND } from '../lib/groupPrices';
 
 const FIELD_TYPES = ['text', 'number', 'select', 'textarea'];
-const OPTION_LISTS = ['model', 'network', 'mep'];
 /** The longest hidden key and the longest name a field may have (the server's limits). */
 const KEY_MAX = 60;
 const NAME_MAX = 120;
@@ -63,7 +62,7 @@ function keepUntouchedRetail(
   return [...rows.filter((row) => row.groupId !== retailGroupId), ...(kept ? [kept] : [])];
 }
 
-/** The fields, options and group prices routes. */
+/** The fields and group prices routes. */
 export const servicePartRoutes: HttpHandler[] = [
   http.put('*/admin/services/:id/fields', ({ request, params }) =>
     signedIn(request, async () => {
@@ -138,31 +137,6 @@ export const servicePartRoutes: HttpHandler[] = [
           : undefined;
       service.fields = fields.map((field) => (field === imeiRow ? { ...field, isMainInput: true } : field));
       return HttpResponse.json(service.fields);
-    }),
-  ),
-
-  http.put('*/admin/services/:id/options', ({ request, params }) =>
-    signedIn(request, async () => {
-      const stores = await servicesStore();
-      const service = stores.services.find(String(params.id));
-      if (!service) return notFound('service', params.id);
-      const rows = rowsOf((await bodyOf(request)).options);
-      const problems: { field: string; message: string }[] = [];
-      const options: ServiceOption[] = rows.map((row, index) => {
-        if (!OPTION_LISTS.includes(String(row.list)))
-          problems.push({ field: `options.${index}.list`, message: 'Unknown list.' });
-        if (!String(row.value ?? '').trim())
-          problems.push({ field: `options.${index}.value`, message: 'Enter a value.' });
-        return {
-          list: row.list as ServiceOption['list'],
-          value: String(row.value ?? '').trim(),
-          label: String(row.label ?? '').trim(),
-          supplierValue: String(row.supplierValue ?? '').trim(),
-        };
-      });
-      if (problems.length > 0) return invalid(problems);
-      service.options = options;
-      return HttpResponse.json(options);
     }),
   ),
 

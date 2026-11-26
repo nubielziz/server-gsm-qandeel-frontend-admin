@@ -1,7 +1,8 @@
-// Tests for the Field part of the edit view, opened through the whole page against the dev mock API: the three sections (how the service sells
-// by quantity, the order fields a buyer fills in, the option lists), each its own form with its own Save, the messages of the server
-// under the input they name, the repeated name, the main input switch, moving and removing a field, and what a role without catalog:update sees.
-import { screen, within } from '@testing-library/react';
+// Tests for the Field part of the edit view, opened through the whole page against the dev mock API: the two sections (how the service sells
+// by quantity, the order fields a buyer fills in), each its own form with its own Save, the messages of the server under the input they
+// name, the repeated name, the hidden pattern that a save sends back, the main input switch, moving and removing a field, and what a role
+// without catalog:update sees.
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -9,13 +10,15 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { getService } from '../../../../api';
+import { servicesStore } from '../../../../mocks/store';
 import { openProducts } from '../../../../test/productsPage';
+import { recordRequests } from '../../../../test/requests';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.restoreAllMocks());
 
-const AT_T = 5; // IMEI-ATT-USA, "AT&T USA Premier Unlock": one per order, three option lists
+const AT_T = 5; // IMEI-ATT-USA, "AT&T USA Premier Unlock": one per order, no custom fields
 const Z3X = 15; // SRV-Z3X-10, "Z3X Credits x10": one order field, `account`
 
 /** Opens the part for a service, signed in as the Owner (or with these permissions), once it has drawn its first section. */
@@ -28,12 +31,15 @@ async function openFields(id: number, type: string, options: { permissions?: str
 const section = (name: string) => within(screen.getByRole('form', { name }));
 
 describe('Field: the sections', () => {
-  it('draws the three sections under their headings, each with its own Save', async () => {
+  it('draws the two sections under their headings, each with its own Save, and no Options section', async () => {
     await openFields(AT_T, 'imei');
-    for (const name of ['Quantity Field', 'Custom Fields', 'Options']) {
+    for (const name of ['Quantity Field', 'Custom Fields']) {
       expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument();
       expect(section(name).getByRole('button', { name: 'Save' })).toBeDisabled();
     }
+    expect(screen.queryByRole('heading', { level: 3, name: 'Options' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Options' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Models' })).not.toBeInTheDocument();
   });
 });
 
@@ -109,6 +115,61 @@ describe('Field: the custom fields', () => {
       expect(fields.queryByRole('columnheader', { name: header })).not.toBeInTheDocument();
     }
     expect(fields.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+  });
+
+  it('has no Pattern column and no pattern input', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    expect(fields.queryByRole('columnheader', { name: 'Pattern' })).not.toBeInTheDocument();
+    expect(fields.queryByRole('textbox', { name: 'Pattern of field 1' })).not.toBeInTheDocument();
+    expect(fields.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      'No.',
+      'Name',
+      'Label',
+      'Type',
+      'Required',
+      'Actions',
+    ]);
+  });
+
+  it('sends the pattern of a saved field back as it was saved, and an empty one for a new field', async () => {
+    const user = userEvent.setup();
+    // A pattern the supplier import made: nobody typed it, the table shows nothing of it.
+    const pattern = '^[0-9]{15}$';
+    const service = (await servicesStore()).services.find(String(Z3X));
+    if (!service?.fields[0]) throw new Error('The seed has no field on the Z3X service.');
+    service.fields[0].regex = pattern;
+    const requests = recordRequests();
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    const name = await fields.findByRole('textbox', { name: 'Name of field 1' });
+    await user.clear(name);
+    await user.type(name, 'Account name');
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 2' }), 'Plan');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+
+    const put = requests.sent().filter((request) => request.method === 'PUT');
+    expect(put).toHaveLength(1);
+    expect(put[0]?.body).toMatchObject({
+      fields: [
+        { key: 'account', name: 'Account name', regex: pattern },
+        { name: 'Plan', regex: '' },
+      ],
+    });
+    expect((await getService(Z3X)).fields.map((field) => [field.key, field.regex])).toEqual([
+      ['account', pattern],
+      ['plan', ''],
+    ]);
+    // A second save, from the list the server answered, still sends it back.
+    await user.type(fields.getByRole('textbox', { name: 'Label of field 1' }), ' again');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(requests.sent().filter((request) => request.method === 'PUT')).toHaveLength(2),
+    );
+    expect((await getService(Z3X)).fields[0]).toMatchObject({ regex: pattern });
   });
 
   it('adds a choice field after the saved one and saves the list in order, the server making its key from its name', async () => {
@@ -206,7 +267,6 @@ describe('Field: the custom fields', () => {
       http.put('*/admin/services/:id/fields', () =>
         problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
           { field: 'fields.0.fieldType', message: 'That type is not offered.' },
-          { field: 'fields.0.regex', message: 'That pattern is not valid.' },
           { field: 'fields.0.key', message: 'This field no longer exists. Reload the page.' },
           { field: 'fields.1.name', message: 'The name Plan is used by an earlier field.' },
           { field: 'fields.1.options', message: 'Add at least two choices.' },
@@ -225,7 +285,7 @@ describe('Field: the custom fields', () => {
     await user.type(fields.getByRole('textbox', { name: 'Choices of field 2' }), 'Basic');
     await user.click(fields.getByRole('button', { name: 'Save' }));
 
-    expect(await fields.findByText('That pattern is not valid.')).toBeInTheDocument();
+    expect(await fields.findByText('That type is not offered.')).toBeInTheDocument();
     for (const message of [
       'That type is not offered.',
       'This field no longer exists. Reload the page.',
@@ -234,10 +294,6 @@ describe('Field: the custom fields', () => {
     ]) {
       expect(fields.getByText(message)).toBeInTheDocument();
     }
-    expect(fields.getByRole('textbox', { name: 'Pattern of field 1' })).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    );
     // The hidden key has no cell of its own: its message is under the row's name.
     expect(fields.getByRole('textbox', { name: 'Name of field 1' })).toHaveAttribute('aria-invalid', 'true');
     expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveAttribute('aria-invalid', 'true');
@@ -254,6 +310,26 @@ describe('Field: the custom fields', () => {
     );
     // A column the row has no input for is not lost: it is in the failure line.
     expect(fields.getByRole('alert')).toHaveTextContent('fields.0.sort: The order sets the position.');
+  });
+
+  it("shows a message about a field's pattern under the row's name, as the pattern has no input", async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.put('*/admin/services/:id/fields', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'fields.0.regex', message: 'That pattern is not valid.' },
+        ]),
+      ),
+    );
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    const name = await fields.findByRole('textbox', { name: 'Name of field 1' });
+    await user.type(name, ' x');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await fields.findByText('That pattern is not valid.')).toBeInTheDocument();
+    expect(name).toHaveAttribute('aria-invalid', 'true');
+    // Nothing is left for the failure line: the message found its place.
+    expect(fields.getByRole('alert')).toBeEmptyDOMElement();
   });
 
   it('refuses a name that an earlier field already uses, whatever its letter case', async () => {
@@ -405,40 +481,6 @@ describe('Field: the main input warning', () => {
   });
 });
 
-describe('Field: the options', () => {
-  it('shows each list as lines and saves the edited lists', async () => {
-    const user = userEvent.setup();
-    await openFields(AT_T, 'imei');
-    const options = section('Options');
-    expect(await options.findByRole('textbox', { name: 'Models' })).toHaveValue(
-      'iphone15 | iPhone 15\niphone14 | iPhone 14',
-    );
-    expect(options.getByRole('textbox', { name: 'Networks' })).toHaveValue('att | AT&T USA | ATT');
-    expect(options.getByText(/2 entries\./)).toBeInTheDocument();
-    await user.type(options.getByRole('textbox', { name: 'MEP' }), 'mep1 | MEP one{Enter}mep2');
-    await user.click(options.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByText('Options saved')).toBeInTheDocument();
-    expect(screen.getByText('AT&T USA Premier Unlock has 5 options.')).toBeInTheDocument();
-    const saved = (await getService(AT_T)).options;
-    expect(saved.filter((option) => option.list === 'mep')).toEqual([
-      { list: 'mep', value: 'mep1', label: 'MEP one', supplierValue: '' },
-      { list: 'mep', value: 'mep2', label: 'mep2', supplierValue: '' },
-    ]);
-    expect(options.getByRole('textbox', { name: 'MEP' })).toHaveValue('mep1 | MEP one\nmep2');
-    expect(options.getByRole('button', { name: 'Save' })).toBeDisabled();
-  });
-
-  it('points at a line that has a label but no value', async () => {
-    const user = userEvent.setup();
-    await openFields(AT_T, 'imei');
-    const options = section('Options');
-    await user.type(await options.findByRole('textbox', { name: 'MEP' }), 'ok{Enter}| only a label');
-    await user.click(options.getByRole('button', { name: 'Save' }));
-    expect(await options.findByText('Line 2 has no value.')).toBeInTheDocument();
-    expect((await getService(AT_T)).options).toHaveLength(3);
-  });
-});
-
 describe('Field: what a role may change', () => {
   it('shows every box off with the missing permission named for a role that may only read', async () => {
     await openFields(Z3X, 'server', { permissions: ['catalog:read'] });
@@ -452,8 +494,7 @@ describe('Field: what a role may change', () => {
     expect(name).toHaveAttribute('title', title);
     expect(fields.getByRole('button', { name: 'Main input of field 1' })).toBeDisabled();
     expect(fields.getByRole('button', { name: 'Add a field' })).toBeDisabled();
-    expect(section('Options').getByRole('textbox', { name: 'Models' })).toBeDisabled();
-    for (const name of ['Quantity Field', 'Custom Fields', 'Options']) {
+    for (const name of ['Quantity Field', 'Custom Fields']) {
       expect(section(name).getByRole('button', { name: 'Save' })).toBeDisabled();
     }
   });

@@ -7,7 +7,6 @@ import type {
   PricingRuleScope,
   ServiceField,
   ServiceGroupPrice,
-  ServiceOption,
   ServiceType,
 } from '../types';
 
@@ -40,7 +39,6 @@ export type MockService = {
   status: 'active' | 'disabled';
   auto: boolean;
   fields: ServiceField[];
-  options: ServiceOption[];
   groupPrices: ServiceGroupPrice[];
 };
 

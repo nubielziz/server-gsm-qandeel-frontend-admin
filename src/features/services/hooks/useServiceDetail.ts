@@ -1,4 +1,4 @@
-// One service with its custom fields, option lists and group prices, for the dialogs that edit those parts. The record is read
+// One service with its custom fields and group prices, for the dialogs that edit those parts. The record is read
 // when a dialog opens and refreshed after a save (the part mutations invalidate it).
 import { useOne } from '@refinedev/core';
 import type { ServiceDetail } from '../types';

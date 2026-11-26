@@ -122,7 +122,6 @@
         "CRUD /admin/service-categories",
         "CRUD /admin/services",
         "PUT /admin/services/:id/fields",
-        "PUT /admin/services/:id/options",
         "PUT /admin/services/:id/group-prices",
         "CRUD /admin/pricing-rules",
         "POST /admin/services/bulk-price/preview",

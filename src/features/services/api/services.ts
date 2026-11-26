@@ -28,9 +28,10 @@ export function listServices(query: ListQuery = {}, init?: ApiInit): Promise<Lis
 }
 
 /**
- * One service with the parts its editing dialogs start from: custom fields, option lists and group prices. No other
+ * One service with the parts its editing dialogs start from: custom fields and group prices. No other
  * route reads them, which is why this one is assumed to embed them.
- * Assumed contract: the list row plus `fields`, `options`, `groupPrices` and `publishFailure` (storefront:read, else left out).
+ * Assumed contract: the list row plus `fields`, `groupPrices` and `publishFailure` (storefront:read, else left out). The server may
+ * still send `options` (the retired option lists, decision 030); the console ignores it.
  * @route GET /admin/services/:id
  */
 export function getService(id: Id, init?: ApiInit): Promise<ServiceDetail> {

@@ -1,9 +1,9 @@
-// Saving the parts of a service that are replaced as a whole list: group prices, custom fields and option lists. A save makes
+// Saving the parts of a service that are replaced as a whole list: group prices and custom fields. A save makes
 // the service's own record stale (the edit view's parts read it) and, for group prices, the price resolutions and the listing read (the shop
 // price block prints the shop floor and the B2B price, and keeps its copy until a write). The part that saves shows the refusal.
 import { useApiMutation } from '@/lib/query';
-import { replaceServiceFields, replaceServiceGroupPrices, replaceServiceOptions } from '../api';
-import type { ReplaceFieldsBody, ReplaceGroupPricesBody, ReplaceOptionsBody, Service } from '../types';
+import { replaceServiceFields, replaceServiceGroupPrices } from '../api';
+import type { ReplaceFieldsBody, ReplaceGroupPricesBody, Service } from '../types';
 import { SERVICE_STALE_KEYS, staleServices } from './keys';
 
 const NO_ERROR_TOAST = () => false as const;
@@ -33,20 +33,6 @@ export function useReplaceFields() {
     successNotification: (fields, { service }) => ({
       message: 'Fields saved',
       description: `${service.name} has ${fields.length} ${fields.length === 1 ? 'field' : 'fields'}.`,
-    }),
-    errorNotification: NO_ERROR_TOAST,
-  });
-}
-
-/** Saves the model, network and MEP lists of a service. */
-export function useReplaceOptions() {
-  return useApiMutation({
-    mutationFn: ({ service, body }: ForService<ReplaceOptionsBody>) =>
-      replaceServiceOptions(service.id, body),
-    invalidates: (_result, { service }) => staleServices(service.id),
-    successNotification: (options, { service }) => ({
-      message: 'Options saved',
-      description: `${service.name} has ${options.length} ${options.length === 1 ? 'option' : 'options'}.`,
     }),
     errorNotification: NO_ERROR_TOAST,
   });

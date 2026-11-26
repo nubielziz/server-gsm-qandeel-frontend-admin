@@ -1,6 +1,6 @@
 // Builds the mock stores from the demo's own seed (`S.services`, `S.merchants`, `GROUPS`, `S.groupPrices`,
-// `S.clientPrices`, `S.categoryRules`), mapped to the API's shapes. The demo has no categories, option lists, custom fields or code stock as
-// records, so those are made up: categories from the services' category names, a few fields and options, and codes for two
+// `S.clientPrices`, `S.categoryRules`), mapped to the API's shapes. The demo has no categories, custom fields or code stock as
+// records, so those are made up: categories from the services' category names, a custom field, and codes for two
 // digital-code services (Z3X credits and the UnlockTool licence), which are delivered from code stock. A service's suppliers are not kept here: the rows join them from the
 // suppliers mock's links (catalog.ts).
 import { demoNumericId, demoRows, toIso, type DemoState } from '@/mocks/seed';
@@ -123,7 +123,6 @@ export function buildStores(state: DemoState): Stores {
     status: s.status,
     auto: s.auto,
     fields: [],
-    options: [],
     groupPrices: [],
   }));
   const byCode = (code: string) => services.find((service) => service.code === code);
@@ -135,7 +134,7 @@ export function buildStores(state: DemoState): Stores {
     byCode(code)?.groupPrices.push({ groupId: GROUP_IDS[group] ?? 1, price: price.toFixed(4) });
   }
 
-  // A custom field on the Z3X credits and option lists on the AT&T unlock, so the dialogs have something to show.
+  // A custom field on the Z3X credits, so the Field part has something to show.
   const z3x = byCode('SRV-Z3X-10');
   if (z3x) {
     z3x.fields = [
@@ -149,14 +148,6 @@ export function buildStores(state: DemoState): Stores {
         name: 'user',
         isMainInput: false,
       },
-    ];
-  }
-  const att = byCode('IMEI-ATT-USA');
-  if (att) {
-    att.options = [
-      { list: 'model', value: 'iphone15', label: 'iPhone 15', supplierValue: '' },
-      { list: 'model', value: 'iphone14', label: 'iPhone 14', supplierValue: '' },
-      { list: 'network', value: 'att', label: 'AT&T USA', supplierValue: 'ATT' },
     ];
   }
 

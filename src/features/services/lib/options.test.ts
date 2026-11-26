@@ -1,6 +1,6 @@
-// Tests for the Options and Fields dialogs' text forms: option lists as lines, a select field's choices, and the field rows.
+// Tests for the Custom Fields section's text forms: a select field's choices, and the field rows (the hidden key and pattern, the error targets).
 import { describe, expect, it } from 'vitest';
-import type { ServiceField, ServiceOption } from '../types';
+import type { ServiceField } from '../types';
 import {
   blankField,
   fieldDraft,
@@ -9,67 +9,7 @@ import {
   toServiceField,
   withMainInput,
 } from './fields';
-import {
-  blankValueLine,
-  choicesText,
-  entriesText,
-  optionLines,
-  parseChoices,
-  parseOptionLines,
-} from './options';
-
-const option = (
-  list: ServiceOption['list'],
-  value: string,
-  label = value,
-  supplierValue = '',
-): ServiceOption => ({
-  list,
-  value,
-  label,
-  supplierValue,
-});
-
-describe('option lines', () => {
-  const saved = [
-    option('model', 'iphone15', 'iPhone 15'),
-    option('model', 'iphone14', 'iPhone 14', 'IP14'),
-    option('network', 'att', 'AT&T USA', 'ATT'),
-    option('mep', 'plain'),
-  ];
-
-  it('writes one list as lines of value | label | supplier value, leaving out empty trailing parts', () => {
-    expect(optionLines(saved, 'model')).toBe('iphone15 | iPhone 15\niphone14 | iPhone 14 | IP14');
-    expect(optionLines(saved, 'network')).toBe('att | AT&T USA | ATT');
-    expect(optionLines(saved, 'mep')).toBe('plain | plain');
-    expect(optionLines(saved, 'model').split('\n')).toHaveLength(2);
-  });
-
-  it('reads lines back, with the label defaulting to the value', () => {
-    expect(parseOptionLines('a\nb | B\n\n  c | C | sup  \n', 'mep')).toEqual([
-      option('mep', 'a'),
-      option('mep', 'b', 'B'),
-      option('mep', 'c', 'C', 'sup'),
-    ]);
-  });
-
-  it('round-trips a list', () => {
-    expect(parseOptionLines(optionLines(saved, 'model'), 'model')).toEqual(
-      saved.filter((entry) => entry.list === 'model'),
-    );
-  });
-
-  it('finds the first line that has a label but no value', () => {
-    expect(blankValueLine('a\n| label\nb')).toBe(2);
-    expect(blankValueLine('a\n\nb')).toBeNull();
-    expect(blankValueLine('')).toBeNull();
-  });
-
-  it('counts entries', () => {
-    expect(entriesText(1)).toBe('1 entry');
-    expect(entriesText(0)).toBe('0 entries');
-  });
-});
+import { choicesText, parseChoices } from './options';
 
 describe('choices', () => {
   it('writes and reads a comma-separated line', () => {
@@ -87,7 +27,7 @@ describe('field rows', () => {
     fieldType: 'select',
     required: true,
     options: ['Basic', 'Pro'],
-    regex: '',
+    regex: '^\\d{15}$',
     isMainInput: false,
   };
 
@@ -104,12 +44,13 @@ describe('field rows', () => {
     });
   });
 
-  it('go from a saved field to a row and back, keeping its hidden key', () => {
+  it('go from a saved field to a row and back, keeping its hidden key and its hidden pattern', () => {
     expect(fieldDraft(saved)).toMatchObject({
       key: 'plan',
       name: 'Plan name',
       choices: 'Basic, Pro',
       required: true,
+      regex: '^\\d{15}$',
     });
     expect(toServiceField(fieldDraft(saved))).toEqual(saved);
     expect(toServiceField(fieldDraft({ ...saved, isMainInput: true }))).toMatchObject({ isMainInput: true });
@@ -126,6 +67,16 @@ describe('field rows', () => {
     const body = toServiceField(draft);
     expect(body).toMatchObject({ name: 'A', label: 'A label', options: [], isMainInput: false });
     expect(body).not.toHaveProperty('key');
+  });
+
+  it("send a saved field's pattern back untouched, and an empty one for a new row", () => {
+    // Nobody types a pattern here, so it is not trimmed or changed: the supplier import made it and it keeps protecting orders.
+    const odd = { ...saved, regex: '  ^[A-Z]{2}\\d+$ ' };
+    expect(toServiceField(fieldDraft(odd))).toMatchObject({ key: 'plan', regex: '  ^[A-Z]{2}\\d+$ ' });
+    expect(toServiceField(fieldDraft(saved))).toMatchObject({ regex: '^\\d{15}$' });
+    const added = toServiceField({ ...blankField(), name: 'Serial' });
+    expect(added).toMatchObject({ name: 'Serial', regex: '' });
+    expect(added).not.toHaveProperty('key');
   });
 
   it('send the label as typed, so an empty one asks the server for the name', () => {
@@ -155,19 +106,20 @@ describe('field rows', () => {
       'fields.0.label',
       'fields.0.fieldType',
       'fields.0.required',
-      'fields.0.regex',
       'fields.1.name',
       'fields.1.label',
       'fields.1.fieldType',
       'fields.1.required',
-      'fields.1.regex',
       'fields.1.choices',
     ]);
-    // The hidden key and the main-input flag have no cell: their messages show under the row's name. `options` is the choices of a choice list only.
+    // The hidden key, the hidden pattern and the main-input flag have no cell: their messages show under the row's name. `options` is the
+    // choices of a choice list only.
     expect(aliases).toEqual({
       'fields.0.key': 'fields.0.name',
+      'fields.0.regex': 'fields.0.name',
       'fields.0.isMainInput': 'fields.0.name',
       'fields.1.key': 'fields.1.name',
+      'fields.1.regex': 'fields.1.name',
       'fields.1.isMainInput': 'fields.1.name',
       'fields.1.options': 'fields.1.choices',
     });

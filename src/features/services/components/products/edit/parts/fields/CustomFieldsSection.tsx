@@ -53,7 +53,8 @@ export function CustomFieldsSection({ service, lock, onDirtyChange }: FieldsSect
         <p className="mb-3 text-sm text-ink2">
           What the buyer fills in when ordering, in this order: the order form shows only these fields. The
           name is what the supplier receives; the label is what buyers read (it is the name when left empty).
-          A pattern is a regular expression the answer must match; it is optional.
+          A field made by the supplier import keeps the answer pattern the import gave it: the pattern is not
+          shown here and saving leaves it as it is.
         </p>
         <MainInputWarning serviceType={service.type} hasMainInput={mainInputs.some(Boolean)} />
         <DataTable

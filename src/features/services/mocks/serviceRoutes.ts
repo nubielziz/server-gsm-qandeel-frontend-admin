@@ -150,7 +150,6 @@ export const serviceRoutes: HttpHandler[] = [
         status: 'active',
         auto: true,
         fields: [],
-        options: [],
         groupPrices: [],
       };
       const draft = applyFields(blank, body, problems);

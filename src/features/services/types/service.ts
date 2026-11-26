@@ -1,10 +1,10 @@
 // Types of the services catalog (the rows of the services lists): a service as the API sends it, its detail with the custom
-// fields, option lists and group prices, and the bodies of the catalog endpoints. The map gives the tables but no bodies
+// fields and group prices, and the bodies of the catalog endpoints. The map gives the tables but no bodies
 // (MISMATCHES M10), so every shape below is an assumed contract, narrowed from the generated rows in `schema.gen.ts`.
 import type { NamedRef, ServiceType } from '@/features/orders';
 import type { RetailPriceSource } from '@/features/storefront';
 import type { Decimal, Id, IsoDateTime, Money } from '@/lib/api';
-import type { ServiceGroupPriceRow, ServiceOptionRow, ServiceRow } from '@/lib/api/schema.gen';
+import type { ServiceGroupPriceRow, ServiceRow } from '@/lib/api/schema.gen';
 
 // The orders feature's id-and-name join and service type, re-exported so this feature's types read as one set.
 export type { NamedRef, ServiceType };
@@ -119,7 +119,9 @@ export type ServiceFieldType = 'text' | 'number' | 'select' | 'textarea';
  * field's one visible name: what a supplier receives, unique in the service without regard to letter case. `key` is a hidden
  * identifier the server makes from the name when the field is created; nobody types it and it never changes (the shop and merchant
  * forms send their answers under it). `label` is the text buyers read. `isMainInput` marks the one box that travels as the
- * order's own input (an IMEI, an account, a serial number); a service has at most one. The wire is not in the generated map rows
+ * order's own input (an IMEI, an account, a serial number); a service has at most one. `regex` is the answer pattern the supplier import
+ * made from the supplier's lengths; the console shows no input for it and sends a saved field's pattern back untouched (decision 030).
+ * The wire is not in the generated map rows
  * (they come from the read-only map), so this type is an assumed contract (MISMATCHES M368).
  */
 export type ServiceField = {
@@ -149,25 +151,19 @@ export type ServiceFieldInput = {
   isMainInput?: boolean;
 };
 
-/** The three option lists of a service: device models, networks (carriers) and MEP values. */
-export type ServiceOptionList = 'model' | 'network' | 'mep';
-
-/** One entry of an option list (`service_options`). */
-export type ServiceOption = Pick<ServiceOptionRow, 'value' | 'label' | 'supplierValue'> & {
-  list: ServiceOptionList;
-};
-
 /** The fixed price of a service for one rank; a group with no entry pays the base price less its discount. */
 export type ServiceGroupPrice = Pick<ServiceGroupPriceRow, 'groupId' | 'price'>;
 
 /**
  * `GET /admin/services/:id` (assumed contract): the list row plus the parts the editing dialogs start from. There is
- * no read route for the parts alone, so the server is assumed to embed them. `publishFailure` needs `storefront:read` (left out
+ * no read route for the parts alone, so the server is assumed to embed them. The server still sends `options` (the old model,
+ * network and MEP lists, decision 030): the console does not read it, and the mock sends it empty so the two answers keep one shape. `publishFailure` needs `storefront:read` (left out
  * without it) and is `null` when the service has no refused publish attempt to show.
  */
 export type ServiceDetail = Service & {
   fields: ServiceField[];
-  options: ServiceOption[];
+  /** The stored option lists, still part of the server's answer; nothing in the console reads them (decision 030). */
+  options: readonly unknown[];
   groupPrices: ServiceGroupPrice[];
   publishFailure?: PublishFailure | null;
 };
@@ -206,9 +202,6 @@ export type UpdateServiceBody = Partial<CreateServiceBody> & {
 
 /** Body of `PUT /admin/services/:id/fields` (assumed contract): the whole list, in order. */
 export type ReplaceFieldsBody = { fields: ServiceFieldInput[] };
-
-/** Body of `PUT /admin/services/:id/options` (assumed contract): all three lists together. */
-export type ReplaceOptionsBody = { options: ServiceOption[] };
 
 /**
  * Body of `PUT /admin/services/:id/group-prices`: one entry per group that has a fixed price, and `retailPriceSeen`, the

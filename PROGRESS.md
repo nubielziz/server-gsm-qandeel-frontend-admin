@@ -11,6 +11,15 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): the Options section and the Pattern column are removed (decision 030)
+
+On the owner's order the Field part of a service lost its Options section (Models, Networks, MEP) with its call of `PUT /admin/services/:id/options`
+(retired by the backend, its decision 072; production held no option rows) and the Pattern column of the Custom Fields table. A saved field's
+pattern is a hidden value of the form, sent back untouched on save (`''` for a new field): production's 354 patterns come from the supplier import
+and keep judging orders. The mock still answers `options: []` on the service read, as the server does. Built by a Sonnet implementer, reviewed by
+an Opus reviewer (ok), finished by the lead. Checks: typecheck, lint, route coverage, live routes, the services tests (948 pass), the build.
+Merged and pushed on the owner's word.
+
 ## Status (2026-11-26): custom fields are the whole order form (decision 029)
 
 The shop's order forms draw only a service's custom fields (owner's ruling; shop decision 007, backend 070). The Custom Fields section says so:

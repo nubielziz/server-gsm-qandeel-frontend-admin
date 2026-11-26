@@ -247,7 +247,6 @@ export const LIVE_ROUTE_KEYS: readonly string[] = [
   'PUT /admin/services/:id/fields',
   'PUT /admin/services/:id/group-prices',
   'POST /admin/services/:id/inventory/import',
-  'PUT /admin/services/:id/options',
   'GET /admin/services/:id/supplier-links',
   'PUT /admin/services/:id/supplier-links',
   'POST /admin/services/bulk-price/apply',

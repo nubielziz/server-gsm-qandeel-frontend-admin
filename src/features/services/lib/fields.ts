@@ -1,12 +1,14 @@
 // The Custom Fields section's form rows (the edit view's Field part) and how they become a service's custom fields. A select field's choices are one comma-separated
-// line in the form and a list in the request. The checks are hints; the server validates the fields for real.
+// line in the form and a list in the request. A saved field's hidden key and hidden pattern travel through the form untouched. The checks
+// are hints; the server validates the fields for real.
 import { choicesText, parseChoices } from './options';
 import type { ServiceField, ServiceFieldInput, ServiceFieldType } from '../types';
 
 /**
  * One field as the form holds it: every value is the text or the switch of its input. `key` is the hidden identifier of a saved field
- * (`''` for a new row, which the server gives one from its name); it has no input and is sent back untouched. `isMainInput` has no
- * column either: the row's badge and its switch button show and change it.
+ * (`''` for a new row, which the server gives one from its name); it has no input and is sent back untouched. `regex` is the same: the
+ * answer pattern a supplier import made for a saved field (`''` for a new row); nobody types it and it is sent back untouched
+ * (decision 030). `isMainInput` has no column either: the row's badge and its switch button show and change it.
  */
 export type FieldDraft = {
   key: string;
@@ -52,7 +54,8 @@ export function fieldDraft(field: ServiceField): FieldDraft {
 
 /**
  * The request entry for a row. Only a choice list keeps its choices. A new row has no `key` (the server makes it); the label goes as
- * typed, so an empty label asks the server to store the name.
+ * typed, so an empty label asks the server to store the name. The pattern goes exactly as the saved field had it (`''` for a new row):
+ * no input changes it, so it is not trimmed either.
  */
 export function toServiceField(draft: FieldDraft): ServiceFieldInput {
   const key = draft.key.trim();
@@ -63,7 +66,7 @@ export function toServiceField(draft: FieldDraft): ServiceFieldInput {
     fieldType: draft.fieldType,
     required: draft.required,
     options: draft.fieldType === 'select' ? parseChoices(draft.choices) : [],
-    regex: draft.regex.trim(),
+    regex: draft.regex,
     isMainInput: draft.isMainInput,
   };
 }
@@ -95,13 +98,13 @@ export function withMainInput(drafts: readonly FieldDraft[], index: number, on: 
 }
 
 // The inputs of a row that have an error line under them. The choices input is not here: it exists only on a choice list.
-const ROW_INPUTS = ['name', 'label', 'fieldType', 'required', 'regex'] as const;
+const ROW_INPUTS = ['name', 'label', 'fieldType', 'required'] as const;
 
 /**
  * Where a server message about the rows can be shown: the names of the inputs that have an error line under them (every input of every
  * row; the choices only on a choice list), and the API's names mapped to the form's: the choices (`options`) to the choices input,
- * and the hidden key (a field that no longer exists) and the main-input flag (a second main input) to the row's name input, the only
- * visible cell they are about. A message about anything else (the list itself, a column the row has no input for) is left for the
+ * and the hidden key (a field that no longer exists), the hidden pattern and the main-input flag (a second main input) to the row's name
+ * input, the only visible cell they are about. A message about anything else (the list itself, a column the row has no input for) is left for the
  * dialog's error slot, instead of being set on a name nobody can see.
  */
 export function fieldErrorTargets(drafts: readonly FieldDraft[]): {
@@ -114,6 +117,7 @@ export function fieldErrorTargets(drafts: readonly FieldDraft[]): {
     const row = `fields.${index}`;
     names.push(...ROW_INPUTS.map((input) => `${row}.${input}`));
     aliases[`${row}.key`] = `${row}.name`;
+    aliases[`${row}.regex`] = `${row}.name`;
     aliases[`${row}.isMainInput`] = `${row}.name`;
     if (draft.fieldType === 'select') {
       names.push(`${row}.choices`);

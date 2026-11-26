@@ -58,12 +58,15 @@ export function toService(stores: Stores, row: MockService, join: ServiceJoin): 
   };
 }
 
-/** `GET /admin/services/:id`: the row plus its fields, options and group prices, and the failed publish with `storefront:read`. */
+/**
+ * `GET /admin/services/:id`: the row plus its fields and group prices, and the failed publish with `storefront:read`. `options` is the
+ * server's old option lists: always empty here, and unread by the console (decision 030).
+ */
 export function toDetail(stores: Stores, row: MockService, join: ServiceJoin): ServiceDetail {
   return {
     ...toService(stores, row, join),
     fields: row.fields,
-    options: row.options,
+    options: [],
     groupPrices: row.groupPrices,
     ...(join.storefront ? { publishFailure: join.shop(row.id).publishFailure } : {}),
   };

@@ -19,7 +19,6 @@ import {
   listServices,
   replaceServiceFields,
   replaceServiceGroupPrices,
-  replaceServiceOptions,
   servicesResources,
   updateCategory,
   updateService,
@@ -135,14 +134,15 @@ describe('listServices', () => {
 });
 
 describe('getService', () => {
-  it('reads one service with its fields, options and group prices', async () => {
-    expect(await getService(ATT)).toMatchObject({
+  it('reads one service with its fields and group prices; the option lists the server still sends are empty', async () => {
+    const att = await getService(ATT);
+    expect(att).toMatchObject({
       id: ATT,
       name: 'AT&T USA Premier Unlock',
       groupPrices: [{ groupId: 3, price: '15.9000' }],
-      options: [{ list: 'model' }, { list: 'model' }, { list: 'network' }],
       fields: [],
     });
+    expect(att.options).toEqual([]);
     expect((await getService(Z3X)).fields).toMatchObject([
       { key: 'account', fieldType: 'text', required: true },
     ]);
@@ -625,15 +625,6 @@ describe('the parts of a service', () => {
       fields: [{ key: 'account', name: 'user', fieldType: 'text', required: true, options: [], regex: '' }],
     });
     expect(kept).toMatchObject({ key: 'account', label: 'Z3X account', isMainInput: true });
-  });
-
-  it('replaces the option lists', async () => {
-    const requests = recordRequests();
-    const options = [{ list: 'mep' as const, value: 'm1', label: 'M1', supplierValue: '' }];
-    expect(await replaceServiceOptions(ATT, { options })).toEqual(options);
-    expect(requests.last()).toMatchObject({ method: 'PUT', body: { options } });
-    expect(requests.last().url.pathname).toBe('/admin/services/5/options');
-    expect((await getService(ATT)).options).toEqual(options);
   });
 
   it('replaces the group prices, for any group id (the accounts feature owns the groups)', async () => {

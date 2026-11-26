@@ -27,6 +27,8 @@ const RETIRED_TAC_CATALOG =
   'Retired (decision 025): the TAC catalogue tab was removed from Shop content, so the console no longer calls this route.';
 const RETIRED_LANDING_GENERATOR =
   'Retired (decision 025): landing pages and their draft generator were removed from Shop content, so the console no longer calls this route.';
+const RETIRED_SERVICE_OPTIONS =
+  'Retired (decision 030): the Options section (the model, network and MEP lists) was removed from the edit view, so the console no longer calls this route.';
 const EXCLUSIONS = {
   'GET /admin/webhook-deliveries': RETIRED_WEBHOOKS,
   'GET /admin/webhook-deliveries/:id': RETIRED_WEBHOOKS,
@@ -56,6 +58,7 @@ const EXCLUSIONS = {
   'POST /admin/tac-catalog': RETIRED_TAC_CATALOG,
   'PATCH /admin/tac-catalog/:id': RETIRED_TAC_CATALOG,
   'POST /admin/content-pages/generate': RETIRED_LANDING_GENERATOR,
+  'PUT /admin/services/:id/options': RETIRED_SERVICE_OPTIONS,
 };
 
 /** Finds every .ts/.tsx file under a folder (no dependency on glob libraries). */

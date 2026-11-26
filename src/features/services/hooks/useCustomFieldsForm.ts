@@ -18,7 +18,8 @@ import { useReplaceFields } from './useServicePartMutations';
  * The form, its row list (`list`: append, move, remove), its `submit` (plug it into a SectionForm) and `setMainInput` (turns the main
  * input of a row on or off; a service has at most one, so turning one on turns the others off). A name used by two rows, without regard
  * to letter case, is refused here with the row's message; any other refusal of the server lands under the input it names (the server
- * calls the choices `options`) and the rest in the section's failure line.
+ * calls the choices `options`; a message about the hidden key or the hidden pattern lands under the row's name) and the rest in the
+ * section's failure line. A saved field's pattern has no input and goes back in the body as it was saved.
  */
 export function useCustomFieldsForm(service: ServiceDetail) {
   const replace = useReplaceFields();

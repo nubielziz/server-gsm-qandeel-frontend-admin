@@ -1,7 +1,7 @@
 // customFieldColumns: the columns of the Custom Fields table of the edit view's Field part. Every cell is an input of the section's form
 // (registered under `fields.<row>.<name>`, so the server's field messages find their input), with its error line under it in the cell.
 // The accessible names are "Name of field 2", "Field 2 is required" and so on, numbered from 1 in the buyer's order. A field has one
-// visible name: the hidden key of a saved field lives in the form's values and has no cell.
+// visible name: the hidden key and the hidden pattern of a saved field live in the form's values and have no cell (decisions 024, 030).
 import type { UseFormReturn } from 'react-hook-form';
 import { Badge, Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
 import type { FieldsFormValues } from '../../../../../lib/fields';
@@ -35,8 +35,8 @@ export interface CustomFieldColumnsArgs {
 }
 
 /**
- * The seven columns, left to right: the number, the name (the main input shows a badge beside it), the label, the type (a choice list
- * shows its choices under it), required, the pattern and the row's buttons (the main input switch, up, down, remove).
+ * The six columns, left to right: the number, the name (the main input shows a badge beside it), the label, the type (a choice list
+ * shows its choices under it), required and the row's buttons (the main input switch, up, down, remove).
  */
 export function customFieldColumns({
   form,
@@ -140,20 +140,6 @@ export function customFieldColumns({
           </>
         );
       },
-    },
-    {
-      key: 'regex',
-      label: 'Pattern',
-      render: ({ index }) => (
-        <TextCell
-          n={index + 1}
-          label="Pattern"
-          mono
-          lock={lock}
-          error={rowErrors?.[index]?.regex?.message}
-          field={register(`fields.${index}.regex`)}
-        />
-      ),
     },
     {
       key: 'actions',
