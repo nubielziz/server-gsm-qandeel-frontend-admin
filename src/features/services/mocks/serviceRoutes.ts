@@ -6,6 +6,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw';
 import { money } from '@/lib/format';
 import { orderStore } from '@/mocks/orders';
 import { serviceJoin, factsOf, passesListFilters, readListFilters } from './serviceFacts';
+import { defaultFieldsOf } from './defaultFields';
 import { toDetail, toService } from './dto';
 import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { storedOrder } from './priceGridRoutes';
@@ -162,8 +163,9 @@ export const serviceRoutes: HttpHandler[] = [
         const message = `The code ${draft.code} is already used by ${taken.name}.`;
         return conflict('CODE_TAKEN', 'Code already used', message, [{ field: 'code', message }]);
       }
-      const { id: _id, ...fields } = draft;
-      const created = stores.services.insert(fields);
+      // An IMEI service made by hand starts with the default IMEI field (decision 031); the other types start with none.
+      const { id: _id, ...row } = draft;
+      const created = stores.services.insert({ ...row, fields: defaultFieldsOf(row.type) });
       return HttpResponse.json(toService(stores, created, await serviceJoin()), { status: 201 });
     }),
   ),

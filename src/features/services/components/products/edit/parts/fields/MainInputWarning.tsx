@@ -1,10 +1,10 @@
-// MainInputWarning: the advice line of the Custom Fields section for an IMEI service whose draft has no main input. The shop's order form draws
-// only a service's custom fields (decision 029), so an IMEI service with none marked "Main input" has no box for the IMEI and cannot be ordered.
+// MainInputWarning: the advice line of the Custom Fields section for an IMEI service whose draft has no main input. An IMEI service no longer
+// forces an IMEI (decision 031): its order form is its custom fields, and the main input is the one the supplier receives as the order's own.
 import { Icon } from '@/components/ui';
 import type { ServiceType } from '../../../../../types';
 
 export interface MainInputWarningProps {
-  /** The service's type: only an IMEI service needs a main input for the shop to sell it. */
+  /** The service's type: only an IMEI service gets the advice. */
   serviceType: ServiceType;
   /** Whether a row of the current draft (saved or not) is the main input. */
   hasMainInput: boolean;
@@ -21,8 +21,8 @@ export function MainInputWarning({ serviceType, hasMainInput }: MainInputWarning
     <p role="status" className="mb-3 flex gap-2 rounded-md bg-warn-bg p-2.5 text-sm text-warn-fg">
       <Icon name="alert" className="ic-sm mt-0.5 flex-none" />
       <span>
-        This IMEI service has no main input field. Buyers cannot order it in the shop until one field is
-        marked Main input.
+        No field is marked Main input. Mark the field the order is about (the IMEI, a serial, an ECID) so the
+        supplier receives it.
       </span>
     </p>
   );

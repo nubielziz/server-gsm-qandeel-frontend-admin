@@ -8,8 +8,8 @@ import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
-import { getService } from '../../../../api';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { createService, getService } from '../../../../api';
 import { servicesStore } from '../../../../mocks/store';
 import { openProducts } from '../../../../test/productsPage';
 import { recordRequests } from '../../../../test/requests';
@@ -234,6 +234,31 @@ describe('Field: the custom fields', () => {
     expect((await getService(Z3X)).fields[0]).toMatchObject({ name: 'user' });
   });
 
+  it.each([
+    ['an IMEI service', AT_T, 'imei'],
+    ['a server service', Z3X, 'server'],
+  ])('offers the IMEI (15 digits) type on %s, and saves a field of it', async (_name, id, type) => {
+    const user = userEvent.setup();
+    await openFields(id, type);
+    const fields = section('Custom Fields');
+    await fields.findByRole('button', { name: 'Add a field' });
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    const count = (await getService(id)).fields.length;
+    const menu = fields.getByRole('combobox', { name: `Type of field ${count + 1}` });
+    expect(
+      within(menu)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Text', 'Number', 'Choice list', 'Long text', 'IMEI (15 digits)']);
+    await user.type(fields.getByRole('textbox', { name: `Name of field ${count + 1}` }), 'Device IMEI');
+    await user.selectOptions(menu, 'IMEI (15 digits)');
+    expect(fields.queryByRole('textbox', { name: `Choices of field ${count + 1}` })).not.toBeInTheDocument();
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    const saved = (await getService(id)).fields;
+    expect(saved[count]).toMatchObject({ name: 'Device IMEI', fieldType: 'imei', options: [] });
+  });
+
   it('shows the choices box only for a choice list', async () => {
     const user = userEvent.setup();
     await openFields(Z3X, 'server');
@@ -423,10 +448,11 @@ describe('Field: the main input', () => {
   });
 });
 
-// The shop's order form draws only the service's custom fields (decision 029), so an IMEI service needs one marked Main input.
+// The shop's order form draws only the service's custom fields (decision 029); an IMEI service forces nothing (decision 031), so the
+// warning is only advice to mark the field the order is about.
 describe('Field: the main input warning', () => {
   const WARNING =
-    'This IMEI service has no main input field. Buyers cannot order it in the shop until one field is marked Main input.';
+    'No field is marked Main input. Mark the field the order is about (the IMEI, a serial, an ECID) so the supplier receives it.';
 
   it('says so on an IMEI service with no fields, and follows the main input switch of the draft', async () => {
     const user = userEvent.setup();
@@ -470,13 +496,33 @@ describe('Field: the main input warning', () => {
     expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
   });
 
+  it('does not show for an IMEI service added by hand, whose default IMEI field is its main input', async () => {
+    await signInAs();
+    const made = await createService({
+      name: 'Hand Made',
+      code: 'IMEI-HAND-1',
+      categoryId: 1,
+      type: 'imei',
+      slaMinutes: 30,
+      basePrice: '4.0000',
+    });
+    await openFields(made.id, 'imei');
+    const fields = section('Custom Fields');
+    expect(await fields.findByRole('textbox', { name: 'Name of field 1' })).toHaveValue('IMEI');
+    expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveValue('IMEI');
+    expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveValue('imei');
+    expect(fields.getByRole('checkbox', { name: 'Field 1 is required' })).toBeChecked();
+    expect(fields.getByText('Main input')).toBeInTheDocument();
+    expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
+  });
+
   it('explains the main input on its switch', async () => {
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     const main = await fields.findByRole('button', { name: 'Main input of field 1' });
     expect(main).toHaveAttribute(
       'title',
-      'The main input is the field the order itself is about, such as the IMEI; on an IMEI service the buyer types the IMEI in it. A service has at most one.',
+      "The main input is the field the order itself is about, such as the IMEI, a serial number or an ECID: the supplier receives it as the order's own input. A service has at most one.",
     );
   });
 });

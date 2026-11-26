@@ -16,10 +16,11 @@ export function parseChoices(text: string): string[] {
     .filter((choice) => choice !== '');
 }
 
-/** The kinds of custom field and the words that name them. */
+/** The kinds of custom field and the words that name them. The menu is the same for every service type (decision 031). */
 export const FIELD_TYPE_OPTIONS: readonly (SelectOption & { value: ServiceFieldType })[] = [
   { value: 'text', label: 'Text' },
   { value: 'number', label: 'Number' },
   { value: 'select', label: 'Choice list' },
   { value: 'textarea', label: 'Long text' },
+  { value: 'imei', label: 'IMEI (15 digits)' },
 ];

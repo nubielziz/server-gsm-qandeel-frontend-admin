@@ -9,13 +9,25 @@ import {
   toServiceField,
   withMainInput,
 } from './fields';
-import { choicesText, parseChoices } from './options';
+import { choicesText, FIELD_TYPE_OPTIONS, parseChoices } from './options';
 
 describe('choices', () => {
   it('writes and reads a comma-separated line', () => {
     expect(choicesText(['Red', 'Green'])).toBe('Red, Green');
     expect(parseChoices(' Red, ,Green ,')).toEqual(['Red', 'Green']);
     expect(parseChoices('')).toEqual([]);
+  });
+});
+
+describe('the field type menu', () => {
+  it('offers the five types, the IMEI type last, as "IMEI (15 digits)"', () => {
+    expect(FIELD_TYPE_OPTIONS.map((option) => [option.value, option.label])).toEqual([
+      ['text', 'Text'],
+      ['number', 'Number'],
+      ['select', 'Choice list'],
+      ['textarea', 'Long text'],
+      ['imei', 'IMEI (15 digits)'],
+    ]);
   });
 });
 
@@ -54,6 +66,22 @@ describe('field rows', () => {
     });
     expect(toServiceField(fieldDraft(saved))).toEqual(saved);
     expect(toServiceField(fieldDraft({ ...saved, isMainInput: true }))).toMatchObject({ isMainInput: true });
+  });
+
+  it('keep the IMEI type and the hidden pattern of a saved field through a row and back', () => {
+    // The pattern is untrimmed on purpose: like any saved field's (decision 030), it goes back exactly as it came.
+    const imei: ServiceField = {
+      key: 'imei',
+      name: 'IMEI',
+      label: 'IMEI',
+      fieldType: 'imei',
+      required: true,
+      options: [],
+      regex: ' ^\\d{15}$ ',
+      isMainInput: true,
+    };
+    expect(fieldDraft(imei)).toMatchObject({ fieldType: 'imei', choices: '', regex: ' ^\\d{15}$ ' });
+    expect(toServiceField(fieldDraft(imei))).toEqual(imei);
   });
 
   it('send no key for a new row, and keep choices only for a choice list and trim the text', () => {

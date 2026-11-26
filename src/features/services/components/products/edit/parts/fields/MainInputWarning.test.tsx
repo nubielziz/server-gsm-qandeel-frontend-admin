@@ -6,12 +6,17 @@ import type { ServiceType } from '../../../../../types';
 import { MainInputWarning } from './MainInputWarning';
 
 const TEXT =
-  'This IMEI service has no main input field. Buyers cannot order it in the shop until one field is marked Main input.';
+  'No field is marked Main input. Mark the field the order is about (the IMEI, a serial, an ECID) so the supplier receives it.';
 
 describe('MainInputWarning', () => {
-  it('warns when an IMEI service has no main input', () => {
+  it('advises marking a main input when an IMEI service has none', () => {
     render(<MainInputWarning serviceType="imei" hasMainInput={false} />);
     expect(screen.getByRole('status')).toHaveTextContent(TEXT);
+  });
+
+  it('no longer says that buyers cannot order the service', () => {
+    render(<MainInputWarning serviceType="imei" hasMainInput={false} />);
+    expect(screen.getByRole('status')).not.toHaveTextContent(/cannot order/i);
   });
 
   it('is hidden once a row of the draft is the main input', () => {

@@ -11,6 +11,14 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): IMEI is a field type (decision 031)
+
+On the owner's order an IMEI service no longer forces an IMEI (backend decision 073): the field type list gains "IMEI (15 digits)" for every service
+type, the warning of an IMEI service without a main input is advice ("Mark the field the order is about ... so the supplier receives it"), and the mock
+gives an IMEI service created by hand its default field (Name and label IMEI, type imei, required, main input), as the server does. Built by a Sonnet
+implementer, reviewed by an Opus reviewer (ok). Checks: typecheck, lint, route coverage, live routes, the services tests (956 pass), the build.
+Merged, not pushed (waiting for the owner's word).
+
 ## Status (2026-11-26): the Options section and the Pattern column are removed (decision 030)
 
 On the owner's order the Field part of a service lost its Options section (Models, Networks, MEP) with its call of `PUT /admin/services/:id/options`

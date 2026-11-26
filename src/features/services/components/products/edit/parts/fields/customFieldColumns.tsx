@@ -14,7 +14,7 @@ const INVALID = 'aria-[invalid=true]:border-crit-dot';
 
 // What the switch of a row's main input says when nothing locks it.
 const MAIN_INPUT_HINT =
-  'The main input is the field the order itself is about, such as the IMEI; on an IMEI service the buyer types the IMEI in it. A service has at most one.';
+  "The main input is the field the order itself is about, such as the IMEI, a serial number or an ECID: the supplier receives it as the order's own input. A service has at most one.";
 
 /** A row of the table: the id React keys it by (the form's row id) and its place in the form's list. */
 export type FieldRowRef = { id: string; index: number };

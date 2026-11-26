@@ -1,7 +1,8 @@
 // CustomFieldsSection: "Custom Fields", the second section of the edit view's Field part: the fields a buyer fills in when ordering, as a
 // dense table of inputs in the buyer's order, with Add a field and its own Save. Saving replaces the whole list (useCustomFieldsForm).
-// The shop's order form draws only these fields (decision 029), so an IMEI service needs one of them marked Main input: the section warns
-// when its draft has none (the service's type is `service.type`, the record the editor already loaded).
+// The shop's order form draws only these fields (decision 029) and each is judged by its own type, Required tick and pattern (decision 031):
+// an IMEI service forces nothing, but the section advises marking one Main input when its draft has none (the service's type is
+// `service.type`, the record the editor already loaded).
 import { Button, DataTable, Icon, SectionHeading, SectionForm, useReportDirty } from '@/components/ui';
 import { useCustomFieldsForm } from '../../../../../hooks/useCustomFieldsForm';
 import { blankField } from '../../../../../lib/fields';
@@ -53,8 +54,9 @@ export function CustomFieldsSection({ service, lock, onDirtyChange }: FieldsSect
         <p className="mb-3 text-sm text-ink2">
           What the buyer fills in when ordering, in this order: the order form shows only these fields. The
           name is what the supplier receives; the label is what buyers read (it is the name when left empty).
-          A field made by the supplier import keeps the answer pattern the import gave it: the pattern is not
-          shown here and saving leaves it as it is.
+          A field of the IMEI type takes one 15-digit IMEI with a valid check digit. A field made by the
+          supplier import keeps the answer pattern the import gave it: the pattern is not shown here and
+          saving leaves it as it is.
         </p>
         <MainInputWarning serviceType={service.type} hasMainInput={mainInputs.some(Boolean)} />
         <DataTable

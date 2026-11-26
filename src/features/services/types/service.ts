@@ -111,8 +111,11 @@ export type Service = Pick<
   shopBlocked?: ShopBlockReason | null;
 };
 
-/** The kinds of custom field a buyer fills in. The list is an assumption; the map only has the column. */
-export type ServiceFieldType = 'text' | 'number' | 'select' | 'textarea';
+/**
+ * The kinds of custom field a buyer fills in. The list is an assumption; the map only has the column. `imei` (decision 031) holds one
+ * IMEI: the server reads the answer as digits and accepts 15 digits with a valid check digit; it is a kind of field for any service type.
+ */
+export type ServiceFieldType = 'text' | 'number' | 'select' | 'textarea' | 'imei';
 
 /**
  * One custom field of a service (`service_fields`), as the server sends it. Its position in the list is its `sort`. `name` is the

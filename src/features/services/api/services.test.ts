@@ -189,6 +189,26 @@ describe('createService', () => {
     expect((await getService(created.id)).slaMinutes).toBe(15);
   });
 
+  it('gives an IMEI service made by hand the default IMEI field, and the other types none', async () => {
+    const created = await createService(body);
+    expect((await getService(created.id)).fields).toEqual([
+      {
+        key: 'imei',
+        name: 'IMEI',
+        label: 'IMEI',
+        fieldType: 'imei',
+        required: true,
+        options: [],
+        regex: '',
+        isMainInput: true,
+      },
+    ]);
+    for (const type of ['server', 'remote', 'file'] as const) {
+      const other = await createService({ ...body, code: `NEW-${type}`, type });
+      expect((await getService(other.id)).fields).toEqual([]);
+    }
+  });
+
   it('refuses a code that is taken, naming the field', async () => {
     const error = await createService({ ...body, code: 'IMEI-ATT-USA' }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
@@ -579,6 +599,19 @@ describe('the parts of a service', () => {
       ],
     });
     expect(saved.map((field) => field.key)).toEqual(['a'.repeat(60), `${'a'.repeat(58)}_2`]);
+  });
+
+  it('takes a field of the imei type, on a service of any type', async () => {
+    const row = { name: 'Device IMEI', fieldType: 'imei' as const, required: true, options: [], regex: '' };
+    for (const id of [ATT, Z3X]) {
+      const [saved] = await replaceServiceFields(id, { fields: [row] });
+      expect(saved).toMatchObject({ key: 'device_imei', fieldType: 'imei', required: true });
+      expect((await getService(id)).fields).toMatchObject([{ fieldType: 'imei' }]);
+    }
+    const error = await replaceServiceFields(ATT, {
+      fields: [{ ...row, fieldType: 'mac' as unknown as 'imei' }],
+    }).catch((e: unknown) => e);
+    expect((error as ApiError).fieldErrors['fields.0.fieldType']).toEqual(['Choose a type.']);
   });
 
   it('makes a field named IMEI the main input of an IMEI service when no row is flagged', async () => {
