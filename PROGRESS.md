@@ -11,6 +11,14 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): the Custom Fields section on one left edge (decision 032, Layout)
+
+The owner rejected the look of the merged section (a table, then label-left rows that did not line up, Save floating mid-page, a dense intro) and
+approved a new one from screenshots: one sentence and a closed "How this works" disclosure with the longer help; the table and "Add a field"; a
+divider; a "Quantity" subheading with one row of stacked-label controls (the menu is labelled "Sold as") and its hint under it; Save at the left
+edge. Layout only. Built by a Sonnet implementer, looked at in a browser on mock data by the lead, reviewed by an Opus reviewer (ok). Checks:
+typecheck, lint, route coverage, the services and kit tests (1,254 pass), the build. Merged and pushed on the owner's word.
+
 ## Status (2026-11-26): the quantity sits inside Custom Fields; the main input is a tick box (decision 032)
 
 On the owner's order the Field part of a service is one section. The "Quantity Field" section is gone: its menu and boxes sit under the fields table

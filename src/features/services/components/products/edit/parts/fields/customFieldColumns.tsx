@@ -3,7 +3,7 @@
 // The accessible names are "Name of field 2", "Field 2 is required", "Main input of field 2" and so on, numbered from 1 in the buyer's
 // order. A field has one visible name: the hidden key and the hidden pattern of a saved field live in the form's values and have no cell
 // (decisions 024, 030). The main input is a tick box column after Required (decision 032); its tick boxes are registered too, so a server
-// message about the flag shows on the box, and each points at the intro sentence that says what the main input is.
+// message about the flag shows on the box, and each points at the help line that says what the main input is (in "How this works").
 import type { ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
@@ -27,7 +27,7 @@ export interface CustomFieldColumnsArgs {
   lock: PermissionLock;
   onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
-  /** The id of the intro sentence about the main input: every tick box of the column points at it (aria-describedby). */
+  /** The id of the help line about the main input (in "How this works"): every tick box of the column points at it (aria-describedby). */
   introId: string;
   /** Ticks or unticks the main input of a row; ticking it unticks the others, unticking leaves the service with none. */
   onMainInput: (index: number, on: boolean) => void;

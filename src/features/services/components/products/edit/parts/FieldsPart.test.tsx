@@ -45,7 +45,7 @@ describe('Field: the section', () => {
     // The order on the page: the table, Add a field, the quantity menu, Save.
     const table = fields.getByRole('table', { name: 'Custom fields' });
     const add = fields.getByRole('button', { name: 'Add a field' });
-    const quantity = fields.getByRole('combobox', { name: 'Quantity' });
+    const quantity = fields.getByRole('combobox', { name: 'Sold as' });
     const save = fields.getByRole('button', { name: 'Save' });
     const before = (a: Element, b: Element) =>
       Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -56,6 +56,36 @@ describe('Field: the section', () => {
     expect(screen.queryByRole('form', { name: 'Options' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Models' })).not.toBeInTheDocument();
   });
+
+  it('keeps the long help in a closed disclosure, "How this works", and the Main input item keeps the id the tick boxes point at', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    expect(fields.getByText('What the buyer fills in when ordering, in this order.')).toBeInTheDocument();
+    const summary = fields.getByText('How this works');
+    const details = summary.closest('details') as HTMLDetailsElement;
+    expect(summary.tagName).toBe('SUMMARY');
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+    // The list of the help is inside the disclosure (a closed one keeps it in the page), and the Main input item is the one the boxes name.
+    const list = within(details).getByRole('list');
+    const items = within(list).getAllByRole('listitem');
+    expect(items.map((item) => item.textContent?.split(':')[0])).toEqual([
+      'Name',
+      'Label',
+      'Type "IMEI (15 digits)"',
+      'Main input',
+      'A pattern the supplier import gave a field is kept and not shown.',
+    ]);
+    const mainInput = items[3] as HTMLElement;
+    expect(mainInput.id).not.toBe('');
+    const tick = fields.getByRole('checkbox', { name: 'Main input of field 1' });
+    expect(tick).toHaveAttribute('aria-describedby', mainInput.id);
+    expect(document.getElementById(mainInput.id)).toBe(mainInput);
+    // Opening it is the browser's own doing: the summary toggles it.
+    await userEvent.click(summary);
+    expect(details.open).toBe(true);
+  });
 });
 
 describe('Field: the quantity', () => {
@@ -63,7 +93,7 @@ describe('Field: the quantity', () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
     const quantity = section('Custom Fields');
-    const way = quantity.getByRole('combobox', { name: 'Quantity' });
+    const way = quantity.getByRole('combobox', { name: 'Sold as' });
     expect(way).toHaveValue('single');
     expect(quantity.getByText(/Every order is for 1 unit\./)).toBeInTheDocument();
     await user.selectOptions(way, 'A range');
@@ -80,7 +110,7 @@ describe('Field: the quantity', () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
     const quantity = section('Custom Fields');
-    await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'Fixed packs');
+    await user.selectOptions(quantity.getByRole('combobox', { name: 'Sold as' }), 'Fixed packs');
     await user.type(quantity.getByRole('textbox', { name: 'Pack sizes' }), '25, 5, 10');
     await user.click(quantity.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Quantity saved')).toBeInTheDocument();
@@ -91,7 +121,7 @@ describe('Field: the quantity', () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
     const quantity = section('Custom Fields');
-    await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'A range');
+    await user.selectOptions(quantity.getByRole('combobox', { name: 'Sold as' }), 'A range');
     const smallest = quantity.getByRole('textbox', { name: 'Smallest' });
     await user.clear(smallest);
     await user.type(smallest, '5');
@@ -107,7 +137,7 @@ describe('Field: the quantity', () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
     const quantity = section('Custom Fields');
-    await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'Fixed packs');
+    await user.selectOptions(quantity.getByRole('combobox', { name: 'Sold as' }), 'Fixed packs');
     await user.type(quantity.getByRole('textbox', { name: 'Pack sizes' }), ' ');
     await user.click(quantity.getByRole('button', { name: 'Save' }));
     expect(await quantity.findByText('Enter at least one pack size.')).toBeInTheDocument();
@@ -440,12 +470,12 @@ describe('Field: the main input', () => {
     ]);
   });
 
-  it('says what the main input is in the intro of the section, and every tick box points at that sentence', async () => {
+  it('says what the main input is in the help list of the section, and every tick box points at that item', async () => {
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
     const sentence = fields.getByText(
-      /Main input: the one field the order is about \(IMEI, serial, ECID\)\. The supplier receives it as the IMEI, and order lists show it\./,
+      /Main input: the one field the order is about \(IMEI, serial, ECID\); the supplier receives it as the IMEI and order lists show it\./,
     );
     expect(sentence.id).not.toBe('');
     await userEvent.click(fields.getByRole('button', { name: 'Add a field' }));
@@ -613,7 +643,7 @@ describe('Field: one Save for the fields and the quantity', () => {
     await user.type(name, value);
   };
   const changeQuantity = async ({ fields, user }: Opened, largest = '10') => {
-    await user.selectOptions(fields.getByRole('combobox', { name: 'Quantity' }), 'A range');
+    await user.selectOptions(fields.getByRole('combobox', { name: 'Sold as' }), 'A range');
     await user.type(fields.getByRole('textbox', { name: 'Largest' }), largest);
   };
   const failOnce = (method: 'put' | 'patch', path: string, field: string, message: string) =>
@@ -733,7 +763,7 @@ describe('Field: one Save for the fields and the quantity', () => {
     const page = await openZ3x();
     const { fields, requests, user } = page;
     await changeName(page);
-    await user.selectOptions(fields.getByRole('combobox', { name: 'Quantity' }), 'A range');
+    await user.selectOptions(fields.getByRole('combobox', { name: 'Sold as' }), 'A range');
     const smallest = fields.getByRole('textbox', { name: 'Smallest' });
     await user.clear(smallest);
     await user.type(smallest, '5');
@@ -768,7 +798,7 @@ describe('Field: one Save for the fields and the quantity', () => {
     await user.click(fields.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
     expect(writes(requests)).toEqual([]);
-    expect(fields.getByRole('combobox', { name: 'Quantity' })).toHaveValue('single');
+    expect(fields.getByRole('combobox', { name: 'Sold as' })).toHaveValue('single');
     expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
     expect(fields.queryByText('Saved')).not.toBeInTheDocument();
   });
@@ -783,7 +813,7 @@ describe('Field: one Save for the fields and the quantity', () => {
     expect(await fields.findByText('Saved')).toBeInTheDocument();
     expect(writes(requests)).toEqual(['PUT fields']);
     expect(screen.queryByText('Nothing changed')).not.toBeInTheDocument();
-    expect(fields.getByRole('combobox', { name: 'Quantity' })).toHaveValue('single');
+    expect(fields.getByRole('combobox', { name: 'Sold as' })).toHaveValue('single');
     expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
@@ -837,7 +867,7 @@ describe('Field: what a role may change', () => {
     await openFields(Z3X, 'server', { permissions: ['catalog:read'] });
     const title = 'You need the catalog:update permission';
     const fields = section('Custom Fields');
-    const way = fields.getByRole('combobox', { name: 'Quantity' });
+    const way = fields.getByRole('combobox', { name: 'Sold as' });
     expect(way).toBeDisabled();
     expect(way).toHaveAttribute('title', title);
     const name = await fields.findByRole('textbox', { name: 'Name of field 1' });
