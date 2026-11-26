@@ -8,7 +8,7 @@ import type { ServiceField, ServiceFieldInput, ServiceFieldType } from '../types
  * One field as the form holds it: every value is the text or the switch of its input. `key` is the hidden identifier of a saved field
  * (`''` for a new row, which the server gives one from its name); it has no input and is sent back untouched. `regex` is the same: the
  * answer pattern a supplier import made for a saved field (`''` for a new row); nobody types it and it is sent back untouched
- * (decision 030). `isMainInput` has no column either: the row's badge and its switch button show and change it.
+ * (decision 030). `isMainInput` is not registered as an input of its own: the tick box of the "Main input" column shows it and changes it through `withMainInput`.
  */
 export type FieldDraft = {
   key: string;
@@ -98,13 +98,13 @@ export function withMainInput(drafts: readonly FieldDraft[], index: number, on: 
 }
 
 // The inputs of a row that have an error line under them. The choices input is not here: it exists only on a choice list.
-const ROW_INPUTS = ['name', 'label', 'fieldType', 'required'] as const;
+const ROW_INPUTS = ['name', 'label', 'fieldType', 'required', 'isMainInput'] as const;
 
 /**
  * Where a server message about the rows can be shown: the names of the inputs that have an error line under them (every input of every
  * row; the choices only on a choice list), and the API's names mapped to the form's: the choices (`options`) to the choices input,
- * and the hidden key (a field that no longer exists), the hidden pattern and the main-input flag (a second main input) to the row's name
- * input, the only visible cell they are about. A message about anything else (the list itself, a column the row has no input for) is left for the
+ * and the hidden key (a field that no longer exists) and the hidden pattern to the row's name input, the only visible cell they are about.
+ * The main-input flag (a second main input) has its own tick box and its own error line. A message about anything else (the list itself, a column the row has no input for) is left for the
  * dialog's error slot, instead of being set on a name nobody can see.
  */
 export function fieldErrorTargets(drafts: readonly FieldDraft[]): {
@@ -118,7 +118,6 @@ export function fieldErrorTargets(drafts: readonly FieldDraft[]): {
     names.push(...ROW_INPUTS.map((input) => `${row}.${input}`));
     aliases[`${row}.key`] = `${row}.name`;
     aliases[`${row}.regex`] = `${row}.name`;
-    aliases[`${row}.isMainInput`] = `${row}.name`;
     if (draft.fieldType === 'select') {
       names.push(`${row}.choices`);
       aliases[`${row}.options`] = `${row}.choices`;

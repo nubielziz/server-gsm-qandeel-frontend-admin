@@ -1,6 +1,6 @@
 // TextCell: one text input of a row of the Custom Fields table, with its error line under it in the cell. The input is registered by the table
 // (under `fields.<row>.<name>`), so the server's field messages find it; its accessible name is "<label> of field <n>", numbered from 1.
-import { useId, type ReactNode } from 'react';
+import { useId } from 'react';
 import type { UseFormRegisterReturn } from 'react-hook-form';
 import type { PermissionLock } from '@/components/ui';
 
@@ -13,37 +13,25 @@ export interface TextCellProps {
   error?: string;
   lock: PermissionLock;
   placeholder?: string;
-  /** Something small drawn beside the input (a badge), on the same line. */
-  trailing?: ReactNode;
 }
 
 /** The input and, when the row has a problem with it, the line that says so. */
-export function TextCell({ n, label, field, error, lock, placeholder, trailing }: TextCellProps) {
+export function TextCell({ n, label, field, error, lock, placeholder }: TextCellProps) {
   const id = useId();
-  const input = (
-    <input
-      id={id}
-      className="input-sm w-full min-w-24 aria-[invalid=true]:border-crit-dot"
-      aria-label={`${label} of field ${n}`}
-      aria-invalid={error ? true : undefined}
-      aria-describedby={error ? `${id}-error` : undefined}
-      autoComplete="off"
-      placeholder={placeholder}
-      disabled={lock.disabled}
-      title={lock.title}
-      {...field}
-    />
-  );
   return (
     <>
-      {trailing ? (
-        <span className="flex items-center gap-2">
-          {input}
-          <span className="flex-none">{trailing}</span>
-        </span>
-      ) : (
-        input
-      )}
+      <input
+        id={id}
+        className="input-sm w-full min-w-24 aria-[invalid=true]:border-crit-dot"
+        aria-label={`${label} of field ${n}`}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        autoComplete="off"
+        placeholder={placeholder}
+        disabled={lock.disabled}
+        title={lock.title}
+        {...field}
+      />
       {error && (
         <span id={`${id}-error`} className="cell-sub text-crit-fg">
           {error}

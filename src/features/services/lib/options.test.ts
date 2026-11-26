@@ -134,21 +134,21 @@ describe('field rows', () => {
       'fields.0.label',
       'fields.0.fieldType',
       'fields.0.required',
+      'fields.0.isMainInput',
       'fields.1.name',
       'fields.1.label',
       'fields.1.fieldType',
       'fields.1.required',
+      'fields.1.isMainInput',
       'fields.1.choices',
     ]);
-    // The hidden key, the hidden pattern and the main-input flag have no cell: their messages show under the row's name. `options` is the
-    // choices of a choice list only.
+    // The hidden key and the hidden pattern have no cell: their messages show under the row's name. The main-input flag has its own tick
+    // box. `options` is the choices of a choice list only.
     expect(aliases).toEqual({
       'fields.0.key': 'fields.0.name',
       'fields.0.regex': 'fields.0.name',
-      'fields.0.isMainInput': 'fields.0.name',
       'fields.1.key': 'fields.1.name',
       'fields.1.regex': 'fields.1.name',
-      'fields.1.isMainInput': 'fields.1.name',
       'fields.1.options': 'fields.1.choices',
     });
     expect(fieldErrorTargets([])).toEqual({ names: [], aliases: {} });

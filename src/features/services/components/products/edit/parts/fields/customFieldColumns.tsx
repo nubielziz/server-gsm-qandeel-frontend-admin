@@ -1,9 +1,12 @@
 // customFieldColumns: the columns of the Custom Fields table of the edit view's Field part. Every cell is an input of the section's form
 // (registered under `fields.<row>.<name>`, so the server's field messages find their input), with its error line under it in the cell.
-// The accessible names are "Name of field 2", "Field 2 is required" and so on, numbered from 1 in the buyer's order. A field has one
-// visible name: the hidden key and the hidden pattern of a saved field live in the form's values and have no cell (decisions 024, 030).
+// The accessible names are "Name of field 2", "Field 2 is required", "Main input of field 2" and so on, numbered from 1 in the buyer's
+// order. A field has one visible name: the hidden key and the hidden pattern of a saved field live in the form's values and have no cell
+// (decisions 024, 030). The main input is a tick box column after Required (decision 032); its tick boxes are registered too, so a server
+// message about the flag shows on the box, and each points at the intro sentence that says what the main input is.
+import type { ChangeEvent } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
-import { Badge, Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
+import { Button, cx, Icon, SelectField, type DataTableColumn } from '@/components/ui';
 import type { FieldsFormValues } from '../../../../../lib/fields';
 import { FIELD_TYPE_OPTIONS } from '../../../../../lib/options';
 import type { ServiceFieldType } from '../../../../../types';
@@ -12,10 +15,6 @@ import { TextCell } from './TextCell';
 
 const INVALID = 'aria-[invalid=true]:border-crit-dot';
 
-// What the switch of a row's main input says when nothing locks it.
-const MAIN_INPUT_HINT =
-  "The main input is the field the order itself is about, such as the IMEI, a serial number or an ECID: the supplier receives it as the order's own input. A service has at most one.";
-
 /** A row of the table: the id React keys it by (the form's row id) and its place in the form's list. */
 export type FieldRowRef = { id: string; index: number };
 
@@ -23,27 +22,27 @@ export interface CustomFieldColumnsArgs {
   form: UseFormReturn<FieldsFormValues>;
   /** The type each row has now, by position: only a choice list shows its choices box. */
   types: readonly (ServiceFieldType | undefined)[];
-  /** Whether each row is the main input now, by position: that row shows the badge and its switch is pressed. */
-  mainInputs: readonly (boolean | undefined)[];
   /** How many rows there are, so the last one cannot move down. */
   count: number;
   lock: PermissionLock;
   onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
-  /** Turns the main input of a row on or off; turning it on turns it off for the others. */
+  /** The id of the intro sentence about the main input: every tick box of the column points at it (aria-describedby). */
+  introId: string;
+  /** Ticks or unticks the main input of a row; ticking it unticks the others, unticking leaves the service with none. */
   onMainInput: (index: number, on: boolean) => void;
 }
 
 /**
- * The six columns, left to right: the number, the name (the main input shows a badge beside it), the label, the type (a choice list
- * shows its choices under it), required and the row's buttons (the main input switch, up, down, remove).
+ * The seven columns, left to right: the number, the name, the label, the type (a choice list shows its choices under it), required,
+ * the main input (a tick box, one row at most) and the row's buttons (up, down, remove).
  */
 export function customFieldColumns({
   form,
   types,
-  mainInputs,
   count,
   lock,
+  introId,
   onMove,
   onRemove,
   onMainInput,
@@ -65,7 +64,6 @@ export function customFieldColumns({
           label="Name"
           lock={lock}
           error={rowErrors?.[index]?.name?.message}
-          trailing={mainInputs[index] ? <Badge tone="accent">Main input</Badge> : undefined}
           field={register(`fields.${index}.name`, {
             validate: (value) => value.trim() !== '' || 'Enter a name.',
           })}
@@ -142,22 +140,41 @@ export function customFieldColumns({
       },
     },
     {
+      key: 'mainInput',
+      label: 'Main input',
+      className: 'w-px whitespace-nowrap',
+      render: ({ index }) => {
+        const message = rowErrors?.[index]?.isMainInput?.message;
+        const errorId = `${introId}-error-${index}`;
+        return (
+          <>
+            <input
+              type="checkbox"
+              className={cx('check', INVALID)}
+              aria-label={`Main input of field ${index + 1}`}
+              aria-describedby={message ? `${introId} ${errorId}` : introId}
+              aria-invalid={message ? true : undefined}
+              disabled={lock.disabled}
+              title={lock.title}
+              {...register(`fields.${index}.isMainInput`, {
+                // Ticking a row unticks the others; the value of this row is already the box's by the time this runs.
+                onChange: (event: ChangeEvent<HTMLInputElement>) => onMainInput(index, event.target.checked),
+              })}
+            />
+            {message && (
+              <span id={errorId} className="cell-sub w-32 whitespace-normal text-crit-fg">
+                {message}
+              </span>
+            )}
+          </>
+        );
+      },
+    },
+    {
       key: 'actions',
       label: 'Actions',
       render: ({ index }) => (
         <span className="inline-flex items-center">
-          <Button
-            size="sm"
-            variant="ghost"
-            icon
-            aria-label={`Main input of field ${index + 1}`}
-            aria-pressed={mainInputs[index] === true}
-            title={lock.title ?? MAIN_INPUT_HINT}
-            disabled={lock.disabled}
-            onClick={() => onMainInput(index, mainInputs[index] !== true)}
-          >
-            <Icon name="inbox" className="ic-sm" />
-          </Button>
           <Button
             size="sm"
             variant="ghost"

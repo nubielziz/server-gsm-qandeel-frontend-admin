@@ -1,7 +1,7 @@
-// Tests for the Field part of the edit view, opened through the whole page against the dev mock API: the two sections (how the service sells
-// by quantity, the order fields a buyer fills in), each its own form with its own Save, the messages of the server under the input they
-// name, the repeated name, the hidden pattern that a save sends back, the main input switch, moving and removing a field, and what a role
-// without catalog:update sees.
+// Tests for the Field part of the edit view, opened through the whole page against the dev mock API: the one Custom Fields section (the order
+// fields a buyer fills in, and under their table how the service sells by quantity) with its one Save that sends only the part that changed
+// (decision 032), the messages of the server under the input they name, the repeated name, the hidden pattern that a save sends back, the
+// main input tick box column, moving and removing a field, and what a role without catalog:update sees.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -21,22 +21,37 @@ afterEach(() => vi.restoreAllMocks());
 const AT_T = 5; // IMEI-ATT-USA, "AT&T USA Premier Unlock": one per order, no custom fields
 const Z3X = 15; // SRV-Z3X-10, "Z3X Credits x10": one order field, `account`
 
-/** Opens the part for a service, signed in as the Owner (or with these permissions), once it has drawn its first section. */
+/** Opens the part for a service, signed in as the Owner (or with these permissions), once it has drawn its section. */
 async function openFields(id: number, type: string, options: { permissions?: string[] } = {}) {
   await openProducts(`/products?view=edit&type=${type}&id=${id}&part=fields`, options);
-  await screen.findByRole('form', { name: 'Quantity Field' }, { timeout: 10_000 });
+  await screen.findByRole('form', { name: 'Custom Fields' }, { timeout: 10_000 });
 }
 
 /** One section of the part by the name of its form. */
 const section = (name: string) => within(screen.getByRole('form', { name }));
 
-describe('Field: the sections', () => {
-  it('draws the two sections under their headings, each with its own Save, and no Options section', async () => {
-    await openFields(AT_T, 'imei');
-    for (const name of ['Quantity Field', 'Custom Fields']) {
-      expect(screen.getByRole('heading', { level: 3, name })).toBeInTheDocument();
-      expect(section(name).getByRole('button', { name: 'Save' })).toBeDisabled();
-    }
+describe('Field: the section', () => {
+  it('draws one section, Custom Fields, with one Save and the quantity under the table, and no Quantity Field or Options section', async () => {
+    await openFields(Z3X, 'server');
+    expect(screen.getByRole('heading', { level: 3, name: 'Custom Fields' })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1);
+    expect(screen.getAllByRole('form')).toHaveLength(1);
+    const fields = section('Custom Fields');
+    expect(fields.getAllByRole('button', { name: 'Save' })).toHaveLength(1);
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.queryByRole('heading', { name: 'Quantity Field' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Quantity Field' })).not.toBeInTheDocument();
+
+    // The order on the page: the table, Add a field, the quantity menu, Save.
+    const table = fields.getByRole('table', { name: 'Custom fields' });
+    const add = fields.getByRole('button', { name: 'Add a field' });
+    const quantity = fields.getByRole('combobox', { name: 'Quantity' });
+    const save = fields.getByRole('button', { name: 'Save' });
+    const before = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(before(table, add)).toBe(true);
+    expect(before(add, quantity)).toBe(true);
+    expect(before(quantity, save)).toBe(true);
     expect(screen.queryByRole('heading', { level: 3, name: 'Options' })).not.toBeInTheDocument();
     expect(screen.queryByRole('form', { name: 'Options' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Models' })).not.toBeInTheDocument();
@@ -47,7 +62,7 @@ describe('Field: the quantity', () => {
   it('shows how the service sells and saves a range', async () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
-    const quantity = section('Quantity Field');
+    const quantity = section('Custom Fields');
     const way = quantity.getByRole('combobox', { name: 'Quantity' });
     expect(way).toHaveValue('single');
     expect(quantity.getByText(/Every order is for 1 unit\./)).toBeInTheDocument();
@@ -64,7 +79,7 @@ describe('Field: the quantity', () => {
   it('saves fixed packs in order and keeps the smallest and largest pack as the range', async () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
-    const quantity = section('Quantity Field');
+    const quantity = section('Custom Fields');
     await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'Fixed packs');
     await user.type(quantity.getByRole('textbox', { name: 'Pack sizes' }), '25, 5, 10');
     await user.click(quantity.getByRole('button', { name: 'Save' }));
@@ -75,7 +90,7 @@ describe('Field: the quantity', () => {
   it('checks the range in the browser, under the box it is about', async () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
-    const quantity = section('Quantity Field');
+    const quantity = section('Custom Fields');
     await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'A range');
     const smallest = quantity.getByRole('textbox', { name: 'Smallest' });
     await user.clear(smallest);
@@ -91,7 +106,7 @@ describe('Field: the quantity', () => {
   it('asks for at least one pack size', async () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
-    const quantity = section('Quantity Field');
+    const quantity = section('Custom Fields');
     await user.selectOptions(quantity.getByRole('combobox', { name: 'Quantity' }), 'Fixed packs');
     await user.type(quantity.getByRole('textbox', { name: 'Pack sizes' }), ' ');
     await user.click(quantity.getByRole('button', { name: 'Save' }));
@@ -129,6 +144,7 @@ describe('Field: the custom fields', () => {
       'Label',
       'Type',
       'Required',
+      'Main input',
       'Actions',
     ]);
   });
@@ -316,14 +332,25 @@ describe('Field: the custom fields', () => {
       'This field no longer exists. Reload the page.',
       'Add at least two choices.',
       'A choice list must be required.',
+      'The name Plan is used by an earlier field.',
+      'Only one field can be the main input.',
     ]) {
       expect(fields.getByText(message)).toBeInTheDocument();
     }
     // The hidden key has no cell of its own: its message is under the row's name.
     expect(fields.getByRole('textbox', { name: 'Name of field 1' })).toHaveAttribute('aria-invalid', 'true');
     expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveAttribute('aria-invalid', 'true');
-    // The name and the main-input flag of row 2 share the name input: the later message wins there.
+    // The name of row 2 and its main-input flag each keep their own message: the flag's is on its tick box, not under the name.
     expect(fields.getByRole('textbox', { name: 'Name of field 2' })).toHaveAttribute('aria-invalid', 'true');
+    const flag = fields.getByRole('checkbox', { name: 'Main input of field 2' });
+    expect(flag).toHaveAttribute('aria-invalid', 'true');
+    expect(flag.closest('td')).toHaveTextContent('Only one field can be the main input.');
+    expect(fields.getByRole('textbox', { name: 'Name of field 2' }).closest('td')).not.toHaveTextContent(
+      'Only one field can be the main input.',
+    );
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).not.toHaveAttribute(
+      'aria-invalid',
+    );
     // The server calls the choices `options`; they show under the choices input.
     expect(fields.getByRole('textbox', { name: 'Choices of field 2' })).toHaveAttribute(
       'aria-invalid',
@@ -391,36 +418,64 @@ describe('Field: the custom fields', () => {
 });
 
 describe('Field: the main input', () => {
-  it('shows a badge beside the name of the main input, and none for the other fields', async () => {
+  it('has a Main input column after Required with one tick box per row, and no icon button or badge', async () => {
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
-    expect(fields.queryByText('Main input')).not.toBeInTheDocument();
-    expect(fields.getByRole('button', { name: 'Main input of field 1' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    // There is no column for it: the switch lives in the row's buttons.
-    expect(fields.queryByRole('columnheader', { name: 'Main input' })).not.toBeInTheDocument();
+    const headers = fields.getAllByRole('columnheader').map((header) => header.textContent);
+    expect(headers.indexOf('Main input')).toBe(headers.indexOf('Required') + 1);
+    const tick = fields.getByRole('checkbox', { name: 'Main input of field 1' });
+    expect(tick).not.toBeChecked();
+    expect(tick).toHaveClass('check');
+    // The icon-only button and the blue badge are gone: nothing named like it is a button, and the only text that is just
+    // "Main input" is the column header (the intro sentence is longer).
+    expect(fields.queryByRole('button', { name: /Main input/ })).not.toBeInTheDocument();
+    expect(fields.getAllByText('Main input')).toHaveLength(1);
+    // The Actions column keeps up, down and remove, and nothing else.
+    const actions = within(tick.closest('tr') as HTMLElement).getAllByRole('button');
+    expect(actions.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Move field 1 up',
+      'Move field 1 down',
+      'Remove field 1',
+    ]);
   });
 
-  it('turns it on for one row and off for the others, and saves the flag', async () => {
+  it('says what the main input is in the intro of the section, and every tick box points at that sentence', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    const sentence = fields.getByText(
+      /Main input: the one field the order is about \(IMEI, serial, ECID\)\. The supplier receives it as the IMEI, and order lists show it\./,
+    );
+    expect(sentence.id).not.toBe('');
+    await userEvent.click(fields.getByRole('button', { name: 'Add a field' }));
+    for (const n of [1, 2]) {
+      expect(fields.getByRole('checkbox', { name: `Main input of field ${n}` })).toHaveAttribute(
+        'aria-describedby',
+        sentence.id,
+      );
+    }
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).toHaveAccessibleDescription(
+      /Main input: the one field the order is about/,
+    );
+  });
+
+  it('ticks one row and unticks the other, and saves the flag', async () => {
     const user = userEvent.setup();
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
     await user.click(fields.getByRole('button', { name: 'Add a field' }));
     await user.type(fields.getByRole('textbox', { name: 'Name of field 2' }), 'Serial');
-    const first = fields.getByRole('button', { name: 'Main input of field 1' });
-    const second = fields.getByRole('button', { name: 'Main input of field 2' });
+    const first = fields.getByRole('checkbox', { name: 'Main input of field 1' });
+    const second = fields.getByRole('checkbox', { name: 'Main input of field 2' });
 
     await user.click(first);
-    expect(first).toHaveAttribute('aria-pressed', 'true');
-    expect(fields.getAllByText('Main input')).toHaveLength(1);
+    expect(first).toBeChecked();
+    expect(second).not.toBeChecked();
     await user.click(second);
-    expect(first).toHaveAttribute('aria-pressed', 'false');
-    expect(second).toHaveAttribute('aria-pressed', 'true');
-    expect(fields.getAllByText('Main input')).toHaveLength(1);
+    expect(first).not.toBeChecked();
+    expect(second).toBeChecked();
 
     await user.click(fields.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Fields saved')).toBeInTheDocument();
@@ -428,23 +483,38 @@ describe('Field: the main input', () => {
       ['account', false],
       ['serial', true],
     ]);
-    expect(fields.getAllByText('Main input')).toHaveLength(1);
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 2' })).toBeChecked();
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).not.toBeChecked();
   });
 
-  it('turns it off again, which marks the section as changed', async () => {
+  it('unticks it again, which leaves the service with none and marks the section as changed only while it differs', async () => {
     const user = userEvent.setup();
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
     const save = fields.getByRole('button', { name: 'Save' });
     expect(save).toBeDisabled();
-    const first = fields.getByRole('button', { name: 'Main input of field 1' });
+    const first = fields.getByRole('checkbox', { name: 'Main input of field 1' });
     await user.click(first);
     expect(save).toBeEnabled();
     await user.click(first);
-    expect(first).toHaveAttribute('aria-pressed', 'false');
-    expect(fields.queryByText('Main input')).not.toBeInTheDocument();
+    expect(first).not.toBeChecked();
     expect(save).toBeDisabled();
+  });
+
+  it('saves a service with no main input after the last one is unticked', async () => {
+    const user = userEvent.setup();
+    const service = (await servicesStore()).services.find(String(Z3X));
+    if (!service?.fields[0]) throw new Error('The seed has no field on the Z3X service.');
+    service.fields[0].isMainInput = true;
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    const first = await fields.findByRole('checkbox', { name: 'Main input of field 1' });
+    expect(first).toBeChecked();
+    await user.click(first);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect((await getService(Z3X)).fields.map((field) => field.isMainInput)).toEqual([false]);
   });
 });
 
@@ -454,7 +524,7 @@ describe('Field: the main input warning', () => {
   const WARNING =
     'No field is marked Main input. Mark the field the order is about (the IMEI, a serial, an ECID) so the supplier receives it.';
 
-  it('says so on an IMEI service with no fields, and follows the main input switch of the draft', async () => {
+  it('says so on an IMEI service with no fields, and follows the main input tick box of the draft', async () => {
     const user = userEvent.setup();
     await openFields(AT_T, 'imei');
     const fields = section('Custom Fields');
@@ -463,7 +533,7 @@ describe('Field: the main input warning', () => {
     await user.click(fields.getByRole('button', { name: 'Add a field' }));
     await user.type(fields.getByRole('textbox', { name: 'Name of field 1' }), 'Serial');
     expect(fields.getByText(WARNING)).toBeInTheDocument();
-    const main = fields.getByRole('button', { name: 'Main input of field 1' });
+    const main = fields.getByRole('checkbox', { name: 'Main input of field 1' });
     await user.click(main);
     expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
     await user.click(main);
@@ -489,10 +559,7 @@ describe('Field: the main input warning', () => {
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
-    expect(fields.getByRole('button', { name: 'Main input of field 1' })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).not.toBeChecked();
     expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
   });
 
@@ -512,18 +579,256 @@ describe('Field: the main input warning', () => {
     expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveValue('IMEI');
     expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveValue('imei');
     expect(fields.getByRole('checkbox', { name: 'Field 1 is required' })).toBeChecked();
-    expect(fields.getByText('Main input')).toBeInTheDocument();
+    expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).toBeChecked();
     expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
   });
+});
 
-  it('explains the main input on its switch', async () => {
+// One Save, two routes (decision 032): it sends only the part that changed, the fields (PUT) first and then the quantity (PATCH), and a part
+// that fails stays dirty with its message while the part that saved stays saved.
+describe('Field: one Save for the fields and the quantity', () => {
+  type Recorder = ReturnType<typeof recordRequests>;
+  /** The writes the part sent, in order: "PUT fields" for the order fields and "PATCH quantity" for the quantity. */
+  const writes = (requests: Recorder) =>
+    requests
+      .sent()
+      .filter((request) => request.method === 'PUT' || request.method === 'PATCH')
+      .map(
+        (request) => `${request.method} ${request.url.pathname.endsWith('/fields') ? 'fields' : 'quantity'}`,
+      );
+
+  /** Opens the Z3X service (one per order, one field) and gives the section. */
+  async function openZ3x() {
+    const requests = recordRequests();
     await openFields(Z3X, 'server');
     const fields = section('Custom Fields');
-    const main = await fields.findByRole('button', { name: 'Main input of field 1' });
-    expect(main).toHaveAttribute(
-      'title',
-      "The main input is the field the order itself is about, such as the IMEI, a serial number or an ECID: the supplier receives it as the order's own input. A service has at most one.",
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    return { fields, requests, user: userEvent.setup() };
+  }
+
+  type Opened = Awaited<ReturnType<typeof openZ3x>>;
+  const changeName = async ({ fields, user }: Opened, value = 'Account name') => {
+    const name = fields.getByRole('textbox', { name: 'Name of field 1' });
+    await user.clear(name);
+    await user.type(name, value);
+  };
+  const changeQuantity = async ({ fields, user }: Opened, largest = '10') => {
+    await user.selectOptions(fields.getByRole('combobox', { name: 'Quantity' }), 'A range');
+    await user.type(fields.getByRole('textbox', { name: 'Largest' }), largest);
+  };
+  const failOnce = (method: 'put' | 'patch', path: string, field: string, message: string) =>
+    mockServer.use(
+      http[method](
+        path,
+        () =>
+          problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+            { field, message },
+          ]),
+        { once: true },
+      ),
     );
+
+  it('sends one PATCH and no PUT when only the quantity changed', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeQuantity(page);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Quantity saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PATCH quantity']);
+    expect(requests.sent().find((request) => request.method === 'PATCH')?.body).toMatchObject({
+      minQty: 1,
+      maxQty: 10,
+      qtyOptions: [],
+    });
+    expect(screen.queryByText('Fields saved')).not.toBeInTheDocument();
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('sends one PUT and no PATCH when only the fields changed', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields']);
+    expect(screen.queryByText('Quantity saved')).not.toBeInTheDocument();
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('sends both, the fields first, when both changed, and leaves the section clean', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await changeQuantity(page);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Quantity saved')).toBeInTheDocument();
+    expect(screen.getByText('Fields saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields', 'PATCH quantity']);
+    expect(await getService(Z3X)).toMatchObject({
+      minQty: 1,
+      maxQty: 10,
+      fields: [{ key: 'account', name: 'Account name' }],
+    });
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('keeps the fields saved and clean, and the quantity dirty with its message, when the PATCH fails after the PUT', async () => {
+    failOnce('patch', '*/admin/services/:id', 'maxQty', 'The supplier sells at most 5 per order.');
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await changeQuantity(page);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+
+    expect(await fields.findByText('The supplier sells at most 5 per order.')).toBeInTheDocument();
+    expect(screen.getByText('Fields saved')).toBeInTheDocument();
+    expect(screen.queryByText('Quantity saved')).not.toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields', 'PATCH quantity']);
+    expect(fields.getByRole('textbox', { name: 'Largest' })).toHaveAttribute('aria-invalid', 'true');
+    expect(fields.queryByText('Saved')).not.toBeInTheDocument();
+    expect((await getService(Z3X)).fields[0]).toMatchObject({ name: 'Account name' });
+    expect(await getService(Z3X)).toMatchObject({ minQty: 1, maxQty: 1 });
+    // The quantity is still unsaved and Save is on; the fields are clean, so the next press sends the PATCH alone.
+    const save = fields.getByRole('button', { name: 'Save' });
+    expect(save).toBeEnabled();
+    await user.click(save);
+    expect(await screen.findByText('Quantity saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields', 'PATCH quantity', 'PATCH quantity']);
+    expect(await getService(Z3X)).toMatchObject({ minQty: 1, maxQty: 10 });
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(save).toBeDisabled();
+  });
+
+  it('keeps the quantity saved and clean, and the fields dirty with their message, when the PUT fails', async () => {
+    failOnce('put', '*/admin/services/:id/fields', 'fields.0.fieldType', 'That type is not offered.');
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await changeQuantity(page);
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+
+    expect(await fields.findByText('That type is not offered.')).toBeInTheDocument();
+    expect(screen.getByText('Quantity saved')).toBeInTheDocument();
+    expect(screen.queryByText('Fields saved')).not.toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields', 'PATCH quantity']);
+    expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveAttribute('aria-invalid', 'true');
+    expect(await getService(Z3X)).toMatchObject({ minQty: 1, maxQty: 10, fields: [{ name: 'user' }] });
+    const save = fields.getByRole('button', { name: 'Save' });
+    expect(save).toBeEnabled();
+    await user.click(save);
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields', 'PATCH quantity', 'PUT fields']);
+    // The reset that the quantity's save made did not wipe the edits of the fields: the retried PUT still carries the edited name.
+    const puts = requests.sent().filter((request) => request.method === 'PUT');
+    expect(puts[1]?.body).toMatchObject({ fields: [{ key: 'account', name: 'Account name' }] });
+    expect((await getService(Z3X)).fields[0]).toMatchObject({ name: 'Account name' });
+    expect(fields.getByRole('textbox', { name: 'Name of field 1' })).toHaveValue('Account name');
+    expect(save).toBeDisabled();
+  });
+
+  it('does not let a mistake in the quantity box hold back the fields, and sends no PATCH for it', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await user.selectOptions(fields.getByRole('combobox', { name: 'Quantity' }), 'A range');
+    const smallest = fields.getByRole('textbox', { name: 'Smallest' });
+    await user.clear(smallest);
+    await user.type(smallest, '5');
+    await user.type(fields.getByRole('textbox', { name: 'Largest' }), '3');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(
+      await fields.findByText('The largest quantity cannot be below the smallest (5).'),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields']);
+    expect((await getService(Z3X)).fields[0]).toMatchObject({ name: 'Account name' });
+    // The quantity boxes keep what was typed, and Save stays on for them.
+    expect(fields.getByRole('textbox', { name: 'Smallest' })).toHaveValue('5');
+    expect(fields.getByRole('textbox', { name: 'Largest' })).toHaveValue('3');
+    expect(fields.getByRole('textbox', { name: 'Name of field 1' })).toHaveValue('Account name');
+    const save = fields.getByRole('button', { name: 'Save' });
+    expect(save).toBeEnabled();
+    // The fields are clean: the next press tries the quantity alone, sends nothing and says why again.
+    await user.click(save);
+    await waitFor(() =>
+      expect(fields.getByRole('textbox', { name: 'Largest' })).toHaveAttribute('aria-invalid', 'true'),
+    );
+    expect(writes(requests)).toEqual(['PUT fields']);
+    expect(fields.getByRole('textbox', { name: 'Smallest' })).toHaveValue('5');
+    expect(fields.getByRole('textbox', { name: 'Largest' })).toHaveValue('3');
+  });
+
+  it('says "Nothing changed" and sends nothing when the quantity is typed back to the saved rule', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeQuantity(page, '1');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Nothing changed')).toBeInTheDocument();
+    expect(writes(requests)).toEqual([]);
+    expect(fields.getByRole('combobox', { name: 'Quantity' })).toHaveValue('single');
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(fields.queryByText('Saved')).not.toBeInTheDocument();
+  });
+
+  it('saves the fields without a word about the quantity when the quantity is the saved rule', async () => {
+    const page = await openZ3x();
+    const { fields, requests, user } = page;
+    await changeName(page);
+    await changeQuantity(page, '1');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(writes(requests)).toEqual(['PUT fields']);
+    expect(screen.queryByText('Nothing changed')).not.toBeInTheDocument();
+    expect(fields.getByRole('combobox', { name: 'Quantity' })).toHaveValue('single');
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  describe('the question before unsaved changes are left', () => {
+    const question = () => screen.findByRole('dialog', { name: 'Discard your unsaved changes?' });
+    const overview = () =>
+      within(screen.getByRole('navigation', { name: 'Parts' })).getByRole('link', { name: 'Overview' });
+
+    it.each([
+      ['the fields', changeName],
+      ['the quantity', changeQuantity],
+    ])(
+      'is asked while only %s hold a change, and not once the one Save has sent it',
+      async (_part, change) => {
+        const page = await openZ3x();
+        const { fields, user } = page;
+        await change(page);
+        await user.click(overview());
+        const dialog = within(await question());
+        expect(dialog.getByText(/You have unsaved changes in Field\./)).toBeInTheDocument();
+        await user.click(dialog.getByRole('button', { name: 'Keep editing' }));
+
+        await user.click(fields.getByRole('button', { name: 'Save' }));
+        expect(await fields.findByText('Saved')).toBeInTheDocument();
+        await user.click(overview());
+        await waitFor(() =>
+          expect(screen.queryByRole('form', { name: 'Custom Fields' })).not.toBeInTheDocument(),
+        );
+        expect(
+          screen.queryByRole('dialog', { name: 'Discard your unsaved changes?' }),
+        ).not.toBeInTheDocument();
+      },
+    );
+
+    it('is still asked while the quantity stays unsaved after the fields saved', async () => {
+      failOnce('patch', '*/admin/services/:id', 'maxQty', 'The supplier sells at most 5 per order.');
+      const page = await openZ3x();
+      const { fields, user } = page;
+      await changeName(page);
+      await changeQuantity(page);
+      await user.click(fields.getByRole('button', { name: 'Save' }));
+      await fields.findByText('The supplier sells at most 5 per order.');
+      await user.click(overview());
+      expect(await question()).toBeInTheDocument();
+    });
   });
 });
 
@@ -531,17 +836,17 @@ describe('Field: what a role may change', () => {
   it('shows every box off with the missing permission named for a role that may only read', async () => {
     await openFields(Z3X, 'server', { permissions: ['catalog:read'] });
     const title = 'You need the catalog:update permission';
-    const way = section('Quantity Field').getByRole('combobox', { name: 'Quantity' });
+    const fields = section('Custom Fields');
+    const way = fields.getByRole('combobox', { name: 'Quantity' });
     expect(way).toBeDisabled();
     expect(way).toHaveAttribute('title', title);
-    const fields = section('Custom Fields');
     const name = await fields.findByRole('textbox', { name: 'Name of field 1' });
     expect(name).toBeDisabled();
     expect(name).toHaveAttribute('title', title);
-    expect(fields.getByRole('button', { name: 'Main input of field 1' })).toBeDisabled();
+    const main = fields.getByRole('checkbox', { name: 'Main input of field 1' });
+    expect(main).toBeDisabled();
+    expect(main).toHaveAttribute('title', title);
     expect(fields.getByRole('button', { name: 'Add a field' })).toBeDisabled();
-    for (const name of ['Quantity Field', 'Custom Fields']) {
-      expect(section(name).getByRole('button', { name: 'Save' })).toBeDisabled();
-    }
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 });

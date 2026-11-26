@@ -11,7 +11,7 @@ import { useSaveFlow } from './useSaveFlow';
 export type PermissionLock = { disabled: boolean; title?: string };
 
 export interface SectionFormProps {
-  /** Names the form for assistive technology, such as "Quantity Field". */
+  /** Names the form for assistive technology, such as "Custom Fields". */
   label?: string;
   /** The save; its result is read as a FormSection's is (`outcomeOf`): `dialogSubmit(...)` plugs in as it is. */
   onSubmit: (event: FormEvent<HTMLFormElement>) => unknown;

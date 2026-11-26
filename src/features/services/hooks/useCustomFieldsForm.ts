@@ -1,4 +1,4 @@
-// The form behind the "Custom Fields" section of the edit view's Field part: the order fields of a service as a list of rows to add,
+// The fields form of the "Custom Fields" section of the edit view's Field part: the order fields of a service as a list of rows to add,
 // reorder and remove. Saving replaces the whole list in this order (`PUT /admin/services/:id/fields`, through useReplaceFields), so the
 // rows start from the saved list and a save resets them to the list the server answered.
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -15,10 +15,10 @@ import type { ServiceDetail } from '../types';
 import { useReplaceFields } from './useServicePartMutations';
 
 /**
- * The form, its row list (`list`: append, move, remove), its `submit` (plug it into a SectionForm) and `setMainInput` (turns the main
- * input of a row on or off; a service has at most one, so turning one on turns the others off). A name used by two rows, without regard
+ * The form, its row list (`list`: append, move, remove), its `submit` (the section calls it when the fields are dirty, see
+ * useFieldsSectionForm) and `setMainInput` (ticks or unticks the main input of a row; a service has at most one, so ticking one unticks the others). A name used by two rows, without regard
  * to letter case, is refused here with the row's message; any other refusal of the server lands under the input it names (the server
- * calls the choices `options`; a message about the hidden key or the hidden pattern lands under the row's name) and the rest in the
+ * calls the choices `options`; a message about the hidden key or the hidden pattern lands under the row's name, one about the main-input flag on its tick box) and the rest in the
  * section's failure line. A saved field's pattern has no input and goes back in the body as it was saved.
  */
 export function useCustomFieldsForm(service: ServiceDetail) {

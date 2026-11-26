@@ -11,6 +11,15 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): the quantity sits inside Custom Fields; the main input is a tick box (decision 032)
+
+On the owner's order the Field part of a service is one section. The "Quantity Field" section is gone: its menu and boxes sit under the fields table
+of Custom Fields, and one Save sends only what changed (`PUT .../fields`, `PATCH /admin/services/:id`, fields first; a failed part stays dirty with its
+message and the other stays saved). The main input is a tick-box column "Main input" beside "Required" (one row at most), in place of the icon button
+and the badge; a server message about it shows on the tick box. No API change. Built by a Sonnet implementer, reviewed by an Opus reviewer (code ok,
+small items fixed), looked at in a browser on mock data by the lead. Checks: typecheck, lint, route coverage, live routes, the services and kit tests
+(1,253 pass), the build. Merged and pushed on the owner's word.
+
 ## Status (2026-11-26): IMEI is a field type (decision 031)
 
 On the owner's order an IMEI service no longer forces an IMEI (backend decision 073): the field type list gains "IMEI (15 digits)" for every service
