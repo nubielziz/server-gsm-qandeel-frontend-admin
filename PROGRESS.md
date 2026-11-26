@@ -11,6 +11,13 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-26): custom fields are the whole order form (decision 029)
+
+The shop's order forms draw only a service's custom fields (owner's ruling; shop decision 007, backend 070). The Custom Fields section says so:
+new empty line, new intro and main-input tooltip, and `MainInputWarning`: an IMEI service whose draft has no main input shows "Buyers cannot
+order it in the shop until one field is marked Main input" (advice only, Save is never blocked). No API change. Built by a Sonnet implementer,
+reviewed by the lead. Checks: typecheck, lint, the touched unit tests (30 pass). Merged and pushed on the owner's word.
+
 ## Status (2026-11-26): motion in the whole console (decision 028)
 
 The owner asked for animation when switching pages in the sidebar and when switching tabs. Built as decision 028: a new page fades in

@@ -276,7 +276,9 @@ describe('Field: the custom fields', () => {
     const fields = section('Custom Fields');
     await fields.findByRole('textbox', { name: 'Name of field 1' });
     await user.click(fields.getByRole('button', { name: 'Remove field 1' }));
-    const none = fields.getByText(/No custom fields/);
+    const none = fields.getByText(
+      'No custom fields. The order form shows no input box: add the fields the buyer must fill in.',
+    );
     expect(none).toBeInTheDocument();
     // A plain line, as the other empty lines of the editor, not a bordered box.
     expect(none).not.toHaveClass('border');
@@ -342,6 +344,64 @@ describe('Field: the main input', () => {
     expect(first).toHaveAttribute('aria-pressed', 'false');
     expect(fields.queryByText('Main input')).not.toBeInTheDocument();
     expect(save).toBeDisabled();
+  });
+});
+
+// The shop's order form draws only the service's custom fields (decision 029), so an IMEI service needs one marked Main input.
+describe('Field: the main input warning', () => {
+  const WARNING =
+    'This IMEI service has no main input field. Buyers cannot order it in the shop until one field is marked Main input.';
+
+  it('says so on an IMEI service with no fields, and follows the main input switch of the draft', async () => {
+    const user = userEvent.setup();
+    await openFields(AT_T, 'imei');
+    const fields = section('Custom Fields');
+    expect(await fields.findByText(WARNING)).toBeInTheDocument();
+    expect(fields.getByText(/No custom fields\. The order form shows no input box/)).toBeInTheDocument();
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 1' }), 'Serial');
+    expect(fields.getByText(WARNING)).toBeInTheDocument();
+    const main = fields.getByRole('button', { name: 'Main input of field 1' });
+    await user.click(main);
+    expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
+    await user.click(main);
+    expect(fields.getByText(WARNING)).toBeInTheDocument();
+  });
+
+  it('is advice only: the section still saves with the warning showing', async () => {
+    const user = userEvent.setup();
+    await openFields(AT_T, 'imei');
+    const fields = section('Custom Fields');
+    await fields.findByText(WARNING);
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 1' }), 'Serial');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect((await getService(AT_T)).fields.map((field) => [field.key, field.isMainInput])).toEqual([
+      ['serial', false],
+    ]);
+    expect(fields.getByText(WARNING)).toBeInTheDocument();
+  });
+
+  it('is hidden on a service that is not an IMEI service, with no main input', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    expect(fields.getByRole('button', { name: 'Main input of field 1' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(fields.queryByText(WARNING)).not.toBeInTheDocument();
+  });
+
+  it('explains the main input on its switch', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    const main = await fields.findByRole('button', { name: 'Main input of field 1' });
+    expect(main).toHaveAttribute(
+      'title',
+      'The main input is the field the order itself is about, such as the IMEI; on an IMEI service the buyer types the IMEI in it. A service has at most one.',
+    );
   });
 });
 
