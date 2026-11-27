@@ -69,12 +69,34 @@ describe('the table', () => {
     expect(row.getByText('T-Mobile USA Unlock')).toBeInTheDocument();
     expect(row.getByText('IMEI')).toBeInTheDocument();
     expect(row.getByText('35 460711 658877 7')).toBeInTheDocument();
+    // The type, the service name and the input are three cells of their own, in that order, after the buyer.
+    const cells = row.getAllByRole('cell').map((cell) => cell.textContent);
+    const [type, name, input] = [
+      cells.indexOf('IMEI'),
+      cells.indexOf('T-Mobile USA Unlock'),
+      cells.indexOf('35 460711 658877 7'),
+    ];
+    expect(type).toBeGreaterThan(0);
+    expect([name, input]).toEqual([type + 1, type + 2]);
     expect(row.getByText('Nordic GSM')).toBeInTheDocument();
     expect(row.getByText('Processing')).toBeInTheDocument();
     expect(row.getByText('$12.49')).toBeInTheDocument();
     expect(row.getByText('$2.69')).toBeInTheDocument();
     const rows = (await ordersTable()).getAllByRole('row');
     expect(rows).toHaveLength(26); // the header and 25 orders
+  });
+
+  it('has Type, Service Name and Input columns in place of the one Service / input column', async () => {
+    await openOrders('/orders?tab=all');
+    await orderRow('ORD-48859');
+    const heads = screen.getAllByRole('columnheader').map((head) => head.textContent);
+    expect(heads).toContain('Type');
+    expect(heads).toContain('Service Name');
+    expect(heads).toContain('Input');
+    expect(heads).not.toContain('Service / input');
+    expect(heads.indexOf('Service Name')).toBe(heads.indexOf('Type') + 1);
+    expect(heads.indexOf('Input')).toBe(heads.indexOf('Type') + 2);
+    expect(heads.indexOf('Type')).toBe(heads.indexOf('Buyer') + 1);
   });
 
   it('names the buyer account with its rank, and a storefront order with the masked email and what the customer paid', async () => {

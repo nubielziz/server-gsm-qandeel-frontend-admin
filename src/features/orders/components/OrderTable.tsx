@@ -1,5 +1,5 @@
-// OrderTable: the orders table with the demo's columns (order, buyer, service / input, status, reason, supplier, SLA, price,
-// profit, menu). Ports orderCols of 41-p-orders.js. It only draws what it is given: the page owns the data, the sort, the
+// OrderTable: the orders table with the demo's columns (order, buyer, type, service name, input, status, reason, supplier, SLA,
+// price, profit, menu). Ports orderCols of 41-p-orders.js; the demo's one "Service / input" column is three here (decision 037). It only draws what it is given: the page owns the data, the sort, the
 // page and the selection, so the same table serves the Orders page and the lists inside other pages.
 import type { ReactNode } from 'react';
 import {
@@ -16,7 +16,7 @@ import type { Order } from '../types';
 import { BuyerCell } from './BuyerCell';
 import { OrderStatusBadge } from './OrderStatusBadge';
 import { PriceCell } from './PriceCell';
-import { ServiceCell } from './ServiceCell';
+import { InputCell, ServiceNameCell, TypeCell } from './ServiceCells';
 import { SlaCell } from './SlaCell';
 
 export interface OrderTableProps {
@@ -80,7 +80,15 @@ export function OrderTable({
     ...(hideBuyer
       ? []
       : [{ key: 'buyer', label: 'Buyer', render: (order: Order) => <BuyerCell order={order} /> }]),
-    { key: 'service', label: 'Service / input', render: (order) => <ServiceCell order={order} /> },
+    { key: 'type', label: 'Type', render: (order) => <TypeCell order={order} /> },
+    // The name column takes the free width and wraps; the cell is never cut off. The others keep the width of their content.
+    {
+      key: 'service',
+      label: 'Service Name',
+      className: 'w-full min-w-[200px] py-2',
+      render: (order) => <ServiceNameCell order={order} />,
+    },
+    { key: 'input', label: 'Input', render: (order) => <InputCell order={order} /> },
     // The tab already names the status, so the column is only there on the tabs that mix states.
     ...(SINGLE_STATUS_TABS.includes(tab)
       ? []
