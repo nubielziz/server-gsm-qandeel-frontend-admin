@@ -11,6 +11,18 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-27): fewer inputs to type (decisions 035, 036)
+
+Merged and pushed on the owner's order. The owner agreed a numbered list of 39 inputs: removed (the system fills them: a supplier's currency and API
+type, a payment method's code and an alert rule's key, made by the server since the backend's decision 077, a shop page's and a new content page's
+slug, a legal version's number, a new currency's name), moved under the kit's new `MoreOptions` fold (it opens by itself for a non-default value
+or an error), or turned from typed text into a menu (country, currency code, payment driver, template event, help topic, campaign links). Custom
+fields show the Label column only behind "Show buyers a different label". Kept visible on purpose: a currency's Rate (production runs with manual
+rates) and the maintenance message. New in the kit: `MoreOptions`, `ReadField`; `src/lib/isoCountries.ts`; `src/mocks/identifier.ts` (the
+server's rule for a made identifier). The rule kept through the whole change: a form left at its defaults sends what it sent before. Built by two
+Sonnet implementers in two worktrees, reviewed by an Opus reviewer (one blocker: a new 3-decimal currency could not be added; fixed), final review
+by the lead. **Checks:** typecheck, lint, the whole Vitest suite (8,222 tests). **Release order:** console, backend.
+
 ## Status (2026-11-27): the owner's notes: shop switch, server-made code, merchant switches, ten more field types (decisions 033, 034)
 
 Merged and pushed on the owner's order of 2026-11-27 ("go ahead ... when you finish push the work and confirm live"). **033:** the one shop
