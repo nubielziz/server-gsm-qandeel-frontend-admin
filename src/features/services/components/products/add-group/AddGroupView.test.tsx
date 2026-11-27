@@ -192,12 +192,11 @@ describe('opened from the "Add New Group" link of +Add Service', () => {
   const OPENED = '/products?view=add-group&type=imei&return=add';
   const serviceName = () => screen.findByRole('textbox', { name: 'Service Name' }, { timeout: 10_000 });
 
-  /** Opens +Add Service, types three boxes and follows "Add New Group". */
+  /** Opens +Add Service, types two boxes and follows "Add New Group" (the form has no Code box: the server makes the code). */
   async function typeThenAddGroup() {
     const user = userEvent.setup();
     const app = await openProducts('/products?view=add');
     await user.type(await serviceName(), 'Pixel Later');
-    await user.type(screen.getByRole('textbox', { name: 'Code' }), 'IMEI-PX-9');
     await user.type(screen.getByRole('textbox', { name: 'Credit' }), '4.25');
     await user.click(screen.getByRole('link', { name: 'Add New Group' }));
     await waitFor(() => expect(app.location()).toBe(OPENED));
@@ -211,7 +210,7 @@ describe('opened from the "Add New Group" link of +Add Service', () => {
     await waitFor(() => expect(app.location()).toBe('/products?view=add&type=imei'));
 
     expect(await serviceName()).toHaveValue('Pixel Later');
-    expect(screen.getByRole('textbox', { name: 'Code' })).toHaveValue('IMEI-PX-9');
+    expect(screen.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Credit' })).toHaveValue('4.25');
     const group = screen.getByRole('combobox', { name: 'Service Listed In Group' });
     await within(group).findByRole('option', { name: 'Brand new' });

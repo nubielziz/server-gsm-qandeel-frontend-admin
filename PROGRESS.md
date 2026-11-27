@@ -11,6 +11,18 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-27): the owner's notes: shop switch, server-made code, merchant switches, ten more field types (decisions 033, 034)
+
+Merged and pushed on the owner's order of 2026-11-27 ("go ahead ... when you finish push the work and confirm live"). **033:** the one shop
+switch of the Retail Purchase part now makes the open service's own record stale (`useServicesRefresh(ids)`: Refine's `detail` invalidation
+without an id reaches only the key of id ""), so the switch, the Status row and the shop page follow the save; proven on production first (the
+owner's first press saved, four more did nothing). "+Add Service" has no Code row and sends no `code` (the backend's decision 074 makes
+`IMEI-`, `SRV-`, `RMT-`, `FILE-` and the id); the Overview shows the code read-only. "User Can Cancel Order" and "Send For Verification" say what
+they do (website orders of a service with cancel on wait 2 minutes, backend 075); the verification window is 1 to 720 hours on both forms
+(`lib/verifyWindow.ts`). **034:** the Field part offers ten more types (`imei_bulk` to `box_sn`, backend 076); the console only names the type.
+Built by a Sonnet implementer; the field types were reviewed by an Opus reviewer with the backend and the shop; final review by the lead.
+**Checks:** typecheck, lint, the whole Vitest suite locally. **Release order:** console, backend, shop.
+
 ## Status (2026-11-26): the Custom Fields section on one left edge (decision 032, Layout)
 
 The owner rejected the look of the merged section (a table, then label-left rows that did not line up, Save floating mid-page, a dense intro) and
