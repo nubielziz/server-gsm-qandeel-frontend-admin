@@ -9,7 +9,7 @@ import {
   toServiceField,
   withMainInput,
 } from './fields';
-import { choicesText, FIELD_TYPE_OPTIONS, parseChoices } from './options';
+import { choicesText, FIELD_TYPE_HELP, FIELD_TYPE_OPTIONS, parseChoices } from './options';
 
 describe('choices', () => {
   it('writes and reads a comma-separated line', () => {
@@ -20,14 +20,35 @@ describe('choices', () => {
 });
 
 describe('the field type menu', () => {
-  it('offers the five types, the IMEI type last, as "IMEI (15 digits)"', () => {
+  it('offers the fifteen types: the four plain ones, then "IMEI (15 digits)" and the ten more the server checks', () => {
     expect(FIELD_TYPE_OPTIONS.map((option) => [option.value, option.label])).toEqual([
       ['text', 'Text'],
       ['number', 'Number'],
       ['select', 'Choice list'],
       ['textarea', 'Long text'],
       ['imei', 'IMEI (15 digits)'],
+      ['imei_bulk', 'IMEI list (one per line, up to 30)'],
+      ['imeisv', 'IMEISV (16 digits)'],
+      ['serial', 'Serial number'],
+      ['iccid', 'ICCID (SIM number)'],
+      ['eid', 'EID (eSIM, 32 digits)'],
+      ['meid', 'MEID'],
+      ['ecid', 'ECID'],
+      ['mac_address', 'MAC address'],
+      ['mi_lock_code', 'Mi lock code'],
+      ['box_sn', 'Box serial number'],
     ]);
+  });
+
+  it('gives each of the eleven checked types one line saying what a buyer must type, and the plain four none', () => {
+    const typed = FIELD_TYPE_OPTIONS.slice(4).map((option) => option.value);
+    expect(Object.keys(FIELD_TYPE_HELP).sort()).toEqual([...typed].sort());
+    for (const type of typed) expect(FIELD_TYPE_HELP[type]).toMatch(/\S/);
+    expect(FIELD_TYPE_HELP.imei_bulk).toBe('one IMEI per line, up to 30, each with a valid check digit.');
+    expect(FIELD_TYPE_HELP.mac_address).toBe('12 hexadecimal characters, like AA:BB:CC:DD:EE:FF.');
+    for (const plain of ['text', 'number', 'select', 'textarea'] as const) {
+      expect(FIELD_TYPE_HELP[plain]).toBeUndefined();
+    }
   });
 });
 
@@ -83,6 +104,24 @@ describe('field rows', () => {
     expect(fieldDraft(imei)).toMatchObject({ fieldType: 'imei', choices: '', regex: ' ^\\d{15}$ ' });
     expect(toServiceField(fieldDraft(imei))).toEqual(imei);
   });
+
+  it.each(FIELD_TYPE_OPTIONS.map((option) => option.value))(
+    'keep the %s type of a saved field through a row and back',
+    (fieldType) => {
+      const field: ServiceField = {
+        key: 'device',
+        name: 'Device',
+        label: 'Device',
+        fieldType,
+        required: true,
+        options: fieldType === 'select' ? ['A', 'B'] : [],
+        regex: '',
+        isMainInput: false,
+      };
+      expect(fieldDraft(field).fieldType).toBe(fieldType);
+      expect(toServiceField(fieldDraft(field))).toEqual(field);
+    },
+  );
 
   it('send no key for a new row, and keep choices only for a choice list and trim the text', () => {
     const draft = {

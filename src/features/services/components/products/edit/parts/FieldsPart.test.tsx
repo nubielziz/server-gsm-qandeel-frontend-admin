@@ -18,6 +18,25 @@ setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
 afterEach(() => vi.restoreAllMocks());
 
+/** The type menu of a field, in order: the four plain types, "IMEI (15 digits)" and the ten more (decision 034). */
+const ALL_TYPE_LABELS = [
+  'Text',
+  'Number',
+  'Choice list',
+  'Long text',
+  'IMEI (15 digits)',
+  'IMEI list (one per line, up to 30)',
+  'IMEISV (16 digits)',
+  'Serial number',
+  'ICCID (SIM number)',
+  'EID (eSIM, 32 digits)',
+  'MEID',
+  'ECID',
+  'MAC address',
+  'Mi lock code',
+  'Box serial number',
+];
+
 const AT_T = 5; // IMEI-ATT-USA, "AT&T USA Premier Unlock": one per order, no custom fields
 const Z3X = 15; // SRV-Z3X-10, "Z3X Credits x10": one order field, `account`
 
@@ -74,10 +93,20 @@ describe('Field: the section', () => {
       'Name',
       'Label',
       'Type "IMEI (15 digits)"',
+      'Type "IMEI list (one per line, up to 30)"',
+      'Type "IMEISV (16 digits)"',
+      'Type "Serial number"',
+      'Type "ICCID (SIM number)"',
+      'Type "EID (eSIM, 32 digits)"',
+      'Type "MEID"',
+      'Type "ECID"',
+      'Type "MAC address"',
+      'Type "Mi lock code"',
+      'Type "Box serial number"',
       'Main input',
       'A pattern the supplier import gave a field is kept and not shown.',
     ]);
-    const mainInput = items[3] as HTMLElement;
+    const mainInput = items[13] as HTMLElement;
     expect(mainInput.id).not.toBe('');
     const tick = fields.getByRole('checkbox', { name: 'Main input of field 1' });
     expect(tick).toHaveAttribute('aria-describedby', mainInput.id);
@@ -295,7 +324,7 @@ describe('Field: the custom fields', () => {
       within(menu)
         .getAllByRole('option')
         .map((option) => option.textContent),
-    ).toEqual(['Text', 'Number', 'Choice list', 'Long text', 'IMEI (15 digits)']);
+    ).toEqual(ALL_TYPE_LABELS);
     await user.type(fields.getByRole('textbox', { name: `Name of field ${count + 1}` }), 'Device IMEI');
     await user.selectOptions(menu, 'IMEI (15 digits)');
     expect(fields.queryByRole('textbox', { name: `Choices of field ${count + 1}` })).not.toBeInTheDocument();
@@ -303,6 +332,37 @@ describe('Field: the custom fields', () => {
     expect(await screen.findByText('Fields saved')).toBeInTheDocument();
     const saved = (await getService(id)).fields;
     expect(saved[count]).toMatchObject({ name: 'Device IMEI', fieldType: 'imei', options: [] });
+  });
+
+  it.each([
+    ['imei_bulk', 'IMEI list (one per line, up to 30)'],
+    ['imeisv', 'IMEISV (16 digits)'],
+    ['serial', 'Serial number'],
+    ['iccid', 'ICCID (SIM number)'],
+    ['eid', 'EID (eSIM, 32 digits)'],
+    ['meid', 'MEID'],
+    ['ecid', 'ECID'],
+    ['mac_address', 'MAC address'],
+    ['mi_lock_code', 'Mi lock code'],
+    ['box_sn', 'Box serial number'],
+  ])('saves a field of the %s type, keeps it after a reload and shows it as "%s"', async (type, label) => {
+    const user = userEvent.setup();
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('button', { name: 'Add a field' });
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    const count = (await getService(Z3X)).fields.length;
+    await user.type(fields.getByRole('textbox', { name: `Name of field ${count + 1}` }), 'Device code');
+    await user.selectOptions(fields.getByRole('combobox', { name: `Type of field ${count + 1}` }), label);
+    expect(fields.queryByRole('textbox', { name: `Choices of field ${count + 1}` })).not.toBeInTheDocument();
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    const saved = (await getService(Z3X)).fields;
+    expect(saved[count]).toMatchObject({ name: 'Device code', fieldType: type, options: [] });
+    // The form shows the saved type again once the record is read.
+    await waitFor(() =>
+      expect(fields.getByRole('combobox', { name: `Type of field ${count + 1}` })).toHaveDisplayValue(label),
+    );
   });
 
   it('shows the choices box only for a choice list', async () => {

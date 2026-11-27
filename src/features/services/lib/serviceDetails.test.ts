@@ -36,7 +36,6 @@ const SERVICE: Service = {
 // The service as the form shows it.
 const values = (changes: Partial<ServiceDetailsValues> = {}): ServiceDetailsValues => ({
   name: 'Sample Unlock',
-  code: 'IMEI-SAMPLE',
   categoryId: '3',
   type: 'imei',
   slaMinutes: '60',
@@ -56,13 +55,14 @@ describe('updateServiceBody', () => {
 
   it('sends only the fields that changed', () => {
     expect(updateServiceBody(values({ slaMinutes: '90' }), SERVICE)).toEqual({ slaMinutes: 90 });
-    expect(
-      updateServiceBody(values({ categoryId: '5', type: 'server', code: 'IMEI-OTHER' }), SERVICE),
-    ).toEqual({
+    expect(updateServiceBody(values({ categoryId: '5', type: 'server' }), SERVICE)).toEqual({
       categoryId: 5,
       type: 'server',
-      code: 'IMEI-OTHER',
     });
+  });
+
+  it('never sends a code: the server makes it', () => {
+    expect(updateServiceBody(values({ name: 'Other' }), SERVICE)).not.toHaveProperty('code');
   });
 
   it('sends the quantity rule only when it differs: a range sends all three keys, packs send the packs', () => {

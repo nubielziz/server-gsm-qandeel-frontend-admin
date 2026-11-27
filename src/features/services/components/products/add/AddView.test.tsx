@@ -42,10 +42,9 @@ const addButton = () => screen.getByRole('button', { name: 'Add' });
 
 type User = ReturnType<typeof userEvent.setup>;
 
-/** Types the boxes a service needs (the group, the delivery time and the credit). */
-async function fill(user: User, values: { name: string; code: string; hours?: string; credit?: string }) {
+/** Types the boxes a service needs (the name, the group, the delivery time and the credit; the server makes the code). */
+async function fill(user: User, values: { name: string; hours?: string; credit?: string }) {
   await user.type(box('Service Name'), values.name);
-  await user.type(box('Code'), values.code);
   await user.selectOptions(menu('Service Listed In Group'), 'Apple');
   await user.type(box('Delivery Time'), values.hours ?? '2');
   await user.selectOptions(menu('Delivery time unit'), 'Hours');
@@ -68,7 +67,6 @@ describe('the form', () => {
     );
     expect(labels).toEqual([
       'Service Name',
-      'Code',
       'Service Listed In Group',
       'Status',
       'Send For Verification',
@@ -111,6 +109,23 @@ describe('the form', () => {
     expect(menu('Delivery time unit')).toHaveDisplayValue('Minutes');
   });
 
+  it('says what the two merchant switches do', async () => {
+    const { user } = await openForm();
+    expect(
+      screen.getByText(
+        'A merchant may cancel an order that was not sent yet. Website orders of this service wait 2 minutes before they are sent, so there is time to cancel.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A merchant may ask once for a check of a completed order's result, inside the window below. The request shows in Orders, under Verification.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(toggle('Send For Verification'));
+    expect(await screen.findByRole('textbox', { name: 'Verification window' })).toBeInTheDocument();
+    expect(screen.queryByText(/0 means no window/)).not.toBeInTheDocument();
+  });
+
   it('names the switches in the words of the layout', async () => {
     await openForm();
     expect(within(toggle('Status')).getByText('Active')).toBeInTheDocument();
@@ -148,7 +163,7 @@ describe('the form', () => {
 describe('adding a service', () => {
   it('creates it in one call, then opens its edit view', async () => {
     const { app, user } = await openForm();
-    await fill(user, { name: 'Pixel Check', code: 'IMEI-PX-1' });
+    await fill(user, { name: 'Pixel Check' });
     const requests = recordRequests();
     await user.click(addButton());
 
@@ -157,9 +172,9 @@ describe('adding a service', () => {
     const sent = requests.sent();
     const created = calls(sent, 'POST');
     expect(created).toHaveLength(1);
+    // No code is sent: the server makes it.
     expect(created[0].body).toEqual({
       name: 'Pixel Check',
-      code: 'IMEI-PX-1',
       categoryId: 1,
       type: 'imei',
       slaMinutes: 120,
@@ -167,7 +182,7 @@ describe('adding a service', () => {
     });
     // An Active, Automatic service needs no second call.
     expect(calls(sent, 'PATCH')).toHaveLength(0);
-    const [made] = (await listServices({ q: 'IMEI-PX-1' })).data;
+    const [made] = (await listServices({ q: 'Pixel Check' })).data;
     expect(made).toMatchObject({
       name: 'Pixel Check',
       type: 'imei',
@@ -179,12 +194,24 @@ describe('adding a service', () => {
     });
     expect(made.category?.name).toBe('Apple');
     expect(app.location()).toContain(`id=${made.id}`);
+    // The new service opens with the code the server made, in the strip of its edit view.
+    expect(made.code).toBe(`IMEI-${made.id}`);
+    expect(await screen.findByText(`#${made.id} · IMEI-${made.id}`)).toBeInTheDocument();
+  });
+
+  it('has no Code box, and never sends a code', async () => {
+    const { user } = await openForm();
+    expect(screen.queryByRole('textbox', { name: /^Code/ })).not.toBeInTheDocument();
+    await fill(user, { name: 'Pixel Nameless' });
+    const requests = recordRequests();
+    await user.click(addButton());
+    expect(await screen.findByRole('heading', { level: 2, name: 'Pixel Nameless' })).toBeInTheDocument();
+    expect(calls(requests.sent(), 'POST')[0].body).not.toHaveProperty('code');
   });
 
   it('sends Your cost and Delivered from code stock with the create, and the service comes back so', async () => {
     const { user } = await openForm(SERVER_ADD, 'Credits');
     await user.type(box('Service Name'), 'iTunes Gift Card 10');
-    await user.type(box('Code'), 'GC-ITUNES-10');
     await user.selectOptions(menu('Service Listed In Group'), 'Credits');
     await user.type(box('Delivery Time'), '1');
     await user.type(box('Credit'), '10');
@@ -198,7 +225,7 @@ describe('adding a service', () => {
     const created = calls(requests.sent(), 'POST');
     expect(created).toHaveLength(1);
     expect(created[0].body).toMatchObject({ ownCost: '4.7000', stockDelivery: true });
-    const [made] = (await listServices({ q: 'GC-ITUNES-10' })).data;
+    const [made] = (await listServices({ q: 'iTunes Gift Card 10' })).data;
     expect(made).toMatchObject({
       stockDelivery: true,
       stockAvailable: 0,
@@ -209,34 +236,35 @@ describe('adding a service', () => {
 
   it('leaves both keys out of the create when the form keeps its defaults', async () => {
     const { user } = await openForm();
-    await fill(user, { name: 'Pixel Plain', code: 'IMEI-PX-9' });
+    await fill(user, { name: 'Pixel Plain' });
     const requests = recordRequests();
     await user.click(addButton());
     expect(await screen.findByRole('heading', { level: 2, name: 'Pixel Plain' })).toBeInTheDocument();
     const [body] = calls(requests.sent(), 'POST').map((request) => request.body);
     expect(body).not.toHaveProperty('ownCost');
     expect(body).not.toHaveProperty('stockDelivery');
-    const [made] = (await listServices({ q: 'IMEI-PX-9' })).data;
+    const [made] = (await listServices({ q: 'Pixel Plain' })).data;
     expect(made).toMatchObject({ stockDelivery: false, ownCost: '0.0000' });
   });
 
   it('adds a service of the kind on the strip', async () => {
     const { user } = await openForm(SERVER_ADD, 'Credits');
-    await user.type(box('Service Name'), 'Credits x5');
-    await user.type(box('Code'), 'SRV-CR-5');
+    await user.type(box('Service Name'), 'Credits Five Pack');
     await user.selectOptions(menu('Service Listed In Group'), 'Credits');
     await user.type(box('Delivery Time'), '5');
     await user.type(box('Credit'), '2');
     await user.click(addButton());
-    expect(await screen.findByRole('heading', { level: 2, name: 'Credits x5' })).toBeInTheDocument();
-    const [made] = (await listServices({ q: 'SRV-CR-5' })).data;
+    expect(await screen.findByRole('heading', { level: 2, name: 'Credits Five Pack' })).toBeInTheDocument();
+    const [made] = (await listServices({ q: 'Credits Five Pack' })).data;
     expect(made).toMatchObject({ type: 'server', slaMinutes: 5 });
+    // The kind makes the start of the code: a Server service gets SRV.
+    expect(made.code).toBe(`SRV-${made.id}`);
     expect(made.category?.name).toBe('Credits');
   });
 
   it('sends Inactive and Manual in one update after the create, and the cancel and verification keys with it', async () => {
     const { user } = await openForm();
-    await fill(user, { name: 'Pixel Slow', code: 'IMEI-PX-2' });
+    await fill(user, { name: 'Pixel Slow' });
     await user.click(toggle('Status'));
     await user.click(toggle('Order handling'));
     await user.click(toggle('User Can Cancel Order'));
@@ -255,7 +283,7 @@ describe('adding a service', () => {
       allowVerify: true,
       verifyWindowH: 48,
     });
-    const [made] = (await listServices({ q: 'IMEI-PX-2' })).data;
+    const [made] = (await listServices({ q: 'Pixel Slow' })).data;
     const changed = calls(sent, 'PATCH');
     expect(changed).toHaveLength(1);
     expect(changed[0].url.pathname.endsWith(`/admin/services/${made.id}`)).toBe(true);
@@ -276,7 +304,7 @@ describe('adding a service', () => {
       ),
     );
     const { app, user } = await openForm();
-    await fill(user, { name: 'Pixel Half', code: 'IMEI-PX-3' });
+    await fill(user, { name: 'Pixel Half' });
     await user.click(toggle('Status'));
     await user.click(addButton());
 
@@ -286,7 +314,7 @@ describe('adding a service', () => {
     ).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 2, name: 'Pixel Half' })).toBeInTheDocument();
     expect(app.location()).toMatch(/^\/products\?view=edit&type=imei&id=\d+$/);
-    const [made] = (await listServices({ q: 'IMEI-PX-3' })).data;
+    const [made] = (await listServices({ q: 'Pixel Half' })).data;
     expect(made.status).toBe('active');
   });
 });
@@ -297,7 +325,7 @@ describe("the checks and the server's refusals", () => {
     const requests = recordRequests();
     await user.click(addButton());
     expect(await screen.findByText('Enter a name.')).toBeInTheDocument();
-    expect(screen.getByText('Enter a code.')).toBeInTheDocument();
+    expect(screen.queryByText('Enter a code.')).not.toBeInTheDocument();
     expect(screen.getByText('Choose a group.')).toBeInTheDocument();
     expect(screen.getByText('Enter a whole number, 1 or more.')).toBeInTheDocument();
     expect(screen.getByText('Enter a credit greater than zero.')).toBeInTheDocument();
@@ -308,7 +336,7 @@ describe("the checks and the server's refusals", () => {
 
   it('asks for an amount in Your cost before it calls the server, and accepts it empty', async () => {
     const { user } = await openForm();
-    await fill(user, { name: 'Pixel Cost', code: 'IMEI-PX-5' });
+    await fill(user, { name: 'Pixel Cost' });
     await user.type(box('Your cost'), 'abc');
     const requests = recordRequests();
     await user.click(addButton());
@@ -327,7 +355,7 @@ describe("the checks and the server's refusals", () => {
       ),
     );
     const { user } = await openForm();
-    await fill(user, { name: 'Odd Cost', code: 'IMEI-ODD-2' });
+    await fill(user, { name: 'Odd Cost' });
     await user.click(addButton());
     expect(await screen.findByText('Enter an amount, 0 or more.')).toBeInTheDocument();
     expect(box('Your cost')).toHaveAttribute('aria-invalid', 'true');
@@ -337,7 +365,7 @@ describe("the checks and the server's refusals", () => {
 
   it('asks for the verification window in hours, 1 to 720', async () => {
     const { user } = await openForm();
-    await fill(user, { name: 'Pixel Window', code: 'IMEI-PX-4' });
+    await fill(user, { name: 'Pixel Window' });
     await user.click(toggle('Send For Verification'));
     const hours = await screen.findByRole('textbox', { name: 'Verification window' });
     await user.clear(hours);
@@ -348,12 +376,20 @@ describe("the checks and the server's refusals", () => {
     expect(calls(requests.sent(), 'POST')).toHaveLength(0);
   });
 
-  it('puts a taken code under the code box and stays on the form', async () => {
+  it('shows a message the server gives about a code in the error slot, as the form has no code box', async () => {
+    mockServer.use(
+      http.post('*/admin/services', () =>
+        problem(409, 'CODE_TAKEN', 'Code already used', 'The code IMEI-ATT-USA is already used by AT&T.', [
+          { field: 'code', message: 'The code IMEI-ATT-USA is already used by AT&T.' },
+        ]),
+      ),
+    );
     const { app, user } = await openForm();
-    await fill(user, { name: 'Copycat', code: 'IMEI-ATT-USA' });
+    await fill(user, { name: 'Copycat' });
     await user.click(addButton());
-    expect(await screen.findByText(/The code IMEI-ATT-USA is already used by/)).toBeInTheDocument();
-    expect(box('Code')).toHaveAttribute('aria-invalid', 'true');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The code IMEI-ATT-USA is already used by AT&T.',
+    );
     expect(app.location()).toBe(ADD);
     expect(addButton()).toBeEnabled();
   });
@@ -370,7 +406,7 @@ describe("the checks and the server's refusals", () => {
       ),
     );
     const { user } = await openForm();
-    await fill(user, { name: 'Odd', code: 'IMEI-ODD-1' });
+    await fill(user, { name: 'Odd' });
     await user.click(addButton());
     expect(await screen.findByText('The group is of another kind.')).toBeInTheDocument();
     expect(menu('Service Listed In Group')).toHaveAttribute('aria-invalid', 'true');
@@ -382,10 +418,9 @@ describe("the checks and the server's refusals", () => {
 });
 
 describe('"- Select -"', () => {
-  it('copies the settings of the chosen service and keeps the typed name and code', async () => {
+  it('copies the settings of the chosen service and keeps the typed name', async () => {
     const { user } = await openForm();
     await user.type(box('Service Name'), 'My Xiaomi');
-    await user.type(box('Code'), 'IMEI-MY-1');
     await screen.findByRole('option', { name: 'Xiaomi Mi Account Clean' });
     await user.selectOptions(menu('Copy settings from'), 'Xiaomi Mi Account Clean');
 
@@ -396,14 +431,12 @@ describe('"- Select -"', () => {
     expect(menu('Delivery time unit')).toHaveDisplayValue('Hours');
     expect(box('Credit')).toHaveValue('5.88');
     expect(box('Service Name')).toHaveValue('My Xiaomi');
-    expect(box('Code')).toHaveValue('IMEI-MY-1');
   });
 
   it('copies "Delivered from code stock" and Your cost, and puts them in the create call', async () => {
     const { user } = await openForm(SERVER_ADD, 'Credits');
     await screen.findByRole('option', { name: 'Z3X Credits x10' });
     await user.type(box('Service Name'), 'Z3X Credits x20');
-    await user.type(box('Code'), 'SRV-Z3X-20');
     await user.selectOptions(menu('Copy settings from'), 'Z3X Credits x10');
     expect(toggle('Delivered from code stock')).toHaveAttribute('aria-checked', 'true');
     expect(box('Your cost')).toHaveValue('8.50');

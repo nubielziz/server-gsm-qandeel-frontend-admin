@@ -13,7 +13,6 @@ import {
   followUpBody,
   followUpWords,
   ownCostProblem,
-  windowProblem,
   type AddServiceValues,
 } from './addServiceForm';
 
@@ -22,7 +21,6 @@ function filled(changes: Partial<AddServiceValues> = {}): AddServiceValues {
   return {
     ...addServiceDefaults(),
     name: '  Pixel Check ',
-    code: ' IMEI-PX-1 ',
     categoryId: '1',
     deliveryAmount: '2',
     deliveryUnit: 'hours',
@@ -80,21 +78,13 @@ describe('the delivery time', () => {
   });
 });
 
-describe('the credit and the verification window', () => {
+// The verification window's own rule is tested in lib/verifyWindow.test.ts.
+describe('the credit', () => {
   it('asks for an amount above zero', () => {
     expect(creditProblem('3.5')).toBe(true);
     expect(creditProblem('0.0001')).toBe(true);
     for (const text of ['', '0', '0.00', '-1', 'abc', '1.23456']) {
       expect(creditProblem(text)).toBe('Enter a credit greater than zero.');
-    }
-  });
-
-  it('asks for 1 to 720 hours, and only while verification is on', () => {
-    expect(windowProblem({ verify: false, verifyWindowH: 'abc' })).toBe(true);
-    expect(windowProblem({ verify: true, verifyWindowH: '24' })).toBe(true);
-    expect(windowProblem({ verify: true, verifyWindowH: '720' })).toBe(true);
-    for (const text of ['', '0', '721', '1.5', 'x']) {
-      expect(windowProblem({ verify: true, verifyWindowH: text })).toBe('Enter the hours, 1 to 720.');
     }
   });
 });
@@ -103,7 +93,6 @@ describe('the create body', () => {
   it('has the trimmed words, the group, the minutes and the credit as the API writes money', () => {
     expect(createBody(filled(), 'imei')).toEqual({
       name: 'Pixel Check',
-      code: 'IMEI-PX-1',
       categoryId: 1,
       type: 'imei',
       slaMinutes: 120,
@@ -173,7 +162,6 @@ describe('the blank form', () => {
   it('starts a service as the server starts it, with nothing typed', () => {
     expect(addServiceDefaults()).toEqual({
       name: '',
-      code: '',
       categoryId: '',
       active: true,
       automatic: true,

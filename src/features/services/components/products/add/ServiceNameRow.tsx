@@ -1,5 +1,5 @@
 // ServiceNameRow: "Service Name *" of the +Add Service form: the name box and, beside it, the "- Select -" menu that copies the settings of an
-// existing service of the same kind into the form (the name and the code stay as typed). Hint under both.
+// existing service of the same kind into the form (the name stays as typed). Hint under both.
 import { useId, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { cx, FormRow, SelectField, type SelectOption } from '@/components/ui';
@@ -21,8 +21,7 @@ export interface ServiceNameRowProps {
 
 /**
  * The menu lists the services of the kind by name (the first 200: the services menus are capped, and the hint says so when the cap is
- * reached). Choosing one fills the group, status, order handling, verification, cancel, delivery time and credit; it never changes the name or
- * the code. Status and Order handling are sent by the update after the create (`catalog:update`), so a role without it does not get them from
+ * reached). Choosing one fills the group, status, order handling, verification, cancel, delivery time and credit; it never changes the name. Status and Order handling are sent by the update after the create (`catalog:update`), so a role without it does not get them from
  * the copy, and the hint says so. It needs `catalog:read`, which the view already needs.
  */
 export function ServiceNameRow({ form, type, grants }: ServiceNameRowProps) {

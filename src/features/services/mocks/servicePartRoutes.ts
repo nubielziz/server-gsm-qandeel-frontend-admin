@@ -2,7 +2,8 @@
 // (`PUT /admin/services/:id/fields|group-prices`). Each checks its list the way a server would and answers with the saved list.
 // The fields route plays the server's naming rules: a row with the key of a saved field is that field, a row without a key is new and
 // gets a key made from its name, an unknown key is refused, a name may be used once in a service whatever its letter case, and on an
-// IMEI service a field named IMEI is the main input when no row is flagged. A field may be of any of the five types on any service type.
+// IMEI service a field named IMEI is the main input when no row is flagged. A field may be of any of the fifteen types on any service type,
+// and of nothing else. The mock only names the types (it keeps the choices of a choice list); the server judges the answers of an order.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { toMoney } from '@/mocks/seed';
 import { bodyOf, idOf, invalid, notFound, signedIn } from './http';
@@ -10,7 +11,23 @@ import { servicesStore } from './store';
 import type { ServiceField, ServiceGroupPrice } from '../types';
 import { RETAIL_GROUP_KIND } from '../lib/groupPrices';
 
-const FIELD_TYPES = ['text', 'number', 'select', 'textarea', 'imei'];
+const FIELD_TYPES = [
+  'text',
+  'number',
+  'select',
+  'textarea',
+  'imei',
+  'imei_bulk',
+  'imeisv',
+  'serial',
+  'iccid',
+  'eid',
+  'meid',
+  'ecid',
+  'mac_address',
+  'mi_lock_code',
+  'box_sn',
+];
 /** The longest hidden key and the longest name a field may have (the server's limits). */
 const KEY_MAX = 60;
 const NAME_MAX = 120;

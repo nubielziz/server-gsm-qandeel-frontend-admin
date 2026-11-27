@@ -61,9 +61,7 @@ export function readAddDraft(type: ServiceType): AddServiceValues | null {
   if (typeof saved !== 'object' || saved === null || Array.isArray(saved)) return null;
   const fields = new Map(Object.entries(saved));
   const blank = addServiceDefaults();
-  const text = (
-    key: 'name' | 'code' | 'categoryId' | 'verifyWindowH' | 'deliveryAmount' | 'credit' | 'ownCost',
-  ) => {
+  const text = (key: 'name' | 'categoryId' | 'verifyWindowH' | 'deliveryAmount' | 'credit' | 'ownCost') => {
     const value = fields.get(key);
     return typeof value === 'string' ? value : blank[key];
   };
@@ -74,7 +72,6 @@ export function readAddDraft(type: ServiceType): AddServiceValues | null {
   const unit = DELIVERY_UNITS.find((choice) => choice.value === fields.get('deliveryUnit'));
   return {
     name: text('name'),
-    code: text('code'),
     categoryId: text('categoryId'),
     active: flag('active'),
     automatic: flag('automatic'),

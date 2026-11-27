@@ -1,6 +1,7 @@
 // The values of the +Add Service form (a service made by hand), as typed text, and what they become: the body of the one create call, the
 // body of the one update that follows it, the checks that run before the server is called and the settings a chosen service copies in.
 // Pure text-to-body mapping; the server stays the authority (the create route takes no status or order handling, so those two go in the update).
+// The form has no code: the server makes the service's code (<PREFIX>-<id>) and the new service shows it when it opens.
 import {
   deliveryMinutes,
   deliveryOf,
@@ -10,8 +11,6 @@ import {
 import { isMoneyText, moneyInput, sameMoney, toMoneyText } from '../../../lib/money';
 import type { CreateServiceBody, Service, ServiceType, UpdateServiceBody } from '../../../types';
 
-/** The longest verification window the server accepts, in hours (30 days). */
-export const MAX_VERIFY_WINDOW_H = 720;
 /** What the window box holds when "Send For Verification" is switched on and the form has no other figure for it. */
 export const DEFAULT_VERIFY_WINDOW_H = '24';
 
@@ -24,7 +23,6 @@ export const DEFAULT_VERIFY_WINDOW_H = '24';
  */
 export type AddServiceValues = {
   name: string;
-  code: string;
   categoryId: string;
   active: boolean;
   automatic: boolean;
@@ -39,14 +37,13 @@ export type AddServiceValues = {
 };
 
 /**
- * The blank form. The switches start as the server starts a new service (Active, Automatic, no verification, no cancel); the name, code,
+ * The blank form. The switches start as the server starts a new service (Active, Automatic, no verification, no cancel); the name,
  * group, delivery time and credit are typed (the server refuses a zero credit and a zero delivery time, so there is no default for them).
  * Your cost starts empty (the server's 0) and a service is not delivered from code stock until the person says so.
  */
 export function addServiceDefaults(): AddServiceValues {
   return {
     name: '',
-    code: '',
     categoryId: '',
     active: true,
     automatic: true,
@@ -64,7 +61,6 @@ export function addServiceDefaults(): AddServiceValues {
 /** The names of the form's fields, so a server message about any other field shows in the error slot. */
 export const ADD_SERVICE_FIELDS: readonly string[] = [
   'name',
-  'code',
   'categoryId',
   'active',
   'automatic',
@@ -111,23 +107,15 @@ export function ownCostProblem(ownCost: string): string | true {
   return ownCost.trim() === '' || isMoneyText(ownCost) ? true : 'Enter an amount, 0 or more.';
 }
 
-/** The message under the verification window, or true when it is fine or the window does not apply (verification is off). */
-export function windowProblem(values: Pick<AddServiceValues, 'verify' | 'verifyWindowH'>): string | true {
-  if (!values.verify) return true;
-  const text = values.verifyWindowH.trim();
-  const hours = /^\d+$/.test(text) ? Number(text) : Number.NaN;
-  return hours >= 1 && hours <= MAX_VERIFY_WINDOW_H ? true : `Enter the hours, 1 to ${MAX_VERIFY_WINDOW_H}.`;
-}
-
 /**
- * The body of `POST /admin/services`: the typed words, the group, the delivery time in minutes and the credit as the API's money text. The
+ * The body of `POST /admin/services`: the typed name, the group, the delivery time in minutes and the credit as the API's money text. The
  * cancel and verification keys are sent only when they are on (the server starts a service with both off and no window); so are
- * `stockDelivery` (it starts off) and `ownCost` (only when a figure was typed: the server starts it at 0).
+ * `stockDelivery` (it starts off) and `ownCost` (only when a figure was typed: the server starts it at 0). It never sends a `code`: the
+ * server makes it (`<PREFIX>-<id>`).
  */
 export function createBody(values: AddServiceValues, type: ServiceType): CreateServiceBody {
   return {
     name: values.name.trim(),
-    code: values.code.trim(),
     categoryId: Number(values.categoryId),
     type,
     slaMinutes: deliveryMinutes(values.deliveryAmount, values.deliveryUnit) ?? 0,
@@ -161,8 +149,8 @@ export function followUpWords(body: UpdateServiceBody): string {
 
 /**
  * The settings a chosen service gives the form ("- Select -"): its group, status, order handling, verification and window, cancel, delivery time,
- * credit, "Delivered from code stock" and its own cost (an own cost of 0 leaves the box empty, as for a service with none). Not its name or code
- * (they are typed: a code must be new) and not its quantity rule (the editor's Field part owns it).
+ * credit, "Delivered from code stock" and its own cost (an own cost of 0 leaves the box empty, as for a service with none). Not its name
+ * (it is typed) and not its quantity rule (the editor's Field part owns it).
  * `switches: false` leaves Status and Order handling out: the update that sets them needs `catalog:update`, and a copy must never put a
  * value in the form that the role cannot send (the create route would start the service Active and Automatic, whatever the form showed).
  */

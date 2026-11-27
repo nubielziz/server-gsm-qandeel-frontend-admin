@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
+import { problem } from '@/mocks/problem';
 import { renderApp, setupMockApi, signInAs } from '@/test/renderApp';
 import { createService, getService, importInventoryCodes, updateService } from '../../../api';
 import { groupHandlers } from '../../../mocks/testGroups';
@@ -202,7 +203,10 @@ describe('the Overview part', () => {
   it('shows the service in label-left rows: name, code, group, delivery time and the four switches', async () => {
     await openOverview();
     expect(textbox('Service Name')).toHaveValue('EE UK Unlock');
-    expect(textbox('Code')).toHaveValue('IMEI-EE-UK');
+    // The code is made by the system: a plain value with its hint, never a box.
+    expect(screen.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
+    expect(screen.getByText('IMEI-EE-UK', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('Made by the system.')).toBeInTheDocument();
     const group = screen.getByRole('combobox', { name: 'Service Listed In Group' });
     await waitFor(() => expect(group).toHaveDisplayValue('Carrier unlock'));
     expect(textbox('Delivery Time')).toHaveValue('1');
@@ -367,7 +371,7 @@ describe('the Overview part', () => {
     await user.type(textbox('Delivery Time'), '0');
     await user.clear(textbox('Service Name'));
     await user.click(saveButton());
-    expect(await screen.findByText('Enter hours, 0 to 720.')).toBeInTheDocument();
+    expect(await screen.findByText('Enter the hours, 1 to 720.')).toBeInTheDocument();
     expect(screen.getByText('Enter a whole number, 1 or more.')).toBeInTheDocument();
     expect(screen.getByText('Enter a name.')).toBeInTheDocument();
     expect(patches(requests)).toHaveLength(0);
@@ -436,22 +440,71 @@ describe('the Overview part', () => {
 
   it('puts the server’s refusal under the row it names and keeps the changes', async () => {
     const user = userEvent.setup();
+    mockServer.use(
+      http.patch('*/admin/services/:id', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'slaMinutes', message: 'Enter minutes, 1 or more.' },
+        ]),
+      ),
+    );
     await openOverview();
-    await user.clear(textbox('Code'));
-    await user.type(textbox('Code'), 'IMEI-TMO-USA');
+    await user.clear(textbox('Delivery Time'));
+    await user.type(textbox('Delivery Time'), '3');
     await user.click(saveButton());
-    expect(
-      await screen.findByText('The code IMEI-TMO-USA is already used by T-Mobile USA Unlock.'),
-    ).toBeInTheDocument();
-    expect(textbox('Code')).toHaveValue('IMEI-TMO-USA');
+    expect(await screen.findByText('Enter minutes, 1 or more.')).toBeInTheDocument();
+    expect(textbox('Delivery Time')).toHaveValue('3');
     expect(saveButton()).toBeEnabled();
+    expect((await getService(EE_UK)).slaMinutes).toBe(1440);
+  });
+
+  it('never sends the code, which the server made: a save of another change leaves it out', async () => {
+    const user = userEvent.setup();
+    await openOverview();
+    const requests = recordRequests();
+    await user.clear(textbox('Service Name'));
+    await user.type(textbox('Service Name'), 'EE UK Unlock Plus');
+    await user.click(saveButton());
+    expect(await screen.findByText('Saved')).toBeInTheDocument();
+    const [sent] = patches(requests);
+    expect(sent.body).toEqual({ name: 'EE UK Unlock Plus' });
     expect((await getService(EE_UK)).code).toBe('IMEI-EE-UK');
+  });
+
+  it('says what the two merchant switches do, and what the window is', async () => {
+    const user = userEvent.setup();
+    await openOverview();
+    expect(
+      screen.getByText(
+        'A merchant may cancel an order that was not sent yet. Website orders of this service wait 2 minutes before they are sent, so there is time to cancel.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A merchant may ask once for a check of a completed order's result, inside the window below. The request shows in Orders, under Verification.",
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('switch', { name: 'Send For Verification' }));
+    expect(await screen.findByRole('textbox', { name: 'Verification window' })).toBeInTheDocument();
+    expect(
+      screen.getByText('How long after an order completes a merchant may ask for its verification.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/0 means no window/)).not.toBeInTheDocument();
+  });
+
+  it('shows a stored window of 0 as it is and refuses to save it with verification on', async () => {
+    const user = userEvent.setup();
+    await openOverview();
+    const requests = recordRequests();
+    await user.click(screen.getByRole('switch', { name: 'Send For Verification' }));
+    expect(await screen.findByRole('textbox', { name: 'Verification window' })).toHaveValue('0');
+    await user.click(saveButton());
+    expect(await screen.findByText('Enter the hours, 1 to 720.')).toBeInTheDocument();
+    expect(patches(requests)).toHaveLength(0);
   });
 
   it('keeps every control off, and says why beside Save, for a role that may not change services', async () => {
     await openOverview(EE_ROUTE, { permissions: ['catalog:read'] });
     expect(textbox('Service Name')).toBeDisabled();
-    expect(textbox('Code')).toBeDisabled();
     expect(screen.getByRole('switch', { name: 'Status' })).toBeDisabled();
     expect(screen.getByRole('switch', { name: 'User Can Cancel Order' })).toBeDisabled();
     expect(saveButton()).toBeDisabled();
@@ -505,7 +558,7 @@ describe('the question before unsaved changes are left', () => {
   it('asks before the link back to All is followed', async () => {
     const user = userEvent.setup();
     const app = await openOverview();
-    await user.type(textbox('Code'), '-2');
+    await user.type(textbox('Service Name'), ' X');
     await user.click(screen.getByRole('link', { name: 'Back to All' }));
     await user.click(within(await question()).getByRole('button', { name: 'Discard changes' }));
     await waitFor(() => expect(app.location()).toBe('/products?view=all&type=imei'));

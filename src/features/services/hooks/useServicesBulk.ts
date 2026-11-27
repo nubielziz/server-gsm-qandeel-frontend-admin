@@ -40,6 +40,7 @@ export type BulkResult = { summary: BulkSummary | null; runId: Id | null };
 /** `progress` is set while a run goes; each action resolves with what the view shows next. */
 export function useServicesBulk() {
   const refresh = useServicesRefresh();
+  // The run hands the ticked ids to `refresh`, so each changed service's own record (an open edit view) is made stale too.
   const { run, progress } = useSequentialRun<number>(refresh);
   const [starting, setStarting] = useState(false);
 

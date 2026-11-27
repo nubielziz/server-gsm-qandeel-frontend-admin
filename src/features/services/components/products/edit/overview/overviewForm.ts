@@ -1,13 +1,11 @@
-// The values of the Overview part's form (status, name, code, group, delivery time, order handling, verification, cancel, code stock) and the body a
-// save sends. The name, code, group and delivery time go through the existing details mapping (lib/serviceDetails.ts), so that one place
-// decides how typed text becomes the API's body; this file adds only the switches the old dialog had no box for. The server stays the authority.
+// The values of the Overview part's form (status, name, group, delivery time, order handling, verification, cancel, code stock) and the body a
+// save sends. The name, group and delivery time go through the existing details mapping (lib/serviceDetails.ts), so that one place
+// decides how typed text becomes the API's body; this file adds only the switches the old dialog had no box for. The service's code is shown
+// by the part but is not a value of this form: the server makes it, so it is never part of a save. The server stays the authority.
 import { quantityDefaults } from '../../../../lib/quantity';
 import { updateServiceBody, type ServiceDetailsValues } from '../../../../lib/serviceDetails';
 import type { Service, UpdateServiceBody } from '../../../../types';
 import { deliveryMinutes, deliveryOf, type DeliveryUnit } from '../../../../lib/delivery';
-
-/** The longest verification window the API takes, in hours (30 days). */
-export const MAX_VERIFY_WINDOW_H = 720;
 
 /**
  * What the form holds. The switches are booleans: `active` (status), `auto` (order handling: automatic or manual), `verify` (a merchant may
@@ -17,7 +15,6 @@ export const MAX_VERIFY_WINDOW_H = 720;
 export type OverviewValues = {
   active: boolean;
   name: string;
-  code: string;
   categoryId: string;
   delivery: string;
   unit: DeliveryUnit;
@@ -33,7 +30,6 @@ export function overviewDefaults(service: Service): OverviewValues {
   return {
     active: service.status === 'active',
     name: service.name,
-    code: service.code,
     categoryId: String(service.categoryId),
     ...deliveryOf(service.slaMinutes),
     auto: service.executionMode === 'auto',
@@ -47,7 +43,6 @@ export function overviewDefaults(service: Service): OverviewValues {
 /** The names of the form's fields, each with an error line in its row, so a server message about any other field shows in the error slot. */
 export const OVERVIEW_FIELDS: readonly string[] = [
   'name',
-  'code',
   'categoryId',
   'delivery',
   'verifyWindowH',
@@ -72,7 +67,6 @@ function detailsOf(values: OverviewValues, service: Service): ServiceDetailsValu
   return {
     ...quantityDefaults(service),
     name: values.name,
-    code: values.code,
     categoryId: values.categoryId,
     type: service.type,
     slaMinutes: String(deliveryMinutes(values.delivery, values.unit) ?? service.slaMinutes),
@@ -98,13 +92,4 @@ export function overviewBody(values: OverviewValues, service: Service): UpdateSe
   if (values.cancel !== service.allowCancel) body.allowCancel = values.cancel;
   if (values.stockDelivery !== service.stockDelivery) body.stockDelivery = values.stockDelivery;
   return body;
-}
-
-/** The message under the verification window box, or true when it is fine (or verification is off). */
-export function windowProblem(values: Pick<OverviewValues, 'verify' | 'verifyWindowH'>): string | true {
-  if (!values.verify) return true;
-  const text = values.verifyWindowH.trim();
-  return /^\d+$/.test(text) && Number(text) <= MAX_VERIFY_WINDOW_H
-    ? true
-    : `Enter hours, 0 to ${MAX_VERIFY_WINDOW_H}.`;
 }

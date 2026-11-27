@@ -1,13 +1,14 @@
 // OverviewFields: the rows of the Overview part, label on the left and control on the right (the layout the owner asked for), in the order of the
-// +Add Service form: Service Name, Code, Service Listed In Group, Status, Send For Verification (its window in hours is a row of its own,
-// shown when Yes), User Can Cancel Order, Delivery Time, Order handling and Delivered from code stock. It owns no request: the group names are read here and the save
-// belongs to the part.
+// +Add Service form: Service Name, Code (read only: the server makes it), Service Listed In Group, Status, Send For Verification (its window in
+// hours is a row of its own, shown when Yes), User Can Cancel Order, Delivery Time, Order handling and Delivered from code stock. It owns no
+// request: the group names are read here and the save belongs to the part.
 import type { UseFormReturn } from 'react-hook-form';
-import { FormRow, SectionHeading, SelectField, TextField } from '@/components/ui';
+import { FormRow, ReadValue, SectionHeading, SelectField, TextField } from '@/components/ui';
 import { LookupNote } from '../../../LookupNote';
 import { useCategories } from '../../../../hooks/useChoices';
 import { deliveryProblem, DELIVERY_UNITS } from '../../../../lib/delivery';
-import { windowProblem, type OverviewValues } from './overviewForm';
+import { CANCEL_HINT, VERIFY_HINT, WINDOW_HINT, windowProblem } from '../../../../lib/verifyWindow';
+import type { OverviewValues } from './overviewForm';
 import { SwitchRow } from './SwitchRow';
 import { withChosen } from '../../../../lib/select';
 import type { Service } from '../../../../types';
@@ -64,18 +65,9 @@ export function OverviewFields({ form, service, lock }: OverviewFieldsProps) {
         error={errors.name}
         {...register('name', { validate: (value) => value.trim() !== '' || 'Enter a name.' })}
       />
-      <TextField
-        layout="row"
-        label="Code"
-        required
-        className="mono"
-        autoComplete="off"
-        spellCheck={false}
-        maxLength={40}
-        hint="A short unique code, such as IMEI-ATT-USA."
-        error={errors.code}
-        {...register('code', { validate: (value) => value.trim() !== '' || 'Enter a code.' })}
-      />
+      <FormRow label="Code" hint="Made by the system.">
+        <ReadValue className="mono">{service.code}</ReadValue>
+      </FormRow>
       <div>
         <SelectField
           layout="row"
@@ -97,12 +89,12 @@ export function OverviewFields({ form, service, lock }: OverviewFieldsProps) {
         hint="Merchants can order an active service. An inactive one is hidden from them, and its open orders continue."
         lock={lock}
       />
-      <SwitchRow form={form} name="verify" label="Send For Verification" lock={lock} />
+      <SwitchRow form={form} name="verify" label="Send For Verification" hint={VERIFY_HINT} lock={lock} />
       {verify && (
         <FormRow
           label="Verification window"
           htmlFor={WINDOW_ID}
-          hint="How long after an order completes a merchant may ask for its verification. 0 means no window."
+          hint={WINDOW_HINT}
           error={errors.verifyWindowH?.message}
         >
           <div className="flex items-center gap-2">
@@ -121,13 +113,7 @@ export function OverviewFields({ form, service, lock }: OverviewFieldsProps) {
           </div>
         </FormRow>
       )}
-      <SwitchRow
-        form={form}
-        name="cancel"
-        label="User Can Cancel Order"
-        hint="A merchant may cancel an order that was never sent."
-        lock={lock}
-      />
+      <SwitchRow form={form} name="cancel" label="User Can Cancel Order" hint={CANCEL_HINT} lock={lock} />
       <FormRow
         label="Delivery Time"
         htmlFor={DELIVERY_ID}

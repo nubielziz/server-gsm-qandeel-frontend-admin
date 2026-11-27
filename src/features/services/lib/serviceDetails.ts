@@ -1,12 +1,11 @@
-// The values of the service details (name, code, category, type, SLA, quantity) and the body an edit sends. Pure text-to-body mapping, used
-// by the edit view's Overview part; the server stays the authority.
+// The values of the service details (name, category, type, SLA, quantity) and the body an edit sends. Pure text-to-body mapping, used
+// by the edit view's Overview part; the server stays the authority. The code is never sent: the server makes it and the Overview shows it.
 import { quantityBody, type QuantityValues } from './quantity';
 import type { Service, ServiceType, UpdateServiceBody } from '../types';
 
 /** What the form holds, as text. `basePrice` is not part of an edit's body (the Set Pricing part saves the price). */
 export type ServiceDetailsValues = QuantityValues & {
   name: string;
-  code: string;
   categoryId: string;
   type: ServiceType;
   slaMinutes: string;
@@ -17,7 +16,6 @@ export type ServiceDetailsValues = QuantityValues & {
 function typed(values: ServiceDetailsValues) {
   return {
     name: values.name.trim(),
-    code: values.code.trim(),
     categoryId: Number(values.categoryId),
     type: values.type,
     slaMinutes: Number(values.slaMinutes),
@@ -29,7 +27,6 @@ export function updateServiceBody(values: ServiceDetailsValues, service: Service
   const next = typed(values);
   const body: UpdateServiceBody = {};
   if (next.name !== service.name) body.name = next.name;
-  if (next.code !== service.code) body.code = next.code;
   if (next.categoryId !== service.categoryId) body.categoryId = next.categoryId;
   if (next.type !== service.type) body.type = next.type;
   if (next.slaMinutes !== service.slaMinutes) body.slaMinutes = next.slaMinutes;

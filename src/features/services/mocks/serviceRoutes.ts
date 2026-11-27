@@ -17,6 +17,21 @@ import type { MockService } from './types';
 
 const SEARCH_FIELDS = ['name', 'code', 'category.name'];
 const TYPES = ['imei', 'server', 'remote', 'file'];
+/** The start of a code the server makes, by kind of service. */
+const CODE_PREFIX: Record<MockService['type'], string> = {
+  imei: 'IMEI',
+  server: 'SRV',
+  remote: 'RMT',
+  file: 'FILE',
+};
+
+/** The code the server makes for a service that was sent without one: `<PREFIX>-<id>`, then `-2`, `-3` while that is taken (any case). */
+function madeCode(type: MockService['type'], id: number, isTaken: (code: string) => boolean): string {
+  const first = `${CODE_PREFIX[type]}-${id}`;
+  let code = first;
+  for (let attempt = 2; isTaken(code); attempt += 1) code = `${first}-${attempt}`;
+  return code;
+}
 /** The longest verification window the server accepts, in hours (30 days). */
 const MAX_VERIFY_WINDOW_H = 720;
 
@@ -154,11 +169,15 @@ export const serviceRoutes: HttpHandler[] = [
         groupPrices: [],
       };
       const draft = applyFields(blank, body, problems);
-      for (const field of ['name', 'code', 'basePrice'] as const) {
+      // The code is optional: left out, the server makes it after the row has its id (the mock plays that below).
+      for (const field of ['name', 'basePrice'] as const) {
         if (!(field in body)) problems.push({ field, message: 'This field is required.' });
       }
       if (problems.length > 0) return invalid(problems);
-      const taken = stores.services.list().find((row) => row.code.toLowerCase() === draft.code.toLowerCase());
+      const given = 'code' in body;
+      const taken = given
+        ? stores.services.list().find((row) => row.code.toLowerCase() === draft.code.toLowerCase())
+        : undefined;
       if (taken) {
         const message = `The code ${draft.code} is already used by ${taken.name}.`;
         return conflict('CODE_TAKEN', 'Code already used', message, [{ field: 'code', message }]);
@@ -166,6 +185,10 @@ export const serviceRoutes: HttpHandler[] = [
       // An IMEI service made by hand starts with the default IMEI field (decision 031); the other types start with none.
       const { id: _id, ...row } = draft;
       const created = stores.services.insert({ ...row, fields: defaultFieldsOf(row.type) });
+      if (!given) {
+        const used = new Set(stores.services.list().map((other) => other.code.toLowerCase()));
+        created.code = madeCode(created.type, created.id, (code) => used.has(code.toLowerCase()));
+      }
       return HttpResponse.json(toService(stores, created, await serviceJoin()), { status: 201 });
     }),
   ),

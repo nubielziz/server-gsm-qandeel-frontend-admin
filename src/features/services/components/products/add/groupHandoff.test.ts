@@ -15,7 +15,6 @@ beforeEach(() => sessionStorage.clear());
 const TYPED: AddServiceValues = {
   ...addServiceDefaults(),
   name: 'Pixel Check',
-  code: 'IMEI-PX-1',
   categoryId: '2',
   active: false,
   deliveryAmount: '3',
@@ -57,7 +56,7 @@ describe('the draft', () => {
       'gsm-products-add-draft:imei',
       JSON.stringify({
         name: 'Kept',
-        code: 7,
+        code: 'IMEI-OLD-1',
         active: 'yes',
         deliveryUnit: 'weeks',
         credit: '2',

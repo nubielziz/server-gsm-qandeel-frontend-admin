@@ -217,6 +217,49 @@ describe('createService', () => {
   });
 });
 
+describe('createService without a code', () => {
+  const bare = {
+    name: 'Made Code',
+    categoryId: APPLE,
+    type: 'imei' as const,
+    slaMinutes: 15,
+    basePrice: '2.5000',
+  };
+
+  it('sends no code and gets one made by the server: the start of its kind, a dash and its id', async () => {
+    const requests = recordRequests();
+    const imei = await createService(bare);
+    expect(requests.last().body).not.toHaveProperty('code');
+    expect(imei.code).toBe(`IMEI-${imei.id}`);
+    const kinds = { server: 'SRV', remote: 'RMT', file: 'FILE' } as const;
+    for (const [type, start] of Object.entries(kinds)) {
+      const made = await createService({ ...bare, type: type as keyof typeof kinds });
+      expect(made.code).toBe(`${start}-${made.id}`);
+    }
+  });
+
+  it('adds -2, then -3, when the made code is taken already', async () => {
+    const store = await servicesStore();
+    const first = await createService(bare);
+    // The next id's code is taken before it is made: a service that already holds IMEI-<next id>.
+    const next = Math.max(...store.services.list().map((row) => row.id)) + 1;
+    store.services.patch(first.id, { code: `IMEI-${next}` });
+    const second = await createService(bare);
+    expect(second.id).toBe(next);
+    expect(second.code).toBe(`IMEI-${next}-2`);
+    store.services.patch(first.id, { code: `IMEI-${next + 1}` });
+    store.services.patch(second.id, { code: `IMEI-${next + 1}-2` });
+    const third = await createService(bare);
+    expect(third.id).toBe(next + 1);
+    expect(third.code).toBe(`IMEI-${next + 1}-3`);
+  });
+
+  it('keeps a code that is sent', async () => {
+    const created = await createService({ ...bare, code: 'IMEI-MY-OWN' });
+    expect(created.code).toBe('IMEI-MY-OWN');
+  });
+});
+
 describe('the code stock fields', () => {
   const body = {
     name: 'iTunes Gift Card 10',
@@ -551,6 +594,44 @@ describe('the parts of a service', () => {
     expect(requests.last()).toMatchObject({ method: 'PUT', body: { fields } });
     expect(requests.last().url.pathname).toBe('/admin/services/15/fields');
     expect((await getService(Z3X)).fields).toEqual(saved);
+  });
+
+  it('accepts the fifteen field types, each one back as it was saved, and refuses any other', async () => {
+    const types = [
+      'text',
+      'number',
+      'select',
+      'textarea',
+      'imei',
+      'imei_bulk',
+      'imeisv',
+      'serial',
+      'iccid',
+      'eid',
+      'meid',
+      'ecid',
+      'mac_address',
+      'mi_lock_code',
+      'box_sn',
+    ] as const;
+    const fields = types.map((fieldType) => ({
+      name: `Field ${fieldType}`,
+      fieldType,
+      required: false,
+      options: fieldType === 'select' ? ['A', 'B'] : [],
+      regex: '',
+    }));
+    const saved = await replaceServiceFields(Z3X, { fields });
+    expect(saved.map((field) => field.fieldType)).toEqual(types);
+    expect((await getService(Z3X)).fields.map((field) => field.fieldType)).toEqual(types);
+
+    const error = await replaceServiceFields(Z3X, {
+      fields: [{ name: 'Bad', fieldType: 'imei_list' as never, required: false, options: [], regex: '' }],
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).fieldErrors['fields.0.fieldType']).toEqual(['Choose a type.']);
+    // The refused list changed nothing.
+    expect((await getService(Z3X)).fields.map((field) => field.fieldType)).toEqual(types);
   });
 
   it('gives a new field with a taken key base the next free key, and keeps the saved key when the name changes', async () => {

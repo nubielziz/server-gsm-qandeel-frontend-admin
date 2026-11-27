@@ -4,15 +4,10 @@ import { useId } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import { cx, FormRow, SelectField, YesNo } from '@/components/ui';
 import type { ServiceGrants } from '../../../hooks/useServiceGrants';
-import {
-  creditProblem,
-  deliveryProblem,
-  ownCostProblem,
-  windowProblem,
-  type AddServiceValues,
-} from './addServiceForm';
+import { creditProblem, deliveryProblem, ownCostProblem, type AddServiceValues } from './addServiceForm';
 import { fieldWiring, INVALID_BORDER } from './fieldWiring';
 import { DELIVERY_UNITS } from '../../../lib/delivery';
+import { CANCEL_HINT, VERIFY_HINT, WINDOW_HINT, windowProblem } from '../../../lib/verifyWindow';
 
 export interface ServiceTermsRowsProps {
   form: UseFormReturn<AddServiceValues>;
@@ -57,14 +52,19 @@ export function ServiceTermsRows({ form, grants }: ServiceTermsRowsProps) {
           {...switchLock}
         />
       </FormRow>
-      <FormRow label="Send For Verification" htmlFor={ids.verify} error={errors.verify?.message}>
+      <FormRow
+        label="Send For Verification"
+        htmlFor={ids.verify}
+        hint={VERIFY_HINT}
+        error={errors.verify?.message}
+      >
         <YesNo id={ids.verify} value={verify} onChange={flip('verify')} />
       </FormRow>
       {verify && (
         <FormRow
           label="Verification window"
           htmlFor={ids.window}
-          hint="How long after an order completes a merchant may ask for its verification."
+          hint={WINDOW_HINT}
           error={errors.verifyWindowH?.message}
         >
           <div className="flex items-center gap-2">
@@ -80,7 +80,12 @@ export function ServiceTermsRows({ form, grants }: ServiceTermsRowsProps) {
           </div>
         </FormRow>
       )}
-      <FormRow label="User Can Cancel Order" htmlFor={ids.cancel} error={errors.cancel?.message}>
+      <FormRow
+        label="User Can Cancel Order"
+        htmlFor={ids.cancel}
+        hint={CANCEL_HINT}
+        error={errors.cancel?.message}
+      >
         <YesNo id={ids.cancel} value={watch('cancel')} onChange={flip('cancel')} />
       </FormRow>
       <FormRow

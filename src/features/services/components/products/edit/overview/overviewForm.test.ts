@@ -3,12 +3,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Service } from '../../../../types';
 import {
-  MAX_VERIFY_WINDOW_H,
   OVERVIEW_ALIASES,
   OVERVIEW_FIELDS,
   overviewBody,
   overviewDefaults,
-  windowProblem,
   type OverviewValues,
 } from './overviewForm';
 
@@ -52,7 +50,6 @@ describe('overviewDefaults', () => {
     expect(overviewDefaults(SERVICE)).toEqual({
       active: true,
       name: 'Sample Unlock',
-      code: 'IMEI-SAMPLE',
       categoryId: '3',
       delivery: '1',
       unit: 'days',
@@ -97,13 +94,16 @@ describe('overviewBody', () => {
     expect(overviewBody(values({ delivery: '1440', unit: 'minutes' }), SERVICE)).toEqual({});
   });
 
-  it('sends the name, code, group and delivery time through the details mapping, as the old dialog did', () => {
+  it('sends the name, group and delivery time through the details mapping, as the old dialog did', () => {
     expect(
-      overviewBody(
-        values({ name: ' New name ', code: 'IMEI-NEW', categoryId: '5', delivery: '2', unit: 'hours' }),
-        SERVICE,
-      ),
-    ).toEqual({ name: 'New name', code: 'IMEI-NEW', categoryId: 5, slaMinutes: 120 });
+      overviewBody(values({ name: ' New name ', categoryId: '5', delivery: '2', unit: 'hours' }), SERVICE),
+    ).toEqual({ name: 'New name', categoryId: 5, slaMinutes: 120 });
+  });
+
+  it('never sends a code, and the form holds none: the server makes it', () => {
+    expect(overviewDefaults(SERVICE)).not.toHaveProperty('code');
+    expect(OVERVIEW_FIELDS).not.toContain('code');
+    expect(overviewBody(values({ name: 'Other', cancel: true }), SERVICE)).not.toHaveProperty('code');
   });
 
   it('never sends the type or the quantity rule: the part does not edit them', () => {
@@ -156,22 +156,12 @@ describe('overviewBody', () => {
   });
 });
 
-describe('windowProblem', () => {
-  it('is fine while verification is off, whatever the box holds', () => {
-    expect(windowProblem({ verify: false, verifyWindowH: 'abc' })).toBe(true);
-  });
-
-  it('accepts whole hours from 0 to the largest window', () => {
-    expect(windowProblem({ verify: true, verifyWindowH: '0' })).toBe(true);
-    expect(windowProblem({ verify: true, verifyWindowH: String(MAX_VERIFY_WINDOW_H) })).toBe(true);
-  });
-
-  it('names the range for anything else', () => {
-    const message = 'Enter hours, 0 to 720.';
-    expect(windowProblem({ verify: true, verifyWindowH: '' })).toBe(message);
-    expect(windowProblem({ verify: true, verifyWindowH: '-1' })).toBe(message);
-    expect(windowProblem({ verify: true, verifyWindowH: '1.5' })).toBe(message);
-    expect(windowProblem({ verify: true, verifyWindowH: '721' })).toBe(message);
+// The verification window's own rule (whole hours, 1 to 720) is tested in lib/verifyWindow.test.ts; here a stored 0 is read as it is.
+describe('a stored verification window of 0', () => {
+  it('shows as it is, and is not sent again while it does not change', () => {
+    const on: Service = { ...SERVICE, allowVerify: true, verifyWindowH: 0 };
+    expect(overviewDefaults(on).verifyWindowH).toBe('0');
+    expect(overviewBody(values({ cancel: true }, on), on)).toEqual({ allowCancel: true });
   });
 });
 

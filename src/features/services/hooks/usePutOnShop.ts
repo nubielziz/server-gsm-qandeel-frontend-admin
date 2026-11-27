@@ -59,7 +59,7 @@ const isLive = (run: PublishRun) => run.status === 'queued' || run.status === 'r
 /**
  * `toggle(service, on)` runs the switch of one row; `isBusy(id)` says that row is working (its switch must wait). A second press on a
  * busy row does nothing. Every end (published, not ready, refused, failed) is told in a toast with the server's words, and the table
- * is refreshed once.
+ * and the record of that service (an open edit view reads it) are refreshed once.
  */
 export function usePutOnShop() {
   const navigate = useNavigate();
@@ -236,7 +236,8 @@ export function usePutOnShop() {
       const work = listingId === null ? publish(service) : setListed(service, listingId, on);
       void work.finally(() => {
         mark(service.id, false);
-        void refresh();
+        // The record of this service is made stale too: the edit view that holds it open shows the new state of the switch.
+        void refresh([service.id]);
       });
     },
     [mark, publish, setListed, refresh],

@@ -112,10 +112,28 @@ export type Service = Pick<
 };
 
 /**
- * The kinds of custom field a buyer fills in. The list is an assumption; the map only has the column. `imei` (decision 031) holds one
- * IMEI: the server reads the answer as digits and accepts 15 digits with a valid check digit; it is a kind of field for any service type.
+ * The kinds of custom field a buyer fills in: fifteen. The list is an assumption; the map only has the column. The first four are free
+ * text, a number, a choice and long text. The other eleven are the kinds the server checks and cleans itself (decisions 031 and 034): `imei`
+ * holds one IMEI (15 digits, a valid check digit), `imei_bulk` up to 30 IMEIs one per line, `imeisv` 16 digits, `serial` a serial number,
+ * `iccid` a SIM number, `eid` an eSIM id (32 digits), `meid`, `ecid`, `mac_address`, `mi_lock_code` and `box_sn` (a box serial number).
+ * Each is a kind of field for any service type, and the console only names it: the server judges the answers of an order.
  */
-export type ServiceFieldType = 'text' | 'number' | 'select' | 'textarea' | 'imei';
+export type ServiceFieldType =
+  | 'text'
+  | 'number'
+  | 'select'
+  | 'textarea'
+  | 'imei'
+  | 'imei_bulk'
+  | 'imeisv'
+  | 'serial'
+  | 'iccid'
+  | 'eid'
+  | 'meid'
+  | 'ecid'
+  | 'mac_address'
+  | 'mi_lock_code'
+  | 'box_sn';
 
 /**
  * One custom field of a service (`service_fields`), as the server sends it. Its position in the list is its `sort`. `name` is the
@@ -176,7 +194,11 @@ export type ServiceDetail = Service & {
 /** Body of `POST /admin/services` (assumed contract). Supplier links are made on the Suppliers page. */
 export type CreateServiceBody = {
   name: string;
-  code: string;
+  /**
+   * Left out by the console: the server makes the code, `<PREFIX>-<id>` (imei IMEI, server SRV, remote RMT, file FILE; `-2`, `-3` when
+   * taken). A code sent with the create is kept, and a taken one is refused (`CODE_TAKEN`).
+   */
+  code?: string;
   categoryId: Id;
   type: ServiceType;
   slaMinutes: number;
@@ -188,7 +210,7 @@ export type CreateServiceBody = {
   /** What a merchant may do with an order of the service; all three start off (`false`, `false`, `0`) when left out. */
   allowCancel?: boolean;
   allowVerify?: boolean;
-  /** Hours after completion that a merchant may ask for verification, 0 to 720; `0` means no window. */
+  /** Hours after completion that a merchant may ask for verification, 0 to 720 on the wire; the console sends 1 to 720 (with 0 the button never shows on the website). */
   verifyWindowH?: number;
   /** "Delivered from code stock"; a new service starts with `false`. The server refuses `false` while codes are in stock (`codes_in_stock`). */
   stockDelivery?: boolean;

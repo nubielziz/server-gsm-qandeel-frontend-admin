@@ -42,8 +42,7 @@ export function useOverviewForm(service: Service, onDirtyChange: (dirty: boolean
       setBase(updated);
       form.reset(overviewDefaults(updated));
     },
-    // A code the server says is taken belongs under the Code row, whether or not the problem names the field.
-    { fields: OVERVIEW_FIELDS, aliases: OVERVIEW_ALIASES, codeFields: { CODE_TAKEN: 'code' } },
+    { fields: OVERVIEW_FIELDS, aliases: OVERVIEW_ALIASES },
   );
   return { form, submit, dirty: isDirty };
 }
