@@ -101,7 +101,8 @@ describe('Add', () => {
     const names = table
       .getAllByRole('row')
       .slice(1)
-      .map((r) => within(r).getAllByRole('cell')[1].textContent);
+      // The first two cells are the tick box and the grip of the drag (decision 038); the name is the third.
+      .map((r) => within(r).getAllByRole('cell')[2].textContent);
     expect(names.at(-1)).toBe('Bulk credits');
   });
 

@@ -11,6 +11,17 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-28): Orders columns, drag-and-drop order, one-click API keys (decisions 037, 038, 039)
+
+Merged and pushed on the owner's order (their second request of 2026-11-27). **037:** the Orders table has Type, Service Name (whole, wrapping)
+and Input columns in place of "Service / input". **038:** groups are dragged by a grip in the Group view and saved by one
+`POST /admin/service-categories/order` (backend decision 078); a group's services are dragged in the Pricing view when "Set Order" is on and the
+page holds the whole group; the buttons and the Order boxes stay; dragging is off, with the reason shown, during a search, a save, a partial list
+or without the permission (`services/components/sortable`, new packages `@dnd-kit/core`, `sortable`, `utilities`). **039:** "Generate API key"
+makes a key in one click (the server names it); a key's permissions are its allowed IP addresses and "Valid until" (the owner's ruling), shown
+in the list and edited in "Edit key" with the name and the limit; an expired key can be revoked. Built by Sonnet implementers, reviewed by an Opus
+reviewer (no blockers; three fixes), final review by the lead. **Checks:** typecheck, lint, the whole Vitest suite (8,348 tests).
+
 ## Status (2026-11-27): fewer inputs to type (decisions 035, 036)
 
 Merged and pushed on the owner's order. The owner agreed a numbered list of 39 inputs: removed (the system fills them: a supplier's currency and API
