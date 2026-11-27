@@ -1,6 +1,7 @@
 // ApiPart: the "API" part of an account's record (for an account with a merchant rank and a login): the Dhru address and username a merchant's
-// client program uses, and the account's API keys with New key…, Limits… and Revoke…. The Owner makes a key for an active account (shown once);
-// anyone with the permission changes limits or revokes. The demo's "Rotate key" has no admin route (MISMATCHES M45). The address is the map's
+// client program uses, and the account's API keys with "Generate API key" (one click, no dialog, the server names the key), "Key with limits…",
+// Edit… and Revoke…. The Owner makes a key for an active account (shown once); anyone with the permission edits or revokes (a change that gives
+// a key more reach is for the Owner, the server says so). The demo's "Rotate key" has no admin route (MISMATCHES M45). The address is the map's
 // Dhru address (`/api/index.php`), not the demo's `/dhru/index.php` (MISMATCHES M51). The keys are read whole and paged in the browser.
 import { useState } from 'react';
 import {
@@ -15,19 +16,19 @@ import {
 } from '@/components/ui';
 import { apiUrl } from '@/lib/api';
 import { useNow } from '@/lib/format';
-import { useAccountApiKeys } from '../../hooks/useAccountApiKeys';
+import { useAccountApiKeys, useCreateAccountApiKey } from '../../hooks/useAccountApiKeys';
 import type { ApiKey } from '../../types';
 import type { AccountPartProps } from '../types';
 import { ApiKeyTable } from './ApiKeyTable';
 import { newKeyLock } from './keyState';
-import { KeyLimitsDialog } from './KeyLimitsDialog';
+import { EditKeyDialog } from './EditKeyDialog';
 import { NewKeyDialog } from './NewKeyDialog';
 import { RevealKeyDialog } from './RevealKeyDialog';
 import { RevokeKeyDialog } from './RevokeKeyDialog';
 
-// Which dialog is open: a key's limits or its revoking, a new key, or the one-time view of the key just made (held here, never cached).
+// Which dialog is open: a key's edit or its revoking, a new key, or the one-time view of the key just made (held here, never cached).
 type Dialog =
-  | { kind: 'limits' | 'revoke'; key: ApiKey }
+  | { kind: 'edit' | 'revoke'; key: ApiKey }
   | { kind: 'create' }
   | { kind: 'reveal'; name: string; secret: string };
 
@@ -40,6 +41,7 @@ export function ApiPart({ account, grants }: AccountPartProps) {
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(DEFAULT_SIZE);
+  const generate = useCreateAccountApiKey({ toastErrors: true });
 
   const all = keys.data ?? [];
   const current = Math.min(page, Math.max(1, Math.ceil(all.length / size)));
@@ -82,24 +84,47 @@ export function ApiPart({ account, grants }: AccountPartProps) {
               The merchant creates keys in their portal; they show here.
             </EmptyState>
           }
-          limitsLock={grants.needs('api_keys:update')}
+          editLock={grants.needs('api_keys:update')}
           revokeLock={grants.needs('api_keys:revoke')}
-          onLimits={(key) => setDialog({ kind: 'limits', key })}
+          onEdit={(key) => setDialog({ kind: 'edit', key })}
           onRevoke={(key) => setDialog({ kind: 'revoke', key })}
         />
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {/* One click: no dialog and no name (the server names the key); the key is then shown once, in the one-time dialog. */}
           <Button
             size="sm"
+            variant="primary"
+            loading={generate.isPending}
             disabled={createLock.disabled}
+            title={createLock.title}
+            onClick={() =>
+              generate.mutate(
+                { account, body: {} },
+                {
+                  onSuccess: (created) => {
+                    setDialog({ kind: 'reveal', name: created.key.name, secret: created.secret });
+                    // The one-time dialog holds the key now: let go of the mutation's copy, or it stays in memory while the part is open.
+                    generate.reset();
+                  },
+                },
+              )
+            }
+          >
+            <Icon name="plus" className="ic-sm" />
+            Generate API key
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={createLock.disabled || generate.isPending}
             title={createLock.title}
             onClick={() => setDialog({ kind: 'create' })}
           >
-            <Icon name="plus" className="ic-sm" />
-            New key…
+            Key with limits…
           </Button>
         </div>
 
-        {dialog?.kind === 'limits' && <KeyLimitsDialog apiKey={dialog.key} onClose={() => setDialog(null)} />}
+        {dialog?.kind === 'edit' && <EditKeyDialog apiKey={dialog.key} onClose={() => setDialog(null)} />}
         {dialog?.kind === 'revoke' && <RevokeKeyDialog apiKey={dialog.key} onClose={() => setDialog(null)} />}
         {dialog?.kind === 'create' && (
           <NewKeyDialog

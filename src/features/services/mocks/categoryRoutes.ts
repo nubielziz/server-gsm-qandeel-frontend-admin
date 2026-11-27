@@ -1,12 +1,17 @@
-// Mock of the category routes (`/admin/service-categories*`). The mock refuses to delete a category that services still use. The merchant
+// Mock of the category routes (`/admin/service-categories*`). The mock refuses to delete a category that services still use, and stores the
+// order of groups all or none with the words of the backend's contract (`POST /admin/service-categories/order`, decision 078). The merchant
 // group list the pricing screens read (`GET /admin/client-groups`) is not served here: the accounts feature owns that route.
 import { http, HttpResponse, type HttpHandler } from 'msw';
+import { problem } from '@/mocks/problem';
+import { covers, sessionPermissions } from './access';
 import { toCategory } from './dto';
-import { bodyOf, conflict, invalid, listAnswer, notFound, signedIn, textOf } from './http';
+import { bodyOf, conflict, idOf, invalid, listAnswer, notFound, signedIn, textOf } from './http';
 import { servicesStore } from './store';
 import type { MockCategory } from './types';
 
 const TYPES = ['imei', 'server', 'remote', 'file'];
+const MAX_ORDER_ITEMS = 500;
+const MAX_SORT = 1_000_000;
 
 /** Applies the fields of a body to a category, collecting the problems. */
 function applyFields(
@@ -49,6 +54,63 @@ export const categoryRoutes: HttpHandler[] = [
         request,
         ['name'],
       );
+    }),
+  ),
+
+  // The order of groups: 1 to 500 groups, all saved or none. A group listed twice or unknown is a 422 on `items.N.id`, a bad position a 422 on
+  // `items.N.sort`; every problem comes back together. The answer counts the groups that changed position.
+  http.post('*/admin/service-categories/order', ({ request }) =>
+    signedIn(request, async () => {
+      if (!covers(await sessionPermissions(), 'catalog:update')) {
+        return problem(
+          403,
+          'FORBIDDEN',
+          'Forbidden',
+          'You need the catalog:update permission to change the order of groups.',
+        );
+      }
+      const stores = await servicesStore();
+      const body = await bodyOf(request);
+      const items = Array.isArray(body.items) ? (body.items as Record<string, unknown>[]) : [];
+      if (items.length < 1) return invalid([{ field: 'items', message: 'Send at least one category.' }]);
+      if (items.length > MAX_ORDER_ITEMS) {
+        return invalid([
+          { field: 'items', message: `Send at most ${MAX_ORDER_ITEMS} categories at a time.` },
+        ]);
+      }
+      const problems: { field: string; message: string }[] = [];
+      const seen = new Set<number>();
+      const parsed = items.map((item, index) => {
+        const id = idOf(item.id);
+        const sort = typeof item.sort === 'number' ? item.sort : Number.NaN;
+        if (id !== null && seen.has(id)) {
+          problems.push({ field: `items.${index}.id`, message: 'This category is listed twice.' });
+        } else if (id === null || !stores.categories.find(id)) {
+          problems.push({
+            field: `items.${index}.id`,
+            message: `No category has the id ${String(item.id)}.`,
+          });
+        }
+        if (id !== null) seen.add(id);
+        const refusal = !Number.isInteger(sort)
+          ? 'Enter a whole number.'
+          : sort < 0
+            ? 'Enter 0 or more.'
+            : sort > MAX_SORT
+              ? `Use at most ${MAX_SORT}.`
+              : null;
+        if (refusal) problems.push({ field: `items.${index}.sort`, message: refusal });
+        return { id: id ?? 0, sort };
+      });
+      if (problems.length > 0) return invalid(problems);
+      let updated = 0;
+      for (const { id, sort } of parsed) {
+        const row = stores.categories.find(id);
+        if (!row || row.sort === sort) continue;
+        stores.categories.patch(id, { sort });
+        updated += 1;
+      }
+      return HttpResponse.json({ updated });
     }),
   ),
 

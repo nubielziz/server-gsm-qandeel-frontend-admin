@@ -1,12 +1,14 @@
 // ApiKeyTable: the keys of one account in the list skin: the name (with "Made by support" under a key staff made), the key's prefix, its
-// limit, the addresses it may be used from, when it was made and last used, its state as a square and a word, and Limits… and Revoke… on the
-// keys that still work. The demo's "Rotate key" has no admin route (MISMATCHES M45).
+// limit, its permissions at a glance (the addresses that may use it, or "Any address", and "Valid until <day>" or "No end", marked when the key has
+// expired; decision 039; on a small screen, where the column is hidden, the same words as one line under the name), when it was made and last used,
+// its state as a square and a word, and Edit… and Revoke… (both on a key that is not revoked: an expired key may be given a later end, so it may be
+// revoked to stay dead). The demo's "Rotate key" has no admin route (MISMATCHES M45).
 import type { ReactNode } from 'react';
-import { Button, DataTable, StatusSquare, type DataTableColumn } from '@/components/ui';
+import { Button, cx, DataTable, StatusSquare, type DataTableColumn } from '@/components/ui';
 import { ago, fmtDate } from '@/lib/format';
 import type { ApiKey } from '../../types';
 import type { GrantLock } from '../frame/useAccountGrants';
-import { apiKeyState, KEY_LOOK } from './keyState';
+import { apiKeyState, KEY_LOOK, keyPermissions, permissionsLine } from './keyState';
 
 export interface ApiKeyTableProps {
   /** The keys of the page being shown. */
@@ -18,9 +20,9 @@ export interface ApiKeyTableProps {
   onRetry: () => void;
   /** Drawn when the account has no key. */
   empty: ReactNode;
-  limitsLock: GrantLock;
+  editLock: GrantLock;
   revokeLock: GrantLock;
-  onLimits: (key: ApiKey) => void;
+  onEdit: (key: ApiKey) => void;
   onRevoke: (key: ApiKey) => void;
 }
 
@@ -32,9 +34,9 @@ export function ApiKeyTable({
   error,
   onRetry,
   empty,
-  limitsLock,
+  editLock,
   revokeLock,
-  onLimits,
+  onEdit,
   onRevoke,
 }: ApiKeyTableProps) {
   const columns: DataTableColumn<ApiKey>[] = [
@@ -45,6 +47,8 @@ export function ApiKeyTable({
         <>
           <span className="font-medium">{key.name}</span>
           {key.createdByStaff && <span className="cell-sub">Made by support</span>}
+          {/* The Permissions column is hidden on small screens: its words go under the name there. */}
+          <span className="cell-sub sm:hidden">{permissionsLine(keyPermissions(key, now))}</span>
         </>
       ),
     },
@@ -56,21 +60,29 @@ export function ApiKeyTable({
       render: (key) => `${key.rateLimitPerMin} a minute`,
     },
     {
-      key: 'addresses',
-      label: 'Allowed addresses',
-      hide: 'md',
-      render: (key) =>
-        key.allowedIps.length > 0 ? (
+      key: 'permissions',
+      label: 'Permissions',
+      hide: 'sm',
+      render: (key) => {
+        const { addresses, validUntil, expired } = keyPermissions(key, now);
+        return (
           <span className="flex flex-col">
-            {key.allowedIps.map((address) => (
-              <span key={address} className="mono text-xs">
-                {address}
-              </span>
-            ))}
+            {addresses.length > 0 ? (
+              addresses.map((address) => (
+                <span key={address} className="mono text-xs">
+                  {address}
+                </span>
+              ))
+            ) : (
+              <span className="text-ink2">Any address</span>
+            )}
+            <span className={cx('cell-sub', expired && 'text-warn-fg')}>
+              {validUntil}
+              {expired ? ' · Expired' : ''}
+            </span>
           </span>
-        ) : (
-          <span className="text-ink3">Any</span>
-        ),
+        );
+      },
     },
     { key: 'created', label: 'Created', hide: 'lg', render: (key) => fmtDate(key.createdAt) },
     {
@@ -104,18 +116,20 @@ export function ApiKeyTable({
       key: 'actions',
       label: '',
       className: 'w-44 text-end',
-      render: (key) =>
-        apiKeyState(key, now) === 'active' ? (
+      render: (key) => {
+        const state = apiKeyState(key, now);
+        return state === 'revoked' ? null : (
           <span className="inline-flex justify-end gap-1.5">
             <Button
               size="sm"
-              aria-label={`Change limits of ${key.name}`}
-              disabled={limitsLock.disabled}
-              title={limitsLock.title}
-              onClick={() => onLimits(key)}
+              aria-label={`Edit ${key.name}`}
+              disabled={editLock.disabled}
+              title={editLock.title}
+              onClick={() => onEdit(key)}
             >
-              Limits…
+              Edit…
             </Button>
+            {/* An expired key can be given a later end, so it can be revoked too: only a revoke keeps it dead. */}
             <Button
               size="sm"
               variant="danger"
@@ -127,7 +141,8 @@ export function ApiKeyTable({
               Revoke…
             </Button>
           </span>
-        ) : null,
+        );
+      },
     },
   ];
 

@@ -1,7 +1,8 @@
-// Input helpers for the API key dialogs (a new key, a key's limits): reading the allowed addresses (one per line) and the per-minute
-// limit, the expiry day, and folding the server's per-entry field errors (`allowedIps.N`) onto the one box that holds the list. Hints
-// only: the server validates everything (decision 008).
+// Input helpers for the API key dialogs (a new key, editing a key): reading the allowed addresses (one per line) and the per-minute
+// limit, the day a key is valid until, what an edit sends (only what changed), and folding the server's per-entry field errors
+// (`allowedIps.N`) onto the one box that holds the list. Hints only: the server validates everything (decision 008).
 import { ApiError, isApiError } from '@/lib/api';
+import type { ApiKey, UpdateApiKeyBody } from '../../types';
 
 /** The per-minute limit the server accepts, and the one a new key starts with. */
 export const RATE_LIMIT = { min: 1, max: 6000, default: 60 } as const;
@@ -52,6 +53,45 @@ export function expiryOf(day: string): string | undefined {
 export function dayIsPast(day: string, now: number = Date.now()): boolean {
   const end = expiryOf(day);
   return end !== undefined && Date.parse(end) <= now;
+}
+
+/**
+ * The calendar day (`YYYY-MM-DD`, in the staff member's own time zone) an expiry time falls on: what the "Valid until" date box shows for a
+ * key. Empty for no expiry (or a time that cannot be read).
+ */
+export function dayOf(expiresAt: string | null): string {
+  if (!expiresAt) return '';
+  const at = new Date(expiresAt);
+  if (Number.isNaN(at.getTime())) return '';
+  const two = (value: number) => String(value).padStart(2, '0');
+  return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`;
+}
+
+/**
+ * What the form of an edit sends, from the key as it was and the form as it is: only a value that changed, so a save of one field
+ * never asks the server to judge the others (a change of reach is for the Owner, and an untouched value is none). The name is trimmed,
+ * the addresses are compared as lists, the day as a day (a key's expiry time is the end of its day, so an unchanged day sends nothing)
+ * and a cleared day is `expiresAt: null`. An empty body means nothing changed.
+ */
+export function editBody(
+  key: Pick<ApiKey, 'name' | 'allowedIps' | 'expiresAt' | 'rateLimitPerMin'>,
+  form: { name: string; allowedIps: string; validUntil: string; rateLimitPerMin: string },
+): UpdateApiKeyBody {
+  const body: UpdateApiKeyBody = {};
+  const name = cleanKeyName(form.name);
+  if (name !== '' && name !== key.name) body.name = name;
+  const addresses = parseIpLines(form.allowedIps);
+  if (addresses.join('\n') !== key.allowedIps.join('\n')) body.allowedIps = addresses;
+  if (form.validUntil !== dayOf(key.expiresAt)) {
+    if (form.validUntil === '') body.expiresAt = null;
+    else {
+      const until = expiryOf(form.validUntil);
+      if (until !== undefined) body.expiresAt = until;
+    }
+  }
+  const limit = parseRateLimit(form.rateLimitPerMin);
+  if (limit !== null && limit !== key.rateLimitPerMin) body.rateLimitPerMin = limit;
+  return body;
 }
 
 /**

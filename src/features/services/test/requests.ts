@@ -5,6 +5,13 @@ import { vi } from 'vitest';
 /** One request the client sent. */
 export type SentRequest = { method: string; url: URL; body: unknown };
 
+/** The requests of one method to one path, from a recorder. */
+export const sentTo = (
+  requests: { sent: () => SentRequest[] },
+  method: string,
+  path: string,
+): SentRequest[] => requests.sent().filter((sent) => sent.method === method && sent.url.pathname === path);
+
 /** Starts recording. The spy calls through to the real `fetch`; `vi.restoreAllMocks()` (or `stop`) ends it. */
 export function recordRequests() {
   const spy = vi.spyOn(globalThis, 'fetch');

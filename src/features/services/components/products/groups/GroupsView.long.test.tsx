@@ -33,7 +33,7 @@ async function groupNames() {
   return table
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[1].textContent);
+    .map((row) => within(row).getAllByRole('cell')[2].textContent);
 }
 
 /** The group the view has marked as just added (the name's own element), or null. */
@@ -73,6 +73,29 @@ describe('reading every group', () => {
     // The warning comes before the table in the page.
     expect(warning.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(warning).toHaveClass('text-warn-fg');
+  });
+
+  it('turns dragging off, with a line that says why, while the list holds only some of the groups', async () => {
+    mockServer.use(
+      http.get('*/admin/service-categories', () =>
+        HttpResponse.json(list.groups.slice(0, 3), { headers: { 'x-total-count': '1200' } }),
+      ),
+    );
+    await openProducts(SERVER);
+    await screen.findByText('Only the first 3 of 1200 groups are listed.');
+    const reason = 'Groups cannot be dragged while only some of them are listed';
+    expect(await screen.findByText(`${reason}.`)).toBeInTheDocument();
+    const grips = screen.getAllByRole('button', { name: /^Drag / });
+    expect(grips).toHaveLength(3);
+    for (const grip of grips) {
+      expect(grip).toBeDisabled();
+      expect(grip).toHaveAttribute('title', reason);
+    }
+  });
+
+  it('keeps dragging on when the list is whole', async () => {
+    await openProducts(SERVER);
+    expect((await screen.findAllByRole('button', { name: /^Drag / }))[0]).toBeEnabled();
   });
 });
 

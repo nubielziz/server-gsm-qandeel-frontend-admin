@@ -1,29 +1,24 @@
 // PricingView: the price grid of the services of one kind (the second link of the page). A Quick Search box, then a grid in the list skin: per
 // service the cost, the supplier's price, the base price, the shop price and one price per rank, every figure the server's. The
 // prices are typed in place and saved by the bar at the foot, row by row; "Display Enable/Disable Service" and "Set Order" add a box per row.
+// With "Set Order" on, the services of one chosen group (all of them on the page) can also be dragged to a new place by their grip (decision 038).
 import { useEffect, useState } from 'react';
-import {
-  ButtonLink,
-  Button,
-  DataTable,
-  EmptyState,
-  FooterPager,
-  UnsavedGuard,
-  usePageClamp,
-} from '@/components/ui';
+import { Button, FooterPager, UnsavedGuard, usePageClamp } from '@/components/ui';
 import { BulkPriceDialog } from '../../BulkPriceDialog';
 import { useCategories, useGroupOptions } from '../../../hooks/useChoices';
 import { usePriceGrid } from '../../../hooks/usePriceGrid';
 import { useSetGridStatus } from '../../../hooks/useSetGridStatus';
 import { gridQuery } from '../../../lib/priceGrid';
-import { productsPath } from '../../../lib/productsPath';
 import type { PriceGridRow } from '../../../types';
+import { SortableTable } from '../../sortable';
 import type { ProductsViewProps } from '../types';
 import { priceColumns, type Lock } from './priceColumns';
+import { PricingEmpty } from './PricingEmpty';
 import { PricingSearch } from './PricingSearch';
 import { usePriceEdits } from './usePriceEdits';
 import { usePricingAddress } from './usePricingAddress';
 import { usePricingSave } from './usePricingSave';
+import { useServiceDrag } from './useServiceDrag';
 
 const RETAIL_GROUP_KIND = 'b2c_retail';
 
@@ -63,6 +58,16 @@ export function PricingView({ type, grants }: ProductsViewProps) {
 
   const pricesLock = grants.needs('pricing:update');
   const updateLock = grants.needs('catalog:update');
+  const order = useServiceDrag({
+    rows,
+    total,
+    stale: grid.isPlaceholderData,
+    q,
+    group,
+    page,
+    lock: updateLock,
+    typedPositions: editing.pendingOrders,
+  });
   const columns = priceColumns({
     type,
     groupIds: rows[0]?.groupPrices.map((entry) => entry.groupId) ?? [],
@@ -104,35 +109,37 @@ export function PricingView({ type, grants }: ProductsViewProps) {
           lock={updateLock}
         />
         <div className="mt-4">
-          <DataTable
+          {ordering && !order.dragging.on && order.dragging.hint && (
+            <p className="mb-2 text-sm text-ink3">{order.dragging.reason}.</p>
+          )}
+          <SortableTable
             skin="list"
-            footer={false}
             caption="Price grid"
             columns={columns}
-            rows={rows}
+            rows={order.list}
             rowKey={(row) => row.id}
+            drag={
+              ordering
+                ? {
+                    offReason: order.dragging.on ? null : order.dragging.reason,
+                    labelOf: (row) => row.name,
+                    placeOf: (row) => order.list.findIndex((entry) => entry.id === row.id) + 1,
+                    count: order.list.length,
+                    onDrop: order.drop,
+                  }
+                : undefined
+            }
             state={grid.isPending ? 'loading' : grid.isError && rows.length === 0 ? 'error' : 'ready'}
             error={grid.error}
             errorTitle="Could not load the prices"
             onRetry={() => void grid.refetch()}
             empty={
-              <EmptyState
-                icon="search"
-                title={filtered ? 'No services match' : 'No services in this kind yet'}
-                cta={
-                  filtered ? (
-                    <Button onClick={() => go({ q: '', group: undefined })}>Clear the search</Button>
-                  ) : (
-                    grants.can('catalog:create') && (
-                      <ButtonLink to={productsPath({ type, view: 'add' })}>Add a service</ButtonLink>
-                    )
-                  )
-                }
-              >
-                {filtered
-                  ? 'Nothing in this kind has that name or group.'
-                  : 'A service you add shows here with its prices.'}
-              </EmptyState>
+              <PricingEmpty
+                type={type}
+                filtered={filtered}
+                canAdd={grants.can('catalog:create')}
+                onClear={() => go({ q: '', group: undefined })}
+              />
             }
           />
         </div>

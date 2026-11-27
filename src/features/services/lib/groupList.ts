@@ -1,8 +1,10 @@
 // The pure rules of the Group view's list: the groups of one kind in the order merchants see them, one page of them, the page size
-// kept in the address, and the position changes that move a group one place up or down. Nothing here reads the server.
+// kept in the address, and the position changes that move a group one place up or down (the rules of a drag are in reorder.ts). Nothing here
+// reads the server.
 import type { Id } from '@/lib/api';
 import type { ServiceType } from '@/lib/serviceTypes';
 import type { ServiceCategory } from '../types';
+import { dragState, reorderChanges, type DragState, type PositionChange } from './reorder';
 
 /** Groups per page when the address names no size. */
 export const GROUPS_DEFAULT_SIZE = 50;
@@ -64,16 +66,10 @@ export function locateGroup(
   };
 }
 
-/** The new position of one group. */
-export type PositionChange = { id: Id; sort: number };
-
 /**
  * The position writes that move group `id` one place up or down in `ordered` (the groups of one kind in their order), or none when it
- * is already first (up) or last (down) or not in the list.
- *
- * The two groups take each other's place, so the numbers stay as they are. A tie (two groups with the same number, as when staff
- * typed none) cannot be told apart by a swap, so each group from the first moved place on gets a number above the one before it, and
- * the walk stops at the first group that already is. Only groups whose number changes are returned, so a move is usually two writes.
+ * is already first (up) or last (down) or not in the list. The rules of the numbers (ties, only the groups that change) are those of
+ * `reorderChanges`: this is a drag over one place, which is how the up and down buttons save.
  */
 export function moveChanges(
   ordered: readonly Pick<ServiceCategory, 'id' | 'sort'>[],
@@ -81,21 +77,42 @@ export function moveChanges(
   direction: 'up' | 'down',
 ): PositionChange[] {
   const from = ordered.findIndex((group) => group.id === id);
-  const to = direction === 'up' ? from - 1 : from + 1;
-  if (from < 0 || to < 0 || to >= ordered.length) return [];
+  return from < 0 ? [] : reorderChanges(ordered, from, direction === 'up' ? from - 1 : from + 1);
+}
 
-  const next = [...ordered];
-  [next[from], next[to]] = [next[to], next[from]];
-  const first = Math.min(from, to);
-  const last = Math.max(from, to);
-  const changes: PositionChange[] = [];
-  // The places keep their numbers; a group moved into a place takes that place's number, but never one a group before it already has.
-  let before = first > 0 ? ordered[first - 1].sort : -1;
-  for (let place = first; place < next.length; place += 1) {
-    const sort = Math.max(ordered[place].sort, before + 1);
-    if (place > last && sort === next[place].sort) break;
-    if (sort !== next[place].sort) changes.push({ id: next[place].id, sort });
-    before = sort;
-  }
-  return changes;
+/** Where the up or down button takes a group: the indexes of the group and of the place it moves to, or null at the edge or when it is not in the list. */
+export function stepIndexes(
+  ordered: readonly Pick<ServiceCategory, 'id'>[],
+  id: Id,
+  direction: 'up' | 'down',
+): { from: number; to: number } | null {
+  const from = ordered.findIndex((group) => group.id === id);
+  const to = direction === 'up' ? from - 1 : from + 1;
+  return from < 0 || to < 0 || to >= ordered.length ? null : { from, to };
+}
+
+/**
+ * Whether the rows of the Group view can be dragged. It is off for a role without `catalog:update` (`lock` is the reason the grants give),
+ * while a save runs, while the server holds more groups than the list shows (`truncated`: a drop would be worked out over only some of the
+ * groups) and while a search is on (the list is then only some of the groups, so a drop could not say where it lands in the whole order).
+ * Every reason is also said in a line above the table, not only in the title of a disabled grip. The list is otherwise always in position
+ * order: nothing in the view sorts it.
+ */
+export function groupDragState({
+  lock,
+  saving,
+  searching,
+  truncated,
+}: {
+  lock: { disabled: boolean; title?: string };
+  saving: boolean;
+  searching: boolean;
+  truncated: boolean;
+}): DragState {
+  return dragState([
+    { when: lock.disabled, reason: lock.title ?? 'You cannot change the order', hint: true },
+    { when: saving, reason: 'Saving the new order', hint: true },
+    { when: truncated, reason: 'Groups cannot be dragged while only some of them are listed', hint: true },
+    { when: searching, reason: 'Clear the search to drag groups', hint: true },
+  ]);
 }

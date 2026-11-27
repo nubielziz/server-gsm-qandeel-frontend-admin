@@ -12,7 +12,13 @@ import {
   type ListQuery,
   type ListResult,
 } from '@/lib/api';
-import type { CreateCategoryBody, ServiceCategory, UpdateCategoryBody } from '../types';
+import type {
+  CategoryOrderBody,
+  CategoryOrderResult,
+  CreateCategoryBody,
+  ServiceCategory,
+  UpdateCategoryBody,
+} from '../types';
 
 /**
  * The service categories with the ranks that can see each one.
@@ -48,6 +54,16 @@ export function createCategory(body: CreateCategoryBody, init?: ApiInit): Promis
  */
 export function updateCategory(id: Id, body: UpdateCategoryBody, init?: ApiInit): Promise<ServiceCategory> {
   return apiPatch<ServiceCategory>(pathOf('/admin/service-categories/:id', { id }), body, init);
+}
+
+/**
+ * Stores the position (`sort`) of 1 to 500 groups in one go: all are saved or none (backend decision 078). Merchants and API clients read
+ * groups by this number, then the id. A group listed twice or unknown is a 422 on `items.N.id`; a position outside 0 to 1000000 is a 422 on
+ * `items.N.sort`. The answer says how many groups changed; a group already at its position is left alone. Needs `catalog:update`.
+ * @route POST /admin/service-categories/order
+ */
+export function orderCategories(body: CategoryOrderBody, init?: ApiInit): Promise<CategoryOrderResult> {
+  return apiPost<CategoryOrderResult>('/admin/service-categories/order', body, init);
 }
 
 /**

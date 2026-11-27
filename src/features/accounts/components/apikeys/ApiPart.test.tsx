@@ -1,5 +1,6 @@
 // Tests for the API part of an account's record, run through the whole app against the dev mock API: the Dhru address and username, the keys
-// with their state, Revoke…, the footer pager, the states (empty, a failed read), what each missing permission turns off, and "New key…":
+// with their state and permissions (the addresses and the day they are valid until, an expired key marked), Revoke…, the footer pager, the
+// states (empty, a failed read), what each missing permission turns off, and "Generate API key" (one click, no name sent) with "Key with limits…":
 // offered to the Owner for an active account only.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -9,7 +10,23 @@ import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { installAccountMocks } from '../../test/installAccountMocks';
-import { openApi, rowOf } from './test-utils';
+import type * as KeyHooks from '../../hooks/useAccountApiKeys';
+import { noonOf, openApi, rowOf } from './test-utils';
+
+// The one-click mutation as the part holds it, kept so a test can read what it still keeps in memory (its answer holds the full key).
+const oneClick = vi.hoisted(() => ({ latest: undefined as { data?: unknown; isIdle: boolean } | undefined }));
+vi.mock('../../hooks/useAccountApiKeys', async (importOriginal) => {
+  const original = await importOriginal<typeof KeyHooks>();
+  return {
+    ...original,
+    useCreateAccountApiKey(options?: Parameters<typeof original.useCreateAccountApiKey>[0]) {
+      const result = original.useCreateAccountApiKey(options);
+      // Only the part's own "Generate API key" asks for `toastErrors`; the form of "Key with limits…" is another component.
+      if (options?.toastErrors) oneClick.latest = result;
+      return result;
+    },
+  };
+});
 
 setupMockApi();
 installAccountMocks();
@@ -52,7 +69,8 @@ describe('the Dhru address and the keys', () => {
     expect(production.getByText('203.0.113.55', { selector: '.text-xs' })).toBeInTheDocument();
     expect(production.getByText('Active')).toBeInTheDocument();
     const staging = await rowOf('API keys', 'Staging');
-    expect(staging.getByText('Any')).toBeInTheDocument();
+    expect(staging.getByText('Any address')).toBeInTheDocument();
+    expect(staging.getByText('No end')).toBeInTheDocument();
     expect(staging.getByText('Never')).toBeInTheDocument();
     const legacy = await rowOf('API keys', 'Legacy integration');
     expect(legacy.getByText('Revoked')).toBeInTheDocument();
@@ -61,13 +79,11 @@ describe('the Dhru address and the keys', () => {
     expect(screen.queryByRole('button', { name: /Rotate/ })).not.toBeInTheDocument();
   });
 
-  it('draws the state as a square and a word, and keeps Limits… and Revoke… for the keys that still work', async () => {
+  it('draws the state as a square and a word, and keeps Edit… and Revoke… for the keys that still work', async () => {
     await openApi();
     const production = await rowOf('API keys', 'Production');
     expect(production.getByRole('img', { name: 'Active' })).toBeInTheDocument();
-    expect(production.getByRole('button', { name: 'Change limits of Production' })).toHaveTextContent(
-      'Limits…',
-    );
+    expect(production.getByRole('button', { name: 'Edit Production' })).toHaveTextContent('Edit…');
     expect(production.getByRole('button', { name: 'Revoke Production' })).toHaveTextContent('Revoke…');
     const legacy = await rowOf('API keys', 'Legacy integration');
     expect(legacy.getByRole('img', { name: 'Revoked' })).toBeInTheDocument();
@@ -120,6 +136,98 @@ describe('the Dhru address and the keys', () => {
     expect(await screen.findByText('Could not load the API keys')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByText('Could not load the API keys')).toBeInTheDocument();
+  });
+});
+
+describe('the permissions of a key, at a glance', () => {
+  const answerWith = (keys: Record<string, unknown>[]) =>
+    mockServer.use(http.get('*/admin/clients/:id/api-keys', () => HttpResponse.json(keys)));
+
+  it('prints the addresses and the day the key is valid until, or Any address and No end', async () => {
+    answerWith([
+      key(7, {
+        name: 'Fenced',
+        allowedIps: ['203.0.113.55', '198.51.100.0/24'],
+        expiresAt: noonOf(2999, 1, 15),
+      }),
+      key(8, { name: 'Open' }),
+    ]);
+    await openApi();
+    const fenced = await rowOf('API keys', 'Fenced');
+    expect(fenced.getByText('203.0.113.55')).toBeInTheDocument();
+    expect(fenced.getByText('198.51.100.0/24')).toBeInTheDocument();
+    expect(fenced.getByText('Valid until 15 Jan 2999')).toBeInTheDocument();
+    expect(fenced.queryByText('Any address')).not.toBeInTheDocument();
+    expect(fenced.getByText('Active')).toBeInTheDocument();
+    const open = await rowOf('API keys', 'Open');
+    expect(open.getByText('Any address')).toBeInTheDocument();
+    expect(open.getByText('No end')).toBeInTheDocument();
+  });
+
+  it('prints the permissions under the name as well, for the narrow screens that hide the Permissions column', async () => {
+    answerWith([
+      key(7, {
+        name: 'Fenced',
+        allowedIps: ['203.0.113.55', '198.51.100.0/24'],
+        expiresAt: noonOf(2999, 1, 15),
+      }),
+      key(8, { name: 'Open' }),
+      key(9, { name: 'Lapsed', expiresAt: noonOf(2020, 3, 10) }),
+    ]);
+    await openApi();
+    const fenced = await rowOf('API keys', 'Fenced');
+    const line = fenced.getByText('203.0.113.55, 198.51.100.0/24 · Valid until 15 Jan 2999');
+    // It is the narrow screens' copy: shown under the name and hidden from the width where the Permissions column shows.
+    expect(line).toHaveClass('sm:hidden');
+    expect(line.previousElementSibling).toHaveTextContent('Fenced');
+    expect((await rowOf('API keys', 'Open')).getByText('Any address · No end')).toHaveClass('sm:hidden');
+    expect(
+      (await rowOf('API keys', 'Lapsed')).getByText('Any address · Valid until 10 Mar 2020 · Expired'),
+    ).toHaveClass('sm:hidden');
+    // The Permissions column keeps its own cells, which the narrow screens hide.
+    expect(fenced.getByText('Valid until 15 Jan 2999').closest('td')).toHaveClass('hidden', 'sm:table-cell');
+  });
+
+  it('marks a key whose end has passed: the day, the word Expired beside it and in its state', async () => {
+    answerWith([key(9, { name: 'Lapsed', expiresAt: noonOf(2020, 3, 10) })]);
+    await openApi();
+    const lapsed = await rowOf('API keys', 'Lapsed');
+    expect(lapsed.getByText('Valid until 10 Mar 2020 · Expired')).toBeInTheDocument();
+    expect(lapsed.getByRole('img', { name: 'Expired' })).toBeInTheDocument();
+    // An expired key can be edited (a later end brings it back) and so it can be revoked too: only a revoke keeps an Owner from reviving it.
+    expect(lapsed.getByRole('button', { name: 'Edit Lapsed' })).toBeEnabled();
+    expect(lapsed.getByRole('button', { name: 'Revoke Lapsed' })).toBeEnabled();
+  });
+
+  it('revokes an expired key through the same dialog, which says the key is past its end and cannot come back', async () => {
+    const user = userEvent.setup();
+    answerWith([key(9, { name: 'Lapsed', expiresAt: noonOf(2020, 3, 10) })]);
+    const revoked: string[] = [];
+    mockServer.use(
+      http.delete('*/admin/api-keys/:id', ({ params }) => {
+        revoked.push(String(params.id));
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    await openApi();
+    await user.click(await screen.findByRole('button', { name: 'Revoke Lapsed' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Revoke API key' });
+    expect(within(dialog).getByText(/has passed its end/)).toBeInTheDocument();
+    expect(within(dialog).queryByText(/stops working at once/)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Revoke key' }));
+    expect(await screen.findByText('API key revoked')).toBeInTheDocument();
+    expect(revoked).toEqual(['9']);
+  });
+
+  it('does not mark a revoked key as expired: its state says Revoked', async () => {
+    answerWith([
+      key(10, { name: 'Gone', expiresAt: noonOf(2020, 3, 10), revokedAt: '2020-01-01T00:00:00.000Z' }),
+    ]);
+    await openApi();
+    const gone = await rowOf('API keys', 'Gone');
+    expect(gone.getByText('Revoked')).toBeInTheDocument();
+    expect(gone.getByText('Valid until 10 Mar 2020')).toBeInTheDocument();
+    expect(gone.queryByRole('button')).not.toBeInTheDocument();
   });
 });
 
@@ -185,65 +293,154 @@ describe('Revoke…', () => {
   });
 });
 
-describe('New key…', () => {
-  const button = () => screen.findByRole('button', { name: 'New key…' });
+describe('Generate API key and Key with limits…', () => {
+  const generate = () => screen.findByRole('button', { name: 'Generate API key' });
+  const withLimits = () => screen.findByRole('button', { name: 'Key with limits…' });
 
-  it('is on for the Owner and an active account', async () => {
+  it('are on for the Owner and an active account, the first as the part’s main button', async () => {
     await openApi();
-    expect(await button()).toBeEnabled();
+    expect(await generate()).toBeEnabled();
+    expect(await withLimits()).toBeEnabled();
+    expect(await generate()).toHaveClass('btn-primary');
+    expect(await withLimits()).not.toHaveClass('btn-primary');
   });
 
-  it('is on for a merchant staff invited, who is active at once', async () => {
+  it('are on for a merchant staff invited, who is active at once', async () => {
     await openApi({}, 18, /Algiers Service Plus/);
-    expect(await button()).toBeEnabled();
+    expect(await generate()).toBeEnabled();
   });
 
-  it('is off for a suspended account, with the reason as its title', async () => {
+  it('are off for a suspended account, with the reason as their title', async () => {
     await openApi({}, 19, /Tunis Fix Point/);
-    expect(await button()).toBeDisabled();
-    expect(await button()).toHaveAttribute(
-      'title',
-      'Reactivate the account first: only an active account can have keys',
-    );
+    for (const button of [await generate(), await withLimits()]) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute(
+        'title',
+        'Reactivate the account first: only an active account can have keys',
+      );
+    }
   });
 
-  it('is off for the account that was a pending merchant and is suspended now', async () => {
+  it('are off for the account that was a pending merchant and is suspended now', async () => {
     await openApi({}, 20, /Accra Devices/);
-    expect(await button()).toHaveAttribute(
+    expect(await generate()).toHaveAttribute(
       'title',
       'Reactivate the account first: only an active account can have keys',
     );
   });
 
-  it('is off for a role that has every permission but is not the Owner, who makes keys from the console', async () => {
+  it('are off for a role that has every permission but is not the Owner, who makes keys from the console', async () => {
     await openApi({ role: 'manager' });
-    const create = await button();
-    expect(create).toBeDisabled();
-    expect(create).toHaveAttribute('title', 'Only the Owner creates a key from the console');
+    for (const button of [await generate(), await withLimits()]) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('title', 'Only the Owner creates a key from the console');
+    }
   });
 
-  it('is off for a role without api_keys:create, naming the permission', async () => {
+  it('are off for a role without api_keys:create, naming the permission', async () => {
     await openApi({ permissions: ['clients:read', 'api_keys:read'] });
-    const create = await button();
+    const create = await generate();
     expect(create).toBeDisabled();
     expect(create).toHaveAttribute('title', 'You need the api_keys:create permission');
   });
 
-  it('opens the form for the Owner, titled with the account', async () => {
+  it('make a key at once with one click: no dialog, no name sent, and the key shown once', async () => {
+    const user = userEvent.setup();
+    const bodies: unknown[] = [];
+    mockServer.use(
+      http.post('*/admin/clients/:id/api-keys', async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json(
+          {
+            key: key(40, { name: 'API key 1', createdByStaff: true }),
+            secret: 'gsm_OneClickSecret0123456789',
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    await openApi();
+    await user.click(await generate());
+    const reveal = await screen.findByRole('dialog', { name: 'API key API key 1' });
+    expect(within(reveal).getByText('gsm_OneClickSecret0123456789')).toBeInTheDocument();
+    // The form of "Key with limits…" never opened, and the body holds no name (only the scope a Dhru key carries).
+    expect(screen.queryByRole('dialog', { name: /^New API key for/ })).not.toBeInTheDocument();
+    expect(bodies).toEqual([{ scopes: ['dhru'] }]);
+    expect(await screen.findByText('API key created')).toBeInTheDocument();
+    await user.click(within(reveal).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(screen.queryByText(/gsm_OneClickSecret/)).not.toBeInTheDocument());
+  });
+
+  it('lets go of the new key once the one-time dialog holds it: the part keeps no copy of the answer', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/clients/:id/api-keys', () =>
+        HttpResponse.json(
+          {
+            key: key(41, { name: 'API key 1', createdByStaff: true }),
+            secret: 'gsm_HeldNowhereElse0123456789',
+          },
+          { status: 201 },
+        ),
+      ),
+    );
+    await openApi();
+    await user.click(await generate());
+    const reveal = await screen.findByRole('dialog', { name: 'API key API key 1' });
+    expect(within(reveal).getByText('gsm_HeldNowhereElse0123456789')).toBeInTheDocument();
+    // The mutation's own state (its `data` held the full key for as long as the part stayed open) is cleared; the dialog keeps the key.
+    await waitFor(() => expect(oneClick.latest?.data).toBeUndefined());
+    expect(oneClick.latest?.isIdle).toBe(true);
+    expect(within(screen.getByRole('dialog')).getByText('gsm_HeldNowhereElse0123456789')).toBeInTheDocument();
+  });
+
+  it('are named by the server when the mock makes the key: API key 1, then API key 2', async () => {
     const user = userEvent.setup();
     await openApi();
-    await user.click(await button());
+    for (const name of ['API key 1', 'API key 2']) {
+      await user.click(await generate());
+      const reveal = await screen.findByRole('dialog', { name: `API key ${name}` });
+      await user.click(within(reveal).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect((await rowOf('API keys', name)).getByText('Made by support')).toBeInTheDocument();
+    }
+  });
+
+  it('tell the server’s words in a toast when the one click is refused, and show no key', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/clients/:id/api-keys', () =>
+        problem(
+          422,
+          'VALIDATION_FAILED',
+          'Check the form',
+          'This account already has 10 live keys. Revoke one first.',
+        ),
+      ),
+    );
+    await openApi();
+    await user.click(await generate());
+    expect(await screen.findByText('Check the form')).toBeInTheDocument();
+    expect(screen.getByText(/This account already has 10 live keys/)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await generate()).toBeEnabled();
+  });
+
+  it('open the form from Key with limits…, titled with the account', async () => {
+    const user = userEvent.setup();
+    await openApi();
+    await user.click(await withLimits());
     expect(
       await screen.findByRole('dialog', { name: 'New API key for Zain Mobile Hub' }),
     ).toBeInTheDocument();
   });
 });
 
-describe('Limits…', () => {
+describe('Edit…', () => {
   it('is off for a role without api_keys:update, naming the permission', async () => {
     await openApi({ permissions: ['clients:read', 'api_keys:read'] });
-    const limits = await screen.findByRole('button', { name: 'Change limits of Production' });
-    expect(limits).toBeDisabled();
-    expect(limits).toHaveAttribute('title', 'You need the api_keys:update permission');
+    const edit = await screen.findByRole('button', { name: 'Edit Production' });
+    expect(edit).toBeDisabled();
+    expect(edit).toHaveAttribute('title', 'You need the api_keys:update permission');
   });
 });

@@ -1,5 +1,5 @@
-// An account's API keys and the actions on them: revoke, create one for an active account with a merchant rank (the Owner only), change a
-// key's limits. The demo's "Rotate key" has no admin route (MISMATCHES M45).
+// An account's API keys and the actions on them: revoke, create one for an active account with a merchant rank (the Owner only; with one
+// click or from the form), edit a key (name, allowed addresses, validity, limit). The demo's "Rotate key" has no admin route (MISMATCHES M45).
 import { accountLabel } from '@/lib/format';
 import { useApiMutation, useApiQuery } from '@/lib/query';
 import { createAccountApiKey, listAccountApiKeys, revokeApiKey, updateApiKey } from '../api';
@@ -30,9 +30,10 @@ export function useRevokeApiKey() {
 
 /**
  * Creates a key for an active account. The answer carries the full key once: `gcTime: 0` drops it from the query cache as soon as the
- * dialog is gone, and the page keeps it only in the one-time dialog's state. The dialog shows a failed call itself.
+ * dialog is gone, and the page keeps it only in the one-time dialog's state. The dialog shows a failed call itself; the one-click
+ * "Generate API key" has no dialog, so it asks for `toastErrors` and a refusal is a toast with the server's words.
  */
-export function useCreateAccountApiKey() {
+export function useCreateAccountApiKey({ toastErrors = false }: { toastErrors?: boolean } = {}) {
   return useApiMutation({
     mutationFn: ({
       account,
@@ -43,23 +44,24 @@ export function useCreateAccountApiKey() {
     }) => createAccountApiKey(account.id, body),
     gcTime: 0,
     invalidateKeys: [API_KEYS_KEY],
-    successNotification: (_created, { account, body }) => ({
+    // The name may be the server's own (`API key 3`), so it is read from the answer.
+    successNotification: (created, { account }) => ({
       message: 'API key created',
-      description: `${body.name} for ${accountLabel(account)}. They are emailed a notice.`,
+      description: `${created.key.name} for ${accountLabel(account)}. They are emailed a notice.`,
     }),
-    errorNotification: () => false as const,
+    errorNotification: toastErrors ? undefined : () => false as const,
   });
 }
 
-/** Saves a key's per-minute limit and allowed addresses; the row updates and the key follows them on its next call. */
+/** Saves what changed on a key (name, allowed addresses, validity, limit); the row updates and the key follows it on its next call. */
 export function useUpdateApiKey() {
   return useApiMutation({
     mutationFn: ({ key, body }: { key: Pick<ApiKey, 'id' | 'name' | 'prefix'>; body: UpdateApiKeyBody }) =>
       updateApiKey(key.id, body),
     invalidateKeys: [API_KEYS_KEY],
     successNotification: (_updated, { key }) => ({
-      message: 'Limits saved',
-      description: `${key.name} (${key.prefix}…) uses them from its next call.`,
+      message: 'API key saved',
+      description: `${key.name} (${key.prefix}…) uses the changes from its next call.`,
     }),
     errorNotification: () => false as const,
   });

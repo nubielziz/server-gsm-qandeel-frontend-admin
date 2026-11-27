@@ -1,10 +1,19 @@
 // Mock of an account's API keys (`GET` and `POST /admin/clients/:id/api-keys`, `PATCH` and `DELETE /admin/api-keys/:id`). Only an account with a
-// merchant rank holds keys (a retail account is a 409 `CONFLICT`). The mock refuses revoking a key twice, a key for an account that is not
-// active, an eleventh live key and a bad limit, so the dialogs have a server answer to show. The real rules are the server's (decision 014).
+// merchant rank holds keys (a retail account is a 409 `CONFLICT`). The mock names a key made with no name `API key <n>`, refuses revoking a key
+// twice, a key for an account that is not active, an eleventh live key, a bad limit and, for anyone but the Owner, an edit that gives a key more
+// reach (403), so the dialogs have a server answer to show. The real rules are the server's (decision 014).
 import { HttpResponse, type HttpHandler } from 'msw';
 import { problem } from '@/mocks/problem';
 import { context, rankOf, type Context } from './context';
-import { checkKeyLimits, checkNewKey, newSecret } from './keyInput';
+import { callerIsOwner } from './caller';
+import {
+  checkKeyEdit,
+  checkNewKey,
+  defaultKeyName,
+  newSecret,
+  widensKey,
+  WIDEN_KEY_DETAIL,
+} from './keyInput';
 import { bodyOf, idOf, invalid, noContent, notFound, route } from './shared';
 import type { MockAccount } from './types';
 
@@ -54,7 +63,14 @@ export const apiKeyRoutes: HttpHandler[] = [
     const { secret, prefix } = newSecret();
     const key = ctx.state.keys.insert({
       clientId: account.id,
-      name: value.name ?? 'Key',
+      name:
+        value.name ??
+        defaultKeyName(
+          ctx.state.keys
+            .list()
+            .filter((key) => key.clientId === account.id)
+            .map((key) => key.name),
+        ),
       prefix,
       allowedIps: value.allowedIps ?? [],
       rateLimitPerMin: value.rateLimitPerMin ?? 60,
@@ -68,18 +84,41 @@ export const apiKeyRoutes: HttpHandler[] = [
     return HttpResponse.json({ key, secret }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   }),
 
-  // Staff change a live key's per-minute limit and allowed addresses.
+  // Staff change a key's name, limit, allowed addresses and expiry. More reach (no restriction or a new address, a higher limit, no expiry or a
+  // later one) is for the Owner; an expired key given a later end counts against the ten live keys of the account.
   route('patch', '/admin/api-keys/:id', async (call) => {
     const { state } = await context();
     const key = state.keys.find(idOf(call));
     if (!key) return notFound('API key', call.params.id);
     if (key.revokedAt)
       return problem(409, 'ALREADY_REVOKED', 'Already revoked', 'This key was already revoked.');
-    const { value, errors } = checkKeyLimits(await bodyOf(call.request));
+    const { value, errors } = checkKeyEdit(await bodyOf(call.request));
     if (errors.length > 0) return invalid(errors);
+    if (widensKey(key, value) && !(await callerIsOwner())) {
+      return problem(403, 'FORBIDDEN', 'Forbidden', WIDEN_KEY_DETAIL);
+    }
+    const now = Date.now();
+    const wasLive = !(key.expiresAt && Date.parse(key.expiresAt) <= now);
+    if (!wasLive && value.expiresAt !== undefined) {
+      const live = state.keys
+        .list()
+        .filter(
+          (other) =>
+            other.clientId === key.clientId &&
+            !other.revokedAt &&
+            !(other.expiresAt && Date.parse(other.expiresAt) <= now),
+        );
+      if (live.length >= 10) {
+        return invalid([
+          { field: 'expiresAt', message: 'This merchant already has 10 active keys; revoke one first.' },
+        ]);
+      }
+    }
     const updated = state.keys.patch(key.id, {
+      ...(value.name !== undefined ? { name: value.name } : {}),
       ...(value.rateLimitPerMin !== undefined ? { rateLimitPerMin: value.rateLimitPerMin } : {}),
       ...(value.allowedIps !== undefined ? { allowedIps: value.allowedIps } : {}),
+      ...(value.expiresAt !== undefined ? { expiresAt: value.expiresAt } : {}),
     });
     return updated ? HttpResponse.json(updated) : notFound('API key', key.id);
   }),

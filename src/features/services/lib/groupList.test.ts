@@ -1,7 +1,16 @@
 // Tests for the rules of the Group list: the kind's groups in order, one page of them, the page size in the address, and the position writes
 // of the up and down buttons (a plain swap, and the renumbering a tie needs), the search by name and where a group just added shows.
 import { describe, expect, it } from 'vitest';
-import { groupsMatching, groupsOfKind, locateGroup, moveChanges, pageOf, parseGroupsSize } from './groupList';
+import {
+  groupDragState,
+  groupsMatching,
+  groupsOfKind,
+  locateGroup,
+  moveChanges,
+  pageOf,
+  parseGroupsSize,
+  stepIndexes,
+} from './groupList';
 
 const group = (id: number, sort: number, type: 'imei' | 'server' = 'imei') => ({ id, sort, type });
 
@@ -167,5 +176,76 @@ describe('locateGroup', () => {
   it('is null for a group the list does not hold', () => {
     expect(locateGroup(list, 999, '', 50)).toBeNull();
     expect(locateGroup([], 1, '', 50)).toBeNull();
+  });
+});
+
+describe('stepIndexes', () => {
+  const list = [group(7, 1), group(8, 2), group(9, 3)];
+
+  it('says where the up and down buttons take a group', () => {
+    expect(stepIndexes(list, 8, 'up')).toEqual({ from: 1, to: 0 });
+    expect(stepIndexes(list, 8, 'down')).toEqual({ from: 1, to: 2 });
+  });
+
+  it('is null at the edges and for a group that is not in the list', () => {
+    expect(stepIndexes(list, 7, 'up')).toBeNull();
+    expect(stepIndexes(list, 9, 'down')).toBeNull();
+    expect(stepIndexes(list, 99, 'up')).toBeNull();
+  });
+});
+
+describe('groupDragState', () => {
+  const ready = { lock: { disabled: false }, saving: false, searching: false, truncated: false };
+
+  it('is on for a role that may update, with no search and no save running', () => {
+    expect(groupDragState(ready)).toEqual({ on: true });
+  });
+
+  it('is off for a role without catalog:update, with the lock the grants give and a line that says it', () => {
+    expect(groupDragState({ ...ready, lock: { disabled: true, title: 'You need catalog:update' } })).toEqual({
+      on: false,
+      reason: 'You need catalog:update',
+      hint: true,
+    });
+  });
+
+  it('is off while a save runs, with a line that says it', () => {
+    expect(groupDragState({ ...ready, saving: true })).toEqual({
+      on: false,
+      reason: 'Saving the new order',
+      hint: true,
+    });
+  });
+
+  it('is off, with a line, while the list holds only some of the groups', () => {
+    expect(groupDragState({ ...ready, truncated: true })).toEqual({
+      on: false,
+      reason: 'Groups cannot be dragged while only some of them are listed',
+      hint: true,
+    });
+  });
+
+  it('tells the reasons in order: the lock, a save, a partial list, then a search', () => {
+    const all = { lock: { disabled: true, title: 'lock' }, saving: true, searching: true, truncated: true };
+    expect(groupDragState(all)).toMatchObject({ reason: 'lock' });
+    expect(groupDragState({ ...all, lock: { disabled: false } })).toMatchObject({
+      reason: 'Saving the new order',
+    });
+    expect(groupDragState({ ...all, lock: { disabled: false }, saving: false })).toMatchObject({
+      reason: 'Groups cannot be dragged while only some of them are listed',
+    });
+    expect(
+      groupDragState({ ...all, lock: { disabled: false }, saving: false, truncated: false }),
+    ).toMatchObject({
+      reason: 'Clear the search to drag groups',
+    });
+  });
+
+  it('is off, with a line, while a search is on', () => {
+    expect(groupDragState({ ...ready, searching: true })).toEqual({
+      on: false,
+      reason: 'Clear the search to drag groups',
+      hint: true,
+    });
   });
 });

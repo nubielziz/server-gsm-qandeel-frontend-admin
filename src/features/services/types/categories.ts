@@ -32,6 +32,18 @@ export type CreateCategoryBody = {
 /** Body of `PATCH /admin/service-categories/:id` (assumed contract): only the fields that change. */
 export type UpdateCategoryBody = Partial<CreateCategoryBody>;
 
+/** The highest position the server accepts for a group (the same as for a service). */
+export const MAX_CATEGORY_SORT = 1_000_000;
+
+/** One group and the position to give it. */
+export type CategoryOrderItem = { id: Id; sort: number };
+
+/** Body of `POST /admin/service-categories/order` (backend decision 078): 1 to 500 groups, all saved or none. */
+export type CategoryOrderBody = { items: CategoryOrderItem[] };
+
+/** Answer of the group order save: how many groups changed position (one already at its position is not counted). */
+export type CategoryOrderResult = { updated: number };
+
 /**
  * A rank as the pricing screens need it (assumed contract; the accounts feature owns `GET /admin/client-groups`).
  * `kind` is `b2c_retail` for the storefront's single retail group. `accountCount` (every account in the rank, retail too) is optional.

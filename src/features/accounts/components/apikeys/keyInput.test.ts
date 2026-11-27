@@ -4,6 +4,8 @@ import { ApiError } from '@/lib/api';
 import {
   cleanKeyName,
   dayIsPast,
+  dayOf,
+  editBody,
   expiryOf,
   foldKeyErrors,
   ipLines,
@@ -46,7 +48,8 @@ describe('parseRateLimit', () => {
 describe('expiry', () => {
   it('ends the chosen day and treats an empty day as no expiry', () => {
     expect(expiryOf('')).toBeUndefined();
-    expect(expiryOf('2999-01-31')).toMatch(/^2999-01-3[01]T/);
+    // 23:59:59 of that day in the machine's own zone, whatever the zone is.
+    expect(expiryOf('2999-01-31')).toBe(new Date('2999-01-31T23:59:59').toISOString());
     expect(expiryOf('not a day')).toBeUndefined();
   });
 
@@ -99,5 +102,69 @@ describe('foldKeyErrors', () => {
     expect(foldKeyErrors(plain)).toBe(plain);
     const other = new Error('offline');
     expect(foldKeyErrors(other)).toBe(other);
+  });
+});
+
+describe('dayOf', () => {
+  it('is the day a key is valid until, in the staff member’s time zone, or empty for no end', () => {
+    expect(dayOf(null)).toBe('');
+    expect(dayOf('not a time')).toBe('');
+    // Noon of that day in the machine's own zone: the day does not move with the zone the tests run in.
+    expect(dayOf(new Date(2999, 5, 15, 12).toISOString())).toBe('2999-06-15');
+  });
+
+  it('reads back the day expiryOf wrote (the end of that day)', () => {
+    expect(dayOf(expiryOf('2999-01-31') ?? null)).toBe('2999-01-31');
+    expect(dayOf(expiryOf('2999-12-01') ?? null)).toBe('2999-12-01');
+  });
+});
+
+describe('editBody', () => {
+  const key = {
+    name: 'Production',
+    allowedIps: ['203.0.113.55'],
+    expiresAt: expiryOf('2999-06-15') ?? null,
+    rateLimitPerMin: 120,
+  };
+  const form = {
+    name: 'Production',
+    allowedIps: '203.0.113.55',
+    validUntil: '2999-06-15',
+    rateLimitPerMin: '120',
+  };
+
+  it('is empty when nothing changed', () => {
+    expect(editBody(key, form)).toEqual({});
+    expect(editBody(key, { ...form, name: '  Production ', allowedIps: ' 203.0.113.55 \n' })).toEqual({});
+  });
+
+  it('holds only what changed', () => {
+    expect(editBody(key, { ...form, name: 'Main server' })).toEqual({ name: 'Main server' });
+    expect(editBody(key, { ...form, rateLimitPerMin: '300' })).toEqual({ rateLimitPerMin: 300 });
+    expect(editBody(key, { ...form, allowedIps: '203.0.113.55\n198.51.100.0/24' })).toEqual({
+      allowedIps: ['203.0.113.55', '198.51.100.0/24'],
+    });
+    expect(editBody(key, { ...form, validUntil: '2999-07-01' })).toEqual({
+      expiresAt: expiryOf('2999-07-01'),
+    });
+  });
+
+  it('sends an empty list for an emptied address box and null for an emptied day', () => {
+    expect(editBody(key, { ...form, allowedIps: '' })).toEqual({ allowedIps: [] });
+    expect(editBody(key, { ...form, validUntil: '' })).toEqual({ expiresAt: null });
+  });
+
+  it('sends nothing for the day of a key that has none and still has none', () => {
+    expect(editBody({ ...key, expiresAt: null }, { ...form, validUntil: '' })).toEqual({});
+    expect(editBody({ ...key, expiresAt: null }, form)).toEqual({ expiresAt: expiryOf('2999-06-15') });
+  });
+
+  it('sends one change of each kind together', () => {
+    expect(editBody(key, { name: 'New', allowedIps: '', validUntil: '', rateLimitPerMin: '10' })).toEqual({
+      name: 'New',
+      allowedIps: [],
+      expiresAt: null,
+      rateLimitPerMin: 10,
+    });
   });
 });

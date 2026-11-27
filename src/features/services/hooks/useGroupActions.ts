@@ -1,4 +1,4 @@
-// The actions of the Group view: switching a group on or off, moving it one place, and the bulk actions on the ticked groups (activate,
+// The actions of the Group view: switching a group on or off, saving a new order of groups, and the bulk actions on the ticked groups (activate,
 // deactivate, delete). A bulk action has no bulk route, so it makes one call per group, one after the other (the shared runner, MISMATCHES M23),
 // with one progress line, one toast and a summary of the refusals in the server's own words.
 import { useInvalidate } from '@refinedev/core';
@@ -7,9 +7,9 @@ import { useCallback } from 'react';
 import { toast, type BulkSummary } from '@/components/ui';
 import { summarizeOutcome, useSequentialRun } from '@/lib/bulk';
 import { SERVICE_ROWS_KEY, useApiMutation } from '@/lib/query';
-import { deleteCategory, updateCategory } from '../api';
-import type { PositionChange } from '../lib/groupList';
-import type { ServiceCategory } from '../types';
+import { deleteCategory, orderCategories, updateCategory } from '../api';
+import { refusalWords } from '../lib/reorder';
+import type { CategoryOrderBody, ServiceCategory } from '../types';
 import { SERVICE_PICKER_KEY } from './keys';
 
 /** What a change of groups makes stale: the group lists, and the service lists and menus that print group names and counts. */
@@ -43,16 +43,18 @@ export function useSetGroupActive() {
 }
 
 /**
- * Saves the position writes of one move (see `moveChanges`), one after the other. When one is refused the ones before it stay, so the
- * list is read again either way and shows what the server holds.
+ * Saves the new positions of some groups in ONE call, all or none (`POST /admin/service-categories/order`, backend decision 078): what
+ * a drop and the up and down buttons both send. The group lists and the service reads that sort by group position are read again. A
+ * refusal is a toast with the server's own words (a 422 names the group in the field message); the list is read again too, so it shows what
+ * the server holds.
  */
-export function useMoveGroup() {
+export function useSaveGroupOrder() {
   const invalidate = useInvalidate();
   return useApiMutation({
-    mutationFn: async ({ changes }: { changes: readonly PositionChange[] }) => {
-      for (const change of changes) await updateCategory(change.id, { sort: change.sort });
-    },
-    invalidates: [{ resource: 'service-categories' }],
+    mutationFn: (body: CategoryOrderBody) => orderCategories(body),
+    invalidates: [{ resource: 'service-categories' }, { resource: 'services' }],
+    invalidateKeys: [SERVICE_ROWS_KEY],
+    errorNotification: (error) => ({ message: error.title, description: refusalWords(error) }),
     onError: () =>
       void invalidate({ resource: 'service-categories', invalidates: ['list', 'many', 'detail'] }),
   });

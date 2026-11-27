@@ -1,6 +1,6 @@
 // The API keys of an account (`/admin/clients/:id/api-keys`, `/admin/api-keys/:id`): only an account with a merchant rank holds keys (a
 // retail account answers 409 `CONFLICT`). Ports merApiTab of 42-p-merchants.js. The demo's "Rotate key" has no admin route
-// (MISMATCHES M45); staff list, create (the Owner only, decision 046), change the limits of, and revoke keys.
+// (MISMATCHES M45); staff list, create (the Owner only, decision 046), edit (name, addresses, expiry, limit; decision 039), and revoke keys.
 import { apiDelete, apiGet, apiPatch, apiPost, pathOf, type ApiInit, type Id } from '@/lib/api';
 import type { ApiKey, CreateApiKeyBody, CreatedApiKey, UpdateApiKeyBody } from '../types';
 
@@ -31,7 +31,8 @@ export function revokeApiKey(id: Id, init?: ApiInit): Promise<void> {
 }
 
 /**
- * Creates a key for an active account with a merchant rank (the Owner only). The answer carries the full key once as `secret`; only
+ * Creates a key for an active account with a merchant rank (the Owner only). With no `name` in the body the server names the key
+ * `API key <n>` (the one-click "Generate API key", backend decision 078). The answer carries the full key once as `secret`; only
  * a keyed hash is stored, so it can never be shown again. The key is marked `createdByStaff` and the account is mailed a security
  * notice. Needs `api_keys:create`. Refusals: `NOT_ACTIVE` (409), `CONFLICT` (409, a retail account), `VALIDATION_FAILED` (422 on
  * `name`, `allowedIps.N`, `expiresAt` or `rateLimitPerMin`; an account may hold ten live keys, the next one is a 422 on `name`).
@@ -51,8 +52,10 @@ export function createAccountApiKey(
 }
 
 /**
- * Changes a key's per-minute limit and allowed addresses (an empty `allowedIps` removes the restriction). It takes effect on the
- * key's next call. Needs `api_keys:update`. Refusals: `ALREADY_REVOKED` (409), `VALIDATION_FAILED` (422).
+ * Changes a key: its name, per-minute limit, allowed addresses (an empty `allowedIps` removes the restriction) and expiry (`expiresAt`
+ * `null` removes it). Only the fields sent change. It takes effect on the key's next call. Needs `api_keys:update`. Refusals:
+ * `FORBIDDEN` (403: more reach, that is no restriction or a new address, a higher limit, no expiry or a later one, is for an Owner),
+ * `ALREADY_REVOKED` (409), `VALIDATION_FAILED` (422 on `name`, `allowedIps.N`, `rateLimitPerMin` or `expiresAt`).
  * @route PATCH /admin/api-keys/:id
  */
 export function updateApiKey(id: Id, body: UpdateApiKeyBody, init?: ApiInit): Promise<ApiKey> {

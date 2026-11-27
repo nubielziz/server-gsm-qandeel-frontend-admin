@@ -12,7 +12,7 @@ import { setupMockApi } from '@/test/renderApp';
 import { listCategories } from '../../../api';
 import { groupHandlers } from '../../../mocks/testGroups';
 import { dialogOf, openProducts } from '../../../test/productsPage';
-import { recordRequests } from '../../../test/requests';
+import { recordRequests, sentTo } from '../../../test/requests';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
@@ -23,6 +23,7 @@ afterEach(() => vi.restoreAllMocks());
 // The IMEI kind holds five groups, in this order; the Server kind holds Credits and Licenses.
 const IMEI_GROUPS = ['Apple', 'Samsung', 'Generic', 'Carrier unlock', 'Xiaomi'];
 const GROUPS = '/products?view=groups';
+const ORDER = '/admin/service-categories/order';
 const SERVER_GROUPS = '/products?view=groups&type=server';
 
 /** The table of groups, once the list has loaded. */
@@ -36,7 +37,7 @@ async function groupNames() {
   return table
     .getAllByRole('row')
     .slice(1)
-    .map((row) => within(row).getAllByRole('cell')[1].textContent);
+    .map((row) => within(row).getAllByRole('cell')[2].textContent);
 }
 
 /** The row of the group with this name. */
@@ -57,8 +58,17 @@ describe('the list', () => {
     await openProducts(GROUPS);
     await waitFor(async () => expect(await groupNames()).toEqual(IMEI_GROUPS));
     const headers = (await groupTable()).getAllByRole('columnheader').map((header) => header.textContent);
-    // The first header holds the select-all box and has no text.
-    expect(headers).toEqual(['', 'Group Name', 'Order', 'Status', 'Visible to', 'Services', 'Actions']);
+    // The first header is for the grips (read by a screen reader only); the second holds the select-all box and has no text.
+    expect(headers).toEqual([
+      'Drag to reorder',
+      '',
+      'Group Name',
+      'Order',
+      'Status',
+      'Visible to',
+      'Services',
+      'Actions',
+    ]);
   });
 
   it('shows the status, who sees the group, how many services it holds and a link to its edit view', async () => {
@@ -333,19 +343,20 @@ describe('the order buttons', () => {
     );
   });
 
-  it('sends one position per group that changes, and nothing else', async () => {
+  it('saves a move with ONE call that holds only the groups whose position changes', async () => {
     const user = userEvent.setup();
     await openProducts(GROUPS);
+    const before = { apple: await stored('Apple'), samsung: await stored('Samsung') };
     const requests = recordRequests();
     await user.click((await groupRow('Samsung')).getByRole('button', { name: 'Move Samsung up' }));
-    await waitFor(() =>
-      expect(requests.sent().filter((request) => request.method === 'PATCH')).toHaveLength(2),
-    );
-    const bodies = requests
-      .sent()
-      .filter((request) => request.method === 'PATCH')
-      .map((request) => request.body);
-    expect(bodies.every((body) => Object.keys(body as object).join() === 'sort')).toBe(true);
+    await waitFor(() => expect(sentTo(requests, 'POST', ORDER)).toHaveLength(1));
+    expect(sentTo(requests, 'POST', ORDER)[0].body).toEqual({
+      items: [
+        { id: before.samsung.id, sort: before.apple.sort },
+        { id: before.apple.id, sort: before.samsung.sort },
+      ],
+    });
+    expect(requests.sent().filter((request) => request.method === 'PATCH')).toHaveLength(0);
   });
 
   it('cannot move the first group up or the last group down', async () => {
@@ -369,7 +380,7 @@ describe('the order buttons', () => {
   it('shows the words of the server when a move is refused, and the list as the server holds it', async () => {
     const user = userEvent.setup();
     mockServer.use(
-      http.patch('*/admin/service-categories/:id', () =>
+      http.post('*/admin/service-categories/order', () =>
         problem(403, 'FORBIDDEN', 'No access', 'Positions are locked.'),
       ),
     );

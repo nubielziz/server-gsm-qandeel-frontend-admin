@@ -2,6 +2,7 @@
 // their secrets, created by staff (the secret once), limited and revoked; a retail account has none. Ports the merchant key cases.
 import { HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { roleStore } from '@/mocks/roles';
 import { setupMockApi, signInAs } from '@/test/mockApi';
 import { noContent, SEED, spy } from '../test/apiSupport';
 import { installAccountMocks } from '../test/installAccountMocks';
@@ -104,6 +105,24 @@ describe('createAccountApiKey', () => {
     });
   });
 
+  it('names a key made with no name `API key <n>`: the smallest number no key of the account holds', async () => {
+    const first = await createAccountApiKey(ZAIN, {});
+    const second = await createAccountApiKey(ZAIN, {});
+    expect([first.key.name, second.key.name]).toEqual(['API key 1', 'API key 2']);
+    // A name that only looks alike holds no number, and a name that was typed keeps its own.
+    await createAccountApiKey(ZAIN, { name: 'API key 03' });
+    expect((await createAccountApiKey(ZAIN, {})).key.name).toBe('API key 3');
+    await updateApiKey(first.key.id, { name: 'Renamed' });
+    expect((await createAccountApiKey(ZAIN, {})).key.name).toBe('API key 1');
+  });
+
+  it('refuses a blank name that was sent, though a name left out is fine', async () => {
+    await expect(createAccountApiKey(ZAIN, { name: '   ' })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { name: ['Name the key.'] },
+    });
+  });
+
   it('sends the body of its contract, with the one scope of a Dhru key', async () => {
     const created = spy('post', '/admin/clients/7/api-keys', () =>
       HttpResponse.json({ key: { id: 1 }, secret: 's' }),
@@ -138,6 +157,51 @@ describe('updateApiKey', () => {
     await expect(updateApiKey(9999, { rateLimitPerMin: 10 })).rejects.toMatchObject({ status: 404 });
   });
 
+  it('changes the name and the expiry, and `null` removes the expiry', async () => {
+    const [, , production] = await listAccountApiKeys(ZAIN);
+    const later = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    expect(await updateApiKey(production.id, { name: 'Main server', expiresAt: later })).toMatchObject({
+      name: 'Main server',
+      expiresAt: later,
+    });
+    expect(await updateApiKey(production.id, { expiresAt: null })).toMatchObject({ expiresAt: null });
+    await expect(updateApiKey(production.id, { name: ' ' })).rejects.toMatchObject({
+      status: 422,
+      fieldErrors: { name: ['Name the key.'] },
+    });
+    await expect(
+      updateApiKey(production.id, { expiresAt: '2000-01-01T00:00:00.000Z' }),
+    ).rejects.toMatchObject({ status: 422, fieldErrors: { expiresAt: ['Use a time in the future.'] } });
+  });
+
+  it('answers 403 to a staff member who is not the Owner for a change that gives a key more reach', async () => {
+    const [, , production] = await listAccountApiKeys(ZAIN);
+    // Narrow first, as anyone with the permission may: a first end, a lower limit.
+    await updateApiKey(production.id, { expiresAt: new Date(Date.now() + 10 * 86_400_000).toISOString() });
+    roleStore().patch(1, { permissions: ['api_keys:read', 'api_keys:update'] });
+    await expect(updateApiKey(production.id, { rateLimitPerMin: 60, name: 'Calmer' })).resolves.toMatchObject(
+      {
+        name: 'Calmer',
+        rateLimitPerMin: 60,
+      },
+    );
+    // More reach is the Owner's: no restriction, a higher limit, a later end, no end.
+    for (const body of [
+      { allowedIps: [] },
+      { allowedIps: ['198.51.100.1'] },
+      { rateLimitPerMin: 600 },
+      { expiresAt: new Date(Date.now() + 90 * 86_400_000).toISOString() },
+      { expiresAt: null },
+    ]) {
+      await expect(updateApiKey(production.id, body)).rejects.toMatchObject({
+        status: 403,
+        code: 'FORBIDDEN',
+        detail:
+          'Only an owner can widen an API key: more addresses, a higher limit, or a later or no end date.',
+      });
+    }
+  });
+
   it('uses the route of the backend contract', async () => {
     const seen = spy('patch', '/admin/api-keys/7', () => HttpResponse.json({ id: 7 }));
     await updateApiKey(7, { rateLimitPerMin: 300 });
@@ -146,5 +210,7 @@ describe('updateApiKey', () => {
       path: '/admin/api-keys/7',
       body: { rateLimitPerMin: 300 },
     });
+    await updateApiKey(7, { name: 'Main', expiresAt: null });
+    expect(seen[1]).toMatchObject({ body: { name: 'Main', expiresAt: null } });
   });
 });

@@ -1,32 +1,26 @@
-// NewKeyDialog: "New API key for <account>": a name and the addresses the key may be used from (one per line); the optional expiry day and
-// the per-minute limit (60 unless changed) sit in a "More options" fold (decision 035). The key acts as the account, so only the Owner makes one (the part's button says so). The key
-// comes back once; this dialog hands it to the one-time dialog after it has closed. A 409 `NOT_ACTIVE` and a 422 show in the dialog;
-// `allowedIps.N` errors show under the box with the number of the line.
+// NewKeyDialog: "New API key for <account>" ("Key with limits…" on the part): an optional name and the Permissions section (the addresses the key may be
+// used from, one per line, and the day it is valid until, decision 039); the per-minute limit (60 unless changed) sits in a "More options" fold
+// (decision 035). The one-click "Generate API key" on the part makes a key with none of this. The key acts as the account, so only the Owner makes
+// one (the part's buttons say so). The key comes back once; this dialog hands it to the one-time dialog after it has closed. A 409 `NOT_ACTIVE`, a
+// 403 and a 422 show in the dialog; `allowedIps.N` errors show under the box with the number of the line.
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, MoreOptions, TextareaField, TextField } from '@/components/ui';
+import { dialogSubmit, FormDialog, MoreOptions, TextField } from '@/components/ui';
 import { useCreateAccountApiKey } from '../../hooks/useAccountApiKeys';
 import type { AccountRow, CreateApiKeyBody } from '../../types';
 import { accountLabel } from '../shared/accountLabel';
 import {
   cleanKeyName,
-  dayIsPast,
   expiryOf,
   foldKeyErrors,
   KEY_NAME_MAX,
-  MAX_ALLOWED_IPS,
   parseIpLines,
   parseRateLimit,
   RATE_LIMIT,
 } from './keyInput';
+import { PermissionsFields, type KeyFormValues } from './PermissionsFields';
 
-type Values = {
-  name: string;
-  allowedIps: string;
-  expiresOn: string;
-  rateLimitPerMin: string;
-};
-const FIELDS = ['name', 'allowedIps', 'expiresOn', 'rateLimitPerMin'] as const;
+const FIELDS = ['name', 'allowedIps', 'validUntil', 'rateLimitPerMin'] as const;
 
 export interface NewKeyDialogProps {
   account: Pick<AccountRow, 'id' | 'name' | 'email' | 'status'>;
@@ -39,13 +33,8 @@ export interface NewKeyDialogProps {
 export function NewKeyDialog({ account, onClose, onReveal }: NewKeyDialogProps) {
   const create = useCreateAccountApiKey();
   const revealed = useRef<{ name: string; secret: string } | undefined>(undefined);
-  const form = useForm<Values>({
-    defaultValues: {
-      name: '',
-      allowedIps: '',
-      expiresOn: '',
-      rateLimitPerMin: String(RATE_LIMIT.default),
-    },
+  const form = useForm<KeyFormValues>({
+    defaultValues: { name: '', allowedIps: '', validUntil: '', rateLimitPerMin: String(RATE_LIMIT.default) },
   });
   const {
     register,
@@ -55,11 +44,13 @@ export function NewKeyDialog({ account, onClose, onReveal }: NewKeyDialogProps) 
   const submit = dialogSubmit(
     form,
     async (values) => {
+      const name = cleanKeyName(values.name);
       const addresses = parseIpLines(values.allowedIps);
+      // A name left empty is left out of the body: the server names the key.
       const body: CreateApiKeyBody = {
-        name: cleanKeyName(values.name),
+        ...(name === '' ? {} : { name }),
         ...(addresses.length > 0 ? { allowedIps: addresses } : {}),
-        ...(values.expiresOn ? { expiresAt: expiryOf(values.expiresOn) } : {}),
+        ...(values.validUntil ? { expiresAt: expiryOf(values.validUntil) } : {}),
         rateLimitPerMin: parseRateLimit(values.rateLimitPerMin) ?? RATE_LIMIT.default,
       };
       try {
@@ -69,7 +60,7 @@ export function NewKeyDialog({ account, onClose, onReveal }: NewKeyDialogProps) 
         throw foldKeyErrors(error);
       }
     },
-    { fields: FIELDS, aliases: { expiresAt: 'expiresOn' } },
+    { fields: FIELDS, aliases: { expiresAt: 'validUntil' } },
   );
 
   return (
@@ -90,55 +81,28 @@ export function NewKeyDialog({ account, onClose, onReveal }: NewKeyDialogProps) 
           label="Name"
           placeholder="Production server"
           autoComplete="off"
+          hint="Empty: the system names it."
           error={errors.name}
           {...register('name', {
-            validate: (value) => {
-              const name = cleanKeyName(value);
-              return name === ''
-                ? 'Name the key.'
-                : name.length > KEY_NAME_MAX
-                  ? `Use at most ${KEY_NAME_MAX} characters.`
-                  : true;
-            },
-          })}
-        />
-        <TextareaField
-          label="Allowed addresses"
-          rows={3}
-          placeholder={'203.0.113.55\n198.51.100.0/24'}
-          spellCheck={false}
-          hint={`One address or range per line, at most ${MAX_ALLOWED_IPS}. Leave empty to allow any address.`}
-          error={errors.allowedIps}
-          {...register('allowedIps', {
             validate: (value) =>
-              parseIpLines(value).length <= MAX_ALLOWED_IPS || `Use at most ${MAX_ALLOWED_IPS} addresses.`,
+              cleanKeyName(value).length <= KEY_NAME_MAX || `Use at most ${KEY_NAME_MAX} characters.`,
           })}
         />
-        {/* The expiry (none) and the limit (60) keep their defaults and are sent as before; a message under either opens the fold. */}
-        <MoreOptions forceOpen={Boolean(errors.expiresOn || errors.rateLimitPerMin)}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TextField
-              label="Expires on"
-              type="date"
-              hint="Optional. The key stops working at the end of that day."
-              error={errors.expiresOn}
-              {...register('expiresOn', {
-                validate: (value) => !dayIsPast(value) || 'Choose a day that is still ahead.',
-              })}
-            />
-            <TextField
-              label="Limit a minute"
-              inputMode="numeric"
-              autoComplete="off"
-              hint={`A whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`}
-              error={errors.rateLimitPerMin}
-              {...register('rateLimitPerMin', {
-                validate: (value) =>
-                  parseRateLimit(value) !== null ||
-                  `Use a whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`,
-              })}
-            />
-          </div>
+        <PermissionsFields form={form} />
+        {/* The limit keeps its default (60) and is sent as before; a message under it opens the fold. */}
+        <MoreOptions forceOpen={Boolean(errors.rateLimitPerMin)}>
+          <TextField
+            label="Limit a minute"
+            inputMode="numeric"
+            autoComplete="off"
+            hint={`A whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`}
+            error={errors.rateLimitPerMin}
+            {...register('rateLimitPerMin', {
+              validate: (value) =>
+                parseRateLimit(value) !== null ||
+                `Use a whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`,
+            })}
+          />
         </MoreOptions>
       </div>
     </FormDialog>
