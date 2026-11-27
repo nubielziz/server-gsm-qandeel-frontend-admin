@@ -2,7 +2,7 @@
 // country, company, address, tax number, internal notes and the API username. It owns no request: the save belongs to the part.
 import type { UseFormReturn } from 'react-hook-form';
 import { FormRow, ReadValue, SectionHeading, SelectField, TextareaField, TextField } from '@/components/ui';
-import { countryOptions } from '../shared/countries';
+import { countryOptions, merchantCountryOptions } from '../shared/countries';
 import type { AccountDetail } from '../../types';
 import {
   PROFILE_LIMITS,
@@ -79,15 +79,14 @@ export function ProfileFields({ form, account, lock, emailLock }: ProfileFieldsP
         {...register('phone', { validate: within(PROFILE_LIMITS.phone) })}
       />
       {merchant ? (
-        <TextField
+        <SelectField
           layout="row"
           label="Country"
-          maxLength={2}
-          autoComplete="off"
-          hint="Two letters, like JO or AE."
+          selectWrapClassName="w-full max-w-md"
+          options={merchantCountryOptions(account.country ?? '')}
           error={errors.country}
           {...register('country', {
-            validate: (value) => validCountry(value) || 'Enter the two-letter country code.',
+            validate: (value) => validCountry(value) || 'Choose a country.',
           })}
         />
       ) : (

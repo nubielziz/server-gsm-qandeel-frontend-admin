@@ -1,8 +1,9 @@
-// GatewayFields: the inputs of the payment method dialog (name, code, fees, limits, switches, instructions); the write-only secrets
-// are in GatewaySecretFields. The dialog owns the form; this file only lays the fields out.
+// GatewayFields: the inputs of the payment method dialog (name, driver, fees, limits, switches, instructions; the code only when editing,
+// read only); the write-only secrets are in GatewaySecretFields. The dialog owns the form; this file only lays the fields out.
 import type { UseFormReturn } from 'react-hook-form';
 import { CheckboxField, SelectField, TextareaField, TextField, type SelectOption } from '@/components/ui';
 import { isDecimalText } from '../lib/decimal';
+import { driverOptions } from '../lib/gateways';
 import type { GatewayAudience, PaymentGateway } from '../types';
 import { GatewaySecretFields } from './GatewaySecretFields';
 
@@ -44,10 +45,11 @@ const required = (message: string) => (value: string) => value.trim() !== '' || 
 const amount = (value: string) => isDecimalText(value) || 'Enter an amount, such as 0.30.';
 
 /**
- * The fields. `gateway` is set when editing: the code is then fixed and the secret fields say which are stored. `presetMade` is true for a
- * method made from a ready-made one (an edit of one, or the add dialog opened from the gallery): its driver and its manual setting are
- * fixed (read-only; `aria-disabled` and the click stopped, because react-hook-form drops the value of a disabled field), as the server
- * refuses a change of either (422 `driver` and `isManual`). A custom method keeps both free.
+ * The fields. `gateway` is set when editing: the code is then shown, fixed, and the secret fields say which are stored; a new method has no
+ * code input (the server makes the code). `presetMade` is true for a method made from a ready-made one (an edit of one, or the add dialog
+ * opened from the gallery): its driver and its manual setting are fixed (read-only; `aria-disabled` and the click stopped, because
+ * react-hook-form drops the value of a disabled field), as the server refuses a change of either (422 `driver` and `isManual`). A custom
+ * method keeps both free: its driver is a menu, and one the menu does not know stays chosen as it is.
  */
 export function GatewayFields({
   form,
@@ -72,26 +74,35 @@ export function GatewayFields({
           error={errors.name}
           {...register('name', { validate: required('Enter a name.') })}
         />
-        <TextField
-          label="Code"
-          autoComplete="off"
-          readOnly={gateway !== undefined}
-          hint={
-            gateway
-              ? 'Part of the payment webhook address, so it cannot change.'
-              : 'Letters and numbers, such as card.'
-          }
-          error={errors.code}
-          {...register('code', { validate: required('Enter a code.') })}
-        />
-        <TextField
-          label="Driver"
-          autoComplete="off"
-          readOnly={presetMade}
-          hint={presetMade ? FIXED_HINT : 'The integration that talks to the gateway.'}
-          error={errors.driver}
-          {...register('driver', { validate: required('Enter the driver.') })}
-        />
+        {gateway && (
+          <TextField
+            label="Code"
+            autoComplete="off"
+            readOnly
+            hint="Part of the payment webhook address, so it cannot change."
+            error={errors.code}
+            {...register('code')}
+          />
+        )}
+        {presetMade ? (
+          <TextField
+            label="Driver"
+            autoComplete="off"
+            readOnly
+            hint={FIXED_HINT}
+            error={errors.driver}
+            {...register('driver', { validate: required('Enter the driver.') })}
+          />
+        ) : (
+          <SelectField
+            label="Driver"
+            selectWrapClassName="w-full"
+            options={driverOptions(gateway?.driver ?? '')}
+            hint="The integration that talks to the gateway."
+            error={errors.driver}
+            {...register('driver', { validate: required('Choose the driver.') })}
+          />
+        )}
         <SelectField
           label="Who can pay"
           selectWrapClassName="w-full"

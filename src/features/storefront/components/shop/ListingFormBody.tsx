@@ -1,5 +1,5 @@
-// ListingFormBody: the fields of the shop page (listing) form: the picture, the texts, the facts about the service and the search
-// texts. Shared by the Edit listing dialog (stacked) and the Product / Services edit view's Retail Purchase part (label-left rows);
+// ListingFormBody: the fields of the shop page (listing) form: the picture, the texts, the facts about the service and, in one
+// "More options" fold, the delivery note, the position and the search texts (decision 036). Shared by the Edit listing dialog (stacked) and the Product / Services edit view's Retail Purchase part (label-left rows);
 // each makes its own form and its own save.
 import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
@@ -8,7 +8,7 @@ import type { ServiceListingDetail } from '../../types';
 import { ListingContentFields } from '../ListingContentFields';
 import { ListingFactsFields } from '../ListingFactsFields';
 import { ListingImageField } from '../ListingImageField';
-import { ListingSeoFields } from '../ListingSeoFields';
+import { ListingMoreFields } from '../ListingMoreFields';
 
 export interface ListingFormBodyProps {
   form: UseFormReturn<ListingFormValues>;
@@ -23,7 +23,7 @@ export interface ListingFormBodyProps {
   layout?: 'stacked' | 'row';
 }
 
-/** The four groups of fields. The picture saves at once (its own requests); the rest is the form's Save. */
+/** The groups of fields. The picture saves at once (its own requests); the rest is the form's Save. */
 export function ListingFormBody({ form, listing, disabledReason, layout = 'stacked' }: ListingFormBodyProps) {
   const [imageUrl, setImageUrl] = useState(listing.imageUrl);
   const {
@@ -38,7 +38,7 @@ export function ListingFormBody({ form, listing, disabledReason, layout = 'stack
       className={layout === 'row' ? 'min-w-0' : 'min-w-0 space-y-4'}
     >
       <ListingImageField listing={listing} imageUrl={imageUrl} onChange={setImageUrl} layout={layout} />
-      <ListingContentFields register={register} errors={errors} layout={layout} />
+      <ListingContentFields register={register} errors={errors} slug={listing.slug} layout={layout} />
       <ListingFactsFields
         register={register}
         errors={errors}
@@ -46,7 +46,7 @@ export function ListingFormBody({ form, listing, disabledReason, layout = 'stack
         savedCountry={listing.country}
         layout={layout}
       />
-      <ListingSeoFields register={register} errors={errors} layout={layout} />
+      <ListingMoreFields register={register} errors={errors} listing={listing} layout={layout} />
     </fieldset>
   );
 }

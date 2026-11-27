@@ -9,6 +9,82 @@ export function eventLabel(event: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/**
+ * The events a template can be written for, by the audience that receives the message. A copy of the backend's registry of notification
+ * events, which is filled at boot from these files (all under `src/modules` of the backend):
+ * - `platform/notifications/notification-events.ts`: `BUILT_IN_EVENTS` (the merchant, customer and staff events of the platform, the
+ *   customer's `support.reply` and `customer.security_notice`, the staff alerts and `retail.prices_followed`);
+ * - `identity/application/mail/identity-mail-events.ts`: `IDENTITY_MAIL_EVENTS` (the merchant lifecycle and security mails, the two staff
+ *   link mails);
+ * - `support/application/support-events.ts`: `SUPPORT_EVENTS` (`support.ticket_received` for a customer and for a merchant, and the
+ *   merchant's `support.reply`);
+ * - `money/application/customer-wallet-notifications.ts`: `CUSTOMER_WALLET_EVENTS` (the five `wallet.*` mails to a customer about the
+ *   store balance).
+ * Left out on purpose: `platform/notifications/campaigns/broadcast-events.ts` (`BROADCAST_EVENTS`: `broadcast.announcement` and
+ * `broadcast.test` have `templated: false`, a campaign writes its own text and the server refuses a template for them).
+ * The server refuses a template for any other event (422 on `event`), so the menu cannot offer what it would refuse. Keep it in step
+ * with those files when an event is added there.
+ */
+export const TEMPLATE_EVENTS: Readonly<Record<NotificationAudience, readonly string[]>> = {
+  customer: [
+    'order.received',
+    'order.completed',
+    'order.failed',
+    'support.reply',
+    'support.ticket_received',
+    'payment.failed',
+    'refund.declined',
+    'wallet.topup_credited',
+    'wallet.topup_rejected',
+    'wallet.adjusted',
+    'wallet.frozen',
+    'wallet.order_refunded',
+    'customer.magic_link',
+    'customer.password_reset',
+    'customer.invited',
+    'customer.email_verification',
+    'customer.security_notice',
+  ],
+  merchant: [
+    'merchant.email_verification',
+    'merchant.password_reset',
+    'merchant.invited',
+    'wallet.low_balance',
+    'service.price_changed',
+    'invoice.paid',
+    'order.completed',
+    'order.failed',
+    'support.reply',
+    'support.ticket_received',
+    'merchant.suspended',
+    'merchant.reactivated',
+    'merchant.security_notice',
+    'merchant.portal_api_key_created',
+  ],
+  staff: ['alert.fired', 'alert.resolved', 'retail.prices_followed', 'staff.invited', 'staff.password_reset'],
+};
+
+/** The event keys of an audience, in the order of the list above; an audience the console does not know has none. */
+export function eventsOf(audience: string): readonly string[] {
+  return Object.hasOwn(TEMPLATE_EVENTS, audience) ? TEMPLATE_EVENTS[audience as NotificationAudience] : [];
+}
+
+/**
+ * The event menu of the template form for an audience: a first line that asks for a choice, then each event in words (`eventLabel`),
+ * sorted by those words. The `current` event (a saved template) always stays in the menu, chosen and shown in words, even when the
+ * list above does not know it.
+ */
+export function eventOptions(audience: string, current = ''): SelectOption[] {
+  const keys = eventsOf(audience);
+  const all = current !== '' && !keys.includes(current) ? [...keys, current] : [...keys];
+  return [
+    { value: '', label: 'Choose an event…' },
+    ...all
+      .map((value) => ({ value, label: eventLabel(value) }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  ];
+}
+
 /** "Email". A channel word the console no longer knows (an old line of the log) is shown as it was stored. */
 export function channelLabel(channel: string): string {
   return channel === 'email' ? 'Email' : channel;

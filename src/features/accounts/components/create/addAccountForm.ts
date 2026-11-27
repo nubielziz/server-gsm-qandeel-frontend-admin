@@ -82,7 +82,7 @@ export function cleanCountry(text: string): string {
   return text.trim().toUpperCase();
 }
 
-/** Two letters; a merchant's country is typed, a retail account's is picked from the shop's list. */
+/** Two letters: a merchant's country is picked from every ISO country, a retail account's from the shop's list (both menus hold the code). */
 export function validCountry(text: string): boolean {
   return /^[A-Za-z]{2}$/.test(text.trim());
 }
@@ -141,7 +141,7 @@ export function rankChoices(ranks: readonly Rank[] | undefined, isOwner: boolean
 /**
  * The body of `POST /admin/clients`. A retail account is added with no `groupId`, no company and no credit limit; a merchant rank sends
  * its `groupId`, the company when typed and the credit limit when the rank allows credit and `creditAllowed` says the staff member may
- * set one. Optional keys that are empty are left out. The country is the picked code, or the two letters typed.
+ * set one. Optional keys that are empty are left out. The country is the picked two-letter code, in upper case.
  *
  * @param values what the form holds.
  * @param rank the merchant rank the Rank menu names (undefined for the retail choice).

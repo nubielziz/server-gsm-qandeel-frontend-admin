@@ -1,23 +1,6 @@
-// Tests for the gallery helpers: the free code made from a preset key and the count of methods made from a preset.
+// Tests for the gallery helpers: the count of methods made from a preset. (The code of a new method is made by the server.)
 import { describe, expect, it } from 'vitest';
-import { addedCount, freeCode } from './gatewayPresets';
-
-describe('freeCode', () => {
-  it('is the key itself while no method uses it', () => {
-    expect(freeCode('vodafone_cash', [])).toBe('vodafone_cash');
-    expect(freeCode('vodafone_cash', [{ code: 'card' }, { code: 'bank' }])).toBe('vodafone_cash');
-  });
-
-  it('takes the first free number when the key is used (two bank accounts)', () => {
-    expect(freeCode('bank_transfer', [{ code: 'bank_transfer' }])).toBe('bank_transfer_2');
-    expect(freeCode('bank_transfer', [{ code: 'bank_transfer' }, { code: 'bank_transfer_2' }])).toBe(
-      'bank_transfer_3',
-    );
-    expect(freeCode('bank_transfer', [{ code: 'bank_transfer' }, { code: 'bank_transfer_3' }])).toBe(
-      'bank_transfer_2',
-    );
-  });
-});
+import { addedCount } from './gatewayPresets';
 
 describe('addedCount', () => {
   it('counts the methods made from one preset and ignores custom ones', () => {

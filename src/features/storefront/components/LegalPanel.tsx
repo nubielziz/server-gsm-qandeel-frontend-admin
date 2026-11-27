@@ -68,7 +68,9 @@ export function LegalPanel({ grants }: { grants: StorefrontGrants }) {
           </p>
         )}
       </Panel>
-      {dialog?.kind === 'new' && <LegalVersionDialog from={dialog.from} onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'new' && (
+        <LegalVersionDialog from={dialog.from} documents={list.rows} onClose={() => setDialog(null)} />
+      )}
       {dialog?.kind === 'publish' && (
         <PublishLegalDialog
           document={dialog.document}

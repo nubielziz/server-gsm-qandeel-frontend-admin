@@ -1,10 +1,12 @@
 // Display helpers for the tax table: country names, the rate in words, the "Reported through" text and whether a rate is in force
 // yet. Ports tabTax of 55-p-settings.js. The server applies the tax; these are only labels.
 import type { SelectOption } from '@/components/ui';
+import { regionName } from './countries';
 import { trimDecimal, isZero } from './decimal';
 import type { TaxRate } from '../types';
 
-// The twelve countries of the demo's storefront (MISMATCHES M75: the map has no route for the countries list).
+// The twelve countries of the demo's storefront (MISMATCHES M75: the map has no route for the countries list). Any other ISO country is
+// named by the browser (`regionName`).
 const COUNTRY_NAMES: Record<string, string> = {
   GB: 'United Kingdom',
   DE: 'Germany',
@@ -20,9 +22,9 @@ const COUNTRY_NAMES: Record<string, string> = {
   SA: 'Saudi Arabia',
 };
 
-/** The country's name when the console knows it, else its code. */
+/** The country's name when the console or the browser knows it, else its code. */
 export function countryName(code: string): string {
-  return COUNTRY_NAMES[code.toUpperCase()] ?? code;
+  return COUNTRY_NAMES[code.toUpperCase()] ?? regionName(code) ?? code;
 }
 
 /** The tax kinds the dialog offers (assumed values; any other the server sends is shown as it is). */
@@ -72,6 +74,30 @@ export function effectiveDay(iso: string | null): string {
   if (!iso) return '';
   const ms = Date.parse(iso);
   return Number.isNaN(ms) ? '' : dayFormat.format(ms);
+}
+
+/** What a new rate applies to and the label it starts with: the defaults of the hidden inputs. */
+export const DEFAULT_APPLIES_TO = 'digital_services';
+
+/** Today as the value of a date input (`2026-03-05`), the UTC calendar day, as the rate dates are kept and shown. */
+export function todayInput(now: number = Date.now()): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+/**
+ * True when a rate being edited holds a value of its own in an input of the "More options" fold (region, end date, scheme, what it
+ * applies to, label), so the fold starts open and nothing set earlier is out of sight.
+ */
+export function hasCustomTaxFacts(
+  rate: Pick<TaxRate, 'region' | 'validTo' | 'ossScheme' | 'appliesTo' | 'label'>,
+): boolean {
+  return (
+    rate.region.trim() !== '' ||
+    rate.validTo !== null ||
+    rate.ossScheme.trim() !== '' ||
+    rate.appliesTo !== DEFAULT_APPLIES_TO ||
+    rate.label.trim() !== ''
+  );
 }
 
 /** The value of a date input (`2026-03-05`) for an ISO moment. */

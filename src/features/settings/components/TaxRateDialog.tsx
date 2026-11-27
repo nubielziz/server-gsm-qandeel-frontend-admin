@@ -1,10 +1,29 @@
 // TaxRateDialog: "Add tax rate" and "Edit <country> tax" (`POST` and `PATCH /admin/tax-rates`): the rate, the kind of tax, the scheme it is
 // reported through and the dates it applies. The demo's table was read-only; the map adds this form. Only what changed is sent on an edit.
+// Four inputs show (country, rate, kind of tax, start day, which starts on today); region, end date, scheme, what it applies to and the
+// label are in the "More options" fold and are still sent as before (decision 036).
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, SelectField, TextField, toast } from '@/components/ui';
+import {
+  dialogSubmit,
+  FormDialog,
+  MoreOptions,
+  SelectField,
+  TextField,
+  toast,
+  ReadField,
+} from '@/components/ui';
 import { useCreateTaxRate, useUpdateTaxRate } from '../hooks/useTaxRates';
+import { countryLabel, countryMenu } from '../lib/countries';
 import { isDecimalText, sameDecimal, trimDecimal } from '../lib/decimal';
-import { countryName, fromDateInput, TAX_TYPE_OPTIONS, toDateInput } from '../lib/tax';
+import {
+  countryName,
+  DEFAULT_APPLIES_TO,
+  fromDateInput,
+  hasCustomTaxFacts,
+  TAX_TYPE_OPTIONS,
+  todayInput,
+  toDateInput,
+} from '../lib/tax';
 import type { CreateTaxRateBody, TaxRate, UpdateTaxRateBody } from '../types';
 
 type Values = {
@@ -69,10 +88,10 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
       region: rate?.region ?? '',
       ratePercent: rate ? trimDecimal(rate.ratePercent) : '',
       taxType: rate?.taxType ?? 'vat',
-      appliesTo: rate?.appliesTo ?? 'digital_services',
+      appliesTo: rate?.appliesTo ?? DEFAULT_APPLIES_TO,
       label: rate?.label ?? '',
       ossScheme: rate?.ossScheme ?? '',
-      validFrom: toDateInput(rate?.validFrom ?? null),
+      validFrom: rate ? toDateInput(rate.validFrom) : todayInput(),
       validTo: toDateInput(rate?.validTo ?? null),
     },
   });
@@ -80,6 +99,10 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
     register,
     formState: { errors },
   } = form;
+  // The fold holds five inputs: it opens by itself while any of them holds an error.
+  const foldError = Boolean(
+    errors.region || errors.validTo || errors.ossScheme || errors.appliesTo || errors.label,
+  );
 
   const submit = dialogSubmit(
     form,
@@ -110,25 +133,18 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
     >
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Country code"
-            autoComplete="off"
-            maxLength={2}
-            readOnly={rate !== undefined}
-            autoFocus={!rate}
-            hint={rate ? undefined : 'Two letters, such as GB.'}
-            error={errors.country}
-            {...register('country', {
-              validate: (v) => /^[A-Za-z]{2}$/.test(v.trim()) || 'Enter the two-letter country code.',
-            })}
-          />
-          <TextField
-            label="Region"
-            autoComplete="off"
-            hint="Optional, for a state or province."
-            error={errors.region}
-            {...register('region')}
-          />
+          {rate ? (
+            <ReadField label="Country">{countryLabel(rate.country)}</ReadField>
+          ) : (
+            <SelectField
+              label="Country"
+              selectWrapClassName="w-full"
+              options={[{ value: '', label: 'Choose a country…' }, ...countryMenu()]}
+              autoFocus
+              error={errors.country}
+              {...register('country', { validate: (v) => v !== '' || 'Choose a country.' })}
+            />
+          )}
           <TextField
             label="Rate (%)"
             inputMode="decimal"
@@ -151,36 +167,49 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
             error={errors.validFrom}
             {...register('validFrom', { validate: (v) => v !== '' || 'Enter the date the rate starts.' })}
           />
-          <TextField
-            label="Until"
-            type="date"
-            hint="Leave empty if it has no end."
-            error={errors.validTo}
-            {...register('validTo')}
-          />
         </div>
-        <TextField
-          label="Reported through"
-          autoComplete="off"
-          hint="For example EU OSS or UK VAT. Leave empty if the tax is not collected."
-          error={errors.ossScheme}
-          {...register('ossScheme')}
-        />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Applies to"
-            autoComplete="off"
-            error={errors.appliesTo}
-            {...register('appliesTo')}
-          />
-          <TextField
-            label="Label"
-            autoComplete="off"
-            hint="Shown on invoices."
-            error={errors.label}
-            {...register('label')}
-          />
-        </div>
+        <MoreOptions defaultOpen={rate ? hasCustomTaxFacts(rate) : false} forceOpen={foldError}>
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField
+                label="Region"
+                autoComplete="off"
+                hint="Optional, for a state or province."
+                error={errors.region}
+                {...register('region')}
+              />
+              <TextField
+                label="Until"
+                type="date"
+                hint="Leave empty if it has no end."
+                error={errors.validTo}
+                {...register('validTo')}
+              />
+            </div>
+            <TextField
+              label="Reported through"
+              autoComplete="off"
+              hint="For example EU OSS or UK VAT. Leave empty if the tax is not collected."
+              error={errors.ossScheme}
+              {...register('ossScheme')}
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField
+                label="Applies to"
+                autoComplete="off"
+                error={errors.appliesTo}
+                {...register('appliesTo')}
+              />
+              <TextField
+                label="Label"
+                autoComplete="off"
+                hint="Shown on invoices."
+                error={errors.label}
+                {...register('label')}
+              />
+            </div>
+          </div>
+        </MoreOptions>
       </div>
     </FormDialog>
   );

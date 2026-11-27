@@ -57,9 +57,9 @@ describe('saveListingForm', () => {
   });
 
   it('lets a refusal of the server reach the caller', async () => {
-    const update = vi.fn().mockRejectedValue(new Error('The slug is already used.'));
+    const update = vi.fn().mockRejectedValue(new Error('The summary is too long.'));
     await expect(
-      saveListingForm({ ...toFormValues(listing), slug: 'ee-uk-unlock' }, listing, update),
-    ).rejects.toThrow('The slug is already used.');
+      saveListingForm({ ...toFormValues(listing), summary: 'x' }, listing, update),
+    ).rejects.toThrow('The summary is too long.');
   });
 });

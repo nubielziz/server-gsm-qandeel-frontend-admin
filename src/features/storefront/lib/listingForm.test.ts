@@ -3,11 +3,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   changedBody,
+  hasCustomMoreOptions,
   IMAGE_MAX_BYTES,
   imageProblem,
   imageSrc,
   isCountryText,
   isPosition,
+  moreOptionsHaveError,
   toFormValues,
 } from './listingForm';
 import type { ServiceListingDetail } from '../types';
@@ -86,6 +88,35 @@ describe('changedBody', () => {
 
   it('treats 02 as the position 2', () => {
     expect(changedBody({ ...toFormValues(listing), sort: '02' }, listing)).toEqual({});
+  });
+
+  it('has no address in the form and never sends one', () => {
+    expect(toFormValues(listing)).not.toHaveProperty('slug');
+    // Even a form that somehow carries a slug does not put it in the body.
+    const values = { ...toFormValues(listing), slug: 'another-address' };
+    expect(changedBody(values, listing)).toEqual({});
+  });
+});
+
+describe('the "More options" fold', () => {
+  it('stays closed for a shop page whose four hidden inputs hold their defaults', () => {
+    expect(hasCustomMoreOptions({ etaText: '', sort: 0, seoTitle: '', seoDescription: '' })).toBe(false);
+  });
+
+  it('starts open when any hidden input holds a value of its own', () => {
+    const base = { etaText: '', sort: 0, seoTitle: '', seoDescription: '' };
+    expect(hasCustomMoreOptions({ ...base, etaText: 'Within a day' })).toBe(true);
+    expect(hasCustomMoreOptions({ ...base, sort: 3 })).toBe(true);
+    expect(hasCustomMoreOptions({ ...base, seoTitle: 'Unlock' })).toBe(true);
+    expect(hasCustomMoreOptions({ ...base, seoDescription: 'Unlock it' })).toBe(true);
+  });
+
+  it('is forced open by an error under any of its inputs, and by nothing else', () => {
+    expect(moreOptionsHaveError({})).toBe(false);
+    expect(moreOptionsHaveError({ summary: { type: 'server', message: 'Too long.' } })).toBe(false);
+    for (const field of ['etaText', 'sort', 'seoTitle', 'seoDescription'] as const) {
+      expect(moreOptionsHaveError({ [field]: { type: 'server', message: 'No.' } })).toBe(true);
+    }
   });
 });
 

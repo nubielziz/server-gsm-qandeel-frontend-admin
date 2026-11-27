@@ -1,11 +1,14 @@
 // The fields form of the "Custom Fields" section of the edit view's Field part: the order fields of a service as a list of rows to add,
 // reorder and remove. Saving replaces the whole list in this order (`PUT /admin/services/:id/fields`, through useReplaceFields), so the
 // rows start from the saved list and a save resets them to the list the server answered.
+import { useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { dialogSubmit } from '@/components/ui';
 import {
   fieldDraft,
   fieldErrorTargets,
+  hasDifferentLabel,
+  hasLabelToClear,
   repeatedNameIndex,
   toServiceField,
   withMainInput,
@@ -15,17 +18,30 @@ import type { ServiceDetail } from '../types';
 import { useReplaceFields } from './useServicePartMutations';
 
 /**
- * The form, its row list (`list`: append, move, remove), its `submit` (the section calls it when the fields are dirty, see
- * useFieldsSectionForm) and `setMainInput` (ticks or unticks the main input of a row; a service has at most one, so ticking one unticks the others). A name used by two rows, without regard
+ * The form, its row list (`list`: append, move, remove), its `submit` (the section calls it when the fields are `dirty`, see
+ * useFieldsSectionForm), `labels` (the Label column's tick box, below) and `setMainInput` (ticks or unticks the main input of a row; a service has at most one, so ticking one unticks the others). A name used by two rows, without regard
  * to letter case, is refused here with the row's message; any other refusal of the server lands under the input it names (the server
  * calls the choices `options`; a message about the hidden key or the hidden pattern lands under the row's name, one about the main-input flag on its tick box) and the rest in the
  * section's failure line. A saved field's pattern has no input and goes back in the body as it was saved.
+ *
+ * The Label column is hidden unless the "Show buyers a different label" box is ticked (decision 035). `labels.shown` says whether the column
+ * is drawn: the box was ticked by the person, or started ticked because a saved label differs from its name (spaces ignored), or is forced
+ * on (`labels.forced`) while a label cell holds an error so nothing wrong is out of sight. While it is hidden every row is sent with an
+ * empty label (the server stores the name, so a renamed field's label follows its name). Clearing differing labels by unticking the box is a
+ * change of its own: `dirty` is the form's dirt or that.
  */
 export function useCustomFieldsForm(service: ServiceDetail) {
   const replace = useReplaceFields();
   const form = useForm<FieldsFormValues>({ defaultValues: { fields: service.fields.map(fieldDraft) } });
   const list = useFieldArray({ control: form.control, name: 'fields' });
   const targets = fieldErrorTargets(form.getValues('fields'));
+
+  const [ticked, setTicked] = useState(() => hasDifferentLabel(service.fields));
+  // A message under any label cell (a client check or the server's) keeps the column drawn.
+  const rowErrors = form.formState.errors.fields;
+  const forced = Array.isArray(rowErrors) && rowErrors.some((row) => Boolean(row?.label));
+  const shown = ticked || forced;
+  const dirty = form.formState.isDirty || (!shown && hasLabelToClear(form.watch('fields')));
 
   const setMainInput = (index: number, on: boolean) => {
     const current = form.getValues('fields');
@@ -48,12 +64,15 @@ export function useCustomFieldsForm(service: ServiceDetail) {
         );
         return false;
       }
-      const saved = await replace.mutateAsync({ service, body: { fields: drafts.map(toServiceField) } });
+      const saved = await replace.mutateAsync({
+        service,
+        body: { fields: drafts.map((draft) => toServiceField(draft, shown)) },
+      });
       form.reset({ fields: saved.map(fieldDraft) });
     },
     // Only the inputs that show an error are listed; any other message from the server falls to the section's failure line.
     { fields: targets.names, aliases: targets.aliases },
   );
 
-  return { form, list, submit, setMainInput };
+  return { form, list, submit, setMainInput, dirty, labels: { shown, forced, setShown: setTicked } };
 }

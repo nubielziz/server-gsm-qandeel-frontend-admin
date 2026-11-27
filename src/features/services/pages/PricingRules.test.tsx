@@ -8,8 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fmtDay } from '@/lib/format';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
-import { getPricingRule, listPricingRules } from '../api';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { createPricingRule, getPricingRule, listPricingRules } from '../api';
 import { groupHandlers } from '../mocks/testGroups';
 import { dialogOf, openProducts } from '../test/productsPage';
 
@@ -125,6 +125,101 @@ describe('the rules table', () => {
   });
 });
 
+describe('New rule and Edit rule: fewer inputs (decision 035)', () => {
+  const FOLDED = ['Priority', 'Rounding', 'Minimum profit (USD)', 'Starts', 'Ends'];
+
+  async function openNew(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(await screen.findByRole('button', { name: 'New rule' }));
+    const dialog = dialogOf('New rule');
+    await dialog.findByRole('option', { name: 'Credits' });
+    return dialog;
+  }
+
+  it('shows Applies to, the target, Type, Rank, Percentage and Fixed amount, and folds the other five away, closed', async () => {
+    const user = userEvent.setup();
+    await openProducts(RULES);
+    const dialog = await openNew(user);
+    for (const name of ['Applies to', 'Category', 'Type', 'Rank']) {
+      expect(dialog.getByRole('combobox', { name })).toBeVisible();
+    }
+    for (const name of ['Percentage', 'Fixed amount (USD)']) {
+      expect(dialog.getByRole('textbox', { name })).toBeVisible();
+    }
+    const fold = dialog.getByRole('button', { name: 'More options' });
+    expect(fold).toHaveAttribute('aria-expanded', 'false');
+    for (const label of FOLDED) expect(dialog.getByLabelText(label)).not.toBeVisible();
+    await user.click(fold);
+    for (const label of FOLDED) expect(dialog.getByLabelText(label)).toBeVisible();
+    expect(dialog.getByLabelText('Priority')).toHaveValue('100');
+    expect(dialog.getByRole('combobox', { name: 'Rounding' })).toHaveDisplayValue('No rounding');
+  });
+
+  it('sends what it sent before for a form left at its defaults', async () => {
+    const user = userEvent.setup();
+    const bodies: unknown[] = [];
+    mockServer.use(
+      http.post('*/admin/pricing-rules', async ({ request }) => {
+        bodies.push(await request.clone().json());
+        return undefined;
+      }),
+    );
+    await openProducts(RULES);
+    const dialog = await openNew(user);
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Category' }), 'Credits');
+    await user.type(dialog.getByRole('textbox', { name: 'Percentage' }), '5');
+    await user.click(dialog.getByRole('button', { name: 'Add rule' }));
+    expect(await screen.findByText('Rule added')).toBeInTheDocument();
+    expect(bodies).toEqual([
+      {
+        scope: 'category',
+        targetId: expect.any(Number),
+        groupId: null,
+        kind: 'discount',
+        percent: '5.0000',
+        fixed: '0.0000',
+        rounding: 'none',
+        minProfit: '0.0000',
+        priority: 100,
+        startsAt: null,
+        endsAt: null,
+      },
+    ]);
+  });
+
+  it('opens the fold when the rule being edited holds a value that is not a default, and keeps it closed otherwise', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await createPricingRule({
+      scope: 'global',
+      targetId: null,
+      groupId: null,
+      kind: 'margin',
+      percent: '1.0000',
+      fixed: '0.0000',
+      rounding: 'ends_99',
+      minProfit: '0.0000',
+      priority: 100,
+      startsAt: null,
+      endsAt: null,
+    });
+    await openProducts(RULES);
+    // The seeded rule is on the defaults: closed.
+    const plain = await ruleRow('Carrier unlock (category)');
+    await user.click(plain.getByRole('button', { name: 'Edit rule 1' }));
+    const closed = dialogOf('Edit rule');
+    expect(closed.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    await user.click(closed.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Edit rule' })).not.toBeInTheDocument());
+    // The made rule rounds to .99: open, with the value in view.
+    const custom = await ruleRow('Every service');
+    await user.click(custom.getByRole('button', { name: /^Edit rule/ }));
+    const open = dialogOf('Edit rule');
+    expect(open.getByRole('button', { name: 'Hide more options' })).toHaveAttribute('aria-expanded', 'true');
+    expect(open.getByRole('combobox', { name: 'Rounding' })).toBeVisible();
+    expect(open.getByRole('combobox', { name: 'Rounding' })).toHaveDisplayValue('Ends in .99');
+  });
+});
+
 describe('New rule and Edit rule', () => {
   async function openNewRule(user: ReturnType<typeof userEvent.setup>) {
     await user.click(await screen.findByRole('button', { name: 'New rule' }));
@@ -140,6 +235,7 @@ describe('New rule and Edit rule', () => {
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Category' }), 'Credits');
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Type' }), 'Promo (a discount for a time)');
     await user.type(dialog.getByRole('textbox', { name: 'Percentage' }), '5');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.type(dialog.getByLabelText('Starts'), '2026-03-05');
     await user.type(dialog.getByLabelText('Ends'), '2026-03-20');
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
@@ -169,6 +265,7 @@ describe('New rule and Edit rule', () => {
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Type' }), 'Margin (adds to the price)');
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Rank' }), 'Wholesale');
     await user.type(dialog.getByRole('textbox', { name: 'Fixed amount (USD)' }), '0.50');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.selectOptions(dialog.getByRole('combobox', { name: 'Rounding' }), 'Nearest $0.05');
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
     expect(await screen.findByText('Rule added')).toBeInTheDocument();
@@ -188,6 +285,7 @@ describe('New rule and Edit rule', () => {
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
     expect(await dialog.findByText('Enter a percent or a fixed amount.')).toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Percentage' }), '5');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.type(dialog.getByLabelText('Starts'), '2026-03-20');
     await user.type(dialog.getByLabelText('Ends'), '2026-03-05');
     await user.click(dialog.getByRole('button', { name: 'Add rule' }));
@@ -234,6 +332,8 @@ describe('New rule and Edit rule', () => {
     expect(dialog.getByText('That group has no rules.')).toBeInTheDocument();
     expect(dialog.getByRole('combobox', { name: 'Rank' })).toHaveAttribute('aria-invalid', 'true');
     expect(dialog.getByText('That rounding is not offered.')).toBeInTheDocument();
+    // The rounding is in the fold, which was closed: the message opened it.
+    expect(dialog.getByRole('combobox', { name: 'Rounding' })).toBeVisible();
     expect(dialog.getByRole('combobox', { name: 'Rounding' })).toHaveAttribute('aria-invalid', 'true');
   });
 

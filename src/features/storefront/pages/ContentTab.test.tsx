@@ -3,15 +3,17 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { storefrontStore } from '../mocks/store';
+import { recordRequests } from '../test/requests';
 import { dialogOf, openStorefront, openTab, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
+afterEach(() => vi.restoreAllMocks());
 
 const PAGES = 'Pages and blog posts';
 const LEGAL = 'Legal documents';
@@ -79,6 +81,7 @@ describe('pages and blog', () => {
     expect(await screen.findByText('Page saved')).toBeInTheDocument();
     expect(await rowOf(PAGES, 'About IMEI-HUB')).toBeTruthy();
 
+    const requests = recordRequests();
     await user.click(screen.getByRole('button', { name: 'New page…' }));
     const create = dialogOf('New page');
     expect(
@@ -86,11 +89,73 @@ describe('pages and blog', () => {
         .getAllByRole('option')
         .map((o) => o.textContent),
     ).toEqual(['Page', 'Blog post']);
+    // A new page has no Slug box (the server makes the address from the title) and the search texts wait in the fold.
+    expect(create.queryByRole('textbox', { name: 'Slug' })).not.toBeInTheDocument();
+    expect(create.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
     await user.type(create.getByRole('textbox', { name: 'Title' }), 'Refund guide');
     await user.type(create.getByRole('textbox', { name: 'Text (Markdown)' }), '# Refunds');
     await user.click(create.getByRole('button', { name: 'Save draft' }));
     expect(await screen.findByText('Page saved as a draft')).toBeInTheDocument();
     expect((await rowOf(PAGES, 'Refund guide')).getByText('Draft')).toBeInTheDocument();
+    // Left at their defaults the page is sent exactly as before, without a slug.
+    const posts = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/admin/content-pages'));
+    expect(posts.map((sent) => sent.body)).toEqual([
+      { kind: 'static', title: 'Refund guide', bodyMd: '# Refunds' },
+    ]);
+  });
+
+  it('keeps the Slug box on an edit, and opens the fold when the page has search texts of its own', async () => {
+    const user = userEvent.setup();
+    await openContent(user);
+    await user.click((await rowOf(PAGES, 'About us')).getByRole('button', { name: 'Edit About us' }));
+    const edit = dialogOf('Edit About us');
+    expect(edit.getByRole('textbox', { name: 'Slug' })).toHaveValue('about');
+    // The seed gives the page a search title, so the fold starts open.
+    expect(edit.getByRole('button', { name: 'Hide more options' })).toHaveAttribute('aria-expanded', 'true');
+    expect(edit.getByRole('textbox', { name: 'Search title' })).toHaveValue('About us');
+  });
+
+  it('keeps the fold of a new page open while a search text holds the server’s message', async () => {
+    mockServer.use(
+      http.post('*/admin/content-pages', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'seoTitle', message: 'Use at most 70 characters.' },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openContent(user);
+    await user.click(screen.getByRole('button', { name: 'New page…' }));
+    const create = dialogOf('New page');
+    await user.type(create.getByRole('textbox', { name: 'Title' }), 'Refund guide');
+    await user.click(create.getByRole('button', { name: 'More options' }));
+    await user.type(create.getByRole('textbox', { name: 'Search title' }), 'A title');
+    await user.click(create.getByRole('button', { name: 'Hide more options' }));
+    await user.click(create.getByRole('button', { name: 'Save draft' }));
+    expect(await create.findByText('Use at most 70 characters.')).toBeVisible();
+    expect(create.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
+  it('shows a message about the address of a new page in the dialog, as there is no box for it', async () => {
+    mockServer.use(
+      http.post('*/admin/content-pages', () =>
+        problem(409, 'CONFLICT', 'Address in use', 'Another page already uses this address.', [
+          { field: 'slug', message: 'Another page already uses this address.' },
+        ]),
+      ),
+    );
+    const user = userEvent.setup();
+    await openContent(user);
+    await user.click(screen.getByRole('button', { name: 'New page…' }));
+    const create = dialogOf('New page');
+    await user.type(create.getByRole('textbox', { name: 'Title' }), 'About us');
+    await user.click(create.getByRole('button', { name: 'Save draft' }));
+    expect(await create.findByText(/Another page already uses this address/)).toBeVisible();
   });
 });
 
@@ -199,7 +264,9 @@ describe('legal documents', () => {
     expect(dialog.getByRole('combobox', { name: 'Document' })).toBeDisabled();
     expect(dialog.getByRole('combobox', { name: 'Document' })).toHaveValue('terms');
     expect(dialog.queryByRole('combobox', { name: 'Language' })).not.toBeInTheDocument();
-    expect(dialog.getByRole('textbox', { name: 'Version' })).toHaveValue('3.3');
+    // The version is not typed: it is the next number, shown as a plain value.
+    expect(dialog.queryByRole('textbox', { name: 'Version' })).not.toBeInTheDocument();
+    expect(dialog.getByRole('group', { name: 'Version' })).toHaveTextContent('3.3');
     expect(dialog.getByRole('textbox', { name: 'Text (Markdown)' })).toHaveValue(
       '# Terms of service v3.2\n\nText for Terms of service v3.2 goes here.',
     );
@@ -212,17 +279,72 @@ describe('legal documents', () => {
     expect(await screen.findByRole('button', { name: 'Publish Terms of service v3.3' })).toBeInTheDocument();
   });
 
-  it('shows the server’s refusal of a version number that exists under the Version field', async () => {
+  it('suggests the next free number even when started from the version in force and a later draft exists', async () => {
+    // Terms v3.2 is in force and a draft v3.3 is waiting: the row of v3.2 must not offer 3.3 again (the server answers 409).
+    (await storefrontStore()).legal.insert({
+      type: 'terms',
+      version: '3.3',
+      locale: 'en',
+      bodyMd: '# Terms draft',
+      effectiveFrom: null,
+      isCurrent: false,
+      requiresReacceptance: true,
+      createdAt: new Date().toISOString(),
+      acceptedCount: null,
+    });
+    const user = userEvent.setup();
+    await openContent(user);
+    const requests = recordRequests();
+    await user.click(await screen.findByRole('button', { name: 'New version of Terms of service v3.2' }));
+    const dialog = dialogOf('New version');
+    expect(dialog.getByRole('group', { name: 'Version' })).toHaveTextContent('3.4');
+    await user.click(dialog.getByRole('button', { name: 'Save version' }));
+    expect(await screen.findByText('Terms of service v3.4 saved')).toBeInTheDocument();
+    const posts = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/admin/legal-documents'));
+    expect(posts.map((sent) => sent.body)).toMatchObject([{ type: 'terms', version: '3.4' }]);
+  });
+
+  it('suggests the next number of the document picked in the menu and sends it as it is', async () => {
+    const user = userEvent.setup();
+    await openContent(user);
+    const requests = recordRequests();
+    await user.click(screen.getByRole('button', { name: 'New version…' }));
+    const dialog = dialogOf('New version');
+    const menu = dialog.getByRole('combobox', { name: 'Document' });
+    expect(menu).toBeEnabled();
+    expect(dialog.getByRole('group', { name: 'Version' })).toHaveTextContent('3.3');
+    await user.selectOptions(menu, 'Refund policy');
+    expect(dialog.getByRole('group', { name: 'Version' })).toHaveTextContent('1.6');
+    await user.type(dialog.getByRole('textbox', { name: 'Text (Markdown)' }), '# Refunds');
+    await user.click(dialog.getByRole('button', { name: 'Save version' }));
+    expect(await screen.findByText('Refund policy v1.6 saved')).toBeInTheDocument();
+    const posts = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/admin/legal-documents'));
+    expect(posts.map((sent) => sent.body)).toEqual([
+      { type: 'refund', version: '1.6', bodyMd: '# Refunds', requiresReacceptance: true },
+    ]);
+  });
+
+  it('shows the server’s refusal of a version number under the Version value', async () => {
+    mockServer.use(
+      http.post('*/admin/legal-documents', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'version', message: 'Version 3.3 already exists for this document.' },
+        ]),
+      ),
+    );
     const user = userEvent.setup();
     await openContent(user);
     await user.click(screen.getByRole('button', { name: 'New version…' }));
     const dialog = dialogOf('New version');
     await user.click(dialog.getByRole('button', { name: 'Save version' }));
-    expect(await dialog.findByText('Enter a version number.')).toBeInTheDocument();
-    await user.type(dialog.getByRole('textbox', { name: 'Version' }), '3.2');
+    expect(await dialog.findByText('Enter the text of the document.')).toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Text (Markdown)' }), '# Terms');
     await user.click(dialog.getByRole('button', { name: 'Save version' }));
-    expect(await dialog.findByText('Version 3.2 already exists for this document.')).toBeInTheDocument();
+    expect(await dialog.findByText('Version 3.3 already exists for this document.')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'New version' })).toBeInTheDocument();
   });
 });

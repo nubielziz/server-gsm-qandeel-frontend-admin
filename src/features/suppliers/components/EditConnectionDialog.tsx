@@ -1,10 +1,18 @@
-// EditConnectionDialog: "Edit connection": changes a supplier's name, API type, URL, account, key, currency, alert and limits
-// (`PATCH /admin/suppliers/:id`). The demo has no such action. Only the fields that changed are sent, and nothing at all when
-// none did; an empty key field keeps the stored key.
+// EditConnectionDialog: "Edit connection": changes a supplier's name, URL, account, key, alert and limits (`PATCH /admin/suppliers/:id`).
+// The API type and the currency are neither shown as inputs nor sent (decision 035); a supplier that holds another one shows them as a
+// read-only line. The demo has no such action. Only the fields that changed are sent, and nothing at all when none did; an empty key
+// field keeps the stored key.
 import { useForm } from 'react-hook-form';
 import { dialogSubmit, FormDialog, toast } from '@/components/ui';
 import { useUpdateSupplier } from '../hooks/useSupplierMutations';
-import { changedFields, SUPPLIER_FIELDS, valuesOf, type SupplierFormValues } from '../lib/input';
+import { fixedFactsLine } from '../lib/connection';
+import {
+  changedFields,
+  hasCustomLimits,
+  SUPPLIER_FIELDS,
+  valuesOf,
+  type SupplierFormValues,
+} from '../lib/input';
 import type { Supplier } from '../types';
 import { SupplierFields } from './SupplierFields';
 
@@ -17,6 +25,7 @@ export interface EditConnectionDialogProps {
 export function EditConnectionDialog({ supplier, onClose }: EditConnectionDialogProps) {
   const update = useUpdateSupplier();
   const form = useForm<SupplierFormValues>({ defaultValues: valuesOf(supplier) });
+  const fixedFacts = fixedFactsLine(supplier);
 
   const submit = dialogSubmit(
     form,
@@ -40,7 +49,8 @@ export function EditConnectionDialog({ supplier, onClose }: EditConnectionDialog
       onClose={onClose}
       onSubmit={submit}
     >
-      <SupplierFields form={form} editing />
+      {fixedFacts && <p className="mb-3 text-sm text-ink2">{fixedFacts}</p>}
+      <SupplierFields form={form} editing foldOpen={hasCustomLimits(supplier)} />
     </FormDialog>
   );
 }

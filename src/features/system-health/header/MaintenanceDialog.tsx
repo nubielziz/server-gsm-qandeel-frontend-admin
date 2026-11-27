@@ -1,12 +1,13 @@
 // MaintenanceDialog: turn maintenance on, or change a running one (`PUT /admin/system/maintenance`, `system:manage`). The
-// staff member picks what to close, writes the message customers see and may set an expected end. The effect sentence
-// is on screen before the confirm button. No demo page (docs/system-health-design.md, "Controls and confirmation").
+// staff member picks what to close and may change the message customers see, which starts filled with a usual one; the expected end
+// is in the "More options" fold (decision 036). The effect sentence is on screen before the confirm button. No demo page (docs/system-health-design.md, "Controls and confirmation").
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Button,
   FormDialog,
   Icon,
+  MoreOptions,
   RadioGroup,
   TextField,
   TextareaField,
@@ -15,7 +16,7 @@ import {
 import { useSetMaintenance } from '../hooks';
 import type { MaintenanceScope, MaintenanceState } from '../types';
 import { fromLocalInput, toLocalInput, whenText } from '../lib';
-import { SCOPE_OPTIONS, effectSentence, scopePhrase } from './maintenance';
+import { SCOPE_OPTIONS, effectSentence, scopePhrase, startMessage } from './maintenance';
 
 type Values = { scope: MaintenanceScope | ''; message: string; end: string };
 
@@ -52,8 +53,8 @@ export interface MaintenanceDialogProps {
 
 /**
  * Nothing is chosen for the staff member when maintenance is off: the scope must be picked, so a hurried click cannot close
- * more than intended. When maintenance is already on, the form starts from the running values and a "Turn off" button
- * opens its own confirm. A refusal of the server shows under the field it names, or in the dialog.
+ * more than intended. The message starts as the usual one when none is stored (it stays visible and can be changed). When
+ * maintenance is already on, the form starts from the running values and a "Turn off" button opens its own confirm. A refusal of the server shows under the field it names, or in the dialog.
  */
 export function MaintenanceDialog({ current, onClose, onTurnOff }: MaintenanceDialogProps) {
   const setMaintenance = useSetMaintenance({ toastErrors: false });
@@ -61,7 +62,7 @@ export function MaintenanceDialog({ current, onClose, onTurnOff }: MaintenanceDi
   const form = useForm<Values>({
     defaultValues: {
       scope: running?.scope ?? '',
-      message: running?.message ?? '',
+      message: startMessage(running),
       end: toLocalInput(running?.expectedEndAt),
     },
   });
@@ -126,13 +127,15 @@ export function MaintenanceDialog({ current, onClose, onTurnOff }: MaintenanceDi
             validate: (value) => value.trim().length > 0 || 'Write the message customers will see.',
           })}
         />
-        <TextField
-          label="Expected end (optional)"
-          type="datetime-local"
-          hint="When you expect to be done, in your time zone."
-          error={errors.end}
-          {...register('end')}
-        />
+        <MoreOptions defaultOpen={Boolean(running?.expectedEndAt)} forceOpen={Boolean(errors.end)}>
+          <TextField
+            label="Expected end (optional)"
+            type="datetime-local"
+            hint="When you expect to be done, in your time zone."
+            error={errors.end}
+            {...register('end')}
+          />
+        </MoreOptions>
         <p className="flex gap-2 rounded-md bg-warn-bg p-2.5 text-sm text-warn-fg" role="note">
           <Icon name="alert" className="ic-sm mt-0.5 flex-none" />
           <span>{effectSentence(scope)}</span>

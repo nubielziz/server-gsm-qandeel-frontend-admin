@@ -143,16 +143,18 @@ describe('Webhook secrets in the payment method dialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Stripe');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'stripe');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'card');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Driver' }), 'Card');
     expect(
       dialog.getByText('None stored: the gateway’s confirmations are refused until one is set.'),
     ).toBeInTheDocument();
-    expect(dialog.getByText('/webhooks/payments/stripe')).toBeInTheDocument();
+    // The webhook address contains the code, which the server makes when the method is saved.
+    expect(dialog.queryByText(/\/webhooks\/payments\//)).not.toBeInTheDocument();
+    expect(dialog.getByText(/Made when you save/)).toBeInTheDocument();
     await user.type(dialog.getByLabelText('Webhook signing secret'), 'whsec_a_1111');
     await user.type(dialog.getByLabelText('Second webhook secret (optional)'), 'whsec_b_2222');
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
     expect(await screen.findByText('Stripe added')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/payment-gateways')[0].body).not.toHaveProperty('code');
     expect(recorder.to('POST', '/admin/payment-gateways')[0].body).toMatchObject({
       webhookSecret: 'whsec_a_1111',
       secondaryWebhookSecret: 'whsec_b_2222',
@@ -168,8 +170,7 @@ describe('Webhook secrets in the payment method dialog', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Stripe');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'stripe');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'card');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Driver' }), 'Card');
     await user.type(dialog.getByLabelText('Second webhook secret (optional)'), 'whsec_b_2222');
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
     expect(

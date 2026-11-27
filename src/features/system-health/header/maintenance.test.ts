@@ -1,6 +1,25 @@
 // Tests for the maintenance words: scope phrases, the effect sentence the dialog shows and the expected-end conversions.
 import { describe, expect, it } from 'vitest';
-import { SCOPE_OPTIONS, effectSentence, offSentence, scopePhrase } from './maintenance';
+import {
+  DEFAULT_MESSAGE,
+  SCOPE_OPTIONS,
+  effectSentence,
+  offSentence,
+  scopePhrase,
+  startMessage,
+} from './maintenance';
+
+describe('startMessage', () => {
+  it('starts as the usual message when none is stored, and keeps a stored one as it is', () => {
+    expect(DEFAULT_MESSAGE).toBe('We are doing scheduled maintenance. Please try again in a little while.');
+    expect(startMessage(null)).toBe(DEFAULT_MESSAGE);
+    expect(startMessage(undefined)).toBe(DEFAULT_MESSAGE);
+    expect(startMessage({ message: '' })).toBe(DEFAULT_MESSAGE);
+    expect(startMessage({ message: '   ' })).toBe(DEFAULT_MESSAGE);
+    expect(startMessage({ message: null })).toBe(DEFAULT_MESSAGE);
+    expect(startMessage({ message: 'Back at 16:00.' })).toBe('Back at 16:00.');
+  });
+});
 
 describe('SCOPE_OPTIONS', () => {
   it('offers store, checkout, API orders and all, each with a label and what it closes', () => {

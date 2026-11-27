@@ -6,7 +6,6 @@ import { Button, EmptyState, Icon, Panel, QueryState, SkeletonTable } from '@/co
 import { useGatewayList, useRankNames, useToggleGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import { customersCanPay, isLastStorefrontMethod } from '../lib/gateways';
-import { freeCode } from '../lib/gatewayPresets';
 import { GatewayCard } from './GatewayCard';
 import { PaymentDialogs, type PaymentDialogState } from './PaymentDialogs';
 import { PresetGallery } from './PresetGallery';
@@ -53,7 +52,7 @@ export function PaymentsTab() {
         enabled={grants.ready && allowed}
         gateways={gateways}
         lock={lock}
-        onAdd={(preset) => setDialog({ kind: 'preset', preset, code: freeCode(preset.key, gateways) })}
+        onAdd={(preset) => setDialog({ kind: 'preset', preset })}
       />
       <h3 className="mb-2 text-sm font-semibold">Your payment methods</h3>
       <QueryState

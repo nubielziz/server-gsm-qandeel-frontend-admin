@@ -3,7 +3,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupHealthMocks } from '../mocks/testing';
@@ -14,6 +14,11 @@ import { SLOW, verdictOf } from '../test/pageQueries';
 setupHealthMocks();
 // The page is a lazy chunk and every flow goes through the mock API, so give the first test of a file room.
 vi.setConfig({ testTimeout: 30_000 });
+
+// The headline prints only "since 14:02" when the incident began today and the date as well when it began on an earlier day, so a run
+// just after midnight sees a date. The degraded test pins the clock (the Date only: timers stay real) to midday, so its answer is the
+// same at any hour.
+afterEach(() => vi.useRealTimers());
 
 describe('the verdict', () => {
   it('is good with a check and the word Operational when everything is fine, and says why', async () => {
@@ -30,6 +35,8 @@ describe('the verdict', () => {
   });
 
   it('is warn when degraded: what is down, the open alerts and incident, and what it costs in orders', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 27, 12, 0, 0));
     await openHealthPage({ scenario: 'degraded' });
     const box = await verdictOf(/Degraded/);
     expect(box).toHaveClass('bg-warn-bg');

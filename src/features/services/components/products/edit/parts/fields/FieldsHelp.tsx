@@ -9,7 +9,7 @@ export interface FieldsHelpProps {
 
 /**
  * What the buyer fills in, in one sentence, then a native disclosure (closed by default, no script) with what each column means as a short
- * list. The list says what the supplier receives (Name), what buyers read (Label), one line for each kind of field the server checks (what a
+ * list. The list says what the supplier receives and buyers read (Name), the optional different label (Label, decision 035), one line for each kind of field the server checks (what a
  * buyer must type), what the main input is, and that a pattern from the supplier import is kept and not shown (decision 030).
  */
 export function FieldsHelp({ mainInputId }: FieldsHelpProps) {
@@ -21,8 +21,11 @@ export function FieldsHelp({ mainInputId }: FieldsHelpProps) {
           How this works
         </summary>
         <ul className="mt-1.5 list-disc space-y-1 ps-5 text-ink2">
-          <li>Name: what the supplier receives.</li>
-          <li>Label: what buyers read (the name when left empty).</li>
+          <li>Name: what the supplier receives, and what buyers read.</li>
+          <li>
+            Label: tick &quot;Show buyers a different label&quot; to type what buyers read instead of the name
+            (the name when left empty). Left unticked, a renamed field is renamed for buyers too.
+          </li>
           {FIELD_TYPE_OPTIONS.filter((option) => FIELD_TYPE_HELP[option.value]).map((option) => (
             <li key={option.value}>
               Type &quot;{option.label}&quot;: {FIELD_TYPE_HELP[option.value]}

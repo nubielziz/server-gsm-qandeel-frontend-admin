@@ -1,7 +1,8 @@
 // TemplateDialog: "New template" and "Edit <event>" (`POST` and `PATCH /admin/notification-templates`): event and audience
 // (fixed after the first save), the subject and the message, and whether it is sent. The demo only had a canned preview; the map
-// lets staff edit the texts. Only what changed is sent on an edit.
-import { useForm } from 'react-hook-form';
+// lets staff edit the texts. Only what changed is sent on an edit. The event is a menu of the events the system sends for the chosen
+// audience, not a typed key (decision 036).
+import { useForm, useWatch } from 'react-hook-form';
 import {
   CheckboxField,
   dialogSubmit,
@@ -12,7 +13,7 @@ import {
   toast,
 } from '@/components/ui';
 import { useCreateTemplate, useUpdateTemplate } from '../hooks/useTemplates';
-import { AUDIENCE_OPTIONS, eventLabel } from '../lib/templates';
+import { AUDIENCE_OPTIONS, eventLabel, eventOptions, eventsOf } from '../lib/templates';
 import type { CreateTemplateBody, NotificationTemplate, UpdateTemplateBody } from '../types';
 
 type Values = CreateTemplateBody;
@@ -39,9 +40,16 @@ export function TemplateDialog({
   });
   const {
     register,
+    control,
+    getValues,
+    setValue,
     formState: { errors },
   } = form;
   const fixed = template !== undefined;
+  const audience = useWatch({ control, name: 'audience' });
+  // The saved event stays in the menu, chosen, even when the list of events does not know it.
+  const events = eventOptions(audience, template?.event);
+  const audienceField = register('audience');
 
   const submit = dialogSubmit(
     form,
@@ -81,14 +89,15 @@ export function TemplateDialog({
     >
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
+          <SelectField
             label="Event"
-            autoComplete="off"
-            readOnly={fixed}
+            selectWrapClassName="w-full"
+            disabled={fixed}
             autoFocus={!fixed}
-            hint={fixed ? undefined : 'The event key, such as order.completed.'}
+            options={events}
+            hint={fixed ? undefined : 'What the system sends this message for.'}
             error={errors.event}
-            {...register('event', { validate: (v) => v.trim() !== '' || 'Enter the event.' })}
+            {...register('event', { validate: (v) => v.trim() !== '' || 'Choose an event.' })}
           />
           <SelectField
             label="Sent to"
@@ -96,7 +105,12 @@ export function TemplateDialog({
             disabled={fixed}
             options={AUDIENCE_OPTIONS}
             error={errors.audience}
-            {...register('audience')}
+            {...audienceField}
+            onChange={(event) => {
+              void audienceField.onChange(event);
+              // An event of another audience is not offered any more: the choice starts again.
+              if (!eventsOf(event.target.value).includes(getValues('event'))) setValue('event', '');
+            }}
           />
         </div>
         <TextField

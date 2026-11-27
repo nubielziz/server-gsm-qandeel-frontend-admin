@@ -1,4 +1,5 @@
-// ListingFactsFields: the facts about the service itself (brand, carrier, country, featured, position). New in feature 22.
+// ListingFactsFields: the facts about the service itself (brand, carrier, country, featured). New in feature 22. The position moved into the
+// "More options" fold (decision 036).
 // Since 2026-11-17 the brand is picked from the brands the shop has a logo for (or typed by hand under "Other"), and the
 // country from the Arab countries. Stacked in a two-column grid in the dialogs; label-left rows in the Product / Services edit view.
 import { useMemo, useState } from 'react';
@@ -7,9 +8,7 @@ import { CheckboxField, SelectField, TextField } from '@/components/ui';
 import { BRAND_OPTIONS, countryOptions, OTHER_BRAND, shopBrand } from '../lib/listingFacts';
 import {
   isCountryText,
-  isPosition,
   LISTING_LIMITS,
-  MAX_SORT,
   type ListingFieldsProps,
   type ListingFormValues,
 } from '../lib/listingForm';
@@ -20,7 +19,7 @@ export interface ListingFactsFieldsProps extends ListingFieldsProps {
   savedCountry: string;
 }
 
-/** The five facts about the service. */
+/** The four facts about the service. */
 export function ListingFactsFields({
   register,
   errors,
@@ -98,18 +97,6 @@ export function ListingFactsFields({
           {...register('country', {
             validate: (value) =>
               isCountryText(value) || 'Use a two-letter country code like GB, or leave it empty.',
-          })}
-        />
-        <TextField
-          label="Position"
-          layout={layout}
-          inputMode="numeric"
-          autoComplete="off"
-          hint="Lower numbers come first in the shop."
-          error={errors.sort}
-          {...register('sort', {
-            validate: (value) =>
-              isPosition(value) || `Enter a whole number from 0 to ${MAX_SORT.toLocaleString('en-US')}.`,
           })}
         />
       </div>

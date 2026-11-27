@@ -3,7 +3,14 @@
 // The map adds this action; the demo had no code stock.
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, SelectField, TextareaField, TextField } from '@/components/ui';
+import {
+  dialogSubmit,
+  FormDialog,
+  MoreOptions,
+  SelectField,
+  TextareaField,
+  TextField,
+} from '@/components/ui';
 import { useStockServiceChoices } from '../hooks/useChoices';
 import { useImportCodes } from '../hooks/useInventory';
 import { CODE_FILE_TYPES, codesText, readCodes } from '../lib/codes';
@@ -125,14 +132,17 @@ export function ImportCodesDialog({ serviceId, type, onClose }: ImportCodesDialo
           error={fileError ?? undefined}
           onChange={(event) => void addFile(event.target.files?.[0])}
         />
-        <TextField
-          label="Batch reference"
-          autoComplete="off"
-          maxLength={60}
-          hint="Optional. A name for this delivery, such as the supplier's invoice number."
-          error={errors.batchRef}
-          {...register('batchRef')}
-        />
+        {/* The server makes a reference when none is typed, so the box is folded away (decision 035); an error keeps the fold open. */}
+        <MoreOptions forceOpen={Boolean(errors.batchRef)}>
+          <TextField
+            label="Batch reference"
+            autoComplete="off"
+            maxLength={60}
+            hint="Optional. A name for this delivery, such as the supplier's invoice number."
+            error={errors.batchRef}
+            {...register('batchRef')}
+          />
+        </MoreOptions>
       </div>
     </FormDialog>
   );

@@ -4,12 +4,13 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi, signInAs } from '@/test/renderApp';
 import { createSupplier } from '../api';
 import { mocks, suppliersState } from '../mocks';
+import { recordRequests } from '../test/requests';
 import { detailOf, openSuppliers, supplierButton, toasts } from '../test/suppliersPage';
 
 setupMockApi();
@@ -89,6 +90,126 @@ describe('connect supplier', () => {
     expect(await dialog.findByText('A supplier with this name already exists.')).toBeInTheDocument();
     expect(dialog.getByLabelText('Name')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByRole('dialog', { name: 'Connect supplier' })).toBeInTheDocument();
+  });
+});
+
+describe('connect supplier: fewer inputs (decision 035)', () => {
+  // The request recorder spies on fetch: end it after each test so the next one starts with an empty record.
+  afterEach(() => vi.restoreAllMocks());
+
+  const open = async (user: User) => {
+    await openSuppliers();
+    await user.click(await screen.findByRole('button', { name: 'Connect supplier' }));
+    return within(await screen.findByRole('dialog', { name: 'Connect supplier' }));
+  };
+
+  it('asks for the name, base URL, username and API key; the API type and the currency are gone and the limits are folded', async () => {
+    const user = userEvent.setup();
+    const dialog = await open(user);
+    for (const label of ['Name', 'Base URL', 'Username', 'API key']) {
+      expect(dialog.getByLabelText(label)).toBeVisible();
+    }
+    expect(dialog.queryByLabelText('API type')).not.toBeInTheDocument();
+    expect(dialog.queryByLabelText('Currency')).not.toBeInTheDocument();
+    // The four inputs of the fold are in the page but hidden until it is opened.
+    const fold = dialog.getByRole('button', { name: 'More options' });
+    expect(fold).toHaveAttribute('aria-expanded', 'false');
+    for (const label of ['Alert below (prepaid)', 'At a time', 'Per minute', 'Timeout (ms)']) {
+      expect(dialog.getByLabelText(label)).not.toBeVisible();
+    }
+    await user.click(fold);
+    for (const label of ['Alert below (prepaid)', 'At a time', 'Per minute', 'Timeout (ms)']) {
+      expect(dialog.getByLabelText(label)).toBeVisible();
+      expect(dialog.getByLabelText(label)).toHaveValue('');
+    }
+  });
+
+  it('sends what the form sent before for a form left at its defaults: the Dhru driver, USD and no limits', async () => {
+    const user = userEvent.setup();
+    const dialog = await open(user);
+    const requests = recordRequests();
+    await fillConnect(user, dialog, {
+      Name: 'Atlas IMEI',
+      'Base URL': 'https://api.atlasimei.example/',
+      Username: 'gsm-supply',
+      'API key': 'sk_atlas_secret',
+    });
+    await user.click(dialog.getByRole('button', { name: 'Connect' }));
+    expect(await screen.findByText('Atlas IMEI connected')).toBeInTheDocument();
+    const posts = requests
+      .sent()
+      .filter((request) => request.method === 'POST' && request.url.pathname.endsWith('/admin/suppliers'));
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.body).toEqual({
+      name: 'Atlas IMEI',
+      driver: 'dhru',
+      baseUrl: 'https://api.atlasimei.example',
+      username: 'gsm-supply',
+      apiKey: 'sk_atlas_secret',
+      currency: 'USD',
+    });
+  });
+
+  it('still sends a limit typed inside the fold', async () => {
+    const user = userEvent.setup();
+    const dialog = await open(user);
+    const requests = recordRequests();
+    await fillConnect(user, dialog, {
+      Name: 'Atlas IMEI',
+      'Base URL': 'https://api.atlasimei.example',
+      'API key': 'sk_atlas_secret',
+    });
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
+    await user.type(dialog.getByLabelText('Timeout (ms)'), '20000');
+    await user.click(dialog.getByRole('button', { name: 'Connect' }));
+    expect(await screen.findByText('Atlas IMEI connected')).toBeInTheDocument();
+    const post = requests
+      .sent()
+      .find((request) => request.method === 'POST' && request.url.pathname.endsWith('/admin/suppliers'));
+    expect(post?.body).toMatchObject({ driver: 'dhru', currency: 'USD', timeoutMs: 20000 });
+  });
+
+  it('opens the fold and keeps it open while a folded input holds a message', async () => {
+    const user = userEvent.setup();
+    const dialog = await open(user);
+    mockServer.use(
+      http.post('*/admin/suppliers', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'timeoutMs', message: 'The timeout is too long.' },
+        ]),
+      ),
+    );
+    await fillConnect(user, dialog, {
+      Name: 'Atlas IMEI',
+      'Base URL': 'https://api.atlasimei.example',
+      'API key': 'sk_atlas_secret',
+    });
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    await user.click(dialog.getByRole('button', { name: 'Connect' }));
+    expect(await dialog.findByText('The timeout is too long.')).toBeVisible();
+    const fold = dialog.getByRole('button', { name: 'Hide more options' });
+    await user.click(fold);
+    expect(dialog.getByLabelText('Timeout (ms)')).toBeVisible();
+    expect(dialog.getByLabelText('Timeout (ms)')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('opens the fold for a client check that fails in it', async () => {
+    const user = userEvent.setup();
+    const dialog = await open(user);
+    await fillConnect(user, dialog, {
+      Name: 'Atlas IMEI',
+      'Base URL': 'https://api.atlasimei.example',
+      'API key': 'sk_atlas_secret',
+    });
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
+    await user.type(dialog.getByLabelText('At a time'), 'many');
+    await user.click(dialog.getByRole('button', { name: 'Hide more options' }));
+    await user.click(dialog.getByRole('button', { name: 'Connect' }));
+    expect(await dialog.findByText('Use a whole number, 1 or more.')).toBeVisible();
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 });
 
@@ -269,6 +390,66 @@ describe('edit connection', () => {
     const detail = await detailOf('Nordic GSM');
     expect(await detail.findByText('https://api.nordic.example')).toBeInTheDocument();
     expect(detail.getByText('zz_ne••••••••')).toBeInTheDocument();
+  });
+});
+
+describe('edit connection: fewer inputs (decision 035)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  /** Creates a supplier with these values, opens the page on it and opens its "Edit connection" dialog. */
+  async function openEdit(user: User, extra: Partial<Parameters<typeof createSupplier>[0]>) {
+    await signInAs();
+    const name = String(extra.name ?? NEW_SUPPLIER.name);
+    const created = await createSupplier({ ...NEW_SUPPLIER, lowBalanceAlert: '150.0000', ...extra });
+    await openSuppliers(`/suppliers?supplier=${created.id}`);
+    await detailOf(name);
+    await user.click((await openMenu(user, name)).getByRole('menuitem', { name: 'Edit connection…' }));
+    return within(await screen.findByRole('dialog', { name: `Edit ${name}` }));
+  }
+
+  it('keeps the fold closed for a supplier on the defaults, with no API type, no currency and no read-only line', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, {});
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    expect(dialog.getByLabelText('At a time')).not.toBeVisible();
+    expect(dialog.queryByLabelText('API type')).not.toBeInTheDocument();
+    expect(dialog.queryByLabelText('Currency')).not.toBeInTheDocument();
+    expect(dialog.queryByText(/These are set when a supplier is connected/)).not.toBeInTheDocument();
+  });
+
+  it('opens the fold when a stored limit is not the default, and sends a change of it', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { maxConcurrency: 8 });
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(dialog.getByLabelText('At a time')).toBeVisible();
+    expect(dialog.getByLabelText('At a time')).toHaveValue('8');
+    const requests = recordRequests();
+    await user.clear(dialog.getByLabelText('Timeout (ms)'));
+    await user.type(dialog.getByLabelText('Timeout (ms)'), '20000');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Connection updated')).toBeInTheDocument();
+    const patch = requests.sent().find((request) => request.method === 'PATCH');
+    expect(patch?.body).toEqual({ timeoutMs: 20000 });
+  });
+
+  it('shows the API type and currency of a supplier that holds others as a read-only line and sends neither', async () => {
+    const user = userEvent.setup();
+    const dialog = await openEdit(user, { name: 'Rest Euro', driver: 'rest', currency: 'EUR' });
+    expect(
+      dialog.getByText('API type: REST v2. Currency: EUR. These are set when a supplier is connected.'),
+    ).toBeVisible();
+    expect(dialog.queryByLabelText('API type')).not.toBeInTheDocument();
+    expect(dialog.queryByLabelText('Currency')).not.toBeInTheDocument();
+    const requests = recordRequests();
+    await user.clear(dialog.getByLabelText('Name'));
+    await user.type(dialog.getByLabelText('Name'), 'Rest Euro 2');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('Connection updated')).toBeInTheDocument();
+    const patch = requests.sent().find((request) => request.method === 'PATCH');
+    expect(patch?.body).toEqual({ name: 'Rest Euro 2' });
   });
 });
 

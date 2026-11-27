@@ -1,10 +1,10 @@
-// NewKeyDialog: "New API key for <account>": a name, the addresses the key may be used from (one per line), an optional expiry day and
-// the per-minute limit (60 unless changed). The key acts as the account, so only the Owner makes one (the part's button says so). The key
+// NewKeyDialog: "New API key for <account>": a name and the addresses the key may be used from (one per line); the optional expiry day and
+// the per-minute limit (60 unless changed) sit in a "More options" fold (decision 035). The key acts as the account, so only the Owner makes one (the part's button says so). The key
 // comes back once; this dialog hands it to the one-time dialog after it has closed. A 409 `NOT_ACTIVE` and a 422 show in the dialog;
 // `allowedIps.N` errors show under the box with the number of the line.
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, TextareaField, TextField } from '@/components/ui';
+import { dialogSubmit, FormDialog, MoreOptions, TextareaField, TextField } from '@/components/ui';
 import { useCreateAccountApiKey } from '../../hooks/useAccountApiKeys';
 import type { AccountRow, CreateApiKeyBody } from '../../types';
 import { accountLabel } from '../shared/accountLabel';
@@ -114,29 +114,32 @@ export function NewKeyDialog({ account, onClose, onReveal }: NewKeyDialogProps) 
               parseIpLines(value).length <= MAX_ALLOWED_IPS || `Use at most ${MAX_ALLOWED_IPS} addresses.`,
           })}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Expires on"
-            type="date"
-            hint="Optional. The key stops working at the end of that day."
-            error={errors.expiresOn}
-            {...register('expiresOn', {
-              validate: (value) => !dayIsPast(value) || 'Choose a day that is still ahead.',
-            })}
-          />
-          <TextField
-            label="Limit a minute"
-            inputMode="numeric"
-            autoComplete="off"
-            hint={`A whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`}
-            error={errors.rateLimitPerMin}
-            {...register('rateLimitPerMin', {
-              validate: (value) =>
-                parseRateLimit(value) !== null ||
-                `Use a whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`,
-            })}
-          />
-        </div>
+        {/* The expiry (none) and the limit (60) keep their defaults and are sent as before; a message under either opens the fold. */}
+        <MoreOptions forceOpen={Boolean(errors.expiresOn || errors.rateLimitPerMin)}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextField
+              label="Expires on"
+              type="date"
+              hint="Optional. The key stops working at the end of that day."
+              error={errors.expiresOn}
+              {...register('expiresOn', {
+                validate: (value) => !dayIsPast(value) || 'Choose a day that is still ahead.',
+              })}
+            />
+            <TextField
+              label="Limit a minute"
+              inputMode="numeric"
+              autoComplete="off"
+              hint={`A whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`}
+              error={errors.rateLimitPerMin}
+              {...register('rateLimitPerMin', {
+                validate: (value) =>
+                  parseRateLimit(value) !== null ||
+                  `Use a whole number from ${RATE_LIMIT.min} to ${RATE_LIMIT.max}.`,
+              })}
+            />
+          </div>
+        </MoreOptions>
       </div>
     </FormDialog>
   );

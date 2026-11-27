@@ -10,6 +10,8 @@ import {
   dayEnd,
   dayOf,
   dayStart,
+  hasCustomRuleOptions,
+  RULE_FOLDED_FIELDS,
   ruleValues,
   type RuleValues,
 } from './ruleForm';
@@ -143,6 +145,52 @@ describe('ruleValues and buildRuleBody', () => {
     expect(buildRuleBody(filled({ priority: 'x' }))).toMatchObject({ field: 'priority' });
     expect(buildRuleBody(filled({ startsAt: '2026-03-20', endsAt: '2026-03-05' }))).toMatchObject({
       field: 'endsAt',
+    });
+  });
+});
+
+describe('the "More options" fold of the rule dialog (decision 035)', () => {
+  it('folds Priority, Rounding, Minimum profit, Starts and Ends, which keep the defaults of a new rule', () => {
+    expect(RULE_FOLDED_FIELDS).toEqual(['priority', 'rounding', 'minProfit', 'startsAt', 'endsAt']);
+    expect(ruleValues()).toMatchObject({
+      priority: '100',
+      rounding: 'none',
+      minProfit: '',
+      startsAt: '',
+      endsAt: '',
+    });
+  });
+
+  it('starts closed for a new rule and for a rule on the defaults, and open for a rule that holds anything else', () => {
+    expect(hasCustomRuleOptions()).toBe(false);
+    expect(hasCustomRuleOptions(rule())).toBe(false);
+    expect(hasCustomRuleOptions(rule({ groupId: 3, percent: '2.5000', fixed: '0.5000' }))).toBe(false);
+    for (const change of [
+      { priority: 50 },
+      { rounding: 'ends_99' as const },
+      { minProfit: '0.2500' },
+      { startsAt: dayStart('2026-03-05') },
+      { endsAt: dayEnd('2026-03-20') },
+    ]) {
+      expect(hasCustomRuleOptions(rule(change))).toBe(true);
+    }
+  });
+
+  it('builds the same body for a form left at its defaults as it did before the fold', () => {
+    expect(buildRuleBody({ ...ruleValues(), targetId: '4', percent: '5' })).toEqual({
+      body: {
+        scope: 'category',
+        targetId: 4,
+        groupId: null,
+        kind: 'discount',
+        percent: '5.0000',
+        fixed: '0.0000',
+        rounding: 'none',
+        minProfit: '0.0000',
+        priority: 100,
+        startsAt: null,
+        endsAt: null,
+      },
     });
   });
 });

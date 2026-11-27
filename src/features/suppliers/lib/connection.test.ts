@@ -1,6 +1,14 @@
 // Tests for the words of the Connection panel and of the connection test.
 import { describe, expect, it } from 'vitest';
-import { driverLabel, DRIVERS, hostOf, limitsText, maskedKey, testSummary } from './connection';
+import {
+  driverLabel,
+  DRIVERS,
+  fixedFactsLine,
+  hostOf,
+  limitsText,
+  maskedKey,
+  testSummary,
+} from './connection';
 
 describe('driverLabel', () => {
   it('uses the demo’s names and shows an unknown driver as it is', () => {
@@ -8,6 +16,21 @@ describe('driverLabel', () => {
     expect(driverLabel('rest')).toBe('REST v2');
     expect(driverLabel('soap')).toBe('soap');
     expect(DRIVERS.map((driver) => driver.value)).toEqual(['dhru', 'rest']);
+  });
+});
+
+describe('fixedFactsLine', () => {
+  it('says nothing for a Dhru supplier in USD, the only kind a new one can be', () => {
+    expect(fixedFactsLine({ driver: 'dhru', currency: 'USD' })).toBeNull();
+  });
+
+  it('names both facts when either is not the usual one, so a stored value is never hidden', () => {
+    expect(fixedFactsLine({ driver: 'rest', currency: 'USD' })).toBe(
+      'API type: REST v2. Currency: USD. These are set when a supplier is connected.',
+    );
+    expect(fixedFactsLine({ driver: 'dhru', currency: 'EUR' })).toBe(
+      'API type: Dhru Fusion 6.1. Currency: EUR. These are set when a supplier is connected.',
+    );
   });
 });
 

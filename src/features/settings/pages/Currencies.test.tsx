@@ -153,18 +153,187 @@ describe('Edit rate', () => {
 });
 
 describe('Add currency', () => {
-  it('adds a currency to the table', async () => {
+  it('picks the code from a menu, works out the name and the decimals, and sends them as before', async () => {
     const user = userEvent.setup();
+    const recorder = recordRequests();
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add currency' }));
     const dialog = dialogOf('Add currency');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'chf');
-    await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Swiss franc');
+    // Name is not asked. Decimals sits in the More options fold, closed at first.
+    expect(dialog.queryByRole('textbox', { name: 'Name' })).not.toBeInTheDocument();
+    expect(dialog.queryByRole('textbox', { name: 'Decimals' })).not.toBeInTheDocument();
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    expect(dialog.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
+    const menu = dialog.getByRole('combobox', { name: 'Code' });
+    await user.selectOptions(menu, 'CHF - Swiss Franc');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (per $1)' }), '0.88');
     await user.click(dialog.getByRole('button', { name: 'Add currency' }));
     expect(await screen.findByText('CHF added')).toBeInTheDocument();
     expect((await rowOf('Currencies', 'CHF')).getByText('0.88')).toBeInTheDocument();
-    expect(await codeOf('CHF')).toMatchObject({ name: 'Swiss franc', markupPercent: '1.5000' });
+    expect(recorder.to('POST', '/admin/currencies')[0].body).toEqual({
+      code: 'CHF',
+      name: 'Swiss Franc',
+      rateToBase: '0.88',
+      markupPercent: '1.5',
+      charmRounding: true,
+      isStorefront: false,
+      decimals: 2,
+    });
+    expect(await codeOf('CHF')).toMatchObject({ name: 'Swiss Franc', markupPercent: '1.5000' });
+  });
+
+  it('does not offer a code that is already in the list, and asks for a choice before it sends anything', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await openSettings(TAX);
+    await rowOf('Currencies', 'GBP');
+    await user.click(await screen.findByRole('button', { name: 'Add currency' }));
+    const dialog = dialogOf('Add currency');
+    const options = within(dialog.getByRole('combobox', { name: 'Code' }))
+      .getAllByRole('option')
+      .map((option) => option.textContent ?? '');
+    expect(options[0]).toBe('Choose a currency…');
+    expect(options.some((text) => text.startsWith('GBP - '))).toBe(false);
+    expect(options.some((text) => text.startsWith('USD - '))).toBe(false);
+    expect(options).toContain('JPY - Japanese Yen');
+    await user.type(dialog.getByRole('textbox', { name: 'Rate (per $1)' }), '0.88');
+    await user.click(dialog.getByRole('button', { name: 'Add currency' }));
+    expect(await dialog.findByText('Choose a currency.')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/currencies')).toHaveLength(0);
+  });
+
+  it('gives a currency without decimals its own count', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await openSettings(TAX);
+    await rowOf('Currencies', 'GBP');
+    await user.click(await screen.findByRole('button', { name: 'Add currency' }));
+    const dialog = dialogOf('Add currency');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Code' }), 'JPY - Japanese Yen');
+    await user.type(dialog.getByRole('textbox', { name: 'Rate (per $1)' }), '150');
+    await user.click(dialog.getByRole('button', { name: 'Add currency' }));
+    expect(await screen.findByText('JPY added')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/currencies')[0].body).toMatchObject({ code: 'JPY', decimals: 0 });
+  });
+
+  it('fills Decimals from the chosen code and follows the code until the person types in it', async () => {
+    const user = userEvent.setup();
+    await openSettings(TAX);
+    await rowOf('Currencies', 'GBP');
+    await user.click(await screen.findByRole('button', { name: 'Add currency' }));
+    const dialog = dialogOf('Add currency');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
+    const decimals = dialog.getByRole('textbox', { name: 'Decimals' });
+    expect(decimals).toHaveValue('2');
+    const menu = dialog.getByRole('combobox', { name: 'Code' });
+    await user.selectOptions(menu, 'JOD - Jordanian Dinar');
+    expect(decimals).toHaveValue('3');
+    await user.selectOptions(menu, 'JPY - Japanese Yen');
+    expect(decimals).toHaveValue('0');
+    await user.clear(decimals);
+    await user.type(decimals, '1');
+    await user.selectOptions(menu, 'CHF - Swiss Franc');
+    // The person typed here, so the code no longer decides.
+    expect(decimals).toHaveValue('1');
+  });
+
+  it('puts the server’s message about the decimals under the Decimals box, opens the fold, and sends a corrected value', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    mockServer.use(
+      http.post(
+        '*/admin/currencies',
+        () =>
+          problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+            { field: 'decimals', message: 'The card method cannot charge 3 decimals.' },
+          ]),
+        { once: true },
+      ),
+    );
+    await openSettings(TAX);
+    await rowOf('Currencies', 'GBP');
+    await user.click(await screen.findByRole('button', { name: 'Add currency' }));
+    const dialog = dialogOf('Add currency');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Code' }), 'JOD - Jordanian Dinar');
+    await user.type(dialog.getByRole('textbox', { name: 'Rate (per $1)' }), '0.71');
+    // The fold is closed: the browser's three decimals for JOD are sent as before, and the card method refuses them.
+    await user.click(dialog.getByRole('button', { name: 'Add currency' }));
+    expect(recorder.to('POST', '/admin/currencies')[0].body).toMatchObject({ code: 'JOD', decimals: 3 });
+    expect(await dialog.findByText('The card method cannot charge 3 decimals.')).toBeVisible();
+    const decimals = dialog.getByRole('textbox', { name: 'Decimals' });
+    expect(decimals).toBeVisible();
+    expect(decimals).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    await user.clear(decimals);
+    await user.type(decimals, '2');
+    await user.click(dialog.getByRole('button', { name: 'Add currency' }));
+    expect(await screen.findByText('JOD added')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/currencies')[1].body).toMatchObject({ code: 'JOD', decimals: 2 });
+    expect(await codeOf('JOD')).toMatchObject({ decimals: 2 });
+  });
+});
+
+describe('Edit name and decimals', () => {
+  it('keeps them in the More options fold, open when they differ from what the code gives', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await openSettings(TAX);
+    await user.click((await rowOf('Currencies', 'GBP')).getByRole('button', { name: 'Edit GBP' }));
+    const dialog = dialogOf('GBP rate and markup');
+    // The seed calls GBP "Pound sterling"; the code gives "British Pound", so the fold starts open.
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await user.clear(dialog.getByRole('textbox', { name: 'Name' }));
+    await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'British pound');
+    await user.clear(dialog.getByRole('textbox', { name: 'Decimals' }));
+    await user.type(dialog.getByRole('textbox', { name: 'Decimals' }), '3');
+    await user.click(dialog.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('GBP saved')).toBeInTheDocument();
+    expect(recorder.to('PATCH', '/admin/currencies/2')[0].body).toEqual({
+      name: 'British pound',
+      decimals: 3,
+    });
+  });
+
+  it('stays closed for a currency whose name and decimals are what its code gives, and opens on a bad decimals', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.get('*/admin/currencies', () =>
+        HttpResponse.json(
+          [
+            {
+              id: 9,
+              code: 'CHF',
+              name: 'Swiss Franc',
+              rateToBase: '0.8800',
+              rateUpdatedAt: new Date().toISOString(),
+              markupPercent: '1.5000',
+              charmRounding: true,
+              isStorefront: true,
+              decimals: 2,
+              isActive: true,
+              createdAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+          { headers: { 'x-total-count': '1' } },
+        ),
+      ),
+    );
+    await openSettings(TAX);
+    await user.click((await rowOf('Currencies', 'CHF')).getByRole('button', { name: 'Edit CHF' }));
+    const dialog = dialogOf('CHF rate and markup');
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
+    await user.clear(dialog.getByRole('textbox', { name: 'Decimals' }));
+    await user.type(dialog.getByRole('textbox', { name: 'Decimals' }), '9');
+    await user.click(dialog.getByRole('button', { name: 'Hide more options' }));
+    await user.click(dialog.getByRole('button', { name: 'Save' }));
+    expect(await dialog.findByText('Enter 0 to 4.')).toBeVisible();
   });
 });
 

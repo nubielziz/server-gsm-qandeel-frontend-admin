@@ -2,6 +2,17 @@
 // conversions live in lib/time.ts). No demo page (docs/system-health-design.md, "Controls and confirmation").
 import type { MaintenanceScope } from '../types';
 
+/**
+ * The message a new maintenance starts with, so the staff member does not have to write one (decision 036). It stays visible and
+ * editable: what customers read should be seen before it is sent.
+ */
+export const DEFAULT_MESSAGE = 'We are doing scheduled maintenance. Please try again in a little while.';
+
+/** The message the form starts with: the one stored when maintenance is on and has one, else the usual one. */
+export function startMessage(running: { message?: string | null } | null | undefined): string {
+  return running?.message?.trim() ? running.message : DEFAULT_MESSAGE;
+}
+
 /** One choice of the scope radio. The descriptions follow the contract: what the scope closes. */
 export interface ScopeOption {
   value: MaintenanceScope;

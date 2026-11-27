@@ -1,10 +1,12 @@
 // GatewayDialog: "Add payment method" (custom, or filled from a ready-made one) and "Edit <name>" (`POST` and `PATCH /admin/payment-gateways`).
 // The demo's cards were read-only; the map adds this form. Only what changed is sent on an edit, and the secrets are sent only when typed (they
 // are write-only); the second webhook secret goes as `null` when it is removed. An edit also has the Logo field (feature 32, backend B232).
+// A new method has no Code input and sends no `code`: the server makes it (decision 036; backend decision 077).
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, toast } from '@/components/ui';
 import { sameDecimal } from '../lib/decimal';
+import { DEFAULT_DRIVER } from '../lib/gateways';
 import { useCreateGateway, useRankNames, useUpdateGateway } from '../hooks/useGateways';
 import { useSettingsGrants } from '../hooks/useSettingsGrants';
 import type { CreateGatewayBody, GatewayPreset, PaymentGateway, UpdateGatewayBody } from '../types';
@@ -16,7 +18,6 @@ const sameIds = (a: readonly number[], b: readonly number[]) =>
 
 const FIELD_NAMES = [
   'name',
-  'code',
   'driver',
   'audience',
   'feePercent',
@@ -34,13 +35,12 @@ const FIELD_NAMES = [
   'secondaryWebhookSecret',
 ];
 
-/** The values of the form as a create body; `preset` is the key of the ready-made method it was filled from. */
+/** The values of the form as a create body, without a code; `preset` is the key of the ready-made method it was filled from. */
 function toBody(values: GatewayValues, allowedGroupIds: number[], preset?: string): CreateGatewayBody {
   // A pasted secret with stray whitespace would fail every webhook signature check, and a blank one must not replace the real secret.
   const firstWebhookSecret = values.webhookSecret.trim();
   return {
     name: values.name.trim(),
-    code: values.code.trim(),
     driver: values.driver.trim(),
     audience: values.audience,
     feePercent: values.feePercent.trim(),
@@ -95,8 +95,8 @@ function changes(next: CreateGatewayBody, saved: PaymentGateway, values: Gateway
   return body;
 }
 
-/** A ready-made method to start from, with the free code the tab made from its key. */
-export type PresetStart = { preset: GatewayPreset; code: string };
+/** A ready-made method to start from. */
+export type PresetStart = { preset: GatewayPreset };
 
 /**
  * Adds a payment method, or edits the one it is given. With `start` the form is filled from the ready-made method (name, code, driver,
@@ -120,8 +120,9 @@ export function GatewayDialog({
   const form = useForm<GatewayValues>({
     defaultValues: {
       name: gateway?.name ?? start?.preset.name ?? '',
-      code: gateway?.code ?? start?.code ?? '',
-      driver: gateway?.driver ?? start?.preset.driver ?? '',
+      // Only an edit shows the code (read only); a new method has none to type.
+      code: gateway?.code ?? '',
+      driver: gateway?.driver ?? start?.preset.driver ?? DEFAULT_DRIVER,
       // A ready-made method starts for both: a manual transfer tops up a merchant's wallet and a customer's store balance alike.
       audience: gateway?.audience ?? (start ? 'both' : 'b2c'),
       feePercent: gateway?.feePercent ?? '0',
@@ -156,8 +157,9 @@ export function GatewayDialog({
       }
       await update.mutateAsync({ gateway, body });
     },
-    // `allowedGroupIds` is not a form field (the ticks are state), so a message about it falls to the dialog's error slot.
-    { fields: FIELD_NAMES },
+    // `allowedGroupIds` is not a form field (the ticks are state), and a new method has no Code input, so a message about either falls to
+    // the dialog's error slot.
+    { fields: gateway ? ['code', ...FIELD_NAMES] : FIELD_NAMES },
   );
 
   return (

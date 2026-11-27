@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { apiDelete, apiGet, apiList, apiPatch, apiPost } from '@/lib/api';
 import { setMockScenario } from '@/mocks/scenario';
 import type { AlertEvent, AlertRule, Incident, SystemHealth } from '../types';
+import { madeKey } from './routes/rules';
 import { NEW_RULE, failure, setupHealthMocks } from './testing';
 
 setupHealthMocks();
@@ -91,6 +92,36 @@ describe('alert rules', () => {
       comparator: 'gt',
       unit: 'percent',
     });
+  });
+
+  it('makes the key itself when a new rule comes without one, with a number when the key is taken', async () => {
+    setMockScenario('healthy');
+    const { key: _key, ...withoutKey } = NEW_RULE;
+    const first = await apiPost<AlertRule>('/admin/alert-rules', withoutKey);
+    const second = await apiPost<AlertRule>('/admin/alert-rules', withoutKey);
+    const third = await apiPost<AlertRule>('/admin/alert-rules', { ...withoutKey, name: 'Rule  #3!' });
+    expect([first.key, second.key, third.key]).toEqual(['webhook_backlog', 'webhook_backlog_2', 'rule_3']);
+    // A key sent by an older client is still kept and checked.
+    expect((await failure(apiPost('/admin/alert-rules', { ...withoutKey, key: 'Bad Key' }))).status).toBe(
+      422,
+    );
+  });
+
+  it('makes a key from a name in the server’s form: a letter first, 3 to 41 characters, a free number at the end', () => {
+    const none = () => false;
+    expect(madeKey('API 5xx rate', none)).toBe('api_5xx_rate');
+    expect(madeKey('5xx errors', none)).toBe('rule_5xx_errors');
+    // Accents are dropped, not turned into a separator: the server's `identifierFrom` (NFKD, then marks removed).
+    expect(madeKey('  \u00dcn\u00efcode \u2014 name  ', none)).toBe('unicode_name');
+    expect(madeKey('D\u00e9lai', none)).toBe('delai');
+    // A name shorter than 3 characters once cleaned goes behind `rule_`; a name with nothing usable is `rule`.
+    expect(madeKey('ab', none)).toBe('rule_ab');
+    expect(madeKey('\u0628\u0646\u0643', none)).toBe('rule');
+    expect(madeKey('x'.repeat(60), none)).toHaveLength(41);
+    const taken = new Set(['slow', 'slow_2']);
+    expect(madeKey('Slow', (key) => taken.has(key))).toBe('slow_3');
+    const longTaken = new Set(['x'.repeat(41)]);
+    expect(madeKey('x'.repeat(60), (key) => longTaken.has(key))).toBe(`${'x'.repeat(39)}_2`);
   });
 
   it('creates, edits, mutes, switches off and deletes', async () => {

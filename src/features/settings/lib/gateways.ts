@@ -1,9 +1,29 @@
 // What the Payment methods tab says about a gateway: its audience, fee and limits in words, and whether customers can still pay.
 // Ports gatewayCard and tabGateways of 55-p-settings.js. These are display texts; the server decides what a gateway may do.
+import type { SelectOption } from '@/components/ui';
 import { money } from '@/lib/format';
 import type { Id } from '@/lib/api';
 import type { GatewayAudience, PaymentGateway } from '../types';
 import { isZero, trimDecimal } from './decimal';
+
+/** What a custom method's driver menu offers: the integration kinds the server knows. A ready-made method keeps the driver its entry sets. */
+export const GATEWAY_DRIVER_OPTIONS: readonly SelectOption[] = [
+  { value: 'bank', label: 'Bank transfer' },
+  { value: 'card', label: 'Card' },
+  { value: 'crypto', label: 'Crypto' },
+  { value: 'wise', label: 'Wise' },
+];
+
+/** The driver a new custom method starts with. */
+export const DEFAULT_DRIVER = 'bank';
+
+/** The driver menu with the driver a saved method already holds: one the menu does not know stays chosen and shown as it is. */
+export function driverOptions(current: string): SelectOption[] {
+  const known = GATEWAY_DRIVER_OPTIONS.some((option) => option.value === current);
+  return current === '' || known
+    ? [...GATEWAY_DRIVER_OPTIONS]
+    : [...GATEWAY_DRIVER_OPTIONS, { value: current, label: current }];
+}
 
 /** The audience tag, as the demo wrote it. */
 export const AUDIENCE_LABEL: Record<GatewayAudience, string> = {

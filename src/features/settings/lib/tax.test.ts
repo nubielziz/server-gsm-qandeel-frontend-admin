@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import type { TaxRate } from '../types';
 import {
   countryName,
+  DEFAULT_APPLIES_TO,
+  hasCustomTaxFacts,
+  todayInput,
   effectiveDay,
   fromDateInput,
   rateText,
@@ -31,7 +34,8 @@ const rate = (patch: Partial<TaxRate>): TaxRate => ({
 describe('texts', () => {
   it('names a known country and keeps an unknown code', () => {
     expect(countryName('gb')).toBe('United Kingdom');
-    expect(countryName('JP')).toBe('JP');
+    expect(countryName('JP')).toBe('Japan');
+    expect(countryName('ZZ')).toBe('ZZ');
   });
 
   it('writes the rate with its kind, or No tax', () => {
@@ -73,5 +77,23 @@ describe('sortTaxRates', () => {
       rate({ id: 3, country: 'GB', validFrom: '2026-01-01T00:00:00.000Z' }),
     ];
     expect(sortTaxRates(rows).map((row) => row.id)).toEqual([2, 3, 1]);
+  });
+});
+
+describe('the new-rate defaults', () => {
+  it('writes today as the UTC calendar day of a date input', () => {
+    expect(todayInput(Date.parse('2026-11-27T23:59:00.000Z'))).toBe('2026-11-27');
+    expect(todayInput(Date.parse('2026-11-28T00:00:00.000Z'))).toBe('2026-11-28');
+    expect(todayInput()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('says a saved rate holds a value of its own in the fold, and a plain one does not', () => {
+    const plain = { region: '', validTo: null, ossScheme: '', appliesTo: DEFAULT_APPLIES_TO, label: '' };
+    expect(hasCustomTaxFacts(plain)).toBe(false);
+    expect(hasCustomTaxFacts({ ...plain, region: 'Bavaria' })).toBe(true);
+    expect(hasCustomTaxFacts({ ...plain, validTo: '2026-12-31T00:00:00.000Z' })).toBe(true);
+    expect(hasCustomTaxFacts({ ...plain, ossScheme: 'EU OSS' })).toBe(true);
+    expect(hasCustomTaxFacts({ ...plain, appliesTo: 'goods' })).toBe(true);
+    expect(hasCustomTaxFacts({ ...plain, label: 'VAT' })).toBe(true);
   });
 });

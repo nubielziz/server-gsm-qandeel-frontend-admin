@@ -1,6 +1,7 @@
 // The listing editor's form: its values, how a listing fills them, and how the changed ones become the PATCH body. Pure text
-// reshaping and comparing; every rule (lengths, slug form, country, position) is decided by the server, and the limits here
-// are only hints that stop an obviously long text before it is sent.
+// reshaping and comparing; every rule (lengths, country, position) is decided by the server, and the limits here
+// are only hints that stop an obviously long text before it is sent. The address (slug) is not a form value: it is shown, never
+// sent in an update (decision 036).
 import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { apiUrl } from '@/lib/api';
 import type { ServiceListingDetail, UpdateListingBody } from '../types';
@@ -8,7 +9,6 @@ import type { ServiceListingDetail, UpdateListingBody } from '../types';
 /** What the editor's inputs hold. Numbers and booleans are text and a checkbox, as inputs give them. */
 export type ListingFormValues = {
   publicTitle: string;
-  slug: string;
   summary: string;
   descriptionMd: string;
   requirementsMd: string;
@@ -35,7 +35,6 @@ export type ListingFieldsProps = {
 /** The longest text each field accepts (the server's limits, used as `maxLength` hints). */
 export const LISTING_LIMITS = {
   publicTitle: 200,
-  slug: 120,
   summary: 300,
   descriptionMd: 20_000,
   requirementsMd: 10_000,
@@ -49,7 +48,6 @@ export const LISTING_LIMITS = {
 /** The form's field names, so a server message about any other field falls to the dialog's error slot. */
 export const LISTING_FORM_FIELDS = [
   'publicTitle',
-  'slug',
   'summary',
   'descriptionMd',
   'requirementsMd',
@@ -66,11 +64,33 @@ export const LISTING_FORM_FIELDS = [
 /** The most a position may be (the server's limit). */
 export const MAX_SORT = 1_000_000;
 
+/** The position a new shop page starts with: the server's own default. */
+export const DEFAULT_SORT = 0;
+
+/**
+ * True when the shop page holds a value that is not the default in any input of the "More options" fold (delivery note, position, search
+ * title, search description), so the fold starts open on an edit and nothing set earlier is out of sight.
+ */
+export function hasCustomMoreOptions(
+  listing: Pick<ServiceListingDetail, 'etaText' | 'sort' | 'seoTitle' | 'seoDescription'>,
+): boolean {
+  return (
+    listing.etaText !== '' ||
+    listing.seoTitle !== '' ||
+    listing.seoDescription !== '' ||
+    listing.sort !== DEFAULT_SORT
+  );
+}
+
+/** True when any input of the "More options" fold holds an error, a client check or a server message: the fold must then stay open. */
+export function moreOptionsHaveError(errors: FieldErrors<ListingFormValues>): boolean {
+  return Boolean(errors.etaText || errors.sort || errors.seoTitle || errors.seoDescription);
+}
+
 /** The values the editor starts from, taken from the listing the server sent. */
 export function toFormValues(listing: ServiceListingDetail): ListingFormValues {
   return {
     publicTitle: listing.publicTitle,
-    slug: listing.slug,
     summary: listing.summary,
     descriptionMd: listing.descriptionMd,
     requirementsMd: listing.requirementsMd,
@@ -88,7 +108,6 @@ export function toFormValues(listing: ServiceListingDetail): ListingFormValues {
 /** The short text fields; they lose stray spaces at the ends, as the server trims them too. */
 const SHORT_TEXT = [
   'publicTitle',
-  'slug',
   'summary',
   'etaText',
   'seoTitle',

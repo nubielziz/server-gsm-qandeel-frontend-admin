@@ -43,6 +43,17 @@ export function ruleValues(rule?: PricingRule): RuleValues {
   };
 }
 
+/** The inputs of the rule dialog that sit in its "More options" fold (decision 035). */
+export const RULE_FOLDED_FIELDS = ['priority', 'rounding', 'minProfit', 'startsAt', 'endsAt'] as const;
+
+/** True when a rule being edited holds a value in a folded input that is not the default of a new rule, so its fold starts open. */
+export function hasCustomRuleOptions(rule?: PricingRule): boolean {
+  if (!rule) return false;
+  const now = ruleValues(rule);
+  const defaults = ruleValues();
+  return RULE_FOLDED_FIELDS.some((name) => now[name] !== defaults[name]);
+}
+
 /** The request body, or the first mistake and the field it belongs to. */
 export type RuleBodyResult = { body: CreatePricingRuleBody } | { error: string; field: keyof RuleValues };
 

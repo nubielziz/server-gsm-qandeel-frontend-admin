@@ -53,6 +53,24 @@ describe('createAlertRule', () => {
   });
 });
 
+describe('createAlertRule without a key', () => {
+  it('posts the body as it is: the server makes the key from the name', async () => {
+    const body = {
+      name: 'API p95 high',
+      metric: 'api.p95_ms',
+      comparator: 'gt' as const,
+      threshold: 800,
+      windowSeconds: 300,
+      severity: 'warning' as const,
+      channels: ['telegram' as const],
+    };
+    http.reply({ id: 13, key: 'api_p95_high', ...body });
+    await expect(createAlertRule(body)).resolves.toMatchObject({ id: 13, key: 'api_p95_high' });
+    expect(http.last().body).toEqual(body);
+    expect(http.last().body).not.toHaveProperty('key');
+  });
+});
+
 describe('updateAlertRule', () => {
   it('patches only the fields that change', async () => {
     await updateAlertRule(3, { threshold: 1000 });

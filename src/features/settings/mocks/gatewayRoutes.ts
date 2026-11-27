@@ -3,6 +3,7 @@
 // A create body may carry `preset` (backend B232): the mock refuses what the server refuses and keeps the key; an edit never changes it, and
 // keeps the kind and the driver of a method made from a preset (422 on `isManual` and `driver`).
 import { http, HttpResponse, type HttpHandler } from 'msw';
+import { firstFreeIdentifier, identifierFrom } from '@/mocks/identifier';
 import type { ProblemError } from '@/mocks/problem';
 import type { GatewayAudience, PaymentGateway } from '../types';
 import {
@@ -16,7 +17,7 @@ import {
   signedIn,
   textOf,
 } from './http';
-import { presetPinProblems, presetProblems } from './gatewayPresets';
+import { PRESET_CATALOG, presetPinProblems, presetProblems } from './gatewayPresets';
 import { settingsFeatureStore } from './store';
 
 const AUDIENCES: GatewayAudience[] = ['b2c', 'b2b', 'both'];
@@ -128,6 +129,25 @@ const NEW_GATEWAY: Omit<PaymentGateway, 'id'> = {
   logoUrl: null,
 };
 
+/** The longest code and the code of a name with no a-z or 0-9 (backend `gateway-rules.ts`: `GATEWAY_CODE_MAX_LENGTH`, `GATEWAY_CODE_FALLBACK`). */
+const CODE_RULES = { maxLength: 40, fallback: 'method' } as const;
+
+/**
+ * The code the server makes for a new method that comes without one (backend decision 077, `madeGatewayCode`): a ready-made method takes its
+ * preset's key; a custom one takes its name as an identifier (accents dropped, `method` for a name with nothing usable, up to 40 characters).
+ * Either way `_2`, `_3` is added when the code is taken, the base cut so the suffix fits. An unknown preset key falls back to the name (the
+ * create is refused for it elsewhere).
+ */
+export function madeCode(
+  name: string,
+  presetKey: string | null | undefined,
+  taken: (code: string) => boolean,
+): string {
+  const preset = presetKey ? PRESET_CATALOG.find((entry) => entry.key === presetKey) : undefined;
+  const base = preset ? preset.key : identifierFrom(name, CODE_RULES);
+  return firstFreeIdentifier(base, CODE_RULES.maxLength, taken);
+}
+
 /** The gateway routes. */
 export const gatewayRoutes: HttpHandler[] = [
   http.get('*/admin/payment-gateways', ({ request }) =>
@@ -155,9 +175,13 @@ export const gatewayRoutes: HttpHandler[] = [
         taken,
         problems,
       );
-      for (const key of ['name', 'driver', 'code'] as const)
+      // The code is optional: left out, the server makes it.
+      for (const key of ['name', 'driver'] as const)
         if (!(key in body))
           problems.push({ field: key, message: key === 'name' ? 'Enter a name.' : `Enter the ${key}.` });
+      if (!('code' in body)) {
+        draft.code = madeCode(draft.name, typeof body.preset === 'string' ? body.preset : null, taken);
+      }
       problems.push(...presetProblems(body));
       if (problems.length > 0) return invalid(problems);
       const preset = typeof body.preset === 'string' ? body.preset : null;

@@ -8,6 +8,16 @@ export const WEAK_BELOW_PCT = 70;
 /** Votes it takes before a low share means something. */
 export const WEAK_MIN_VOTES = 30;
 
+/** The topics the articles use, each once and sorted by name. A blank topic is left out. */
+export function topicsOf(articles: readonly Pick<HelpArticle, 'category'>[]): string[] {
+  const seen = new Set<string>();
+  for (const article of articles) {
+    const topic = article.category.trim();
+    if (topic !== '') seen.add(topic);
+  }
+  return [...seen].sort((a, b) => a.localeCompare(b));
+}
+
 /** Share of readers who found the article helpful, 0 to 100 (0 with no votes). */
 export function helpfulPct(article: Pick<HelpArticle, 'helpfulYes' | 'helpfulNo'>): number {
   const votes = article.helpfulYes + article.helpfulNo;

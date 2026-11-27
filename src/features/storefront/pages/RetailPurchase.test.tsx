@@ -9,8 +9,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fmtDate, num } from '@/lib/format';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
-import { setupMockApi } from '@/test/renderApp';
-import { getListing } from '../api';
+import { setupMockApi, signInAs } from '@/test/renderApp';
+import { getListing, updateListing } from '../api';
 import { storefrontPublishPath } from '../lib/paths';
 import { ATT, ATT_SERVICE, ELSEWHERE } from '../test/RetailHost';
 import { listingRequests, openRetail, rowOf, sentTo } from '../test/retailPurchase';
@@ -118,22 +118,25 @@ describe('a service with a shop page', () => {
     const listing = await getListing(ATT_SERVICE);
     expect(rowOf('Orders, 30 days')).toHaveTextContent(num(listing.orders30d));
     expect(screen.getByText('Revenue, 30 days')).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Slug' })).toHaveValue('atandt-usa-premier-unlock');
+    // The address is a plain value: nobody types it (decision 036).
+    expect(rowOf('Address (slug)')).toHaveTextContent('atandt-usa-premier-unlock');
+    expect(screen.queryByRole('textbox', { name: /^(Slug|Address)/ })).not.toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Brand' })).toHaveValue('Apple');
     expect(screen.getByRole('button', { name: 'Save shop page' })).toBeDisabled();
     expect(screen.getByText('No unsaved changes')).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('draws the fields as label-left rows, with the facts and the search texts under small headings', async () => {
+  it('draws the fields as label-left rows, with the facts under a small heading and the search texts in the fold', async () => {
     await openRetail();
     expect((await titleField()).closest('.form-row')).not.toBeNull();
     expect(screen.getByRole('textbox', { name: 'Summary' }).closest('.form-row')).not.toBeNull();
     expect(screen.getByRole('combobox', { name: 'Brand' }).closest('.form-row')).not.toBeNull();
     expect(screen.getByRole('checkbox', { name: 'Featured on the storefront' })).toBeChecked();
     expect(screen.getByRole('group', { name: 'About the service' })).toBeInTheDocument();
+    // ATT holds its own position, so its fold starts open and the search texts are in it.
     expect(screen.getByRole('group', { name: 'Search engines' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Search title' })).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Search title' }).closest('.form-row')).not.toBeNull();
     // The picture is a row of its own and its buttons act at once.
     expect(rowOf('Picture')).toContainElement(screen.getByRole('button', { name: /picture…$/ }));
   });
@@ -225,15 +228,32 @@ describe('a service with a shop page', () => {
 
   it('shows the server’s refusal under the field and keeps the changes', async () => {
     const user = userEvent.setup();
+    mockServer.use(
+      http.patch('*/admin/service-listings/:id', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'summary', message: 'Use at most 300 characters.' },
+        ]),
+      ),
+    );
     await openRetail();
-    const slug = await screen.findByRole('textbox', { name: 'Slug' });
-    await user.clear(slug);
-    await user.type(slug, 'ee-uk-unlock');
+    const summary = await screen.findByRole('textbox', { name: 'Summary' });
+    await user.type(summary, 'Words');
     await user.click(screen.getByRole('button', SAVE));
-    expect(await screen.findByText('The slug ee-uk-unlock is already used.')).toBeInTheDocument();
-    expect(slug).toHaveAttribute('aria-invalid', 'true');
+    expect(await screen.findByText('Use at most 300 characters.')).toBeInTheDocument();
+    expect(summary).toHaveAttribute('aria-invalid', 'true');
     expect(screen.queryByText('Saved')).not.toBeInTheDocument();
     expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+  });
+
+  it('never sends the address, whatever else is saved', async () => {
+    const user = userEvent.setup();
+    const requests = await openRetail();
+    await user.type(await screen.findByRole('textbox', { name: 'Summary' }), 'Words');
+    await user.click(screen.getByRole('button', SAVE));
+    await screen.findByText('Saved');
+    const bodies = listingRequests(requests, 'PATCH', ATT_SERVICE).map((sent) => sent.body);
+    expect(bodies).toEqual([{ summary: 'Words' }]);
+    expect(JSON.stringify(bodies)).not.toContain('slug');
   });
 
   it('asks for a title before it sends anything', async () => {
@@ -296,5 +316,87 @@ describe('a service with a shop page', () => {
     const requests = await openRetail({}, ['storefront:read', 'storefront:update']);
     expect(await titleField()).toBeInTheDocument();
     expect(sentTo(requests, 'GET', '/admin/retail-price-changes')).toHaveLength(0);
+  });
+});
+
+describe('the More options fold of the shop page', () => {
+  it('starts open on a shop page that holds a value of its own, with the four inputs inside', async () => {
+    await openRetail();
+    expect(await screen.findByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('textbox', { name: 'Delivery note' })).toHaveValue('');
+    // The seed gives the shop page its place in the shop, so the fold shows it.
+    expect(screen.getByRole('textbox', { name: 'Position' })).toHaveValue('5');
+    expect(screen.getByRole('textbox', { name: 'Search title' })).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Search description' })).toBeVisible();
+  });
+
+  it('starts closed when every hidden input holds its default, keeps them in the page and opens on a click', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await updateListing(ATT_SERVICE, { sort: 0 });
+    await openRetail();
+    const button = await screen.findByRole('button', { name: 'More options' });
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('textbox', { name: 'Position' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Delivery note' })).not.toBeInTheDocument();
+    await user.click(button);
+    expect(screen.getByRole('textbox', { name: 'Position' })).toHaveValue('0');
+    expect(screen.getByText(/Empty: the shop shows the service's delivery time/)).toBeInTheDocument();
+  });
+
+  it('sends a hidden input exactly as before once it is changed', async () => {
+    const user = userEvent.setup();
+    const requests = await openRetail();
+    const position = await screen.findByRole('textbox', { name: 'Position' });
+    await user.clear(position);
+    await user.type(position, '12');
+    await user.type(screen.getByRole('textbox', { name: 'Delivery note' }), 'Within a day');
+    await user.type(screen.getByRole('textbox', { name: 'Search title' }), 'Unlock AT&T');
+    await user.click(screen.getByRole('button', SAVE));
+    await screen.findByText('Saved');
+    expect(listingRequests(requests, 'PATCH', ATT_SERVICE).map((sent) => sent.body)).toEqual([
+      { etaText: 'Within a day', seoTitle: 'Unlock AT&T', sort: 12 },
+    ]);
+  });
+
+  it('opens by itself and cannot be closed while a hidden input has a server message', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await updateListing(ATT_SERVICE, { sort: 0 });
+    mockServer.use(
+      http.patch('*/admin/service-listings/:id', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'seoTitle', message: 'Use at most 200 characters.' },
+        ]),
+      ),
+    );
+    await openRetail();
+    await user.type(await screen.findByRole('textbox', { name: 'Summary', hidden: true }), 'Words');
+    expect(screen.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    await user.click(screen.getByRole('button', SAVE));
+    expect(await screen.findByText('Use at most 200 characters.')).toBeVisible();
+    const hide = screen.getByRole('button', { name: 'Hide more options' });
+    expect(screen.getByRole('textbox', { name: 'Search title' })).toHaveAttribute('aria-invalid', 'true');
+    await user.click(hide);
+    expect(screen.getByRole('textbox', { name: 'Search title' })).toBeVisible();
+  });
+
+  it('opens by itself when a hidden input fails a client check, before anything is sent', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await updateListing(ATT_SERVICE, { sort: 0 });
+    const requests = await openRetail();
+    await user.click(await screen.findByRole('button', { name: 'More options' }));
+    const position = screen.getByRole('textbox', { name: 'Position' });
+    await user.clear(position);
+    await user.type(position, 'abc');
+    await user.click(screen.getByRole('button', { name: 'Hide more options' }));
+    expect(screen.queryByRole('textbox', { name: 'Position' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', SAVE));
+    expect(await screen.findByText('Enter a whole number from 0 to 1,000,000.')).toBeVisible();
+    expect(listingRequests(requests, 'PATCH', ATT_SERVICE)).toHaveLength(0);
   });
 });

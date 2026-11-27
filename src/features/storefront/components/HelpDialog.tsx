@@ -1,12 +1,12 @@
-// HelpDialog: "New article" and "Edit article" (`POST` and `PATCH /admin/help-articles`): a topic, the question, the answer as
-// Markdown in a textarea and whether it is published. The demo only toggled the status of seeded articles; the map
+// HelpDialog: "New article" and "Edit article" (`POST` and `PATCH /admin/help-articles`): a topic (a menu of the topics in use, or a new
+// one), the question, the answer as Markdown in a textarea and whether it is published. The demo only toggled the status of seeded articles; the map
 // adds the routes. Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
 import { CheckboxField, dialogSubmit, FormDialog, TextareaField, TextField, toast } from '@/components/ui';
 import { useCreateArticle, useUpdateArticle } from '../hooks/useHelpMutations';
+import { useHelpTopics } from '../hooks/useHelpTopics';
 import type { HelpArticle, UpdateArticleBody } from '../types';
-
-type Values = { category: string; question: string; answerMd: string; isPublished: boolean };
+import { HelpTopicField, type HelpFormValues } from './HelpTopicField';
 
 export interface HelpDialogProps {
   /** The article to edit; leave out to write one. */
@@ -18,7 +18,8 @@ export interface HelpDialogProps {
 export function HelpDialog({ article, onClose }: HelpDialogProps) {
   const create = useCreateArticle();
   const update = useUpdateArticle();
-  const form = useForm<Values>({
+  const { topics, loading } = useHelpTopics();
+  const form = useForm<HelpFormValues>({
     defaultValues: {
       category: article?.category ?? '',
       question: article?.question ?? '',
@@ -28,6 +29,7 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
   });
   const {
     register,
+    control,
     formState: { errors },
   } = form;
 
@@ -69,13 +71,7 @@ export function HelpDialog({ article, onClose }: HelpDialogProps) {
       onSubmit={submit}
     >
       <div className="space-y-3">
-        <TextField
-          label="Topic"
-          autoComplete="off"
-          hint="Orders, Unlocking, Payments, IMEI, Privacy…"
-          error={errors.category}
-          {...register('category', { validate: (value) => value.trim() !== '' || 'Enter a topic.' })}
-        />
+        <HelpTopicField control={control} topics={topics} loading={loading} />
         <TextField
           label="Question"
           autoComplete="off"

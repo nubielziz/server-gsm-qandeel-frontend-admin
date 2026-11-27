@@ -10,6 +10,7 @@ import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
 import { SEED } from '../../test/apiSupport';
 import { installAccountMocks } from '../../test/installAccountMocks';
+import { accountState } from '../../mocks/store';
 import { partsMenu, renderAccount } from '../../pages/test-utils';
 
 setupMockApi();
@@ -50,7 +51,10 @@ describe('the rows', () => {
     expect(box('Name')).toHaveValue('Zain Mobile Hub');
     expect(box('Email')).toHaveValue('ops@zainmobilehub.example');
     expect(box('Phone')).toHaveValue('');
-    expect(box('Country')).toHaveValue('JO');
+    // A merchant's country is a menu of every country, with the stored code chosen.
+    expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveValue('JO');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveDisplayValue('Jordan (JO)');
     expect(box('Company')).toHaveValue('Zain Mobile Hub');
     expect(box('Address')).toHaveValue('Abdali Boulevard, Amman');
     expect(box('Tax number')).toHaveValue('JO-1234567');
@@ -60,7 +64,7 @@ describe('the rows', () => {
     expect(
       screen.getByText('Changing it sends a new verification link and cancels older links.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Two letters, like JO or AE.')).toBeInTheDocument();
+    expect(screen.queryByText('Two letters, like JO or AE.')).not.toBeInTheDocument();
     for (const word of ['Referral code', 'Referred by', 'Language', 'Verification', 'KYC']) {
       expect(screen.queryByText(word)).not.toBeInTheDocument();
     }
@@ -116,7 +120,7 @@ describe('saving', () => {
     await profileOf(SEED.ZAIN, ZAIN);
     await replace(user, 'Name', '  Zain   Hub ');
     await replace(user, 'Email', 'New@Zain.example');
-    await replace(user, 'Country', 'sa');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'SA');
     await user.clear(box('Tax number'));
     await user.click(save());
     expect(
@@ -202,12 +206,30 @@ describe('refusals and checks', () => {
     expect(bodies).toEqual([]);
   });
 
-  it("wants two letters for a merchant's country", async () => {
+  it('wants a country chosen for a merchant, and says so under the menu', async () => {
     const user = userEvent.setup();
     await profileOf(SEED.ZAIN, ZAIN);
-    await replace(user, 'Country', 'J');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), '');
     await user.click(save());
-    expect(await screen.findByText('Enter the two-letter country code.')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a country.')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('keeps a stored country the list does not know chosen, shown as its code, and sends nothing for it', async () => {
+    const user = userEvent.setup();
+    const state = await accountState();
+    const zain = state.accounts.find(String(SEED.ZAIN));
+    if (!zain) throw new Error('The seed has no Zain account.');
+    zain.country = 'XK';
+    const bodies = watchPatches(SEED.ZAIN);
+    await profileOf(SEED.ZAIN, ZAIN);
+    const country = screen.getByRole('combobox', { name: 'Country' });
+    expect(country).toHaveValue('XK');
+    expect(country).toHaveDisplayValue('XK');
+    await replace(user, 'Phone', '+962 79 000');
+    await user.click(save());
+    expect(await screen.findByText('Details saved')).toBeInTheDocument();
+    expect(bodies).toEqual([{ phone: '+962 79 000' }]);
   });
 });
 

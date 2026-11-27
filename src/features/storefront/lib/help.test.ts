@@ -1,7 +1,7 @@
 // Tests for the help article display helpers: the helpful share, the vote count and the "needs a rewrite" test of the demo.
 import { describe, expect, it } from 'vitest';
 import type { HelpArticle } from '../types';
-import { helpfulPct, needsRewrite, voteCount } from './help';
+import { helpfulPct, needsRewrite, topicsOf, voteCount } from './help';
 
 const article = (yes: number, no: number, isPublished = true) =>
   ({ helpfulYes: yes, helpfulNo: no, isPublished }) as HelpArticle;
@@ -11,6 +11,14 @@ describe('helpfulPct and voteCount', () => {
     expect(helpfulPct(article(3, 1))).toBe(75);
     expect(helpfulPct(article(0, 0))).toBe(0);
     expect(voteCount(article(142, 9))).toBe(151);
+  });
+});
+
+describe('topicsOf', () => {
+  it('lists each topic once, sorted by name, and leaves a blank one out', () => {
+    const rows = ['Payments', 'Orders', ' Orders ', 'IMEI', '', '  '].map((category) => ({ category }));
+    expect(topicsOf(rows)).toEqual(['IMEI', 'Orders', 'Payments']);
+    expect(topicsOf([])).toEqual([]);
   });
 });
 

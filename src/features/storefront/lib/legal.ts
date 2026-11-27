@@ -39,6 +39,28 @@ export function suggestNextVersion(version: string): string {
   return `${match[1]}${Number(match[2]) + 1}`;
 }
 
+/**
+ * The next free version number of this document type over all its versions, drafts and earlier ones included: the one after the newest
+ * version the document has (see `suggestNextVersion`), moved on while another version of the document holds it, or `1.0` for a
+ * document with no version yet. Only a suggestion read from the rows the page has; the server checks the number and says so when it exists.
+ */
+export function nextVersionFor(
+  documents: readonly Pick<LegalDocument, 'type' | 'version' | 'createdAt'>[],
+  type: string,
+): string {
+  const own = documents.filter((document) => document.type === type);
+  const newest = [...own].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+  if (!newest) return FIRST_VERSION;
+  const held = new Set(own.map((document) => document.version.trim()));
+  let next = suggestNextVersion(newest.version);
+  // A cap keeps an odd row set from looping for ever; the server has the last word anyway.
+  for (let tries = 0; held.has(next) && tries < 1000; tries += 1) next = suggestNextVersion(next);
+  return next;
+}
+
+/** The first version of a document that has none yet. */
+export const FIRST_VERSION = '1.0';
+
 /** The rows of the legal table: what the table lists, split three ways, grouped by document inside each. */
 export type LegalGroups = {
   /** The versions in force. */

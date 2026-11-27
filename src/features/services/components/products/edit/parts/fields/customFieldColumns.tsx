@@ -22,6 +22,8 @@ export interface CustomFieldColumnsArgs {
   form: UseFormReturn<FieldsFormValues>;
   /** The type each row has now, by position: only a choice list shows its choices box. */
   types: readonly (ServiceFieldType | undefined)[];
+  /** Whether the Label column is drawn (the "Show buyers a different label" box); hidden, its inputs stay in the form with their values. */
+  showLabels: boolean;
   /** How many rows there are, so the last one cannot move down. */
   count: number;
   lock: PermissionLock;
@@ -34,12 +36,13 @@ export interface CustomFieldColumnsArgs {
 }
 
 /**
- * The seven columns, left to right: the number, the name, the label, the type (a choice list shows its choices under it), required,
- * the main input (a tick box, one row at most) and the row's buttons (up, down, remove).
+ * The columns, left to right: the number, the name, the label (only while `showLabels`, decision 035), the type (a choice list shows its
+ * choices under it), required, the main input (a tick box, one row at most) and the row's buttons (up, down, remove).
  */
 export function customFieldColumns({
   form,
   types,
+  showLabels,
   count,
   lock,
   introId,
@@ -49,7 +52,7 @@ export function customFieldColumns({
 }: CustomFieldColumnsArgs): DataTableColumn<FieldRowRef>[] {
   const { register } = form;
   const rowErrors = form.formState.errors.fields;
-  return [
+  const columns: DataTableColumn<FieldRowRef>[] = [
     {
       key: 'number',
       label: 'No.',
@@ -212,4 +215,5 @@ export function customFieldColumns({
       ),
     },
   ];
+  return showLabels ? columns : columns.filter((column) => column.key !== 'label');
 }

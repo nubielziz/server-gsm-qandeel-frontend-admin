@@ -11,6 +11,7 @@ import { setupHealthMocks } from '../mocks/testing';
 import { openHealthPage } from '../test/openHealthPage';
 import { SLOW } from '../test/pageQueries';
 import { recordRequests } from '../test/recordRequests';
+import { DEFAULT_MESSAGE } from './maintenance';
 
 setupHealthMocks();
 vi.setConfig({ testTimeout: 30_000 });
@@ -40,7 +41,11 @@ describe('turning maintenance on', () => {
     ]);
     // Nothing is picked for the staff member.
     expect(scopes.every((radio) => !(radio as HTMLInputElement).checked)).toBe(true);
-    expect(dialog.getByLabelText('Message for customers')).toHaveValue('');
+    // The message starts as the usual one, visible and editable; the expected end waits in the fold.
+    expect(dialog.getByLabelText('Message for customers')).toHaveValue(DEFAULT_MESSAGE);
+    expect(dialog.getByLabelText('Message for customers')).toBeVisible();
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    expect(dialog.queryByRole('textbox', { name: 'Expected end (optional)' })).not.toBeInTheDocument();
     expect(dialog.getByLabelText('Expected end (optional)')).toHaveAttribute('type', 'datetime-local');
     expect(dialog.getByRole('note')).toHaveTextContent(
       'Customers using the part you choose get 503 MAINTENANCE with your message until you turn it off.',
@@ -61,7 +66,12 @@ describe('turning maintenance on', () => {
     const { user, dialog } = await openDialog();
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
     expect(await dialog.findByText('Choose what to close.')).toBeInTheDocument();
-    expect(dialog.getByText('Write the message customers will see.')).toBeInTheDocument();
+    // The message starts filled, so only the scope is missing.
+    expect(dialog.queryByText('Write the message customers will see.')).not.toBeInTheDocument();
+    expect(writes).toHaveLength(0);
+    await user.clear(dialog.getByLabelText('Message for customers'));
+    await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
+    expect(await dialog.findByText('Write the message customers will see.')).toBeInTheDocument();
     await user.click(dialog.getByRole('radio', { name: /Store/ }));
     await user.type(dialog.getByLabelText('Message for customers'), '   ');
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
@@ -73,7 +83,9 @@ describe('turning maintenance on', () => {
     const writes = recordRequests('put', '/admin/system/maintenance');
     const { user, dialog } = await openDialog();
     await user.click(dialog.getByRole('radio', { name: /Checkout/ }));
+    await user.clear(dialog.getByLabelText('Message for customers'));
     await user.type(dialog.getByLabelText('Message for customers'), '  We are back at 16:00.  ');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     const end = dialog.getByLabelText('Expected end (optional)');
     await user.type(end, '2099-01-02T16:30');
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
@@ -96,10 +108,25 @@ describe('turning maintenance on', () => {
     expect(banner.closest('[role="status"]')).toHaveTextContent('Customers see “We are back at 16:00.”');
   });
 
+  it('sends the usual message and no end time when only the scope is chosen', async () => {
+    const writes = recordRequests('put', '/admin/system/maintenance');
+    const { user, dialog } = await openDialog();
+    await user.click(dialog.getByRole('radio', { name: /Store/ }));
+    await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
+    await waitFor(() => expect(writes).toHaveLength(1), SLOW);
+    expect(writes[0].body).toEqual({
+      enabled: true,
+      scope: 'store',
+      message: DEFAULT_MESSAGE,
+      expectedEndAt: null,
+    });
+  });
+
   it('sends no end time when the field is left empty', async () => {
     const writes = recordRequests('put', '/admin/system/maintenance');
     const { user, dialog } = await openDialog();
     await user.click(dialog.getByRole('radio', { name: /^API orders/ }));
+    await user.clear(dialog.getByLabelText('Message for customers'));
     await user.type(dialog.getByLabelText('Message for customers'), 'API orders are paused.');
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
     await waitFor(() => expect(writes).toHaveLength(1), SLOW);
@@ -114,12 +141,20 @@ describe('turning maintenance on', () => {
   it("puts the server's message about the end time under that field and keeps the dialog open", async () => {
     const { user, dialog } = await openDialog();
     await user.click(dialog.getByRole('radio', { name: /Store/ }));
+    await user.clear(dialog.getByLabelText('Message for customers'));
     await user.type(dialog.getByLabelText('Message for customers'), 'Back soon.');
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.type(dialog.getByLabelText('Expected end (optional)'), '2020-01-01T10:00');
+    // Closing the fold does not hide a refusal: it opens again for the message.
+    await user.click(dialog.getByRole('button', { name: 'Hide more options' }));
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
     const field = dialog.getByLabelText('Expected end (optional)');
     await waitFor(() => expect(field).toHaveAttribute('aria-invalid', 'true'), SLOW);
-    expect(dialog.getByText('The expected end must be a time in the future.')).toBeInTheDocument();
+    expect(dialog.getByText('The expected end must be a time in the future.')).toBeVisible();
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     expect(screen.getByRole('dialog', { name: 'Maintenance mode' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Maintenance is on' })).not.toBeInTheDocument();
   });
@@ -132,6 +167,7 @@ describe('turning maintenance on', () => {
     );
     const { user, dialog } = await openDialog();
     await user.click(dialog.getByRole('radio', { name: /Store/ }));
+    await user.clear(dialog.getByLabelText('Message for customers'));
     await user.type(dialog.getByLabelText('Message for customers'), 'Back soon.');
     await user.click(dialog.getByRole('button', { name: 'Turn on maintenance' }));
     expect(await dialog.findByRole('alert')).toHaveTextContent('You need the system:manage permission.');
@@ -160,6 +196,12 @@ describe('changing and turning off maintenance', () => {
     ).toBeInTheDocument();
     expect(dialog.getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
     expect(dialog.getByRole('note')).toHaveTextContent(CHECKOUT_EFFECT);
+    // The running maintenance has an expected end, a value of its own, so the fold starts open.
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect((dialog.getByLabelText('Expected end (optional)') as HTMLInputElement).value).not.toBe('');
   });
 
   it('saves a new message with the same scope', async () => {

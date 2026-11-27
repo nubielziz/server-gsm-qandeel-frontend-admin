@@ -54,21 +54,44 @@ export function fieldDraft(field: ServiceField): FieldDraft {
 
 /**
  * The request entry for a row. Only a choice list keeps its choices. A new row has no `key` (the server makes it); the label goes as
- * typed, so an empty label asks the server to store the name. The pattern goes exactly as the saved field had it (`''` for a new row):
- * no input changes it, so it is not trimmed either.
+ * typed while the Label column is shown (`showLabel`, the default), so an empty label asks the server to store the name. While the column
+ * is hidden (decision 035) every row sends an empty label: the server stores the name, and a renamed field's label follows its name.
+ * The pattern goes exactly as the saved field had it (`''` for a new row): no input changes it, so it is not trimmed either.
  */
-export function toServiceField(draft: FieldDraft): ServiceFieldInput {
+export function toServiceField(draft: FieldDraft, showLabel = true): ServiceFieldInput {
   const key = draft.key.trim();
   return {
     ...(key === '' ? {} : { key }),
     name: draft.name.trim(),
-    label: draft.label.trim(),
+    label: showLabel ? draft.label.trim() : '',
     fieldType: draft.fieldType,
     required: draft.required,
     options: draft.fieldType === 'select' ? parseChoices(draft.choices) : [],
     regex: draft.regex,
     isMainInput: draft.isMainInput,
   };
+}
+
+/** True when a label says something other than its name (surrounding spaces ignored); an empty label means "the name". */
+function labelDiffers(label: string, name: string): boolean {
+  const text = label.trim();
+  return text !== '' && text !== name.trim();
+}
+
+/**
+ * Whether any saved field has a label that differs from its name: the "Show buyers a different label" tick box starts ticked then, so a
+ * label that exists is never out of sight (decision 035).
+ */
+export function hasDifferentLabel(fields: readonly Pick<ServiceField, 'name' | 'label'>[]): boolean {
+  return fields.some((field) => labelDiffers(field.label, field.name));
+}
+
+/**
+ * Whether the rows hold a label that a save with the Label column hidden would clear (a label that differs from its name). The form
+ * counts that as a change of its own, so unticking the box on a service with different labels can be saved.
+ */
+export function hasLabelToClear(drafts: readonly FieldDraft[]): boolean {
+  return drafts.some((draft) => labelDiffers(draft.label, draft.name));
 }
 
 /**

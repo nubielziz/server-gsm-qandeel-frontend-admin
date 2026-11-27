@@ -45,7 +45,12 @@ describe('the required fields', () => {
     expect(
       composer.getAllByText('Choose at least one group of people, or add people.').length,
     ).toBeGreaterThan(0);
-    expect(sent.filter((request) => request.method === 'POST')).toEqual([]);
+    expect(
+      sent.filter(
+        (request) =>
+          request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+      ),
+    ).toEqual([]);
   });
 
   it('starts with a service announcement by in-app and email, and nobody chosen', async () => {
@@ -221,20 +226,131 @@ describe('the audience builder', () => {
     expect(await composer.findByText(/You need the roles:read permission/)).toBeInTheDocument();
   });
 
-  it('shows link fields only for the people the audience reaches', async () => {
+  it('shows link menus only for the people the audience reaches', async () => {
     const { user, composer } = await openComposer();
-    expect(composer.queryByRole('textbox', { name: /^Link for/ })).not.toBeInTheDocument();
+    expect(composer.queryByRole('combobox', { name: /^Link for/ })).not.toBeInTheDocument();
     await user.click(composer.getByRole('button', { name: 'Retail' }));
-    expect(composer.getByRole('textbox', { name: 'Link for retail accounts' })).toHaveAttribute(
-      'placeholder',
-      '/account/orders',
-    );
-    expect(composer.queryByRole('textbox', { name: 'Link for staff' })).not.toBeInTheDocument();
+    expect(composer.getByRole('combobox', { name: 'Link for retail accounts' })).toHaveValue('');
+    expect(composer.queryByRole('combobox', { name: 'Link for staff' })).not.toBeInTheDocument();
     await user.click(composer.getByRole('button', { name: 'Merchants' }));
-    expect(composer.getByRole('textbox', { name: 'Link for merchants' })).toHaveAttribute(
-      'placeholder',
-      '/merchant/orders',
+    expect(composer.getByRole('combobox', { name: 'Link for merchants' })).toHaveValue('');
+    // The text box waits behind "Another page…".
+    expect(composer.queryByRole('textbox', { name: /^Page address/ })).not.toBeInTheDocument();
+  });
+
+  it('offers the console pages to staff and the shop account pages to merchants and retail accounts', async () => {
+    const { user, composer } = await openComposer();
+    // The buttons are presets: each one replaces the audience, so the staff menu is read before the retail one.
+    await user.click(composer.getByRole('button', { name: 'Staff' }));
+    const words = (name: string) =>
+      within(composer.getByRole('combobox', { name }))
+        .getAllByRole('option')
+        .map((option) => option.textContent);
+    expect(words('Link for staff')).toEqual(
+      expect.arrayContaining([
+        'No link',
+        'Orders',
+        'Product / Services',
+        'Accounts',
+        'Money',
+        'Support',
+        'Another page…',
+      ]),
     );
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
+    expect(words('Link for retail accounts')).toEqual([
+      'No link',
+      'Account home',
+      'Orders',
+      'Wallet',
+      'Invoices',
+      'Support',
+      'Notifications',
+      'Settings',
+      'Another page…',
+    ]);
+  });
+
+  it('sends the path of the page picked from the menu, exactly as the typed one was', async () => {
+    const sent = recordRequests('/admin/notification-campaigns');
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Staff' }));
+    await user.click(composer.getByRole('switch', { name: 'Target retail' }));
+    await writeMessage(user, composer);
+    await user.selectOptions(composer.getByRole('combobox', { name: 'Link for staff' }), 'Orders');
+    await user.selectOptions(composer.getByRole('combobox', { name: 'Link for retail accounts' }), 'Wallet');
+    await user.click(composer.getByRole('button', { name: 'Save draft' }));
+    await waitFor(
+      () =>
+        expect(
+          sent.some(
+            (request) =>
+              request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+          ),
+        ).toBe(true),
+      { timeout: 10_000 },
+    );
+    const post = sent.find(
+      (request) =>
+        request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+    );
+    expect((post?.body as { link: unknown }).link).toEqual({ staff: '/orders', customer: '/account/wallet' });
+  });
+
+  it('shows the text box for "Another page…", checks its path, and sends the typed text', async () => {
+    const sent = recordRequests('/admin/notification-campaigns');
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Retail' }));
+    await writeMessage(user, composer);
+    await user.selectOptions(
+      composer.getByRole('combobox', { name: 'Link for retail accounts' }),
+      'Another page…',
+    );
+    const box = composer.getByRole('textbox', { name: 'Page address for retail accounts' });
+    expect(box).toHaveValue('');
+    await user.type(box, 'https://evil.example');
+    await user.click(composer.getByRole('button', { name: 'Save draft' }));
+    expect(
+      await composer.findByText('Use a path on the site that starts with one /, such as /account/orders.'),
+    ).toBeInTheDocument();
+    expect(box).toHaveAttribute('aria-invalid', 'true');
+    expect(
+      sent.filter(
+        (request) =>
+          request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+      ),
+    ).toEqual([]);
+    await user.clear(box);
+    await user.type(box, '/account/settings/security');
+    await user.click(composer.getByRole('button', { name: 'Save draft' }));
+    await waitFor(() => expect(sent.some((request) => request.method === 'POST')).toBe(true), {
+      timeout: 10_000,
+    });
+    const post = sent.find(
+      (request) =>
+        request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+    );
+    expect((post?.body as { link: unknown }).link).toEqual({ customer: '/account/settings/security' });
+  });
+
+  it('goes back to no link, which sends no link at all', async () => {
+    const sent = recordRequests('/admin/notification-campaigns');
+    const { user, composer } = await openComposer();
+    await user.click(composer.getByRole('button', { name: 'Staff' }));
+    await writeMessage(user, composer);
+    const menu = composer.getByRole('combobox', { name: 'Link for staff' });
+    await user.selectOptions(menu, 'Orders');
+    expect(menu).toHaveValue('/orders');
+    await user.selectOptions(menu, 'No link');
+    await user.click(composer.getByRole('button', { name: 'Save draft' }));
+    await waitFor(() => expect(sent.some((request) => request.method === 'POST')).toBe(true), {
+      timeout: 10_000,
+    });
+    const post = sent.find(
+      (request) =>
+        request.method === 'POST' && request.url.pathname.endsWith('/admin/notification-campaigns'),
+    );
+    expect((post?.body as { link: unknown }).link).toBeNull();
   });
 });
 

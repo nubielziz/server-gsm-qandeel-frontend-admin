@@ -49,13 +49,15 @@ export type GatewayPreset = {
 };
 
 /**
- * Body of `POST /admin/payment-gateways` (assumed contract). `secret` is write-only: the server stores it and never
+ * Body of `POST /admin/payment-gateways` (assumed contract). `code` is left out by the console (decision 036; backend decision 077): the
+ * server makes it, from the name of a custom method (lower-case letters, digits and underscores) or from the key of a ready-made one,
+ * with `_2`, `_3` when taken, and sends it back; it is optional here, and an older client may still send one. `secret` is write-only: the server stores it and never
  * sends it back, so an edit leaves it out unless a new one is typed. `webhookSecret` (the key the gateway signs its webhooks with)
  * is write-only too and replaces the first stored one; `secondaryWebhookSecret` sets the second one (a second endpoint or rotation),
  * `null` removes it, and the server answers 422 on that field when no first secret exists or is sent.
  */
 export type CreateGatewayBody = {
-  code: string;
+  code?: string;
   driver: string;
   name: string;
   audience: GatewayAudience;

@@ -1,7 +1,8 @@
 // RuleFormDialog: create an alert rule (`POST /admin/alert-rules`, `alerts:create`) or edit one (`PATCH
-// /admin/alert-rules/:id`, `alerts:update`). The server's field messages show under their fields. No demo page.
+// /admin/alert-rules/:id`, `alerts:update`). The server's field messages show under their fields. No demo page. A new rule has no Key
+// input and sends no `key`: the server makes it from the name; an edit shows the key as a plain value and never sends it (decision 036).
 import { Controller, useForm } from 'react-hook-form';
-import { CheckboxField, FormDialog, SelectField, TextField, dialogSubmit } from '@/components/ui';
+import { CheckboxField, FormDialog, SelectField, TextField, dialogSubmit, ReadField } from '@/components/ui';
 import { useCreateAlertRule, useUpdateAlertRule } from '../../hooks';
 import type { AlertRule } from '../../types';
 import { CheckGroup } from './CheckGroup';
@@ -21,10 +22,10 @@ import {
   type RuleValues,
 } from './rules';
 
-// The form's field names: a server message about any other field shows in the dialog's error slot (`dialogSubmit`).
+// The form's field names: a server message about any other field (the key, which has no input) shows in the dialog's error slot
+// (`dialogSubmit`).
 const FIELDS = [
   'name',
-  'key',
   'metric',
   'comparator',
   'threshold',
@@ -89,13 +90,15 @@ export function RuleFormDialog({ rule, onClose }: RuleFormDialogProps) {
           error={errors.name}
           {...register('name', { validate: filled('Enter a name.') })}
         />
-        <TextField
-          label="Key"
-          className="mono"
-          hint="Lowercase letters, digits and underscores. It names the rule in messages."
-          error={errors.key}
-          {...register('key', { validate: filled('Enter a key.') })}
-        />
+        {rule && (
+          <ReadField
+            label="Key"
+            mono
+            hint="Names the rule in messages. It was made from the name and does not change."
+          >
+            {rule.key}
+          </ReadField>
+        )}
         <SelectField
           label="Metric"
           options={metricOptions(rule?.metric)}

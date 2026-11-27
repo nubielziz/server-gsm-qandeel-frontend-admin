@@ -2,7 +2,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Currency } from '../types';
 import {
+  currencyDecimals,
+  currencyName,
+  currencyOptions,
+  FALLBACK_CURRENCY_CODES,
+  hasCustomCurrencyFacts,
   isBaseCurrency,
+  isoCurrencyCodes,
   isStaleRate,
   markupProblem,
   oldestUpdate,
@@ -77,5 +83,49 @@ describe('shownAs and the form checks', () => {
     expect(rateProblem('0.79')).toBeNull();
     expect(rateProblem('0')).toBe('Enter a rate above zero.');
     expect(rateProblem('')).toBe('Enter a rate above zero.');
+  });
+});
+
+describe('the ISO 4217 menu', () => {
+  it('lists the codes the browser knows, sorted, each once', () => {
+    const codes = isoCurrencyCodes();
+    expect(codes).toContain('USD');
+    expect(codes).toContain('JPY');
+    expect(codes).toEqual([...new Set(codes)].sort());
+  });
+
+  it('falls back to the built-in list when the browser cannot list the currencies', () => {
+    const real = Intl.supportedValuesOf;
+    Object.defineProperty(Intl, 'supportedValuesOf', { value: undefined, configurable: true });
+    try {
+      expect(isoCurrencyCodes()).toEqual([...FALLBACK_CURRENCY_CODES].sort());
+    } finally {
+      Object.defineProperty(Intl, 'supportedValuesOf', { value: real, configurable: true });
+    }
+  });
+
+  it('labels each option "CODE - Name", asks for a choice first and leaves out the codes already added', () => {
+    const options = currencyOptions(['GBP', 'usd']);
+    expect(options[0]).toEqual({ value: '', label: 'Choose a currency…' });
+    expect(options).toContainEqual({ value: 'CHF', label: 'CHF - Swiss Franc' });
+    expect(options.some((option) => option.value === 'GBP' || option.value === 'USD')).toBe(false);
+  });
+
+  it('works out the name and the decimals from the code, inside the server’s 0 to 4', () => {
+    expect(currencyName('CHF')).toBe('Swiss Franc');
+    expect(currencyName('chf')).toBe('Swiss Franc');
+    expect(currencyDecimals('USD')).toBe(2);
+    expect(currencyDecimals('JPY')).toBe(0);
+    expect(currencyDecimals('KWD')).toBe(3);
+    expect(currencyDecimals('CLF')).toBe(4);
+    // A code the browser rejects keeps the safe default.
+    expect(currencyDecimals('??')).toBe(2);
+    expect(currencyName('??')).toBe('??');
+  });
+
+  it('knows when a stored name or decimals differ from what the code gives', () => {
+    expect(hasCustomCurrencyFacts({ code: 'CHF', name: 'Swiss Franc', decimals: 2 })).toBe(false);
+    expect(hasCustomCurrencyFacts({ code: 'CHF', name: 'Franc', decimals: 2 })).toBe(true);
+    expect(hasCustomCurrencyFacts({ code: 'JPY', name: 'Japanese Yen', decimals: 2 })).toBe(true);
   });
 });

@@ -173,6 +173,208 @@ describe('Field: the quantity', () => {
   });
 });
 
+// Decision 035: the Label column is hidden unless the box above the table is ticked; hidden, every row sends an empty label.
+describe('Field: the Label column', () => {
+  const SHOW = 'Show buyers a different label';
+
+  /** A new IMEI service: its one field has the label IMEI, the same as its name, so the column starts hidden. */
+  async function openMade(code: string) {
+    await signInAs();
+    const made = await createService({
+      name: `Made ${code}`,
+      code,
+      categoryId: 1,
+      type: 'imei',
+      slaMinutes: 30,
+      basePrice: '4.0000',
+    });
+    await openFields(made.id, 'imei');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    return { id: made.id, fields };
+  }
+
+  it('is hidden when every label is its name, with the tick box off, and the help says what the label is for', async () => {
+    const { fields } = await openMade('IMEI-LBL-1');
+    expect(fields.getByRole('checkbox', { name: SHOW })).not.toBeChecked();
+    expect(fields.queryByRole('columnheader', { name: 'Label' })).not.toBeInTheDocument();
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
+    expect(fields.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      'No.',
+      'Name',
+      'Type',
+      'Required',
+      'Main input',
+      'Actions',
+    ]);
+    // The box sits above the table.
+    const box = fields.getByRole('checkbox', { name: SHOW });
+    const table = fields.getByRole('table', { name: 'Custom fields' });
+    expect(Boolean(box.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    const label = within(fields.getByText('How this works').closest('details') as HTMLElement)
+      .getAllByRole('listitem')
+      .find((item) => item.textContent?.startsWith('Label'));
+    expect(label).toHaveTextContent(/Show buyers a different label/);
+  });
+
+  it('starts ticked, with the column drawn for every row, when a saved label differs from its name', async () => {
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    expect(fields.getByRole('checkbox', { name: SHOW })).toBeChecked();
+    expect(fields.getByRole('columnheader', { name: 'Label' })).toBeInTheDocument();
+    expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveValue('Z3X account');
+  });
+
+  it('draws the column for every row when the box is ticked, and hides it again when it is unticked', async () => {
+    const user = userEvent.setup();
+    const { fields } = await openMade('IMEI-LBL-2');
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveValue('IMEI');
+    expect(fields.getByRole('textbox', { name: 'Label of field 2' })).toHaveValue('');
+    expect(fields.getByRole('textbox', { name: 'Label of field 2' })).toHaveAttribute(
+      'placeholder',
+      'Same as the name',
+    );
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
+  });
+
+  it('sends an empty label for every row while it is hidden, so a renamed field is renamed for buyers too', async () => {
+    const user = userEvent.setup();
+    const { id, fields } = await openMade('IMEI-LBL-3');
+    const requests = recordRequests();
+    const name = fields.getByRole('textbox', { name: 'Name of field 1' });
+    await user.clear(name);
+    await user.type(name, 'Handset IMEI');
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 2' }), 'Plan');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    const put = requests.sent().filter((request) => request.method === 'PUT');
+    expect(put).toHaveLength(1);
+    expect(put[0]?.body).toMatchObject({
+      fields: [
+        { name: 'Handset IMEI', label: '' },
+        { name: 'Plan', label: '' },
+      ],
+    });
+    // The server stored each name as its label, so the label followed the rename.
+    expect((await getService(id)).fields.map((field) => [field.name, field.label])).toEqual([
+      ['Handset IMEI', 'Handset IMEI'],
+      ['Plan', 'Plan'],
+    ]);
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
+  });
+
+  it('sends what is typed while it is shown', async () => {
+    const user = userEvent.setup();
+    const { id, fields } = await openMade('IMEI-LBL-4');
+    const requests = recordRequests();
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    await user.clear(fields.getByRole('textbox', { name: 'Label of field 1' }));
+    await user.type(fields.getByRole('textbox', { name: 'Label of field 1' }), '  Phone IMEI ');
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 2' }), 'Plan');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    const put = requests.sent().filter((request) => request.method === 'PUT');
+    expect(put[0]?.body).toMatchObject({
+      fields: [
+        { name: 'IMEI', label: 'Phone IMEI' },
+        { name: 'Plan', label: '' },
+      ],
+    });
+    expect((await getService(id)).fields.map((field) => field.label)).toEqual(['Phone IMEI', 'Plan']);
+    // The box stays ticked after the save: a label that differs is on show.
+    expect(fields.getByRole('checkbox', { name: SHOW })).toBeChecked();
+  });
+
+  it('can be saved after unticking the box on its own: the labels that differed go back to the names', async () => {
+    const user = userEvent.setup();
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
+    expect(fields.getByRole('button', { name: 'Save' })).toBeEnabled();
+    const requests = recordRequests();
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    expect(requests.sent().filter((request) => request.method === 'PUT')[0]?.body).toMatchObject({
+      fields: [{ key: 'account', name: 'user', label: '' }],
+    });
+    expect((await getService(Z3X)).fields).toMatchObject([{ key: 'account', name: 'user', label: 'user' }]);
+    expect(await fields.findByText('Saved')).toBeInTheDocument();
+    expect(fields.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('says under the box, before a save, that unticking it removes the different labels, and stops saying it once saved', async () => {
+    const user = userEvent.setup();
+    await openFields(Z3X, 'server');
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    const hint = "Saving now removes the different labels: buyers will see each field's name.";
+    // Ticked: the labels are on show, nothing is about to be removed.
+    expect(fields.queryByText(hint)).not.toBeInTheDocument();
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.getByText(hint)).toBeInTheDocument();
+    expect(fields.getByRole('checkbox', { name: SHOW })).toHaveAccessibleDescription(hint);
+    // Ticked again: the labels stay, so the line goes.
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.queryByText(hint)).not.toBeInTheDocument();
+    await user.click(fields.getByRole('checkbox', { name: SHOW }));
+    expect(fields.getByText(hint)).toBeInTheDocument();
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Fields saved')).toBeInTheDocument();
+    // Saved: every label is now its name, so there is nothing left to warn about.
+    expect(fields.queryByText(hint)).not.toBeInTheDocument();
+  });
+
+  it('says nothing about removing labels when every label is its name or empty', async () => {
+    const user = userEvent.setup();
+    const { fields } = await openMade('IMEI-LBL-6');
+    const hint = "Saving now removes the different labels: buyers will see each field's name.";
+    expect(fields.queryByText(hint)).not.toBeInTheDocument();
+    await user.click(fields.getByRole('button', { name: 'Add a field' }));
+    await user.type(fields.getByRole('textbox', { name: 'Name of field 2' }), 'Plan');
+    expect(fields.queryByText(hint)).not.toBeInTheDocument();
+  });
+
+  it('is forced on, and cannot be unticked, while a label cell holds a message of the server', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.put('*/admin/services/:id/fields', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'fields.0.label', message: 'That label is not allowed.' },
+        ]),
+      ),
+    );
+    const { fields } = await openMade('IMEI-LBL-5');
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
+    const name = fields.getByRole('textbox', { name: 'Name of field 1' });
+    await user.clear(name);
+    await user.type(name, 'Handset IMEI');
+    await user.click(fields.getByRole('button', { name: 'Save' }));
+    expect(await fields.findByText('That label is not allowed.')).toBeVisible();
+    expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveAttribute('aria-invalid', 'true');
+    const box = fields.getByRole('checkbox', { name: SHOW });
+    expect(box).toBeChecked();
+    expect(box).toBeDisabled();
+  });
+
+  it('is off for a role that may only read, as every other box of the section is', async () => {
+    await openFields(Z3X, 'server', { permissions: ['catalog:read'] });
+    const fields = section('Custom Fields');
+    await fields.findByRole('textbox', { name: 'Name of field 1' });
+    const box = fields.getByRole('checkbox', { name: SHOW });
+    expect(box).toBeDisabled();
+    expect(box).toBeChecked();
+  });
+});
+
 describe('Field: the custom fields', () => {
   it('shows one name per field, with no key and no supplier key', async () => {
     await openFields(Z3X, 'server');
@@ -666,7 +868,8 @@ describe('Field: the main input warning', () => {
     await openFields(made.id, 'imei');
     const fields = section('Custom Fields');
     expect(await fields.findByRole('textbox', { name: 'Name of field 1' })).toHaveValue('IMEI');
-    expect(fields.getByRole('textbox', { name: 'Label of field 1' })).toHaveValue('IMEI');
+    // Its label is its name, so the Label column is hidden (decision 035).
+    expect(fields.queryByRole('textbox', { name: 'Label of field 1' })).not.toBeInTheDocument();
     expect(fields.getByRole('combobox', { name: 'Type of field 1' })).toHaveValue('imei');
     expect(fields.getByRole('checkbox', { name: 'Field 1 is required' })).toBeChecked();
     expect(fields.getByRole('checkbox', { name: 'Main input of field 1' })).toBeChecked();

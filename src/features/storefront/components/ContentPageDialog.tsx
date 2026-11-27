@@ -1,8 +1,17 @@
 // ContentPageDialog: "New page" and "Edit page" (`POST` and `PATCH /admin/content-pages`) for static pages and blog posts. The demo
 // had no editor (its pages were seed rows); the map adds the routes. The body is plain Markdown in a textarea (no rich-text editor). A
-// new page is a draft; publishing is its own step. Only what changed is sent on an edit.
+// new page is a draft; publishing is its own step. Only what changed is sent on an edit. A new page has no Slug input (the server makes
+// the address from the title) and the two search texts are in the "More options" fold (decision 036).
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, SelectField, TextareaField, TextField, toast } from '@/components/ui';
+import {
+  dialogSubmit,
+  FormDialog,
+  MoreOptions,
+  SelectField,
+  TextareaField,
+  TextField,
+  toast,
+} from '@/components/ui';
 import { useCreatePage, useUpdatePage } from '../hooks/usePageMutations';
 import { kindLabel } from '../lib/kinds';
 import type { ContentPage, PageKind, UpdatePageBody } from '../types';
@@ -50,11 +59,9 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
     form,
     async (values) => {
       if (!page) {
-        const slug = values.slug.trim();
         await create.mutateAsync({
           kind: values.kind,
           title: values.title.trim(),
-          ...(slug ? { slug } : {}),
           bodyMd: values.bodyMd,
           ...(values.seoTitle.trim() ? { seoTitle: values.seoTitle.trim() } : {}),
           ...(values.seoDescription.trim() ? { seoDescription: values.seoDescription.trim() } : {}),
@@ -73,7 +80,10 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
       }
       await update.mutateAsync({ page, body });
     },
-    { fields: ['kind', ...TEXT_FIELDS] },
+    // A new page has no slug input, so a message about the address falls to the dialog's error slot.
+    {
+      fields: page ? ['kind', ...TEXT_FIELDS] : ['kind', ...TEXT_FIELDS.filter((field) => field !== 'slug')],
+    },
   );
 
   return (
@@ -103,15 +113,16 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
           error={errors.title}
           {...register('title', { validate: (value) => value.trim() !== '' || 'Enter a title.' })}
         />
-        <TextField
-          label="Slug"
-          className="mono"
-          autoComplete="off"
-          spellCheck={false}
-          hint={page ? undefined : 'Leave empty and the server makes it from the title.'}
-          error={errors.slug}
-          {...register('slug')}
-        />
+        {page && (
+          <TextField
+            label="Slug"
+            className="mono"
+            autoComplete="off"
+            spellCheck={false}
+            error={errors.slug}
+            {...register('slug')}
+          />
+        )}
         <TextareaField
           label="Text (Markdown)"
           className="mono"
@@ -120,22 +131,27 @@ export function ContentPageDialog({ page, kinds, onClose }: ContentPageDialogPro
           error={errors.bodyMd}
           {...register('bodyMd')}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField
-            label="Search title"
-            autoComplete="off"
-            hint="What Google shows as the headline."
-            error={errors.seoTitle}
-            {...register('seoTitle')}
-          />
-          <TextField
-            label="Search description"
-            autoComplete="off"
-            hint="The line under the headline."
-            error={errors.seoDescription}
-            {...register('seoDescription')}
-          />
-        </div>
+        <MoreOptions
+          defaultOpen={Boolean(page?.seoTitle || page?.seoDescription)}
+          forceOpen={Boolean(errors.seoTitle || errors.seoDescription)}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextField
+              label="Search title"
+              autoComplete="off"
+              hint="What Google shows as the headline."
+              error={errors.seoTitle}
+              {...register('seoTitle')}
+            />
+            <TextField
+              label="Search description"
+              autoComplete="off"
+              hint="The line under the headline."
+              error={errors.seoDescription}
+              {...register('seoDescription')}
+            />
+          </div>
+        </MoreOptions>
       </div>
     </FormDialog>
   );

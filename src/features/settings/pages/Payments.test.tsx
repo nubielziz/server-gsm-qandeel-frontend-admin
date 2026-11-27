@@ -106,17 +106,21 @@ describe('Add payment method', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'PayPal');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'paypal');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'paypal');
+    // A new method has no Code box (the server makes the code) and its driver is a menu that starts on Bank transfer.
+    expect(dialog.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
+    expect(dialog.getByRole('combobox', { name: 'Driver' })).toHaveValue('bank');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Driver' }), 'Card');
     await user.clear(dialog.getByRole('textbox', { name: 'Fee (%)' }));
     await user.type(dialog.getByRole('textbox', { name: 'Fee (%)' }), '3.4');
     await user.type(dialog.getByLabelText('Secret (API key)'), 'sk_live_abcd1234');
     await user.click(await dialog.findByRole('checkbox', { name: 'Wholesale' }));
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
     expect(await screen.findByText('PayPal added')).toBeInTheDocument();
-    expect(recorder.to('POST', '/admin/payment-gateways')[0].body).toMatchObject({
+    const body = recorder.to('POST', '/admin/payment-gateways')[0].body;
+    expect(body).not.toHaveProperty('code');
+    expect(body).toMatchObject({
       name: 'PayPal',
-      code: 'paypal',
+      driver: 'card',
       feePercent: '3.4',
       secret: 'sk_live_abcd1234',
       allowedGroupIds: [2],
@@ -126,6 +130,8 @@ describe('Add payment method', () => {
     expect(paypal.getByText('3.4%')).toBeInTheDocument();
     expect(document.body.textContent).not.toContain('sk_live_abcd1234');
     expect('secret' in (await listGateways()).data.at(-1)!).toBe(false);
+    // The server made the code from the name.
+    expect((await listGateways()).data.at(-1)!.code).toBe('paypal');
   });
 
   it('asks for the required fields before it calls the server', async () => {
@@ -134,8 +140,27 @@ describe('Add payment method', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     await user.click(dialogOf('Add payment method').getByRole('button', { name: 'Add payment method' }));
     expect(await dialogOf('Add payment method').findByText('Enter a name.')).toBeInTheDocument();
-    expect(dialogOf('Add payment method').getByText('Enter a code.')).toBeInTheDocument();
-    expect(dialogOf('Add payment method').getByText('Enter the driver.')).toBeInTheDocument();
+    expect(dialogOf('Add payment method').queryByText('Enter a code.')).not.toBeInTheDocument();
+  });
+
+  it('gives a second method with the same name its own code, made by the server', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await openSettings();
+    for (let round = 0; round < 2; round += 1) {
+      await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
+      const dialog = dialogOf('Add payment method');
+      await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Cash desk');
+      await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    }
+    expect(recorder.to('POST', '/admin/payment-gateways').map((post) => post.body)).toEqual([
+      expect.not.objectContaining({ code: expect.anything() }),
+      expect.not.objectContaining({ code: expect.anything() }),
+    ]);
+    const codes = (await listGateways()).data.map((gateway) => gateway.code);
+    expect(codes).toContain('cash_desk');
+    expect(codes).toContain('cash_desk_2');
   });
 
   it('puts the server’s messages under their fields', async () => {
@@ -144,11 +169,11 @@ describe('Add payment method', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'Odd');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'card');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'odd');
+    await user.clear(dialog.getByRole('textbox', { name: 'Fee (%)' }));
+    await user.type(dialog.getByRole('textbox', { name: 'Fee (%)' }), '150');
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
-    expect(await dialog.findByText('Another payment method already uses this code.')).toBeInTheDocument();
-    expect(dialog.getByRole('textbox', { name: 'Code' })).toHaveAttribute('aria-invalid', 'true');
+    expect(await dialog.findByText('Enter a percentage from 0 to 100.')).toBeInTheDocument();
+    expect(dialog.getByRole('textbox', { name: 'Fee (%)' })).toHaveAttribute('aria-invalid', 'true');
   });
 });
 

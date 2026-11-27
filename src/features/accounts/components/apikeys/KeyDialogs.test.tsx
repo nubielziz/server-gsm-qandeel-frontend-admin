@@ -39,11 +39,86 @@ const createdKey = (extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+describe('creating a key: fewer inputs (decision 035)', () => {
+  it('asks for a name and the allowed addresses; the expiry day and the limit are folded away, closed', async () => {
+    const user = userEvent.setup();
+    await openApi();
+    const dialog = await openCreate(user);
+    const within_ = within(dialog);
+    expect(within_.getByLabelText('Name')).toBeVisible();
+    expect(within_.getByLabelText('Allowed addresses')).toBeVisible();
+    const fold = within_.getByRole('button', { name: 'More options' });
+    expect(fold).toHaveAttribute('aria-expanded', 'false');
+    expect(within_.getByLabelText('Expires on')).not.toBeVisible();
+    expect(within_.getByLabelText('Limit a minute')).not.toBeVisible();
+    await user.click(fold);
+    expect(within_.getByLabelText('Expires on')).toBeVisible();
+    expect(within_.getByLabelText('Limit a minute')).toBeVisible();
+    expect(within_.getByLabelText('Limit a minute')).toHaveValue('60');
+  });
+
+  it('sends what it sent before for a form left at its defaults: the 60 a minute limit, no expiry and no addresses', async () => {
+    const user = userEvent.setup();
+    const bodies: unknown[] = [];
+    mockServer.use(
+      http.post('*/admin/clients/:id/api-keys', async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ key: createdKey({ name: 'Plain' }), secret: 'gsm_x' }, { status: 201 });
+      }),
+    );
+    await openApi();
+    const dialog = await openCreate(user);
+    await user.type(within(dialog).getByLabelText('Name'), 'Plain');
+    await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
+    await screen.findByRole('dialog', { name: 'API key Plain' });
+    expect(bodies).toEqual([{ name: 'Plain', scopes: ['dhru'], rateLimitPerMin: 60 }]);
+  });
+
+  it('opens the fold and keeps it open while a folded input holds a message of the browser', async () => {
+    const user = userEvent.setup();
+    await openApi();
+    const dialog = await openCreate(user);
+    await user.type(within(dialog).getByLabelText('Name'), 'Dated');
+    await user.click(within(dialog).getByRole('button', { name: 'More options' }));
+    await user.type(within(dialog).getByLabelText('Expires on'), '2000-01-01');
+    await user.click(within(dialog).getByRole('button', { name: 'Hide more options' }));
+    expect(within(dialog).getByLabelText('Expires on')).not.toBeVisible();
+    await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
+    expect(await within(dialog).findByText('Choose a day that is still ahead.')).toBeVisible();
+    const fold = within(dialog).getByRole('button', { name: 'Hide more options' });
+    await user.click(fold);
+    expect(within(dialog).getByLabelText('Expires on')).toBeVisible();
+    expect(within(dialog).getByLabelText('Expires on')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('shows a message of the server about a folded input, with the fold open', async () => {
+    const user = userEvent.setup();
+    mockServer.use(
+      http.post('*/admin/clients/:id/api-keys', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'rateLimitPerMin', message: 'The most this account may have is 300 a minute.' },
+        ]),
+      ),
+    );
+    await openApi();
+    const dialog = await openCreate(user);
+    await user.type(within(dialog).getByLabelText('Name'), 'Fast');
+    expect(within(dialog).getByRole('button', { name: 'More options' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
+    expect(await within(dialog).findByText('The most this account may have is 300 a minute.')).toBeVisible();
+    expect(within(dialog).getByLabelText('Limit a minute')).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
 describe('creating a key', () => {
   it('checks the form first: a name, a limit in range, and offers no scope to pick', async () => {
     const user = userEvent.setup();
     await openApi();
     const dialog = await openCreate(user);
+    await user.click(within(dialog).getByRole('button', { name: 'More options' }));
     expect(within(dialog).getByLabelText('Limit a minute')).toHaveValue('60');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     expect(await within(dialog).findByText('Name the key.')).toBeInTheDocument();
@@ -96,6 +171,7 @@ describe('creating a key', () => {
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), '  Production server ');
     await user.type(within(dialog).getByLabelText('Allowed addresses'), '203.0.113.55\n198.51.100.0/24');
+    await user.click(within(dialog).getByRole('button', { name: 'More options' }));
     await user.clear(within(dialog).getByLabelText('Limit a minute'));
     await user.type(within(dialog).getByLabelText('Limit a minute'), '120');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
@@ -135,6 +211,7 @@ describe('creating a key', () => {
     await openApi();
     const dialog = await openCreate(user);
     await user.type(within(dialog).getByLabelText('Name'), 'Dated');
+    await user.click(within(dialog).getByRole('button', { name: 'More options' }));
     await user.type(within(dialog).getByLabelText('Expires on'), '2000-01-01');
     await user.click(within(dialog).getByRole('button', { name: 'Create key' }));
     expect(await within(dialog).findByText('Choose a day that is still ahead.')).toBeInTheDocument();

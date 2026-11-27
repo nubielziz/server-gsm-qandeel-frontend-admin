@@ -79,8 +79,9 @@ describe('the form values and the bodies', () => {
   it('turns a rule into form values (numbers become text) and back into the create body', () => {
     const values = ruleValues(rule());
     expect(values).toMatchObject({ threshold: '2', windowSeconds: '300', channels: ['telegram', 'email'] });
+    // The key is not a form value: the server makes it from the name, so the create body has none.
+    expect(values).not.toHaveProperty('key');
     expect(toCreateBody(values)).toEqual({
-      key: 'api_rate5xx',
       name: 'API 5xx rate',
       metric: 'api.rate5xx',
       comparator: 'gt',
@@ -92,15 +93,20 @@ describe('the form values and the bodies', () => {
     });
   });
 
-  it('trims the name and the key, and reads decimals', () => {
+  it('trims the name and reads decimals, and sends no key', () => {
     const body = toCreateBody({
       ...BLANK_RULE,
       name: '  Slow  ',
-      key: ' slow_one ',
       threshold: '0.5',
       metric: 'api.p95',
     });
-    expect(body).toMatchObject({ name: 'Slow', key: 'slow_one', threshold: 0.5 });
+    expect(body).toMatchObject({ name: 'Slow', threshold: 0.5 });
+    expect(body).not.toHaveProperty('key');
+  });
+
+  it('never sends the key when editing, even for a rule whose key the form could have changed', () => {
+    const original = rule();
+    expect(toUpdateBody(original, { ...ruleValues(original), key: 'another_key' } as never)).toEqual({});
   });
 
   it('sends only what changed when editing', () => {

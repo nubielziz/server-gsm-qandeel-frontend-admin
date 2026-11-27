@@ -24,7 +24,7 @@ export function PaymentDialogs({
   if (!dialog) return null;
   if (dialog.kind === 'create') return <GatewayDialog onClose={onClose} />;
   if (dialog.kind === 'preset') {
-    return <GatewayDialog start={{ preset: dialog.preset, code: dialog.code }} onClose={onClose} />;
+    return <GatewayDialog start={{ preset: dialog.preset }} onClose={onClose} />;
   }
   if (dialog.kind === 'edit') return <GatewayDialog gateway={dialog.gateway} onClose={onClose} />;
   const { gateway } = dialog;

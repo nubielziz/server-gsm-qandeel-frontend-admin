@@ -17,7 +17,7 @@ function readResult(result: FormDialogResult | typeof QUANTITY_UNCHANGED): PartR
 }
 
 /**
- * Both forms, the row list and the main input setter of the fields, whether the section holds unsaved changes (`dirty`: either part does),
+ * Both forms, the row list, the main input setter and the Label column's tick box (`labels`) of the fields, whether the section holds unsaved changes (`dirty`: either part does),
  * and the one `submit` (plug it into a SectionForm). It sends only what changed: the fields when the fields are dirty, then the quantity
  * when the quantity is dirty. The parts are judged alone: a part that fails (the browser's checks or the server) does not stop the other,
  * the part that saved is reset and clean, the failed part stays dirty with its messages under its own inputs, and the section's
@@ -27,7 +27,7 @@ function readResult(result: FormDialogResult | typeof QUANTITY_UNCHANGED): PartR
 export function useFieldsSectionForm(service: ServiceDetail) {
   const custom = useCustomFieldsForm(service);
   const quantity = useQuantityForm(service);
-  const fieldsDirty = custom.form.formState.isDirty;
+  const fieldsDirty = custom.dirty;
   const quantityDirty = quantity.form.formState.isDirty;
 
   const submit = async (event: FormEvent<HTMLFormElement>): Promise<FormDialogResult> => {
@@ -49,6 +49,7 @@ export function useFieldsSectionForm(service: ServiceDetail) {
     form: custom.form,
     list: custom.list,
     setMainInput: custom.setMainInput,
+    labels: custom.labels,
     quantityForm: quantity.form,
     dirty: fieldsDirty || quantityDirty,
     submit,

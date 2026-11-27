@@ -4,8 +4,8 @@ import type { Supplier } from '../types';
 import {
   changedFields,
   cleanBaseUrl,
-  cleanCurrency,
   cleanName,
+  hasCustomLimits,
   isPositiveInt,
   moneyText,
   toCreateBody,
@@ -28,10 +28,9 @@ const nordic = {
 } as Supplier;
 
 describe('cleaning and shape checks', () => {
-  it('tidies names, addresses and currency codes', () => {
+  it('tidies names and addresses', () => {
     expect(cleanName('  Atlas   IMEI ')).toBe('Atlas IMEI');
     expect(cleanBaseUrl(' https://api.example.com/// ')).toBe('https://api.example.com');
-    expect(cleanCurrency(' usd ')).toBe('USD');
   });
 
   it('accepts an http(s) address with a host and refuses anything else', () => {
@@ -76,7 +75,6 @@ describe('toCreateBody', () => {
           name: ' Atlas  IMEI ',
           apiKey: ' sk_x ',
           baseUrl: 'https://api.atlas.example/',
-          currency: 'eur',
           lowBalanceAlert: '',
           maxConcurrency: '',
           rateLimitPerMin: '30',
@@ -89,13 +87,69 @@ describe('toCreateBody', () => {
       baseUrl: 'https://api.atlas.example',
       username: 'gsm-supply',
       apiKey: 'sk_x',
-      currency: 'EUR',
+      currency: 'USD',
       rateLimitPerMin: 30,
     });
+  });
+
+  it('sends exactly what the form sent before for a form left at its defaults: the Dhru driver, USD and no limits', () => {
+    expect(
+      toCreateBody({
+        name: 'Atlas IMEI',
+        baseUrl: 'https://api.atlas.example',
+        username: 'gsm-supply',
+        apiKey: 'sk_x',
+        lowBalanceAlert: '',
+        maxConcurrency: '',
+        rateLimitPerMin: '',
+        timeoutMs: '',
+      }),
+    ).toEqual({
+      name: 'Atlas IMEI',
+      driver: 'dhru',
+      baseUrl: 'https://api.atlas.example',
+      username: 'gsm-supply',
+      apiKey: 'sk_x',
+      currency: 'USD',
+    });
+  });
+
+  it('has no API type or currency in the form values, so none can be typed', () => {
+    expect(Object.keys(valuesOf(nordic))).toEqual([
+      'name',
+      'baseUrl',
+      'username',
+      'apiKey',
+      'lowBalanceAlert',
+      'maxConcurrency',
+      'rateLimitPerMin',
+      'timeoutMs',
+    ]);
+  });
+});
+
+describe('hasCustomLimits', () => {
+  it('is false for the defaults, which keeps the fold of "Edit connection" closed', () => {
+    expect(hasCustomLimits(nordic)).toBe(false);
+    expect(hasCustomLimits({ ...nordic, lowBalanceAlert: '150' })).toBe(false);
+  });
+
+  it.each([
+    ['the alert', { lowBalanceAlert: '200.0000' }],
+    ['the calls at a time', { maxConcurrency: 8 }],
+    ['the calls per minute', { rateLimitPerMin: 30 }],
+    ['the timeout', { timeoutMs: 20000 }],
+  ])('is true when %s is not the default, which opens the fold', (_name, change) => {
+    expect(hasCustomLimits({ ...nordic, ...change })).toBe(true);
   });
 });
 
 describe('changedFields', () => {
+  it('never sends the API type or the currency, even for a supplier that holds others', () => {
+    const rest = { ...nordic, driver: 'rest', currency: 'EUR' } as Supplier;
+    expect(changedFields(rest, values({ ...valuesOf(rest), name: 'Renamed' }))).toEqual({ name: 'Renamed' });
+  });
+
   it('is empty when nothing changed, even if the alert is typed another way', () => {
     expect(changedFields(nordic, values())).toEqual({});
     expect(changedFields(nordic, values({ lowBalanceAlert: '150' }))).toEqual({});

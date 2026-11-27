@@ -1,11 +1,18 @@
 // RuleDialog: "New rule" and "Edit rule" for a pricing rule (`POST` and `PATCH /admin/pricing-rules`). The demo only had the one-click
 // "Add promo: Carrier unlock -2%" button (`cat-on`); this is the general form: what the rule covers, which rank, whether it
-// adds (margin) or takes from (discount, promo) the price, by a percentage and/or a fixed amount, with rounding, priority and dates.
-// Only what changed is sent on an edit.
+// adds (margin) or takes from (discount, promo) the price, by a percentage and/or a fixed amount. Rounding, minimum profit, priority and
+// the dates sit in a "More options" fold (decision 035). Only what changed is sent on an edit.
 import { useForm } from 'react-hook-form';
-import { dialogSubmit, FormDialog, SelectField, TextField, toast } from '@/components/ui';
+import { dialogSubmit, FormDialog, MoreOptions, SelectField, TextField, toast } from '@/components/ui';
 import { useCreateRule, useUpdateRule } from '../hooks/usePricingRules';
-import { buildRuleBody, changedRuleFields, ruleValues, type RuleValues } from '../lib/ruleForm';
+import {
+  buildRuleBody,
+  changedRuleFields,
+  hasCustomRuleOptions,
+  RULE_FOLDED_FIELDS,
+  ruleValues,
+  type RuleValues,
+} from '../lib/ruleForm';
 import { ROUNDING_OPTIONS } from '../lib/rules';
 import type { PricingRule } from '../types';
 import { RuleScopeFields } from './RuleScopeFields';
@@ -16,7 +23,10 @@ export interface RuleDialogProps {
   onClose: () => void;
 }
 
-/** Creates a rule, or edits the one it is given. */
+/**
+ * Creates a rule, or edits the one it is given. The folded inputs keep their defaults and are sent as before; the fold starts open when the
+ * rule being edited holds a value that is not the default, and stays open while any of its inputs has a message.
+ */
 export function RuleDialog({ rule, onClose }: RuleDialogProps) {
   const create = useCreateRule();
   const update = useUpdateRule();
@@ -27,6 +37,7 @@ export function RuleDialog({ rule, onClose }: RuleDialogProps) {
     formState: { errors },
   } = form;
   const scope = watch('scope');
+  const foldHasError = RULE_FOLDED_FIELDS.some((name) => Boolean(errors[name]));
 
   const submit = dialogSubmit(
     form,
@@ -81,47 +92,51 @@ export function RuleDialog({ rule, onClose }: RuleDialogProps) {
             {...register('fixed')}
           />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <SelectField
-            label="Rounding"
-            selectWrapClassName="w-full"
-            options={ROUNDING_OPTIONS}
-            error={errors.rounding}
-            {...register('rounding')}
-          />
-          <TextField
-            label="Minimum profit (USD)"
-            inputMode="decimal"
-            autoComplete="off"
-            hint="Optional."
-            error={errors.minProfit}
-            {...register('minProfit')}
-          />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <TextField
-            label="Priority"
-            inputMode="numeric"
-            autoComplete="off"
-            hint="Decides the order when rules overlap."
-            error={errors.priority}
-            {...register('priority')}
-          />
-          <TextField
-            label="Starts"
-            type="date"
-            hint="Optional."
-            error={errors.startsAt}
-            {...register('startsAt')}
-          />
-          <TextField
-            label="Ends"
-            type="date"
-            hint="Optional."
-            error={errors.endsAt}
-            {...register('endsAt')}
-          />
-        </div>
+        <MoreOptions defaultOpen={hasCustomRuleOptions(rule)} forceOpen={foldHasError}>
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <SelectField
+                label="Rounding"
+                selectWrapClassName="w-full"
+                options={ROUNDING_OPTIONS}
+                error={errors.rounding}
+                {...register('rounding')}
+              />
+              <TextField
+                label="Minimum profit (USD)"
+                inputMode="decimal"
+                autoComplete="off"
+                hint="Optional."
+                error={errors.minProfit}
+                {...register('minProfit')}
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <TextField
+                label="Priority"
+                inputMode="numeric"
+                autoComplete="off"
+                hint="Decides the order when rules overlap."
+                error={errors.priority}
+                {...register('priority')}
+              />
+              <TextField
+                label="Starts"
+                type="date"
+                hint="Optional."
+                error={errors.startsAt}
+                {...register('startsAt')}
+              />
+              <TextField
+                label="Ends"
+                type="date"
+                hint="Optional."
+                error={errors.endsAt}
+                {...register('endsAt')}
+              />
+            </div>
+          </div>
+        </MoreOptions>
       </div>
     </FormDialog>
   );

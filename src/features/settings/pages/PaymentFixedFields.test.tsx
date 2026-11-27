@@ -140,21 +140,67 @@ describe('a custom method', () => {
       }),
     );
     const dialog = dialogOf('Edit Card gateway');
-    const driver = dialog.getByRole('textbox', { name: 'Driver' });
+    // A custom method's driver is a menu of the four kinds, with the stored one chosen.
+    expect(dialog.queryByRole('textbox', { name: 'Driver' })).not.toBeInTheDocument();
+    const driver = dialog.getByRole('combobox', { name: 'Driver' });
     const manual = dialog.getByRole('checkbox', { name: MANUAL });
-    expect(driver).not.toHaveAttribute('readonly');
+    expect(driver).toHaveValue('card');
+    expect(
+      within(driver)
+        .getAllByRole('option')
+        .map((option) => [option.getAttribute('value'), option.textContent]),
+    ).toEqual([
+      ['bank', 'Bank transfer'],
+      ['card', 'Card'],
+      ['crypto', 'Crypto'],
+      ['wise', 'Wise'],
+    ]);
     expect(manual).not.toHaveAttribute('aria-disabled');
     expect(dialog.queryByText(HINT)).not.toBeInTheDocument();
-    await user.clear(driver);
-    await user.type(driver, 'paypal');
+    await user.selectOptions(driver, 'Wise');
     await user.click(manual);
     expect(manual).toBeChecked();
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Card gateway saved')).toBeInTheDocument();
     expect(recorder.to('PATCH', '/admin/payment-gateways/1')[0].body).toEqual({
-      driver: 'paypal',
+      driver: 'wise',
       isManual: true,
     });
+  });
+
+  it('keeps a stored driver the menu does not know chosen and shown as it is, and does not send it again', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await signInAs();
+    await createGateway({
+      code: 'cliq',
+      driver: 'cliq',
+      name: 'CliQ',
+      audience: 'b2c',
+      feePercent: '0',
+      feeFixed: '0',
+      minAmount: '0',
+      maxAmount: '0',
+      allowedGroupIds: [],
+      supportsRefunds: false,
+      supports3ds: false,
+      isManual: true,
+      instructions: '',
+      holdHours: 0,
+      isActive: false,
+    });
+    await openSettings();
+    await user.click(
+      within(await screen.findByRole('article', { name: 'CliQ' })).getByRole('button', { name: 'Edit CliQ' }),
+    );
+    const dialog = dialogOf('Edit CliQ');
+    const driver = dialog.getByRole('combobox', { name: 'Driver' });
+    expect(driver).toHaveValue('cliq');
+    expect(within(driver).getByRole('option', { name: 'cliq' })).toBeInTheDocument();
+    await user.type(dialog.getByRole('textbox', { name: 'Name' }), ' Jordan');
+    await user.click(dialog.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText('CliQ Jordan saved')).toBeInTheDocument();
+    expect(recorder.to('PATCH', '/admin/payment-gateways/5')[0].body).toEqual({ name: 'CliQ Jordan' });
   });
 
   it('keeps them free in the Add custom method dialog', async () => {
@@ -162,8 +208,10 @@ describe('a custom method', () => {
     await openSettings();
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'cliq');
-    expect(dialog.getByRole('textbox', { name: 'Driver' })).toHaveValue('cliq');
+    // A new custom method starts on Bank transfer and may change it.
+    expect(dialog.getByRole('combobox', { name: 'Driver' })).toHaveValue('bank');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Driver' }), 'Crypto');
+    expect(dialog.getByRole('combobox', { name: 'Driver' })).toHaveValue('crypto');
     await user.click(dialog.getByRole('checkbox', { name: MANUAL }));
     expect(dialog.getByRole('checkbox', { name: MANUAL })).toBeChecked();
     expect(dialog.queryByText(HINT)).not.toBeInTheDocument();

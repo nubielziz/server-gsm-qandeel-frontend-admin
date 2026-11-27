@@ -140,6 +140,7 @@ describe('Import codes', () => {
     await user.paste('UT-9001-ZZZ1\nUT-9002-ZZZ2\n\nUT-9001-ZZZ1\nUT-1000-A1B2\nabc\n');
     expect(screen.getByText('5 codes ready.')).toBeInTheDocument();
     await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true));
+    await user.click(screen.getByRole('button', { name: 'More options' }));
     await user.type(screen.getByRole('textbox', { name: 'Batch reference' }), 'INV-77');
     await user.click(screen.getByRole('button', { name: 'Import codes' }));
 
@@ -190,13 +191,33 @@ describe('Import codes', () => {
     const { onDirtyChange } = await show();
     await user.click(codesBox());
     await user.paste('UT-9001-ZZZ1');
+    await user.click(screen.getByRole('button', { name: 'More options' }));
     await user.type(screen.getByRole('textbox', { name: 'Batch reference' }), 'bad ref');
+    // Fold it again: the message must open it, so nothing wrong is out of sight.
+    await user.click(screen.getByRole('button', { name: 'Hide more options' }));
+    expect(screen.getByLabelText('Batch reference')).not.toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Import codes' }));
     expect(
       await screen.findByText('Use 1 to 40 letters, digits, dots, underscores or hyphens.'),
-    ).toBeInTheDocument();
+    ).toBeVisible();
+    expect(screen.getByRole('textbox', { name: 'Batch reference' })).toHaveAttribute('aria-invalid', 'true');
     expect(codesBox()).toHaveValue('UT-9001-ZZZ1');
     expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it('folds the Batch reference away and sends no reference when none is typed', async () => {
+    const user = userEvent.setup();
+    await show();
+    expect(screen.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByLabelText('Batch reference')).not.toBeVisible();
+    const requests = recordRequests();
+    await user.click(codesBox());
+    await user.paste('UT-9001-ZZZ1\nUT-9002-ZZZ2');
+    await user.click(screen.getByRole('button', { name: 'Import codes' }));
+    expect(await screen.findByText(/Imported 2 codes\./)).toBeInTheDocument();
+    const posts = requests.sent().filter((sent) => sent.method === 'POST');
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.body).toEqual({ codes: ['UT-9001-ZZZ1', 'UT-9002-ZZZ2'] });
   });
 
   it('puts the server’s refusal of a service that is not delivered from code stock under the codes box', async () => {

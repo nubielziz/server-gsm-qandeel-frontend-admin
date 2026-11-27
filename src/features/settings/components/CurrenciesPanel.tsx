@@ -104,7 +104,9 @@ export function CurrenciesPanel() {
           </>
         )}
       </Panel>
-      {dialog?.kind === 'create' && <CurrencyDialog onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'create' && (
+        <CurrencyDialog existingCodes={currencies.map((c) => c.code)} onClose={() => setDialog(null)} />
+      )}
       {dialog?.kind === 'edit' && (
         <CurrencyDialog currency={dialog.currency} onClose={() => setDialog(null)} />
       )}

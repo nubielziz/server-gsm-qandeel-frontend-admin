@@ -1,5 +1,5 @@
-// ConnectDialog: "Connect supplier" (the demo's `sup-connect` action): name, API type, base URL, account, API key, currency and
-// limits. The demo faked the save ("This demo has no real suppliers to connect to"); here `POST /admin/suppliers` stores the
+// ConnectDialog: "Connect supplier" (the demo's `sup-connect` action): name, base URL, account and API key, with the alert and limits in a
+// "More options" fold (decision 035); the API type and currency are not asked, a new supplier is sent the Dhru driver and USD. The demo faked the save ("This demo has no real suppliers to connect to"); here `POST /admin/suppliers` stores the
 // supplier, and the page offers to test the connection right after.
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -11,11 +11,9 @@ import { SupplierFields } from './SupplierFields';
 
 const EMPTY: SupplierFormValues = {
   name: '',
-  driver: 'dhru',
   baseUrl: '',
   username: '',
   apiKey: '',
-  currency: 'USD',
   lowBalanceAlert: '',
   maxConcurrency: '',
   rateLimitPerMin: '',

@@ -8,8 +8,8 @@ import type { GatewayValues } from './GatewayFields';
 const STORED = (hint: string) =>
   `Stored (${hint}). Write-only: type a new one to replace it, or leave empty to keep it.`;
 
-/** The path the provider is told to call; the code is part of it, so it is the fixed code of the gateway or what is typed so far. */
-const webhookPathOf = (code: string) => `/webhooks/payments/${code.trim() || '<code>'}`;
+/** The path the provider is told to call; the code is part of it, so it is known once the method is saved (the server makes the code). */
+const webhookPathOf = (code: string) => `/webhooks/payments/${code}`;
 
 /** The secrets of one gateway. `gateway` is set when editing (its hints say what is stored). */
 export function GatewaySecretFields({
@@ -28,7 +28,7 @@ export function GatewaySecretFields({
   const manual = watch('isManual');
   const removed = watch('secondaryRemoved');
   const secondaryHint = gateway?.secondaryWebhookSecretHint;
-  const webhookPath = webhookPathOf(gateway?.code ?? watch('code'));
+  const webhookPath = gateway ? webhookPathOf(gateway.code) : null;
   return (
     <div className="space-y-3">
       <TextField
@@ -85,10 +85,16 @@ export function GatewaySecretFields({
           </div>
           <div>
             <span className="label">Webhook address to register at the provider</span>
-            <div className="flex items-center gap-1.5">
-              <code className="text-xs text-ink2">{webhookPath}</code>
-              <CopyButton value={webhookPath} label="webhook address" />
-            </div>
+            {webhookPath ? (
+              <div className="flex items-center gap-1.5">
+                <code className="text-xs text-ink2">{webhookPath}</code>
+                <CopyButton value={webhookPath} label="webhook address" />
+              </div>
+            ) : (
+              <p className="text-sm text-ink2">
+                Made when you save, from the method’s code. Open Edit on the method to copy it.
+              </p>
+            )}
             <p className="hint">
               One address for payments, refunds and disputes. Type the secret the provider shows for it above.
             </p>

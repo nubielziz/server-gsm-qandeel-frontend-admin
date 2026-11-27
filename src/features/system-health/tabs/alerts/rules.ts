@@ -94,10 +94,9 @@ export const CHANNEL_OPTIONS: readonly { value: AlertChannel; label: string }[] 
   { value: 'email', label: 'Email' },
 ];
 
-/** The rule form as the fields hold it: numbers are text until they are sent. */
+/** The rule form as the fields hold it: numbers are text until they are sent. The key is not a field: the server makes it. */
 export interface RuleValues {
   name: string;
-  key: string;
   metric: string;
   comparator: AlertComparator;
   threshold: string;
@@ -110,7 +109,6 @@ export interface RuleValues {
 /** A new rule starts switched on, watching nothing yet; the channel and the window are the usual ones. */
 export const BLANK_RULE: RuleValues = {
   name: '',
-  key: '',
   metric: '',
   comparator: 'gt',
   threshold: '',
@@ -124,7 +122,6 @@ export const BLANK_RULE: RuleValues = {
 export function ruleValues(rule: AlertRule): RuleValues {
   return {
     name: rule.name,
-    key: rule.key,
     metric: rule.metric,
     comparator: rule.comparator,
     threshold: String(rule.threshold),
@@ -135,10 +132,9 @@ export function ruleValues(rule: AlertRule): RuleValues {
   };
 }
 
-/** The body of `POST /admin/alert-rules`. */
+/** The body of `POST /admin/alert-rules`, without a key: the server makes it from the name. */
 export function toCreateBody(values: RuleValues): CreateAlertRuleBody {
   return {
-    key: values.key.trim(),
     name: values.name.trim(),
     metric: values.metric,
     comparator: values.comparator,
@@ -155,12 +151,12 @@ const sameList = (a: readonly string[], b: readonly string[]) =>
 
 /**
  * The body of `PATCH /admin/alert-rules/:id`: only the fields the staff member changed, so an untouched field is never
- * checked again (a legacy metric the form does not know stays as it is) and the audit log shows what was edited.
+ * checked again (a legacy metric the form does not know stays as it is) and the audit log shows what was edited. The key is never
+ * sent: it names the rule in messages and does not change.
  */
 export function toUpdateBody(rule: AlertRule, values: RuleValues): UpdateAlertRuleBody {
   const next = toCreateBody(values);
   const body: UpdateAlertRuleBody = {};
-  if (next.key !== rule.key) body.key = next.key;
   if (next.name !== rule.name) body.name = next.name;
   if (next.metric !== rule.metric) body.metric = next.metric;
   if (next.comparator !== rule.comparator) body.comparator = next.comparator;

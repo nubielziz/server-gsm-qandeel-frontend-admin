@@ -1,6 +1,7 @@
-// MessageFields: section 4 of the composer: the message. A title and a body with a character counter, a hint for `{{name}}`, and a link field for each
-// kind of person the audience reaches.
+// MessageFields: section 4 of the composer: the message. A title and a body with a character counter, a hint for `{{name}}`, and a link menu for each
+// kind of person the audience reaches (decision 036).
 import { TextareaField, TextField } from '@/components/ui';
+import { LinkField } from './LinkField';
 import {
   BODY_MAX,
   targetedLinks,
@@ -16,11 +17,19 @@ export interface MessageFieldsProps {
   errors: Problems;
 }
 
-const LINKS: Record<LinkKey, { label: string; placeholder: string }> = {
-  staff: { label: 'Link for staff', placeholder: '/orders' },
-  // A merchant link must be a page of the merchant portal: the server refuses anything outside /merchant.
-  merchant: { label: 'Link for merchants', placeholder: '/merchant/orders' },
-  customer: { label: 'Link for retail accounts', placeholder: '/account/orders' },
+const LINKS: Record<LinkKey, { label: string; boxLabel: string; placeholder: string }> = {
+  staff: { label: 'Link for staff', boxLabel: 'Page address for staff', placeholder: '/orders' },
+  // A merchant link must be a page of the account area: the server refuses anything outside /account (backend decision 064).
+  merchant: {
+    label: 'Link for merchants',
+    boxLabel: 'Page address for merchants',
+    placeholder: '/account/orders',
+  },
+  customer: {
+    label: 'Link for retail accounts',
+    boxLabel: 'Page address for retail accounts',
+    placeholder: '/account/orders',
+  },
 };
 
 export function MessageFields({ form, onChange, errors }: MessageFieldsProps) {
@@ -59,14 +68,15 @@ export function MessageFields({ form, onChange, errors }: MessageFieldsProps) {
           {targetedLinks(form.audience).map((key) => {
             const link = LINKS[key];
             return (
-              <TextField
+              <LinkField
                 key={key}
+                linkKey={key}
                 label={link.label}
+                boxLabel={link.boxLabel}
                 placeholder={link.placeholder}
-                hint="A path on the site that starts with one /, no address."
                 value={form.link[key]}
                 error={errors[`link.${key}`]}
-                onChange={(event) => onChange({ link: { ...form.link, [key]: event.target.value } })}
+                onChange={(value) => onChange({ link: { ...form.link, [key]: value } })}
               />
             );
           })}

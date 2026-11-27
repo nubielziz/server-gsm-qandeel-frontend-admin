@@ -221,6 +221,7 @@ describe('Import codes', () => {
     await user.click(dialog.getByRole('textbox', { name: 'Codes' }));
     await user.paste('UT-9001-ZZZ1\nUT-9002-ZZZ2\n\nUT-9001-ZZZ1\nUT-1000-A1B2\nabc\n');
     expect(dialog.getByText('5 codes ready.')).toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.type(dialog.getByRole('textbox', { name: 'Batch reference' }), 'INV-77');
     await user.click(dialog.getByRole('button', { name: 'Import 5 codes' }));
 
@@ -242,6 +243,25 @@ describe('Import codes', () => {
     const added = (await listInventoryCodes({ filters: { serviceId: UNLOCKTOOL, status: 'available' } }))
       .data;
     expect(added.find((code) => code.maskedCode.endsWith('ZZZ2'))).toMatchObject({ batchRef: 'INV-77' });
+  });
+
+  it('folds the Batch reference away and sends no reference when none is typed', async () => {
+    const user = userEvent.setup();
+    await openProducts(`${INVENTORY}&service=${UNLOCKTOOL}`);
+    const dialog = await openImport(user);
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+    expect(dialog.getByLabelText('Batch reference')).not.toBeVisible();
+    const requests = recordRequests();
+    await user.click(dialog.getByRole('textbox', { name: 'Codes' }));
+    await user.paste('UT-9001-ZZZ1\nUT-9002-ZZZ2');
+    await user.click(dialog.getByRole('button', { name: 'Import 2 codes' }));
+    await screen.findByRole('dialog', { name: 'Import finished' });
+    // The recorder spies on fetch for the rest of the file, so look at the last import only.
+    const imports = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/inventory/import'));
+    expect(imports.at(-1)?.body).toEqual({ codes: ['UT-9001-ZZZ1', 'UT-9002-ZZZ2'] });
+    requests.stop();
   });
 
   it('reads a text file into the box, one code per line', async () => {

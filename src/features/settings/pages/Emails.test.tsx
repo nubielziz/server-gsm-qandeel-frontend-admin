@@ -1,13 +1,14 @@
 // Tests for the Customer emails tab, run through the whole app against the dev mock API: the templates and their menus, the Send switch
 // with the check before a receipt goes off, the server's preview as text and as sandboxed HTML, new, edit and delete, permissions.
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
-import { getTemplate, listTemplates } from '../api';
+import { createTemplate, getTemplate, listTemplates } from '../api';
+import { signInAs } from '@/test/renderApp';
 import { dialogOf, openSettings, rowOf } from '../test/settingsPage';
 import { recordRequests } from '../test/requests';
 
@@ -250,7 +251,9 @@ describe('Edit', () => {
       (await rowOf(TABLE, 'Order received')).getByRole('button', { name: 'Edit Order received' }),
     );
     const dialog = dialogOf('Edit Order received');
-    expect(dialog.getByRole('textbox', { name: 'Event' })).toHaveAttribute('readonly');
+    // The event of a saved template is fixed: the menu shows it, in words, and cannot change.
+    expect(dialog.getByRole('combobox', { name: 'Event' })).toBeDisabled();
+    expect(dialog.getByRole('combobox', { name: 'Event' })).toHaveValue('order.received');
     await user.clear(dialog.getByRole('textbox', { name: 'Subject' }));
     await user.type(dialog.getByRole('textbox', { name: 'Subject' }), 'Thanks for your order');
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
@@ -295,17 +298,78 @@ describe('Edit', () => {
 describe('New template', () => {
   it('adds an email template, with no channel to choose', async () => {
     const user = userEvent.setup();
+    const recorder = recordRequests();
     await openSettings(EMAILS);
     await user.click(await screen.findByRole('button', { name: 'New template' }));
     const dialog = dialogOf('New template');
-    await user.type(dialog.getByRole('textbox', { name: 'Event' }), 'refund.issued');
+    expect(dialog.queryByRole('textbox', { name: 'Event' })).not.toBeInTheDocument();
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Event' }), 'Refund declined');
     expect(dialog.queryByRole('textbox', { name: 'Language' })).not.toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Subject' }), 'Your refund');
-    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'We refunded your money.');
+    await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'We could not refund your money.');
     expect(dialog.queryByRole('combobox', { name: 'Channel' })).not.toBeInTheDocument();
     await user.click(dialog.getByRole('button', { name: 'Create template' }));
-    expect(await screen.findByText('Refund issued added')).toBeInTheDocument();
-    expect((await rowOf(TABLE, 'Refund issued')).getByText('Customer · Email')).toBeInTheDocument();
+    expect(await screen.findByText('Refund declined added')).toBeInTheDocument();
+    expect((await rowOf(TABLE, 'Refund declined')).getByText('Customer · Email')).toBeInTheDocument();
+    // The key is what the menu holds, sent as before.
+    expect(recorder.to('POST', '/admin/notification-templates')[0].body).toEqual({
+      event: 'refund.declined',
+      channel: 'email',
+      audience: 'customer',
+      subject: 'Your refund',
+      body: 'We could not refund your money.',
+      isActive: true,
+    });
+  });
+
+  it('offers the events of the audience it is sent to, and starts the choice again when the audience changes', async () => {
+    const user = userEvent.setup();
+    await openSettings(EMAILS);
+    await user.click(await screen.findByRole('button', { name: 'New template' }));
+    const dialog = dialogOf('New template');
+    const event = dialog.getByRole('combobox', { name: 'Event' });
+    const words = () =>
+      within(event)
+        .getAllByRole('option')
+        .map((option) => option.textContent);
+    expect(words()[0]).toBe('Choose an event…');
+    expect(words()).toContain('Support reply');
+    expect(words()).toContain('Wallet frozen');
+    expect(words()).not.toContain('Wallet low balance');
+    await user.selectOptions(event, 'Wallet frozen');
+    expect(event).toHaveValue('wallet.frozen');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Sent to' }), 'Merchant');
+    expect(event).toHaveValue('');
+    expect(words()).toContain('Wallet low balance');
+    // A merchant has its own support texts (the reply and the receipt of a ticket), and none of the customer's wallet mails.
+    expect(words()).toContain('Support reply');
+    expect(words()).toContain('Support ticket received');
+    expect(words()).not.toContain('Wallet frozen');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Sent to' }), 'Staff');
+    expect(words()).toContain('Alert fired');
+    await user.selectOptions(event, 'Alert fired');
+    expect(event).toHaveValue('alert.fired');
+  });
+
+  it('keeps a saved event the menu does not know chosen and shown in words', async () => {
+    const user = userEvent.setup();
+    await signInAs();
+    await createTemplate({
+      event: 'refund.issued',
+      channel: 'email',
+      audience: 'customer',
+      subject: 'Your refund',
+      body: 'Refunded.',
+      isActive: true,
+    });
+    await openSettings(EMAILS);
+    await user.click(
+      (await rowOf(TABLE, 'Refund issued')).getByRole('button', { name: 'Edit Refund issued' }),
+    );
+    const dialog = dialogOf('Edit Refund issued');
+    const event = dialog.getByRole('combobox', { name: 'Event' });
+    expect(event).toHaveValue('refund.issued');
+    expect(within(event).getByRole('option', { name: 'Refund issued' })).toBeInTheDocument();
   });
 
   it('shows the server’s message when the same template already exists', async () => {
@@ -313,14 +377,14 @@ describe('New template', () => {
     await openSettings(EMAILS);
     await user.click(await screen.findByRole('button', { name: 'New template' }));
     const dialog = dialogOf('New template');
-    await user.type(dialog.getByRole('textbox', { name: 'Event' }), 'order.received');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Event' }), 'Order received');
     await user.type(dialog.getByRole('textbox', { name: 'Subject' }), 'Again');
     await user.type(dialog.getByRole('textbox', { name: 'Message' }), 'Again.');
     await user.click(dialog.getByRole('button', { name: 'Create template' }));
     expect(
       await dialog.findByText('A template for this event, channel and audience already exists.'),
     ).toBeInTheDocument();
-    expect(dialog.getByRole('textbox', { name: 'Event' })).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('combobox', { name: 'Event' })).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('asks for the event, subject and message first', async () => {
@@ -329,7 +393,7 @@ describe('New template', () => {
     await user.click(await screen.findByRole('button', { name: 'New template' }));
     await user.click(dialogOf('New template').getByRole('button', { name: 'Create template' }));
     const dialog = dialogOf('New template');
-    expect(await dialog.findByText('Enter the event.')).toBeInTheDocument();
+    expect(await dialog.findByText('Choose an event.')).toBeInTheDocument();
     expect(dialog.getByText('An email needs a subject.')).toBeInTheDocument();
     expect(dialog.getByText('Write the message.')).toBeInTheDocument();
   });

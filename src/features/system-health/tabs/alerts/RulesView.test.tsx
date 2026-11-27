@@ -252,7 +252,9 @@ describe('Edit', () => {
   it("fills the form with the rule's own values", async () => {
     const { dialog } = await openEdit();
     expect(dialog.getByLabelText('Name')).toHaveValue('API 5xx rate');
-    expect(dialog.getByLabelText('Key')).toHaveValue('api_rate5xx');
+    // The key is shown as a plain value, never as an input.
+    expect(dialog.queryByRole('textbox', { name: 'Key' })).not.toBeInTheDocument();
+    expect(dialog.getByRole('group', { name: 'Key' })).toHaveTextContent('api_rate5xx');
     expect(dialog.getByLabelText('Metric')).toHaveValue('api.rate5xx');
     expect(dialog.getByLabelText('Fires when it is')).toHaveValue('gt');
     expect(dialog.getByLabelText('Threshold')).toHaveValue(2);
@@ -299,15 +301,12 @@ describe('Edit', () => {
     const windowField = dialog.getByLabelText('For (seconds)');
     await user.clear(windowField);
     await user.type(windowField, '30');
-    const key = dialog.getByLabelText('Key');
-    await user.clear(key);
-    await user.type(key, 'api_p95_latency');
+    const severity = dialog.getByLabelText('Severity');
+    await user.selectOptions(severity, 'info');
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() => expect(windowField).toHaveAttribute('aria-invalid', 'true'), SLOW);
     expect(dialog.getByText('Enter a whole number of seconds from 60 to 86400.')).toBeInTheDocument();
-    expect(key).toHaveAttribute('aria-invalid', 'true');
-    expect(dialog.getByText('A rule with this key already exists.')).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Edit alert rule' })).toBeInTheDocument();
     expect(windowField).toHaveValue(30);
   });
@@ -427,23 +426,29 @@ describe('New rule', () => {
     await user.click(dialog.getByRole('checkbox', { name: 'Telegram' }));
     await user.click(dialog.getByRole('button', { name: 'Create rule' }));
     expect(await dialog.findByText('Enter a name.')).toBeInTheDocument();
-    expect(dialog.getByText('Enter a key.')).toBeInTheDocument();
+    // A new rule has no key to ask for: the server makes it from the name.
+    expect(dialog.queryByLabelText('Key')).not.toBeInTheDocument();
+    expect(dialog.queryByText('Enter a key.')).not.toBeInTheDocument();
     expect(dialog.getByText('Choose a metric.')).toBeInTheDocument();
     expect(dialog.getByText('Enter a number.')).toBeInTheDocument();
     expect(dialog.getByText('Choose at least one channel.')).toBeInTheDocument();
     expect(writes).toHaveLength(0);
   });
 
-  it("puts the server's message about the key under it", async () => {
+  it('shows a server message about the key in the dialog, as a new rule has no key box', async () => {
+    mockServer.use(
+      http.post('*/admin/alert-rules', () =>
+        problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+          { field: 'key', message: 'A rule with this key already exists.' },
+        ]),
+      ),
+    );
     const { user, dialog } = await openNew();
     await user.type(dialog.getByLabelText('Name'), 'Webhook backlog');
-    await user.type(dialog.getByLabelText('Key'), 'Bad Key');
     await user.selectOptions(dialog.getByLabelText('Metric'), 'queue.oldest_age');
     await user.type(dialog.getByLabelText('Threshold'), '300');
     await user.click(dialog.getByRole('button', { name: 'Create rule' }));
-    const key = dialog.getByLabelText('Key');
-    await waitFor(() => expect(key).toHaveAttribute('aria-invalid', 'true'), SLOW);
-    expect(dialog.getByText(/^Use 3 to 41 lowercase letters/)).toBeInTheDocument();
+    expect(await dialog.findByText(/A rule with this key already exists\./, undefined, SLOW)).toBeVisible();
     expect(screen.getByRole('dialog', { name: 'New alert rule' })).toBeInTheDocument();
   });
 
@@ -451,7 +456,6 @@ describe('New rule', () => {
     const writes = recordRequests('post', '/admin/alert-rules');
     const { user, table, dialog } = await openNew();
     await user.type(dialog.getByLabelText('Name'), 'Webhook backlog');
-    await user.type(dialog.getByLabelText('Key'), 'webhook_backlog');
     await user.selectOptions(dialog.getByLabelText('Metric'), 'queue.oldest_age');
     expect(dialog.getByText('In seconds.')).toBeInTheDocument();
     await user.selectOptions(dialog.getByLabelText('Fires when it is'), 'gte');
@@ -460,8 +464,9 @@ describe('New rule', () => {
     await user.click(dialog.getByRole('button', { name: 'Create rule' }));
 
     await waitFor(() => expect(writes).toHaveLength(1), SLOW);
+    // No key is sent: the server makes it from the name.
+    expect(writes[0].body).not.toHaveProperty('key');
     expect(writes[0].body).toEqual({
-      key: 'webhook_backlog',
       name: 'Webhook backlog',
       metric: 'queue.oldest_age',
       comparator: 'gte',
@@ -474,6 +479,30 @@ describe('New rule', () => {
     expect(await screen.findByText('Alert rule created')).toBeInTheDocument();
     await waitFor(() => expect(table.getByText('Webhook backlog')).toBeInTheDocument(), SLOW);
     expect(rowOf(table, 'Webhook backlog').getByText('≥ 5m for 5m')).toBeInTheDocument();
+    expect(rowOf(table, 'Webhook backlog').getByText('webhook_backlog')).toBeInTheDocument();
+  });
+
+  it('gets its own key from the server when another rule already has the one the name makes', async () => {
+    const writes = recordRequests('post', '/admin/alert-rules');
+    const { user, dialog: first } = await openNew();
+    let dialog = first;
+    for (const round of [1, 2]) {
+      await user.type(dialog.getByLabelText('Name'), 'Webhook backlog');
+      await user.selectOptions(dialog.getByLabelText('Metric'), 'queue.oldest_age');
+      await user.type(dialog.getByLabelText('Threshold'), '300');
+      await user.click(dialog.getByRole('button', { name: 'Create rule' }));
+      await waitFor(() => expect(writes).toHaveLength(round), SLOW);
+      await waitFor(
+        () => expect(screen.queryByRole('dialog', { name: 'New alert rule' })).not.toBeInTheDocument(),
+        SLOW,
+      );
+      if (round === 1) {
+        await user.click(screen.getByRole('button', { name: 'New rule' }));
+        dialog = within(await screen.findByRole('dialog', { name: 'New alert rule' }));
+      }
+    }
+    expect(await screen.findByText('webhook_backlog_2', undefined, SLOW)).toBeInTheDocument();
+    expect(screen.getByText('webhook_backlog')).toBeInTheDocument();
   });
 });
 

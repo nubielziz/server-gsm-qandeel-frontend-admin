@@ -1,14 +1,14 @@
 // AddAccountFields: the rows of +Add Account, label on the left and control on the right (the layout the owner asked for): Name, Email, Rank,
 // Country, Phone, then Company and Credit limit for a merchant rank, then how the password is given. The Rank menu decides which rows are
-// there: a retail account has a country picked from the shop's list and no company or credit; a merchant rank has a country typed as two
-// letters, a company and (when the rank allows credit) a credit limit. It owns no request: the save belongs to the view.
+// there: a retail account has a country picked from the shop's list and no company or credit; a merchant rank has a country picked from
+// every ISO country (decision 035), a company and (when the rank allows credit) a credit limit. It owns no request: the save belongs to the view.
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router';
 import { FormRow, SelectField, TextField } from '@/components/ui';
 import { accountsListPath } from '../../lib/paths';
 import type { Rank } from '../../types';
 import type { AccountGrants } from '../frame/useAccountGrants';
-import { countryOptions } from '../shared/countries';
+import { countryOptions, merchantCountryOptions } from '../shared/countries';
 import { PasswordHowRow } from '../security/PasswordHowRow';
 import {
   allowsCredit,
@@ -59,7 +59,7 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
   const rank = chosenRank(ranks.ranks, choice);
   const creditLock = grants.needs('wallet:credit_limit');
 
-  // A kind change starts the country over: a retail account picks one of the shop's, a merchant types two letters.
+  // A kind change starts the country over: a retail account picks one of the shop's, a merchant picks from every ISO country.
   function chooseRank(next: string) {
     if (choiceKind(next) !== choiceKind(choice)) {
       setValue('country', choiceKind(next) === 'retail' ? DEFAULT_RETAIL_COUNTRY : '');
@@ -124,6 +124,8 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
       />
       {retail ? (
         <SelectField
+          // Two menus with their own keys: changing the kind of rank mounts a fresh one that starts from the value set above.
+          key="retail-country"
           layout="row"
           label="Country"
           required
@@ -134,18 +136,16 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
           {...register('country')}
         />
       ) : (
-        <TextField
+        <SelectField
+          key="merchant-country"
           layout="row"
           label="Country"
           required
-          className="w-24"
-          maxLength={2}
-          placeholder="JO"
-          autoComplete="off"
-          hint="Two letters, like JO or AE."
+          selectWrapClassName="w-full max-w-md"
+          options={merchantCountryOptions()}
           error={errors.country}
           {...register('country', {
-            validate: (value) => validCountry(value) || 'Enter the two-letter country code.',
+            validate: (value) => validCountry(value) || 'Choose a country.',
           })}
         />
       )}

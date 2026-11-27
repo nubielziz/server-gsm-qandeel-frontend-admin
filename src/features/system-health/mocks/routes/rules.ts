@@ -2,6 +2,7 @@
 // is `mutedUntil` and switching off is `isActive`; `open` says whether an alert of the rule is open now.
 import { http, HttpResponse, type HttpHandler } from 'msw';
 import { invalid, notFound, textOf } from '@/mocks/handlers/accessShared';
+import { firstFreeIdentifier, identifierFrom } from '@/mocks/identifier';
 import type { ProblemError } from '@/mocks/problem';
 import type { AlertChannel, AlertComparator, AlertRule, AlertSeverity } from '../../types';
 import { iso } from '../clock';
@@ -13,6 +14,18 @@ const COMPARATORS: AlertComparator[] = ['gt', 'gte', 'lt', 'lte'];
 const SEVERITIES: AlertSeverity[] = ['info', 'warning', 'critical'];
 const CHANNELS: AlertChannel[] = ['telegram', 'email'];
 const KEY = /^[a-z][a-z0-9_]{2,40}$/;
+
+/** What the server asks of a made key (backend `alert-rule-key.ts`): a letter first, 3 to 41 characters, `rule` for a name with no a-z or 0-9. */
+const KEY_RULES = { maxLength: 41, minLength: 3, startsWithLetter: true, fallback: 'rule' } as const;
+
+/**
+ * The key the server makes for a new rule that comes without one (backend decision 077): the name as an identifier (accents dropped, `rule_`
+ * in front of a name that starts with a digit or is shorter than 3 characters once cleaned, `rule` for a name with nothing usable), with
+ * `_2`, `_3` when the key is taken. It is the same helper as the payment method codes use.
+ */
+export function madeKey(name: string, taken: (key: string) => boolean): string {
+  return firstFreeIdentifier(identifierFrom(name, KEY_RULES), KEY_RULES.maxLength, taken);
+}
 
 /** The rule with `open` worked out from the alerts. */
 const withOpen = (state: HealthState, rule: AlertRule): AlertRule => ({
@@ -30,7 +43,8 @@ function problemsOf(
 ): ProblemError[] {
   const errors: ProblemError[] = [];
   const has = (field: string): boolean => creating || field in body;
-  if (has('key')) {
+  // The key is optional on create: left out, the server makes it.
+  if ('key' in body) {
     const key = textOf(body.key);
     if (!KEY.test(key)) {
       errors.push({
@@ -135,8 +149,14 @@ export const ruleRoutes: HttpHandler[] = [
       const input = await body();
       const errors = problemsOf(state, input, null, true, now);
       if (errors.length > 0) return invalid(errors);
+      const key =
+        'key' in input
+          ? textOf(input.key)
+          : madeKey(textOf(input.name), (candidate) =>
+              state.rules.list().some((rule) => rule.key === candidate),
+            );
       const rule = state.rules.insert({
-        key: textOf(input.key),
+        key,
         name: textOf(input.name),
         metric: textOf(input.metric),
         comparator: input.comparator as AlertComparator,

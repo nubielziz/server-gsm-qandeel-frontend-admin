@@ -135,15 +135,24 @@ describe('the Rank menu', () => {
     expect(screen.getByText('You need the groups:read permission to list the ranks')).toBeInTheDocument();
   });
 
-  it('shows Company and Credit limit only for a merchant rank, and a typed Country', async () => {
+  it('shows Company and Credit limit only for a merchant rank, and a Country menu of every country', async () => {
     const { user } = await openForm();
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
     expect(box('Company')).toBeInTheDocument();
     expect(box('Credit limit')).toBeInTheDocument();
-    // A merchant types two letters; the shop's country menu is gone.
-    expect(box('Country')).toHaveValue('');
-    expect(screen.queryByRole('combobox', { name: 'Country' })).not.toBeInTheDocument();
-    expect(screen.getByText('Two letters, like JO or AE.')).toBeInTheDocument();
+    // A merchant picks from a menu of every ISO country, not the shop's twelve; nothing is typed and nothing is chosen at first.
+    expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument();
+    expect(menu('Country')).toHaveValue('');
+    expect(menu('Country')).toHaveDisplayValue('Choose a country');
+    expect(screen.queryByText('Two letters, like JO or AE.')).not.toBeInTheDocument();
+    const options = optionTexts('Country');
+    expect(options[0]).toBe('Choose a country');
+    expect(options).toHaveLength(250);
+    expect(options).toContain('Jordan (JO)');
+    expect(options).toContain('Oman (OM)');
+    expect(options).toContain('Poland (PL)');
+    const names = options.slice(1).map((text) => text?.replace(/ \([A-Z]{2}\)$/, '') ?? '');
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en')));
 
     // A rank that allows no credit has no credit limit.
     await user.selectOptions(menu('Rank'), 'Standard · new merchants start here');
@@ -195,7 +204,7 @@ describe('adding an account', () => {
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
     await user.type(box('Name'), 'Muscat Gadgets');
     await user.type(box('Email'), 'Hello@Muscat.example');
-    await user.type(box('Country'), 'om');
+    await user.selectOptions(menu('Country'), 'OM');
     await user.type(box('Company'), 'Muscat Gadgets LLC');
     await user.type(box('Credit limit'), '500');
     await user.click(addButton());
@@ -306,14 +315,15 @@ describe("the checks and the server's refusals", () => {
     expect(bodies).toEqual([]);
   });
 
-  it('asks for a two-letter country and an amount for a merchant rank', async () => {
+  it('asks for a country and an amount for a merchant rank', async () => {
     const { user } = await openForm();
     const bodies = recordBodies();
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
     await fillRetail(user, 'Copy Cat', 'copy@cat.example');
     await user.type(box('Credit limit'), 'lots');
     await user.click(addButton());
-    expect(await screen.findByText('Enter the two-letter country code.')).toBeInTheDocument();
+    expect(await screen.findByText('Choose a country.')).toBeInTheDocument();
+    expect(menu('Country')).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByText('Enter an amount like 500.00, or leave it empty.')).toBeInTheDocument();
     expect(bodies).toEqual([]);
   });

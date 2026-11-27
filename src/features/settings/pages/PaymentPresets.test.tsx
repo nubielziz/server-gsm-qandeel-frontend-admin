@@ -1,6 +1,6 @@
 // Tests for the "Ready-made methods" gallery of the Payment methods tab (feature 32, backend B232), run through the whole app against the
-// dev mock API: the eight entries, Add and Coming soon, the dialog filled from an entry and the `preset` it sends, a free code for a second
-// method, the count on a card, a custom method with no preset, and the failures.
+// dev mock API: the eight entries, Add and Coming soon, the dialog filled from an entry and the `preset` it sends (and no code: the server
+// makes it, with a number for a second method), the count on a card, a custom method with no preset, and the failures.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { listGateways } from '../api';
 import { dialogOf, openSettings } from '../test/settingsPage';
 import { recordRequests } from '../test/requests';
 
@@ -71,7 +72,8 @@ describe('Add from an entry', () => {
     await user.click((await entry('Vodafone Cash')).getByRole('button', { name: 'Add Vodafone Cash' }));
     const dialog = dialogOf('Add Vodafone Cash');
     expect(dialog.getByRole('textbox', { name: 'Name' })).toHaveValue('Vodafone Cash');
-    expect(dialog.getByRole('textbox', { name: 'Code' })).toHaveValue('vodafone_cash');
+    // No Code box: the server makes the code from the entry's key.
+    expect(dialog.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
     expect(dialog.getByRole('textbox', { name: 'Driver' })).toHaveValue('vodafone_cash');
     expect(dialog.getByRole('checkbox', { name: 'A person checks each payment (manual)' })).toBeChecked();
     expect(dialog.getByRole('textbox', { name: 'Instructions' })).toHaveProperty(
@@ -83,10 +85,10 @@ describe('Add from an entry', () => {
     await user.type(dialog.getByRole('textbox', { name: 'Instructions' }), ' Number 0100.');
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
     expect(await screen.findByText('Vodafone Cash added')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/payment-gateways')[0].body).not.toHaveProperty('code');
     expect(recorder.to('POST', '/admin/payment-gateways')[0].body).toMatchObject({
       preset: 'vodafone_cash',
       name: 'Vodafone Cash',
-      code: 'vodafone_cash',
       driver: 'vodafone_cash',
       isManual: true,
       // Merchants and customers alike, unless staff choose otherwise.
@@ -94,17 +96,18 @@ describe('Add from an entry', () => {
     });
     expect(await screen.findByRole('article', { name: 'Vodafone Cash' })).toBeInTheDocument();
     expect(await (await entry('Vodafone Cash')).findByText('1 added')).toBeInTheDocument();
+    expect((await listGateways()).data.some((gateway) => gateway.code === 'vodafone_cash')).toBe(true);
     expect((await entry('InstaPay')).queryByText(/ added$/)).not.toBeInTheDocument();
   });
 
-  it('takes a free code for a second method from the same entry and counts both', async () => {
+  it('lets the server make a free code for a second method from the same entry and counts both', async () => {
     const user = userEvent.setup();
     const recorder = recordRequests();
     await openSettings();
     for (const code of ['bank_transfer', 'bank_transfer_2']) {
       await user.click((await entry('Bank transfer')).getByRole('button', { name: 'Add Bank transfer' }));
       const dialog = dialogOf('Add Bank transfer');
-      expect(dialog.getByRole('textbox', { name: 'Code' })).toHaveValue(code);
+      expect(dialog.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
       if (code === 'bank_transfer_2') await user.type(dialog.getByRole('textbox', { name: 'Name' }), ' B');
       await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
@@ -112,11 +115,12 @@ describe('Add from an entry', () => {
       await (await entry('Bank transfer')).findByText(code === 'bank_transfer' ? '1 added' : '2 added');
     }
     const posts = recorder.to('POST', '/admin/payment-gateways');
-    expect(posts.map((post) => (post.body as { code: string }).code)).toEqual([
-      'bank_transfer',
-      'bank_transfer_2',
-    ]);
+    expect(posts.every((post) => !('code' in (post.body as object)))).toBe(true);
     expect(posts.every((post) => (post.body as { preset: string }).preset === 'bank_transfer')).toBe(true);
+    const codes = (await listGateways()).data
+      .filter((gateway) => gateway.preset === 'bank_transfer')
+      .map((gateway) => gateway.code);
+    expect(codes).toEqual(['bank_transfer', 'bank_transfer_2']);
   });
 
   it('fills the dialog from a crypto entry, sends nothing on Cancel, and has no way in for a coming-soon entry', async () => {
@@ -163,13 +167,16 @@ describe('Add custom method', () => {
     await user.click(await screen.findByRole('button', { name: 'Add custom method' }));
     const dialog = dialogOf('Add payment method');
     expect(dialog.getByRole('textbox', { name: 'Name' })).toHaveValue('');
-    expect(dialog.getByRole('textbox', { name: 'Driver' })).toHaveValue('');
+    expect(dialog.getByRole('combobox', { name: 'Driver' })).toHaveValue('bank');
+    expect(dialog.queryByRole('textbox', { name: 'Code' })).not.toBeInTheDocument();
     await user.type(dialog.getByRole('textbox', { name: 'Name' }), 'CliQ');
-    await user.type(dialog.getByRole('textbox', { name: 'Code' }), 'cliq');
-    await user.type(dialog.getByRole('textbox', { name: 'Driver' }), 'cliq');
     await user.click(dialog.getByRole('button', { name: 'Add payment method' }));
     expect(await screen.findByText('CliQ added')).toBeInTheDocument();
-    expect(recorder.to('POST', '/admin/payment-gateways')[0].body).not.toHaveProperty('preset');
+    const body = recorder.to('POST', '/admin/payment-gateways')[0].body;
+    expect(body).not.toHaveProperty('preset');
+    expect(body).not.toHaveProperty('code');
+    expect(body).toMatchObject({ name: 'CliQ', driver: 'bank' });
+    expect((await listGateways()).data.at(-1)!.code).toBe('cliq');
     expect(await screen.findByRole('article', { name: 'CliQ' })).toBeInTheDocument();
   });
 });

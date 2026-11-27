@@ -1,7 +1,7 @@
 // FormRow: one label-left row of a form (the label in a fixed column, the control beside it), as in the layout the owner asked for.
 import { useId, type ReactNode } from 'react';
 import { cx } from './cx';
-import { errorId, hintId } from './fieldA11y';
+import { describedBy, errorId, hintId } from './fieldA11y';
 
 export interface FormRowProps {
   /** The label. Empty (null) leaves the label column blank, so a lone checkbox lines up with the controls above it. */
@@ -9,7 +9,8 @@ export interface FormRowProps {
   /**
    * Id of the control the label names: it becomes a <label for>. Without it the row is a group named by its label, which is right
    * for several controls in one row (a number and its unit). The hint and the error get the ids `<htmlFor>-hint` and `<htmlFor>-error`
-   * (the kit's convention), so the control can point to them with aria-describedby.
+   * (the kit's convention), so the control can point to them with aria-describedby. A group points to its own hint and error
+   * (`aria-describedby`), with ids made from the label's.
    */
   htmlFor?: string;
   /** Draws a "*" after the label. It is decoration: put `required` on the control for assistive technology. */
@@ -26,6 +27,8 @@ export function FormRow({ label, htmlFor, required, hint, error, className, chil
   const labelId = useId();
   const hasLabel = label !== null && label !== undefined && label !== false && label !== '';
   const grouped = hasLabel && !htmlFor;
+  // The ids of the hint and the error: the control's (the kit's convention), or the group's own when the row is a group.
+  const base = htmlFor ?? (grouped ? labelId : undefined);
   const star = required ? (
     <span aria-hidden="true" className="ms-0.5">
       *
@@ -51,15 +54,16 @@ export function FormRow({ label, htmlFor, required, hint, error, className, chil
         className="form-row-body"
         role={grouped ? 'group' : undefined}
         aria-labelledby={grouped ? labelId : undefined}
+        aria-describedby={grouped ? describedBy(labelId, Boolean(hint), Boolean(error)) : undefined}
       >
         {children}
         {hint && (
-          <p className="hint" id={htmlFor ? hintId(htmlFor) : undefined}>
+          <p className="hint" id={base ? hintId(base) : undefined}>
             {hint}
           </p>
         )}
         {error && (
-          <p className="mt-1 text-xs text-crit-fg" id={htmlFor ? errorId(htmlFor) : undefined}>
+          <p className="mt-1 text-xs text-crit-fg" id={base ? errorId(base) : undefined}>
             {error}
           </p>
         )}

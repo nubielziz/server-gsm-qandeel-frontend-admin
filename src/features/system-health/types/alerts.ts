@@ -31,9 +31,12 @@ export interface AlertRule extends Pick<
   updatedAt: IsoDateTime | null;
 }
 
-/** Body of `POST /admin/alert-rules`. */
+/**
+ * Body of `POST /admin/alert-rules`. The console leaves `key` out (decision 036; backend decision 077): the server makes it from the
+ * name, in lower-case letters, digits and underscores, with `_2`, `_3` when taken, and sends it back. An older client may still send one.
+ */
 export interface CreateAlertRuleBody {
-  key: string;
+  key?: string;
   name: string;
   metric: string;
   comparator: AlertComparator;

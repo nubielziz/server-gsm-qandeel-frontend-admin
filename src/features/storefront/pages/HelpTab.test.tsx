@@ -3,14 +3,16 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mockServer } from '@/mocks/node';
 import { problem } from '@/mocks/problem';
 import { setupMockApi } from '@/test/renderApp';
+import { recordRequests } from '../test/requests';
 import { dialogOf, openStorefront, openTab, rowOf, tableNamed } from '../test/storefrontPage';
 
 setupMockApi();
 vi.setConfig({ testTimeout: 20_000 });
+afterEach(() => vi.restoreAllMocks());
 
 const TABLE = 'Help articles';
 type User = ReturnType<typeof userEvent.setup>;
@@ -100,13 +102,78 @@ describe('New article and Edit', () => {
     expect(await dialog.findByText('Enter a topic.')).toBeInTheDocument();
     expect(dialog.getByText('Enter the question.')).toBeInTheDocument();
     expect(dialog.getByText('Enter the answer.')).toBeInTheDocument();
-    await user.type(dialog.getByRole('textbox', { name: 'Topic' }), 'Orders');
+    await user.selectOptions(await dialog.findByRole('combobox', { name: 'Topic' }), 'Orders');
     await user.type(dialog.getByRole('textbox', { name: 'Question' }), 'Can I change the IMEI?');
     await user.type(dialog.getByRole('textbox', { name: 'Answer (Markdown)' }), 'No, place a new order.');
     await user.click(dialog.getByRole('button', { name: 'Save article' }));
     expect(await screen.findByText('Article saved')).toBeInTheDocument();
     expect(await screen.findByText('13 articles')).toBeInTheDocument();
     expect((await rowOf(TABLE, 'Can I change the IMEI?')).getByText('Draft')).toBeInTheDocument();
+  });
+
+  it('offers the topics the articles use, sorted, and sends the chosen one as text', async () => {
+    const user = userEvent.setup();
+    await openHelp(user);
+    const requests = recordRequests();
+    await user.click(screen.getByRole('button', { name: 'New article…' }));
+    const dialog = dialogOf('New article');
+    const menu = await dialog.findByRole('combobox', { name: 'Topic' });
+    await waitFor(() => expect(menu).toBeEnabled());
+    const options = within(menu)
+      .getAllByRole('option')
+      .map((option) => option.textContent ?? '');
+    expect(options[0]).toBe('Choose a topic…');
+    expect(options.at(-1)).toBe('New topic…');
+    const topics = options.slice(1, -1);
+    expect(topics).toContain('Orders');
+    expect(topics).toEqual([...new Set(topics)].sort((a, b) => a.localeCompare(b)));
+    await user.selectOptions(menu, 'Orders');
+    await user.type(dialog.getByRole('textbox', { name: 'Question' }), 'Can I change the IMEI?');
+    await user.type(dialog.getByRole('textbox', { name: 'Answer (Markdown)' }), 'No, place a new order.');
+    await user.click(dialog.getByRole('button', { name: 'Save article' }));
+    expect(await screen.findByText('Article saved')).toBeInTheDocument();
+    const posts = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/admin/help-articles'));
+    expect(posts.map((sent) => sent.body)).toEqual([
+      {
+        category: 'Orders',
+        question: 'Can I change the IMEI?',
+        answerMd: 'No, place a new order.',
+        isPublished: false,
+      },
+    ]);
+  });
+
+  it('writes a topic of its own through New topic…', async () => {
+    const user = userEvent.setup();
+    await openHelp(user);
+    const requests = recordRequests();
+    await user.click(screen.getByRole('button', { name: 'New article…' }));
+    const dialog = dialogOf('New article');
+    const menu = await dialog.findByRole('combobox', { name: 'Topic' });
+    await waitFor(() => expect(menu).toBeEnabled());
+    expect(dialog.queryByRole('textbox', { name: 'New topic' })).not.toBeInTheDocument();
+    await user.selectOptions(menu, 'New topic…');
+    await user.type(dialog.getByRole('textbox', { name: 'New topic' }), 'Billing');
+    await user.type(dialog.getByRole('textbox', { name: 'Question' }), 'Do you send invoices?');
+    await user.type(dialog.getByRole('textbox', { name: 'Answer (Markdown)' }), 'Yes.');
+    await user.click(dialog.getByRole('button', { name: 'Save article' }));
+    expect(await screen.findByText('Article saved')).toBeInTheDocument();
+    const posts = requests
+      .sent()
+      .filter((sent) => sent.method === 'POST' && sent.url.pathname.endsWith('/admin/help-articles'));
+    expect(posts.map((sent) => (sent.body as { category: string }).category)).toEqual(['Billing']);
+  });
+
+  it('shows the topic of an article being edited as chosen', async () => {
+    const user = userEvent.setup();
+    await openHelp(user);
+    await user.click(
+      (await rowOf(TABLE, 'Where is my order?')).getByRole('button', { name: 'Edit Where is my order?' }),
+    );
+    const dialog = dialogOf('Edit article');
+    expect(await dialog.findByRole('combobox', { name: 'Topic' })).toHaveValue('Orders');
   });
 
   it('edits an article, starting from its Markdown answer, and sends only what changed', async () => {

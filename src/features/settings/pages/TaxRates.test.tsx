@@ -1,6 +1,6 @@
 // Tests for the "Tax by country" panel of the Tax and currency tab, run through the whole app against the dev mock API: the table with its
 // effective dates, add a rate (including one that starts later), edit with only the changes sent, the server's field errors, permissions.
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -41,16 +41,21 @@ describe('Add tax rate', () => {
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    await user.type(dialog.getByRole('textbox', { name: 'Country code' }), 'gb');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'United Kingdom (GB)');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '22');
     fireEvent.change(dialog.getByLabelText('Rate applies from'), { target: { value: '2099-01-01' } });
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     await user.type(dialog.getByRole('textbox', { name: 'Reported through' }), 'UK VAT');
     await user.click(dialog.getByRole('button', { name: 'Add tax rate' }));
     expect(await screen.findByText('Tax rate for United Kingdom added')).toBeInTheDocument();
-    expect(recorder.to('POST', '/admin/tax-rates')[0].body).toMatchObject({
+    expect(recorder.to('POST', '/admin/tax-rates')[0].body).toEqual({
       country: 'GB',
+      region: '',
       ratePercent: '22',
       taxType: 'vat',
+      appliesTo: 'digital_services',
+      label: '',
+      ossScheme: 'UK VAT',
       validFrom: '2099-01-01T00:00:00.000Z',
       validTo: null,
     });
@@ -67,9 +72,59 @@ describe('Add tax rate', () => {
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     await user.click(dialogOf('Add tax rate').getByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    expect(await dialog.findByText('Enter the two-letter country code.')).toBeInTheDocument();
+    expect(await dialog.findByText('Choose a country.')).toBeInTheDocument();
     expect(dialog.getByText('Enter a rate from 0 to 100.')).toBeInTheDocument();
-    expect(dialog.getByText('Enter the date the rate starts.')).toBeInTheDocument();
+    // The start day begins on today, so it is never empty on a new rate.
+    expect(dialog.getByLabelText('Rate applies from')).toHaveValue(new Date().toISOString().slice(0, 10));
+  });
+
+  it('shows four inputs, the country as a menu of every ISO country, and the rest in the fold', async () => {
+    const user = userEvent.setup();
+    await openSettings(TAX);
+    await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
+    const dialog = dialogOf('Add tax rate');
+    expect(dialog.queryByRole('textbox', { name: 'Country code' })).not.toBeInTheDocument();
+    const options = within(dialog.getByRole('combobox', { name: 'Country' }))
+      .getAllByRole('option')
+      .map((option) => option.textContent ?? '');
+    expect(options[0]).toBe('Choose a country…');
+    expect(options.length).toBeGreaterThan(240);
+    expect(options).toContain('Japan (JP)');
+    expect(options).toContain('United Kingdom (GB)');
+    const names = options.slice(1).map((text) => text.replace(/ \([A-Z]{2}\)$/, ''));
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
+    expect(options.some((text) => /\((EU|UN|ZZ|SU)\)$/.test(text))).toBe(false);
+    for (const name of ['Rate (%)', 'Rate applies from']) {
+      expect(dialog.getByLabelText(name)).toBeVisible();
+    }
+    expect(dialog.getByRole('combobox', { name: 'Kind of tax' })).toBeVisible();
+    for (const name of ['Region', 'Until', 'Reported through', 'Applies to', 'Label']) {
+      expect(dialog.queryByLabelText(name)).not.toBeVisible();
+    }
+    expect(dialog.getByRole('button', { name: 'More options' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('sends a rate left at its defaults exactly as before', async () => {
+    const user = userEvent.setup();
+    const recorder = recordRequests();
+    await openSettings(TAX);
+    await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
+    const dialog = dialogOf('Add tax rate');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'Japan (JP)');
+    await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '10');
+    await user.click(dialog.getByRole('button', { name: 'Add tax rate' }));
+    expect(await screen.findByText('Tax rate for Japan added')).toBeInTheDocument();
+    expect(recorder.to('POST', '/admin/tax-rates')[0].body).toEqual({
+      country: 'JP',
+      region: '',
+      ratePercent: '10',
+      taxType: 'vat',
+      appliesTo: 'digital_services',
+      label: '',
+      ossScheme: '',
+      validFrom: `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+      validTo: null,
+    });
   });
 
   it('puts the server’s message under the end date', async () => {
@@ -84,13 +139,20 @@ describe('Add tax rate', () => {
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    await user.type(dialog.getByRole('textbox', { name: 'Country code' }), 'FR');
+    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'France (FR)');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '20');
     fireEvent.change(dialog.getByLabelText('Rate applies from'), { target: { value: '2026-01-01' } });
+    // The end date is in the fold: type it there, close the fold, and the server's message opens it again.
+    await user.click(dialog.getByRole('button', { name: 'More options' }));
     fireEvent.change(dialog.getByLabelText('Until'), { target: { value: '2026-12-31' } });
+    await user.click(dialog.getByRole('button', { name: 'Hide more options' }));
     await user.click(dialog.getByRole('button', { name: 'Add tax rate' }));
-    expect(await dialog.findByText('The end date overlaps the next rate.')).toBeInTheDocument();
+    expect(await dialog.findByText('The end date overlaps the next rate.')).toBeVisible();
     expect(dialog.getByLabelText('Until')).toHaveAttribute('aria-invalid', 'true');
+    expect(dialog.getByRole('button', { name: 'Hide more options' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 });
 
@@ -105,8 +167,12 @@ describe('Edit tax rate', () => {
       }),
     );
     const dialog = dialogOf('Edit United Kingdom tax');
-    expect(dialog.getByRole('textbox', { name: 'Country code' })).toHaveAttribute('readonly');
+    // The country of a saved rate is shown, not offered.
+    expect(dialog.queryByRole('combobox', { name: 'Country' })).not.toBeInTheDocument();
+    expect(dialog.getByRole('group', { name: 'Country' })).toHaveTextContent('United Kingdom (GB)');
     expect(dialog.getByRole('textbox', { name: 'Rate (%)' })).toHaveValue('20');
+    // UK VAT is reported through a scheme, a value of its own, so the fold starts open.
+    expect(dialog.getByRole('textbox', { name: 'Reported through' })).toHaveValue('UK VAT');
     await user.clear(dialog.getByRole('textbox', { name: 'Rate (%)' }));
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '21');
     await user.click(dialog.getByRole('button', { name: 'Save changes' }));
