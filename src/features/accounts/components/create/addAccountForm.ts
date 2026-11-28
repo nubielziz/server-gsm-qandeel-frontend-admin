@@ -3,6 +3,7 @@
 // under the same fields (decision 008). No float maths: an amount stays text.
 import type { SelectOption } from '@/components/ui';
 import type { Money } from '@/lib/api';
+import { isOnlyDialCode } from '@/lib/phone/dial';
 import { rankLabel, rankKindOf } from '../../lib/ranks';
 import type { CreateAccountBody, PasswordMode, Rank, RankKind } from '../../types';
 import { COUNTRIES } from '../shared/countries';
@@ -152,7 +153,8 @@ export function addAccountBody(
   rank: Rank | undefined,
   creditAllowed: boolean,
 ): CreateAccountBody {
-  const phone = values.phone.trim();
+  // A box that holds only a calling code (the phone box's list wrote it and no number followed) holds no phone.
+  const phone = isOnlyDialCode(values.phone) ? '' : values.phone.trim();
   const body: CreateAccountBody = {
     name: cleanName(values.name),
     email: cleanEmail(values.email),

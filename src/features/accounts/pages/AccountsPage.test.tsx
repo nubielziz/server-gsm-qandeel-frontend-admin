@@ -3,6 +3,7 @@
 // filters kept in the address, its empty and error states, and what each role is allowed to see. The record has its own tests
 // (AccountPage.test.tsx), and the actions of the row menu and the With selected strip theirs (AccountsActions.test.tsx).
 import { screen, waitFor, within } from '@testing-library/react';
+import { chooseCountry } from '@/components/ui/testing/countryField';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -509,7 +510,7 @@ describe('the Quick Search box', () => {
     const app = await renderAccounts();
     await accountsTable();
     await user.type(screen.getByRole('searchbox', { name: /^Search name/ }), 'a');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'GB');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), 'GB');
     await waitFor(() => expect(app.location()).toBe('/accounts?country=GB&q=a'));
   });
 
@@ -517,14 +518,14 @@ describe('the Quick Search box', () => {
     const user = userEvent.setup();
     const app = await renderAccounts('/accounts?page=2');
     await waitFor(async () => expect(await accountNames()).toHaveLength(1));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'GB');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), 'GB');
     await waitFor(() => expect(app.location()).toBe('/accounts?country=GB'));
     await waitFor(async () => expect(await accountNames()).toHaveLength(6));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'blocked');
     await waitFor(() => expect(app.location()).toBe('/accounts?status=blocked&country=GB'));
     await waitFor(async () => expect(await accountNames()).toEqual(['Jack Turner']));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Status' }), '');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), '');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), '');
     await user.selectOptions(screen.getByRole('combobox', { name: 'Rank' }), 'VIP (3)');
     await waitFor(() => expect(app.location()).toBe('/accounts?rank=3'));
     await waitFor(async () =>
@@ -621,10 +622,8 @@ describe('the Quick Search box', () => {
     expect(
       within(screen.getByRole('combobox', { name: 'Rank' })).getByRole('option', { name: 'Rank #99' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveValue('PL');
-    expect(
-      within(screen.getByRole('combobox', { name: 'Country' })).getByRole('option', { name: 'Country PL' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'PL');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveTextContent('Country PL');
   });
 
   it('locks the rank menu with the reason for a role that may not list the ranks', async () => {

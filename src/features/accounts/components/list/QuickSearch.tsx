@@ -2,7 +2,7 @@
 // [Any status] [Any country]. The menus apply at once, together with the text typed so far; Search (or Enter) applies the text. Every
 // choice goes to the address, so a link, a reload and Back keep it, and any change goes to page 1.
 import { useState } from 'react';
-import { LegendBox, QuickSearchText, SelectField } from '@/components/ui';
+import { CountryField, LegendBox, QuickSearchText, SelectField } from '@/components/ui';
 import type { AccountCounts, Rank } from '../../types';
 import type { GrantLock } from '../frame/useAccountGrants';
 import { isListStatus } from '../../lib/status';
@@ -59,12 +59,12 @@ export function QuickSearch({ address, ranks, rankLock, counts, onApply }: Quick
           apply({ status: isListStatus(value) ? value : null });
         }}
       />
-      <SelectField
+      <CountryField
         aria-label="Country"
         options={countryChoices(address.country)}
         value={address.country}
-        selectWrapClassName="w-full sm:w-48"
-        onChange={(event) => apply({ country: event.target.value })}
+        selectWrapClassName="w-full sm:w-52"
+        onValueChange={(country) => apply({ country })}
       />
     </LegendBox>
   );

@@ -3,6 +3,7 @@
 // accounts each applies to, with the reason when none does). The dialogs themselves have their own tests; these tests assert only the
 // title a dialog opens with.
 import { screen, waitFor, within } from '@testing-library/react';
+import { chooseCountry } from '@/components/ui/testing/countryField';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -266,7 +267,7 @@ describe('With selected', () => {
     await user.click(within(await accountsTable()).getByRole('button', { name: 'Rank' }));
     await waitFor(() => expect(screen.getByText('With selected:')).toBeInTheDocument());
     await tick(user, 101);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'GB');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), 'GB');
     await waitFor(() => expect(screen.getByText('With selected:')).toBeInTheDocument());
     await waitFor(async () => expect(await accountNames()).toHaveLength(6));
   });

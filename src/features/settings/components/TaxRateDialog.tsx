@@ -2,8 +2,9 @@
 // reported through and the dates it applies. The demo's table was read-only; the map adds this form. Only what changed is sent on an edit.
 // Four inputs show (country, rate, kind of tax, start day, which starts on today); region, end date, scheme, what it applies to and the
 // label are in the "More options" fold and are still sent as before (decision 036).
-import { useForm } from 'react-hook-form';
+import { useController, useForm } from 'react-hook-form';
 import {
+  CountryField,
   dialogSubmit,
   FormDialog,
   MoreOptions,
@@ -97,8 +98,15 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
   });
   const {
     register,
+    control,
     formState: { errors },
   } = form;
+  // The country menu is not a native select: the form drives it through a controller (decision 040). An edit shows the country as text.
+  const { field: country } = useController({
+    name: 'country',
+    control,
+    rules: rate ? {} : { validate: (value) => value !== '' || 'Choose a country.' },
+  });
   // The fold holds five inputs: it opens by itself while any of them holds an error.
   const foldError = Boolean(
     errors.region || errors.validTo || errors.ossScheme || errors.appliesTo || errors.label,
@@ -136,13 +144,17 @@ export function TaxRateDialog({ rate, onClose }: { rate?: TaxRate; onClose: () =
           {rate ? (
             <ReadField label="Country">{countryLabel(rate.country)}</ReadField>
           ) : (
-            <SelectField
+            <CountryField
               label="Country"
               selectWrapClassName="w-full"
               options={[{ value: '', label: 'Choose a country…' }, ...countryMenu()]}
               autoFocus
               error={errors.country}
-              {...register('country', { validate: (v) => v !== '' || 'Choose a country.' })}
+              ref={country.ref}
+              name={country.name}
+              value={country.value}
+              onValueChange={country.onChange}
+              onBlur={country.onBlur}
             />
           )}
           <TextField

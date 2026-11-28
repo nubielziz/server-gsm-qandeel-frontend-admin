@@ -11,6 +11,16 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-28): country menus with search and flags, a phone box with calling codes (decision 040)
+
+The owner's request: the same fields as the shop's website; committed and pushed on the owner's order. The seven menus that choose a
+country are `CountryField` (a button with the flag and the name, a panel with a search box and the list) and the two Phone boxes are `PhoneField` (the flag
+follows the number, a list of calling codes): +Add Account, an account's Profile, the Country filter of Quick Search, "Add tax rate" and a listing's facts.
+The forms drive them with `useController`; a phone that is only a calling code is sent as empty. No new package: flags are files in `public/flags`
+(circle-flags, MIT), calling codes are data in `src/lib/phone`. The other 108 menus stay native selects, and the three boxes that take typed country codes stay
+text (decision 040 says why). **Checks:** typecheck, lint, build and the whole test suite; looked at in a browser against the mock API (the list filter,
++Add Account for both kinds of rank, Profile in both themes, the tax dialog).
+
 ## Status (2026-11-28): Orders columns, drag-and-drop order, one-click API keys (decisions 037, 038, 039)
 
 Merged and pushed on the owner's order (their second request of 2026-11-27). **037:** the Orders table has Type, Service Name (whole, wrapping)

@@ -2,6 +2,7 @@
 // stays off until something changed, what a save sends (only the changed fields, cleaned), where the server's refusals show, what each
 // missing permission locks, and the unsaved-changes question. Ports the edit-details cases of the old merchant and customer pages.
 import { screen, waitFor, within } from '@testing-library/react';
+import { chooseCountry } from '@/components/ui/testing/countryField';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -53,8 +54,8 @@ describe('the rows', () => {
     expect(box('Phone')).toHaveValue('');
     // A merchant's country is a menu of every country, with the stored code chosen.
     expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveValue('JO');
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveDisplayValue('Jordan (JO)');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'JO');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveTextContent('Jordan (JO)');
     expect(box('Company')).toHaveValue('Zain Mobile Hub');
     expect(box('Address')).toHaveValue('Abdali Boulevard, Amman');
     expect(box('Tax number')).toHaveValue('JO-1234567');
@@ -73,7 +74,7 @@ describe('the rows', () => {
   it("shows a retail account with a menu of the shop's countries, and no company or username", async () => {
     await profileOf(SEED.DANIEL, DANIEL);
     expect(box('Name')).toHaveValue('Daniel Whitmore');
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveValue('GB');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'GB');
     expect(
       screen.getByText('Applies to new orders. Past orders keep their price and VAT.'),
     ).toBeInTheDocument();
@@ -120,7 +121,7 @@ describe('saving', () => {
     await profileOf(SEED.ZAIN, ZAIN);
     await replace(user, 'Name', '  Zain   Hub ');
     await replace(user, 'Email', 'New@Zain.example');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'SA');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), 'SA');
     await user.clear(box('Tax number'));
     await user.click(save());
     expect(
@@ -133,7 +134,7 @@ describe('saving', () => {
     const user = userEvent.setup();
     const bodies = watchPatches(SEED.DANIEL);
     await profileOf(SEED.DANIEL, DANIEL);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), 'IE');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), 'IE');
     await user.click(save());
     expect(await screen.findByText('Details saved')).toBeInTheDocument();
     expect(bodies).toEqual([{ country: 'IE' }]);
@@ -209,7 +210,7 @@ describe('refusals and checks', () => {
   it('wants a country chosen for a merchant, and says so under the menu', async () => {
     const user = userEvent.setup();
     await profileOf(SEED.ZAIN, ZAIN);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Country' }), '');
+    await chooseCountry(user, screen.getByRole('combobox', { name: 'Country' }), '');
     await user.click(save());
     expect(await screen.findByText('Choose a country.')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('aria-invalid', 'true');
@@ -224,8 +225,8 @@ describe('refusals and checks', () => {
     const bodies = watchPatches(SEED.ZAIN);
     await profileOf(SEED.ZAIN, ZAIN);
     const country = screen.getByRole('combobox', { name: 'Country' });
-    expect(country).toHaveValue('XK');
-    expect(country).toHaveDisplayValue('XK');
+    expect(country).toHaveAttribute('data-value', 'XK');
+    expect(country).toHaveTextContent('XK');
     await replace(user, 'Phone', '+962 79 000');
     await user.click(save());
     expect(await screen.findByText('Details saved')).toBeInTheDocument();
@@ -283,7 +284,7 @@ describe('unsaved changes', () => {
   it('does not ask once the changes are saved', async () => {
     const user = userEvent.setup();
     const app = await profileOf(SEED.ZAIN, ZAIN);
-    await user.type(box('Phone'), '+962');
+    await user.type(box('Phone'), '+962 6 555 0100');
     await user.click(save());
     await screen.findByText('Saved');
     await user.click(partsMenu().getByRole('link', { name: 'Overview' }));

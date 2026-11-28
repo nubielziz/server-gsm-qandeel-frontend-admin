@@ -4,7 +4,7 @@
 // country from the Arab countries. Stacked in a two-column grid in the dialogs; label-left rows in the Product / Services edit view.
 import { useMemo, useState } from 'react';
 import { useController, type Control } from 'react-hook-form';
-import { CheckboxField, SelectField, TextField } from '@/components/ui';
+import { CheckboxField, CountryField, SelectField, TextField } from '@/components/ui';
 import { BRAND_OPTIONS, countryOptions, OTHER_BRAND, shopBrand } from '../lib/listingFacts';
 import {
   isCountryText,
@@ -28,6 +28,15 @@ export function ListingFactsFields({
   layout = 'stacked',
 }: ListingFactsFieldsProps) {
   const { field: brand } = useController({ name: 'brand', control });
+  // The country menu is not a native select: the form drives it through a controller (decision 040).
+  const { field: country } = useController({
+    name: 'country',
+    control,
+    rules: {
+      validate: (value) =>
+        isCountryText(value) || 'Use a two-letter country code like GB, or leave it empty.',
+    },
+  });
   // "Other" is a mode of its own: an empty name typed by hand must not jump back to "No brand" while the box is open.
   const [typed, setTyped] = useState(() => brand.value.trim() !== '' && shopBrand(brand.value) === null);
   const countries = useMemo(() => countryOptions(savedCountry), [savedCountry]);
@@ -87,17 +96,18 @@ export function ListingFactsFields({
           error={errors.carrier}
           {...register('carrier')}
         />
-        <SelectField
+        <CountryField
           label="Country"
           layout={layout}
           selectWrapClassName={selectWrap}
           options={countries}
           hint="The Arab countries. Leave it at No country when the service is not for one country."
           error={errors.country}
-          {...register('country', {
-            validate: (value) =>
-              isCountryText(value) || 'Use a two-letter country code like GB, or leave it empty.',
-          })}
+          ref={country.ref}
+          name={country.name}
+          value={country.value}
+          onValueChange={country.onChange}
+          onBlur={country.onBlur}
         />
       </div>
       <CheckboxField

@@ -4,6 +4,7 @@
 // called, the server's refusals under their fields (a taken email, a guest that bought with it), and the question asked before leaving
 // typing behind. Ports the invite, add-customer and check cases of the old merchants and customers pages.
 import { screen, waitFor, within } from '@testing-library/react';
+import { chooseCountry, countryRowTexts } from '@/components/ui/testing/countryField';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
@@ -74,7 +75,7 @@ describe('the form', () => {
   it('starts as a retail account that gets a link, with the first shop country', async () => {
     await openForm();
     expect(menu('Rank')).toHaveDisplayValue('Retail (shop)');
-    expect(menu('Country')).toHaveDisplayValue('United Kingdom');
+    expect(menu('Country')).toHaveTextContent('United Kingdom');
     expect(toggle('How')).toHaveAttribute('aria-checked', 'true');
     expect(within(toggle('How')).getByText('Send a link')).toBeInTheDocument();
     expect(within(toggle('How')).getByText('Temporary password')).toBeInTheDocument();
@@ -142,10 +143,10 @@ describe('the Rank menu', () => {
     expect(box('Credit limit')).toBeInTheDocument();
     // A merchant picks from a menu of every ISO country, not the shop's twelve; nothing is typed and nothing is chosen at first.
     expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument();
-    expect(menu('Country')).toHaveValue('');
-    expect(menu('Country')).toHaveDisplayValue('Choose a country');
+    expect(menu('Country')).toHaveAttribute('data-value', '');
+    expect(menu('Country')).toHaveTextContent('Choose a country');
     expect(screen.queryByText('Two letters, like JO or AE.')).not.toBeInTheDocument();
-    const options = optionTexts('Country');
+    const options = await countryRowTexts(user, menu('Country'));
     expect(options[0]).toBe('Choose a country');
     expect(options).toHaveLength(250);
     expect(options).toContain('Jordan (JO)');
@@ -163,7 +164,7 @@ describe('the Rank menu', () => {
     await user.selectOptions(menu('Rank'), 'Retail (shop)');
     expect(screen.queryByRole('textbox', { name: 'Company' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Credit limit' })).not.toBeInTheDocument();
-    expect(menu('Country')).toHaveDisplayValue('United Kingdom');
+    expect(menu('Country')).toHaveTextContent('United Kingdom');
   });
 });
 
@@ -172,7 +173,7 @@ describe('adding an account', () => {
     const { app, user } = await openForm();
     const bodies = recordBodies();
     await fillRetail(user);
-    await user.selectOptions(menu('Country'), 'DE');
+    await chooseCountry(user, menu('Country'), 'DE');
     await user.type(box('Phone'), '+49 170 000');
     await user.click(addButton());
 
@@ -204,7 +205,7 @@ describe('adding an account', () => {
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
     await user.type(box('Name'), 'Muscat Gadgets');
     await user.type(box('Email'), 'Hello@Muscat.example');
-    await user.selectOptions(menu('Country'), 'OM');
+    await chooseCountry(user, menu('Country'), 'OM');
     await user.type(box('Company'), 'Muscat Gadgets LLC');
     await user.type(box('Credit limit'), '500');
     await user.click(addButton());

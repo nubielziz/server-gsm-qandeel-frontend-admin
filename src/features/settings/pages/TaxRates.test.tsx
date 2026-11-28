@@ -1,6 +1,7 @@
 // Tests for the "Tax by country" panel of the Tax and currency tab, run through the whole app against the dev mock API: the table with its
 // effective dates, add a rate (including one that starts later), edit with only the changes sent, the server's field errors, permissions.
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
+import { chooseCountry, countryRowTexts } from '@/components/ui/testing/countryField';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -41,7 +42,7 @@ describe('Add tax rate', () => {
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'United Kingdom (GB)');
+    await chooseCountry(user, dialog.getByRole('combobox', { name: 'Country' }), 'GB');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '22');
     fireEvent.change(dialog.getByLabelText('Rate applies from'), { target: { value: '2099-01-01' } });
     await user.click(dialog.getByRole('button', { name: 'More options' }));
@@ -84,9 +85,7 @@ describe('Add tax rate', () => {
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
     expect(dialog.queryByRole('textbox', { name: 'Country code' })).not.toBeInTheDocument();
-    const options = within(dialog.getByRole('combobox', { name: 'Country' }))
-      .getAllByRole('option')
-      .map((option) => option.textContent ?? '');
+    const options = await countryRowTexts(user, dialog.getByRole('combobox', { name: 'Country' }));
     expect(options[0]).toBe('Choose a country…');
     expect(options.length).toBeGreaterThan(240);
     expect(options).toContain('Japan (JP)');
@@ -110,7 +109,7 @@ describe('Add tax rate', () => {
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'Japan (JP)');
+    await chooseCountry(user, dialog.getByRole('combobox', { name: 'Country' }), 'JP');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '10');
     await user.click(dialog.getByRole('button', { name: 'Add tax rate' }));
     expect(await screen.findByText('Tax rate for Japan added')).toBeInTheDocument();
@@ -139,7 +138,7 @@ describe('Add tax rate', () => {
     await openSettings(TAX);
     await user.click(await screen.findByRole('button', { name: 'Add tax rate' }));
     const dialog = dialogOf('Add tax rate');
-    await user.selectOptions(dialog.getByRole('combobox', { name: 'Country' }), 'France (FR)');
+    await chooseCountry(user, dialog.getByRole('combobox', { name: 'Country' }), 'FR');
     await user.type(dialog.getByRole('textbox', { name: 'Rate (%)' }), '20');
     fireEvent.change(dialog.getByLabelText('Rate applies from'), { target: { value: '2026-01-01' } });
     // The end date is in the fold: type it there, close the fold, and the server's message opens it again.

@@ -2,9 +2,9 @@
 // Country, Phone, then Company and Credit limit for a merchant rank, then how the password is given. The Rank menu decides which rows are
 // there: a retail account has a country picked from the shop's list and no company or credit; a merchant rank has a country picked from
 // every ISO country (decision 035), a company and (when the rank allows credit) a credit limit. It owns no request: the save belongs to the view.
-import { Controller, type UseFormReturn } from 'react-hook-form';
+import { Controller, useController, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router';
-import { FormRow, SelectField, TextField } from '@/components/ui';
+import { CountryField, FormRow, PhoneField, SelectField, TextField } from '@/components/ui';
 import { accountsListPath } from '../../lib/paths';
 import type { Rank } from '../../types';
 import type { AccountGrants } from '../frame/useAccountGrants';
@@ -58,6 +58,14 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
   const retail = choiceKind(choice) === 'retail';
   const rank = chosenRank(ranks.ranks, choice);
   const creditLock = grants.needs('wallet:credit_limit');
+  // The country menu and the phone box are not native inputs: the form drives them through a controller (decision 040).
+  const { field: country } = useController({
+    name: 'country',
+    control,
+    // A retail account's menu has no empty choice; a merchant must pick one of every ISO country.
+    rules: retail ? {} : { validate: (value) => validCountry(value) || 'Choose a country.' },
+  });
+  const { field: phone } = useController({ name: 'phone', control });
 
   // A kind change starts the country over: a retail account picks one of the shop's, a merchant picks from every ISO country.
   function chooseRank(next: string) {
@@ -122,42 +130,32 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
         error={errors.rank}
         {...register('rank', { onChange: (event) => chooseRank(event.target.value) })}
       />
-      {retail ? (
-        <SelectField
-          // Two menus with their own keys: changing the kind of rank mounts a fresh one that starts from the value set above.
-          key="retail-country"
-          layout="row"
-          label="Country"
-          required
-          selectWrapClassName="w-full max-w-md"
-          options={countryOptions()}
-          hint="Sets the currency and VAT of their orders."
-          error={errors.country}
-          {...register('country')}
-        />
-      ) : (
-        <SelectField
-          key="merchant-country"
-          layout="row"
-          label="Country"
-          required
-          selectWrapClassName="w-full max-w-md"
-          options={merchantCountryOptions()}
-          error={errors.country}
-          {...register('country', {
-            validate: (value) => validCountry(value) || 'Choose a country.',
-          })}
-        />
-      )}
-      <TextField
+      {/* A retail account picks one of the shop's countries, a merchant one of every ISO country; the Rank menu sets the value when the kind changes. */}
+      <CountryField
+        layout="row"
+        label="Country"
+        required
+        selectWrapClassName="w-full max-w-md"
+        options={retail ? countryOptions() : merchantCountryOptions()}
+        hint={retail ? 'Sets the currency and VAT of their orders.' : undefined}
+        error={errors.country}
+        ref={country.ref}
+        name={country.name}
+        value={country.value}
+        onValueChange={country.onChange}
+        onBlur={country.onBlur}
+      />
+      <PhoneField
         layout="row"
         label="Phone"
-        type="text"
-        inputMode="tel"
-        autoComplete="off"
         hint="Optional."
         error={errors.phone}
-        {...register('phone')}
+        ref={phone.ref}
+        name={phone.name}
+        value={phone.value}
+        onValueChange={phone.onChange}
+        onBlur={phone.onBlur}
+        countryHint={country.value}
       />
       {!retail && (
         <TextField

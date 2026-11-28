@@ -1,7 +1,15 @@
 // ProfileFields: the rows of the Profile part, label on the left and box on the right (the layout the owner asked for): name, email, phone,
 // country, company, address, tax number, internal notes and the API username. It owns no request: the save belongs to the part.
-import type { UseFormReturn } from 'react-hook-form';
-import { FormRow, ReadValue, SectionHeading, SelectField, TextareaField, TextField } from '@/components/ui';
+import { useController, type UseFormReturn } from 'react-hook-form';
+import {
+  CountryField,
+  FormRow,
+  PhoneField,
+  ReadValue,
+  SectionHeading,
+  TextareaField,
+  TextField,
+} from '@/components/ui';
 import { countryOptions, merchantCountryOptions } from '../shared/countries';
 import type { AccountDetail } from '../../types';
 import {
@@ -29,9 +37,22 @@ const within = (limit: number) => (value: string) => tooLong(value, limit) ?? tr
 export function ProfileFields({ form, account, lock, emailLock }: ProfileFieldsProps) {
   const {
     register,
+    control,
     formState: { errors },
   } = form;
   const merchant = account.rank.kind === 'merchant';
+  // The phone box and the country menu are not native inputs: the form drives them through a controller (decision 040).
+  const { field: phone } = useController({
+    name: 'phone',
+    control,
+    rules: { validate: within(PROFILE_LIMITS.phone) },
+  });
+  const { field: country } = useController({
+    name: 'country',
+    control,
+    // A merchant must have a country; a retail account's menu has no empty choice.
+    rules: merchant ? { validate: (value) => validCountry(value) || 'Choose a country.' } : {},
+  });
   const emailHint = emailLock.disabled
     ? emailLock.title
     : account.hasAccount
@@ -69,37 +90,30 @@ export function ProfileFields({ form, account, lock, emailLock }: ProfileFieldsP
           validate: (value) => validEmail(value) || 'Enter a valid email address, like owner@example.com.',
         })}
       />
-      <TextField
+      <PhoneField
         layout="row"
         label="Phone"
-        type="text"
-        inputMode="tel"
-        autoComplete="off"
         error={errors.phone}
-        {...register('phone', { validate: within(PROFILE_LIMITS.phone) })}
+        ref={phone.ref}
+        name={phone.name}
+        value={phone.value}
+        onValueChange={phone.onChange}
+        onBlur={phone.onBlur}
+        countryHint={country.value}
       />
-      {merchant ? (
-        <SelectField
-          layout="row"
-          label="Country"
-          selectWrapClassName="w-full max-w-md"
-          options={merchantCountryOptions(account.country ?? '')}
-          error={errors.country}
-          {...register('country', {
-            validate: (value) => validCountry(value) || 'Choose a country.',
-          })}
-        />
-      ) : (
-        <SelectField
-          layout="row"
-          label="Country"
-          selectWrapClassName="w-full max-w-md"
-          options={countryOptions(account.country)}
-          hint="Applies to new orders. Past orders keep their price and VAT."
-          error={errors.country}
-          {...register('country')}
-        />
-      )}
+      <CountryField
+        layout="row"
+        label="Country"
+        selectWrapClassName="w-full max-w-md"
+        options={merchant ? merchantCountryOptions(account.country ?? '') : countryOptions(account.country)}
+        hint={merchant ? undefined : 'Applies to new orders. Past orders keep their price and VAT.'}
+        error={errors.country}
+        ref={country.ref}
+        name={country.name}
+        value={country.value}
+        onValueChange={country.onChange}
+        onBlur={country.onBlur}
+      />
       {(merchant || account.company.trim() !== '') && (
         <TextField
           layout="row"

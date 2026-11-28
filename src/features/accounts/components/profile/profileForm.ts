@@ -1,6 +1,7 @@
 // The form of the Profile part: what the boxes start with, how what was typed is cleaned, and which fields really changed. The limits are
 // hints only: the server validates everything and its field messages show under the same boxes. One form for a merchant rank and a
 // retail rank (it replaces the two edit dialogs of the old pages).
+import { isOnlyDialCode } from '@/lib/phone/dial';
 import type { AccountDetails, AccountRow } from '../../types';
 
 /** The limits of the server's contract, used for the form's hints and checks. */
@@ -106,7 +107,8 @@ export function profileBody(
   if (name !== tidyName(start.name)) body.name = name;
   const email = cleanEmail(values.email);
   if (!locks.email && email !== cleanEmail(start.email)) body.email = email;
-  const phone = values.phone.trim();
+  // A box that holds only a calling code (the phone box's list wrote it and no number followed) holds no phone.
+  const phone = isOnlyDialCode(values.phone) ? '' : values.phone.trim();
   if (phone !== start.phone.trim()) body.phone = phone;
   const country = cleanCountry(values.country);
   if (country !== cleanCountry(start.country)) body.country = country;
