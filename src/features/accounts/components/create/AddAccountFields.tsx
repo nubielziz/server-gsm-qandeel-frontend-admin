@@ -1,21 +1,20 @@
 // AddAccountFields: the rows of +Add Account, label on the left and control on the right (the layout the owner asked for): Name, Email, Rank,
 // Country, Phone, then Company and Credit limit for a merchant rank, then how the password is given. The Rank menu decides which rows are
-// there: a retail account has a country picked from the shop's list and no company or credit; a merchant rank has a country picked from
-// every ISO country (decision 035), a company and (when the rank allows credit) a credit limit. It owns no request: the save belongs to the view.
+// there: a retail account has no company or credit; a merchant rank has a company and (when the rank allows credit) a credit limit. The
+// country is picked from every ISO country for both (decisions 035 and 041). It owns no request: the save belongs to the view.
 import { Controller, useController, type UseFormReturn } from 'react-hook-form';
 import { Link } from 'react-router';
 import { CountryField, FormRow, PhoneField, SelectField, TextField } from '@/components/ui';
 import { accountsListPath } from '../../lib/paths';
 import type { Rank } from '../../types';
 import type { AccountGrants } from '../frame/useAccountGrants';
-import { countryOptions, merchantCountryOptions } from '../shared/countries';
+import { countryOptions } from '../shared/countries';
 import { PasswordHowRow } from '../security/PasswordHowRow';
 import {
   allowsCredit,
   chosenRank,
   choiceKind,
   cleanEmail,
-  DEFAULT_RETAIL_COUNTRY,
   GUEST_EMAIL_WORDS,
   parseCreditLimit,
   rankChoices,
@@ -50,7 +49,6 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
     register,
     control,
     watch,
-    setValue,
     getValues,
     formState: { errors },
   } = form;
@@ -62,17 +60,10 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
   const { field: country } = useController({
     name: 'country',
     control,
-    // A retail account's menu has no empty choice; a merchant must pick one of every ISO country.
-    rules: retail ? {} : { validate: (value) => validCountry(value) || 'Choose a country.' },
+    // Every account has a country, picked from every ISO country; none is chosen for the person.
+    rules: { validate: (value) => validCountry(value) || 'Choose a country.' },
   });
   const { field: phone } = useController({ name: 'phone', control });
-
-  // A kind change starts the country over: a retail account picks one of the shop's, a merchant picks from every ISO country.
-  function chooseRank(next: string) {
-    if (choiceKind(next) !== choiceKind(choice)) {
-      setValue('country', choiceKind(next) === 'retail' ? DEFAULT_RETAIL_COUNTRY : '');
-    }
-  }
 
   const emailError =
     errors.email?.type === 'guest' ? (
@@ -128,15 +119,14 @@ export function AddAccountFields({ form, grants, ranks }: AddAccountFieldsProps)
         options={rankChoices(ranks.ranks, grants.isOwner)}
         hint={rankHint(grants, ranks)}
         error={errors.rank}
-        {...register('rank', { onChange: (event) => chooseRank(event.target.value) })}
+        {...register('rank')}
       />
-      {/* A retail account picks one of the shop's countries, a merchant one of every ISO country; the Rank menu sets the value when the kind changes. */}
       <CountryField
         layout="row"
         label="Country"
         required
         selectWrapClassName="w-full max-w-md"
-        options={retail ? countryOptions() : merchantCountryOptions()}
+        options={countryOptions()}
         hint={retail ? 'Sets the currency and VAT of their orders.' : undefined}
         error={errors.country}
         ref={country.ref}

@@ -617,13 +617,13 @@ describe('the Quick Search box', () => {
   });
 
   it('keeps a rank and a country of the address that the lists lack selectable, so a filter is never out of sight', async () => {
-    await renderAccounts('/accounts?rank=99&country=PL');
+    await renderAccounts('/accounts?rank=99&country=XK');
     expect(screen.getByRole('combobox', { name: 'Rank' })).toHaveValue('99');
     expect(
       within(screen.getByRole('combobox', { name: 'Rank' })).getByRole('option', { name: 'Rank #99' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'PL');
-    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveTextContent('Country PL');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'XK');
+    expect(screen.getByRole('combobox', { name: 'Country' })).toHaveTextContent('Country XK');
   });
 
   it('locks the rank menu with the reason for a role that may not list the ranks', async () => {

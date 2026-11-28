@@ -185,7 +185,7 @@ at the commit before the deletion; the old case list is also in `git show HEAD:<
 | `customers/lib/requests.test.ts` (10) | 1-10 | `components/requests/requestWords.test.ts` | numbers, kinds, statuses, spans, deadlines |
 | `customers/lib/status.test.ts` (9) | 1-3 | `lib/status.test.ts` | status words, unknown word, empty |
 |  | 4 | `components/status/reasons.test.ts` | suspend reasons |
-|  | 5-6 | `components/shared/countries.test.ts` | storefront countries |
+|  | 5-6 | `components/shared/countries.test.ts` | every ISO country (decision 041) |
 |  | 7-8 | `components/record/accountParts.test.ts` | the parts and the wallet permission |
 |  | 9 | `lib/paths.test.ts` | record and part addresses |
 | `customers/lib/text.test.ts` (17) | 1-2 | `components/overview/overviewText.test.ts` | createdByText |

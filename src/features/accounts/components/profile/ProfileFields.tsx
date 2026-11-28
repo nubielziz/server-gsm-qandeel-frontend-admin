@@ -10,7 +10,7 @@ import {
   TextareaField,
   TextField,
 } from '@/components/ui';
-import { countryOptions, merchantCountryOptions } from '../shared/countries';
+import { countryOptions } from '../shared/countries';
 import type { AccountDetail } from '../../types';
 import {
   PROFILE_LIMITS,
@@ -50,8 +50,11 @@ export function ProfileFields({ form, account, lock, emailLock }: ProfileFieldsP
   const { field: country } = useController({
     name: 'country',
     control,
-    // A merchant must have a country; a retail account's menu has no empty choice.
-    rules: merchant ? { validate: (value) => validCountry(value) || 'Choose a country.' } : {},
+    // A merchant must have a country, and an account that has one keeps one; a guest saved with none may stay without.
+    rules:
+      merchant || (account.country ?? '') !== ''
+        ? { validate: (value) => validCountry(value) || 'Choose a country.' }
+        : {},
   });
   const emailHint = emailLock.disabled
     ? emailLock.title
@@ -105,7 +108,7 @@ export function ProfileFields({ form, account, lock, emailLock }: ProfileFieldsP
         layout="row"
         label="Country"
         selectWrapClassName="w-full max-w-md"
-        options={merchant ? merchantCountryOptions(account.country ?? '') : countryOptions(account.country)}
+        options={countryOptions(account.country ?? '')}
         hint={merchant ? undefined : 'Applies to new orders. Past orders keep their price and VAT.'}
         error={errors.country}
         ref={country.ref}

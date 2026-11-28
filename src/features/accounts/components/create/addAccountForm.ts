@@ -6,7 +6,6 @@ import type { Money } from '@/lib/api';
 import { isOnlyDialCode } from '@/lib/phone/dial';
 import { rankLabel, rankKindOf } from '../../lib/ranks';
 import type { CreateAccountBody, PasswordMode, Rank, RankKind } from '../../types';
-import { COUNTRIES } from '../shared/countries';
 
 /** What the form holds. `rank` is `'retail'` or the id of a merchant rank, as text (a select's value). */
 export type AddAccountValues = {
@@ -41,16 +40,16 @@ export const GUEST_EMAIL_WORDS = 'A guest bought with this email. Make that gues
 /** The value of the Rank menu's first choice: the shop's retail rank (the body then carries no `groupId`). */
 export const RETAIL_CHOICE = 'retail';
 
-/** The country a new retail account starts with: the first the shop sells to. */
-export const DEFAULT_RETAIL_COUNTRY = COUNTRIES[0]?.code ?? '';
-
-/** An empty form for a retail account that gets a link to choose its password. */
+/**
+ * An empty form for a retail account that gets a link to choose its password. No country is chosen for the person (decision 041): it sets
+ * their currency and VAT, so staff pick it.
+ */
 export function addAccountDefaults(): AddAccountValues {
   return {
     name: '',
     email: '',
     rank: RETAIL_CHOICE,
-    country: DEFAULT_RETAIL_COUNTRY,
+    country: '',
     phone: '',
     company: '',
     creditLimit: '',
@@ -158,7 +157,7 @@ export function addAccountBody(
   const body: CreateAccountBody = {
     name: cleanName(values.name),
     email: cleanEmail(values.email),
-    country: rank ? cleanCountry(values.country) : values.country,
+    country: cleanCountry(values.country),
     ...(phone ? { phone } : {}),
     password: { mode: values.mode },
   };

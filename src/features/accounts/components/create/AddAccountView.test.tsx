@@ -41,9 +41,16 @@ async function openForm(options: RenderOptions = {}, ranks = true) {
 }
 
 /** Types the three things a retail account needs. */
-async function fillRetail(user: User, name = 'Pat Example', email = 'Pat.Example@Mail.example') {
+// Fills what every account needs. No country is chosen for the person (decision 041), so the helper picks one; pass '' to leave it empty.
+async function fillRetail(
+  user: User,
+  name = 'Pat Example',
+  email = 'Pat.Example@Mail.example',
+  country = 'GB',
+) {
   await user.type(box('Name'), name);
   await user.type(box('Email'), email);
+  if (country) await chooseCountry(user, menu('Country'), country);
 }
 
 // The JSON body of every create call; the mock then answers as usual.
@@ -72,10 +79,11 @@ describe('the form', () => {
     ).toBeInTheDocument();
   });
 
-  it('starts as a retail account that gets a link, with the first shop country', async () => {
+  it('starts as a retail account that gets a link, with no country chosen', async () => {
     await openForm();
     expect(menu('Rank')).toHaveDisplayValue('Retail (shop)');
-    expect(menu('Country')).toHaveTextContent('United Kingdom');
+    expect(menu('Country')).toHaveAttribute('data-value', '');
+    expect(menu('Country')).toHaveTextContent('Choose a country');
     expect(toggle('How')).toHaveAttribute('aria-checked', 'true');
     expect(within(toggle('How')).getByText('Send a link')).toBeInTheDocument();
     expect(within(toggle('How')).getByText('Temporary password')).toBeInTheDocument();
@@ -141,7 +149,7 @@ describe('the Rank menu', () => {
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
     expect(box('Company')).toBeInTheDocument();
     expect(box('Credit limit')).toBeInTheDocument();
-    // A merchant picks from a menu of every ISO country, not the shop's twelve; nothing is typed and nothing is chosen at first.
+    // The menu holds every ISO country; nothing is typed and nothing is chosen at first.
     expect(screen.queryByRole('textbox', { name: 'Country' })).not.toBeInTheDocument();
     expect(menu('Country')).toHaveAttribute('data-value', '');
     expect(menu('Country')).toHaveTextContent('Choose a country');
@@ -160,11 +168,13 @@ describe('the Rank menu', () => {
     expect(box('Company')).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Credit limit' })).not.toBeInTheDocument();
 
-    // Back to retail: no company, no credit, the shop's country menu starts again.
+    // Back to retail: no company, no credit; the country menu is the same one, and a country chosen before stays chosen.
+    await chooseCountry(user, menu('Country'), 'JO');
     await user.selectOptions(menu('Rank'), 'Retail (shop)');
     expect(screen.queryByRole('textbox', { name: 'Company' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Credit limit' })).not.toBeInTheDocument();
-    expect(menu('Country')).toHaveTextContent('United Kingdom');
+    expect(menu('Country')).toHaveTextContent('Jordan (JO)');
+    expect(await countryRowTexts(user, menu('Country'))).toHaveLength(250);
   });
 });
 
@@ -316,11 +326,35 @@ describe("the checks and the server's refusals", () => {
     expect(bodies).toEqual([]);
   });
 
+  it('asks a retail account for a country too, offers every country, and shows the refusal of one the shop does not sell to', async () => {
+    const { user } = await openForm();
+    const bodies = recordBodies();
+    await fillRetail(user, 'Layla Retail', 'layla@mail.example', '');
+    await user.click(addButton());
+    expect(await screen.findByText('Choose a country.')).toBeInTheDocument();
+    expect(menu('Country')).toHaveAttribute('aria-invalid', 'true');
+    expect(bodies).toEqual([]);
+
+    // Jordan was not one of the twelve countries the menu used to hold: it is offered and sent. The mock shop has tax rates, and the
+    // server takes only their countries for a retail account then (a shop with none takes any): its refusal shows under the menu.
+    await chooseCountry(user, menu('Country'), 'JO');
+    await user.click(addButton());
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ email: 'layla@mail.example', country: 'JO' });
+    expect(await screen.findByText('Choose a country.')).toBeInTheDocument();
+    expect(menu('Country')).toHaveAttribute('aria-invalid', 'true');
+
+    await chooseCountry(user, menu('Country'), 'DE');
+    await user.click(addButton());
+    await screen.findByText('Layla Retail added');
+    expect(bodies[1]).toMatchObject({ country: 'DE' });
+  });
+
   it('asks for a country and an amount for a merchant rank', async () => {
     const { user } = await openForm();
     const bodies = recordBodies();
     await user.selectOptions(menu('Rank'), 'VIP (-8%)');
-    await fillRetail(user, 'Copy Cat', 'copy@cat.example');
+    await fillRetail(user, 'Copy Cat', 'copy@cat.example', '');
     await user.type(box('Credit limit'), 'lots');
     await user.click(addButton());
     expect(await screen.findByText('Choose a country.')).toBeInTheDocument();

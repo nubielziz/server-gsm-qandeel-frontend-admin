@@ -4,7 +4,7 @@ import type { SelectOption } from '@/components/ui';
 import { num } from '@/lib/format';
 import { ranksOfKind } from '../../lib/ranks';
 import type { AccountCounts, Rank } from '../../types';
-import { COUNTRIES } from '../shared/countries';
+import { allCountries } from '../shared/countries';
 import type { ListAddress } from './listAddress';
 
 /**
@@ -58,13 +58,13 @@ export function statusOptions(counts: AccountCounts | undefined): SelectOption[]
   ];
 }
 
-/** The country menu: "Any country", then the storefront countries by name. A code from the address the list lacks shows as "Country XX". */
+/** The country menu: "Any country", then every ISO country by name (decision 041). A code from the address the list lacks shows as "Country XX". */
 export function countryChoices(selected: string): SelectOption[] {
   const options: SelectOption[] = [
     { value: '', label: 'Any country' },
-    ...COUNTRIES.map((country) => ({ value: country.code, label: country.name })),
+    ...allCountries().map((country) => ({ value: country.code, label: country.name })),
   ];
-  if (selected && !COUNTRIES.some((country) => country.code === selected)) {
+  if (selected && !allCountries().some((country) => country.code === selected)) {
     options.push({ value: selected, label: `Country ${selected}` });
   }
   return options;

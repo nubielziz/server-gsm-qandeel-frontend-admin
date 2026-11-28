@@ -290,10 +290,12 @@ describe('the menus of the Quick Search box', () => {
     ]);
   });
 
-  it('lists the storefront countries by name, and shows a code the list lacks as "Country XX"', () => {
+  it('lists every country by name, and shows a code the list lacks as "Country XX"', () => {
     expect(countryChoices('')[0]).toEqual({ value: '', label: 'Any country' });
-    expect(countryChoices('')).toHaveLength(13);
+    expect(countryChoices('')).toHaveLength(250);
     expect(countryChoices('DE').find((option) => option.value === 'DE')?.label).toBe('Germany');
-    expect(countryChoices('PL').at(-1)).toEqual({ value: 'PL', label: 'Country PL' });
+    expect(countryChoices('PL').find((option) => option.value === 'PL')?.label).toBe('Poland');
+    expect(countryChoices('PL')).toHaveLength(250);
+    expect(countryChoices('XK').at(-1)).toEqual({ value: 'XK', label: 'Country XK' });
   });
 });

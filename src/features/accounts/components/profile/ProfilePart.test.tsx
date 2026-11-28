@@ -71,7 +71,7 @@ describe('the rows', () => {
     }
   });
 
-  it("shows a retail account with a menu of the shop's countries, and no company or username", async () => {
+  it('shows a retail account with its country in the menu of every country, and no company or username', async () => {
     await profileOf(SEED.DANIEL, DANIEL);
     expect(box('Name')).toHaveValue('Daniel Whitmore');
     expect(screen.getByRole('combobox', { name: 'Country' })).toHaveAttribute('data-value', 'GB');

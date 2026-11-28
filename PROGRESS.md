@@ -11,6 +11,13 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-28): every country for every account (decision 041)
+
+The owner asked why +Add Account offered only some countries. A retail account's Country menu and the list's Country filter held the demo's twelve
+countries; they now hold every ISO country, the same menu a merchant rank had (`countryOptions`). +Add Account starts with no country chosen and asks
+for one; Overview names any country. The server still decides: a shop with tax rates in force takes only their countries for a retail account and its
+refusal shows under the menu. **Checks:** typecheck, lint, build and the whole test suite. Committed and pushed on the owner's order.
+
 ## Status (2026-11-28): country menus with search and flags, a phone box with calling codes (decision 040)
 
 The owner's request: the same fields as the shop's website; committed and pushed on the owner's order. The seven menus that choose a

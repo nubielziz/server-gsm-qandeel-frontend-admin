@@ -83,7 +83,7 @@ describe('the account rows', () => {
     expect(row('Rank').getByText('VIP')).toBeInTheDocument();
     expect(row('Rank').getByText('merchant rank · 8% off base prices')).toBeInTheDocument();
     expect(row('Email').getByText('Not verified')).toBeInTheDocument();
-    expect(row('Country').getByText('JO')).toBeInTheDocument();
+    expect(row('Country').getByText('JO · Jordan')).toBeInTheDocument();
     expect(row('Created by').getByText('Added by your team')).toBeInTheDocument();
     expect(row('Created by').getByText('Rami K.')).toBeInTheDocument();
     expect(hasRow('Currency')).toBe(false);

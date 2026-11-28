@@ -73,10 +73,10 @@ describe('parseCreditLimit', () => {
 });
 
 describe('the Rank menu', () => {
-  it('starts on the retail choice, with a retail country and a link to choose the password', () => {
+  it('starts on the retail choice, with no country chosen and a link to choose the password', () => {
     expect(addAccountDefaults()).toMatchObject({
       rank: 'retail',
-      country: 'GB',
+      country: '',
       mode: 'reset_link',
       company: '',
       creditLimit: '',
