@@ -11,6 +11,15 @@ merchants and customers (Arabic and English; phases 1 to 3) comes first, as a se
 session from `../STOREFRONT-HANDOFF.md` (2026-11-16: the owner removed Arabic, so the site and the console are English only, decision 039). To run the console against the real backend, start it with `VITE_API_MOCKS=false
 VITE_DEV_PROXY_TARGET=http://localhost:3000 VITE_API_BASE_URL= npm run dev` (the local env files say `VITE_API_MOCKS=true`).
 
+## Status (2026-11-28): a drop does not wait for the server (decision 042)
+
+The owner's note on decision 038: after each drag the table "reloaded". Measured: a "Saving the new order" line pushed the table down and back, every
+grip went off until the save and the reads after it had ended, and the Pricing view showed a toast per drop. Now a drop leaves the table alone: no line, no
+toast, the grips stay on, the next drop is taken at once and worked out on the order the last one left; the saves go out in order and the lists are read
+again once, in the background, after the last one (`useReorder`). A refusal gives back the last order the server took and drops the later ones unsent.
+Committed and pushed on the owner's order. **Checks:** typecheck, lint, build and the whole test suite; measured in a browser against the
+mock API (the table's place before and after a drop, three drags in a row).
+
 ## Status (2026-11-28): every country for every account (decision 041)
 
 The owner asked why +Add Account offered only some countries. A retail account's Country menu and the list's Country filter held the demo's twelve

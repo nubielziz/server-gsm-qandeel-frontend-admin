@@ -9,8 +9,6 @@ import { dragState, type DragState } from './reorder';
 export type ServiceDragInput = {
   /** The lock of `catalog:update` as the grants give it. */
   lock: { disabled: boolean; title?: string };
-  /** A drop is being saved. */
-  saving: boolean;
   /** Positions are typed in the Order boxes and not saved: a drop would work on numbers the boxes do not show. */
   typedPositions: number;
   /** The search text of the address. */
@@ -26,15 +24,15 @@ export type ServiceDragInput = {
 };
 
 /**
- * Whether the Pricing view's rows can be dragged. The reasons, in the order they are told: a role without `catalog:update`, a save running,
+ * Whether the Pricing view's rows can be dragged. The reasons, in the order they are told: a role without `catalog:update`,
  * positions typed and not saved, a search on, no group chosen, and a group with more services than the page shows (raise the page size, or
- * use the Order boxes). The list is always in position order: the grid asks for no other.
+ * use the Order boxes). The list is always in position order: the grid asks for no other. A save that runs does not turn dragging off
+ * (decision 042).
  */
 export function serviceDragState(input: ServiceDragInput): DragState {
   const whole = !input.stale && input.page === 1 && input.total !== undefined && input.total === input.rows;
   return dragState([
     { when: input.lock.disabled, reason: input.lock.title ?? 'You cannot change the order', hint: true },
-    { when: input.saving, reason: 'Saving the new order', hint: true },
     { when: input.typedPositions > 0, reason: 'Save or clear the typed positions first', hint: true },
     { when: input.q !== '', reason: 'Clear the search to drag services', hint: true },
     { when: input.group === undefined, reason: 'Choose a group to drag its services', hint: true },

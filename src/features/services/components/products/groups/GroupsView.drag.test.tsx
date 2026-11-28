@@ -1,7 +1,9 @@
 // Tests for dragging the rows of the Group view to a new place (decision 038), run through the whole app against the dev mock API. A test does not
 // drag with a pointer (jsdom has no layout): it drops through the DndContext's own `onDragEnd`, the handler the library calls at a drop. The cases:
 // the grips, the new order shown at once, ONE call with only the groups whose position changed, the list given back when the server refuses,
-// and dragging off while a search is on, while a save runs and for a role without catalog:update. The keyboard path itself is in SortableTable.test.tsx.
+// dragging off while a search is on and for a role without catalog:update, and what a save that runs leaves alone (decision 042): the table
+// does not move, the grips stay on, drops are saved in order and the lists are read again once. The keyboard path itself is in
+// SortableTable.test.tsx.
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -223,28 +225,132 @@ describe('dragging is off', () => {
     expect(screen.getByText(/^You need the catalog:update permission\.$/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Move Samsung up' })).toBeDisabled();
   });
+});
 
-  it('while a save runs: the grips are off, a second drop is ignored, and they come back after', async () => {
+describe('while a save runs (decision 042)', () => {
+  const LISTS = '/admin/service-categories';
+
+  /** Holds every order call until `release`; `answers` decides each one in turn (true lets the mock save it, false refuses it). */
+  function gateOrders(answers: boolean[] = []) {
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
+    const bodies: unknown[] = [];
     mockServer.use(
-      http.post('*/admin/service-categories/order', async () => {
+      http.post('*/admin/service-categories/order', async ({ request }) => {
+        const index = bodies.push(await request.clone().json()) - 1;
         await gate;
-        return HttpResponse.json({ updated: 2 });
+        // `undefined` falls through to the mock API, which stores the positions.
+        return (answers[index] ?? true)
+          ? undefined
+          : problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+              { field: 'items.0.id', message: 'No category has the id 9.' },
+            ]);
+      }),
+    );
+    return { release: () => release(), bodies };
+  }
+
+  it('leaves the table alone: no line above it, the grips stay on', async () => {
+    const orders = gateOrders();
+    await openProducts(GROUPS);
+    await groupTable();
+    await dropRow(await idOf('Samsung'), await idOf('Apple'));
+    expect(await groupNames()).toEqual(['Samsung', 'Apple', 'Generic', 'Carrier unlock', 'Xiaomi']);
+    expect(screen.queryByText('Saving the new order.')).not.toBeInTheDocument();
+    for (const name of IMEI_GROUPS) {
+      expect(grip(name)).toBeEnabled();
+      expect(grip(name)).toHaveAttribute('title', 'Drag to a new place');
+    }
+    orders.release();
+    await waitFor(() => expect(orders.bodies).toHaveLength(1));
+  });
+
+  it('takes the next drop at once, works it out on the order the first one left, and sends the two in order', async () => {
+    const orders = gateOrders();
+    await openProducts(GROUPS);
+    await groupTable();
+    const before = await stored();
+    const requests = recordRequests();
+    await dropRow(before.get('Samsung')!.id, before.get('Apple')!.id);
+    await dropRow(before.get('Xiaomi')!.id, before.get('Samsung')!.id);
+    // Both drops are on screen before the server has answered the first.
+    expect(await groupNames()).toEqual(['Xiaomi', 'Samsung', 'Apple', 'Generic', 'Carrier unlock']);
+    // The second waits for the first: one call is out.
+    await waitFor(() => expect(orders.bodies).toHaveLength(1));
+    orders.release();
+    await waitFor(() => expect(orders.bodies).toHaveLength(2));
+    expect(orders.bodies[0]).toEqual({
+      items: [
+        { id: before.get('Samsung')!.id, sort: before.get('Apple')!.sort },
+        { id: before.get('Apple')!.id, sort: before.get('Samsung')!.sort },
+      ],
+    });
+    // The second call moves Xiaomi to the first place of the order the first drop left (Samsung, Apple, Generic, Carrier unlock, Xiaomi).
+    const second = (orders.bodies[1] as { items: { id: number; sort: number }[] }).items;
+    expect(second[0]).toEqual({ id: before.get('Xiaomi')!.id, sort: before.get('Apple')!.sort });
+    expect(second.map((item) => item.id)).toContain(before.get('Samsung')!.id);
+    // The lists are read again once for the two saves, after the last of them, and the order stays.
+    await waitFor(() => expect(sentTo(requests, 'GET', LISTS).length).toBeGreaterThan(0));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    });
+    expect(sentTo(requests, 'GET', LISTS)).toHaveLength(1);
+    expect(await groupNames()).toEqual(['Xiaomi', 'Samsung', 'Apple', 'Generic', 'Carrier unlock']);
+  });
+
+  it('does not read the lists again between a save and the next drop', async () => {
+    await openProducts(GROUPS);
+    await groupTable();
+    const ids = { samsung: await idOf('Samsung'), apple: await idOf('Apple') };
+    const requests = recordRequests();
+    await dropRow(ids.samsung, ids.apple);
+    await waitFor(() => expect(sentTo(requests, 'POST', ORDER)).toHaveLength(1));
+    // The save is in and no read has started: the table shows the drop without waiting for one.
+    expect(sentTo(requests, 'GET', LISTS)).toHaveLength(0);
+    expect(await groupNames()).toEqual(['Samsung', 'Apple', 'Generic', 'Carrier unlock', 'Xiaomi']);
+    await waitFor(() => expect(sentTo(requests, 'GET', LISTS)).toHaveLength(1));
+    expect(await groupNames()).toEqual(['Samsung', 'Apple', 'Generic', 'Carrier unlock', 'Xiaomi']);
+  });
+
+  it('gives back every drop, and does not send the later one, when the first is refused', async () => {
+    const orders = gateOrders([false]);
+    await openProducts(GROUPS);
+    await groupTable();
+    await dropRow(await idOf('Samsung'), await idOf('Apple'));
+    await dropRow(await idOf('Xiaomi'), await idOf('Samsung'));
+    orders.release();
+    expect(await screen.findByText('No category has the id 9.')).toBeInTheDocument();
+    await waitFor(async () => expect(await groupNames()).toEqual(IMEI_GROUPS));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    // The second drop was worked out on an order the server never took.
+    expect(orders.bodies).toHaveLength(1);
+    expect(grip('Xiaomi')).toBeEnabled();
+  });
+
+  it('keeps the drop the server took when a later one is refused', async () => {
+    let calls = 0;
+    mockServer.use(
+      http.post('*/admin/service-categories/order', () => {
+        calls += 1;
+        // The first call falls through to the mock, which saves it; the second is refused.
+        return calls === 1
+          ? undefined
+          : problem(422, 'VALIDATION_FAILED', 'Check the form', 'Some fields need attention.', [
+              { field: 'items.0.id', message: 'No category has the id 9.' },
+            ]);
       }),
     );
     await openProducts(GROUPS);
     await groupTable();
-    const requests = recordRequests();
     await dropRow(await idOf('Samsung'), await idOf('Apple'));
-    expect(grip('Generic')).toBeDisabled();
-    expect(grip('Generic')).toHaveAttribute('title', 'Saving the new order');
-    expect(screen.getByText('Saving the new order.')).toBeInTheDocument();
-    await dropRow(await idOf('Xiaomi'), await idOf('Apple'));
-    release();
-    await waitFor(() => expect(grip('Generic')).toBeEnabled());
-    expect(screen.queryByText('Saving the new order.')).not.toBeInTheDocument();
-    expect(sentTo(requests, 'POST', ORDER)).toHaveLength(1);
+    await dropRow(await idOf('Xiaomi'), await idOf('Samsung'));
+    expect(await screen.findByText('No category has the id 9.')).toBeInTheDocument();
+    await waitFor(async () =>
+      expect(await groupNames()).toEqual(['Samsung', 'Apple', 'Generic', 'Carrier unlock', 'Xiaomi']),
+    );
+    expect((await stored()).get('Samsung')!.sort).toBeLessThan((await stored()).get('Apple')!.sort);
   });
 });
 

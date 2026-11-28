@@ -93,25 +93,23 @@ export function stepIndexes(
 
 /**
  * Whether the rows of the Group view can be dragged. It is off for a role without `catalog:update` (`lock` is the reason the grants give),
- * while a save runs, while the server holds more groups than the list shows (`truncated`: a drop would be worked out over only some of the
+ * while the server holds more groups than the list shows (`truncated`: a drop would be worked out over only some of the
  * groups) and while a search is on (the list is then only some of the groups, so a drop could not say where it lands in the whole order).
  * Every reason is also said in a line above the table, not only in the title of a disabled grip. The list is otherwise always in position
- * order: nothing in the view sorts it.
+ * order: nothing in the view sorts it. A save that runs does not turn dragging off (decision 042): the next drop is worked out on the order
+ * the last one left, and the saves go out in order.
  */
 export function groupDragState({
   lock,
-  saving,
   searching,
   truncated,
 }: {
   lock: { disabled: boolean; title?: string };
-  saving: boolean;
   searching: boolean;
   truncated: boolean;
 }): DragState {
   return dragState([
     { when: lock.disabled, reason: lock.title ?? 'You cannot change the order', hint: true },
-    { when: saving, reason: 'Saving the new order', hint: true },
     { when: truncated, reason: 'Groups cannot be dragged while only some of them are listed', hint: true },
     { when: searching, reason: 'Clear the search to drag groups', hint: true },
   ]);

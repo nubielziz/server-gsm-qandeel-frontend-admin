@@ -47,7 +47,7 @@ export function GroupsView({ type, grants }: ProductsViewProps) {
   // The server holds more groups than it sent: the list is only some of them, so the warning shows and a drop is not worked out over it.
   const truncated = total !== undefined && total > categories.length;
   const updateLock = grants.needs('catalog:update');
-  const dragging = groupDragState({ lock: updateLock, saving: order.saving, searching, truncated });
+  const dragging = groupDragState({ lock: updateLock, searching, truncated });
   const columns = groupColumns({
     type,
     ordered,

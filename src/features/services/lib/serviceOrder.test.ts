@@ -1,11 +1,11 @@
 // Tests for when the rows of the Pricing view can be dragged (decision 038): only the services of one chosen group that the page holds in full,
-// never while a search or typed positions are on, a save runs, the page before is kept on screen or the role cannot change the order.
+// never while a search or typed positions are on, the page before is kept on screen or the role cannot change the order. A save that runs
+// does not turn dragging off (decision 042).
 import { describe, expect, it } from 'vitest';
 import { serviceDragState, type ServiceDragInput } from './serviceOrder';
 
 const ready: ServiceDragInput = {
   lock: { disabled: false },
-  saving: false,
   typedPositions: 0,
   q: '',
   group: 4,
@@ -34,14 +34,6 @@ describe('serviceDragState', () => {
     expect(serviceDragState({ ...ready, lock: { disabled: true } })).toMatchObject({
       on: false,
       reason: 'You cannot change the order',
-    });
-  });
-
-  it('is off while a save runs, with a line in the view', () => {
-    expect(serviceDragState({ ...ready, saving: true })).toEqual({
-      on: false,
-      reason: 'Saving the new order',
-      hint: true,
     });
   });
 
@@ -86,16 +78,15 @@ describe('serviceDragState', () => {
     });
   });
 
-  it('tells the reasons in order: the lock before a save, a save before typed positions, those before a search', () => {
-    const all = { ...ready, saving: true, typedPositions: 1, q: 'x', group: undefined };
+  it('tells the reasons in order: the lock before typed positions, those before a search', () => {
+    const all = { ...ready, typedPositions: 1, q: 'x', group: undefined };
     expect(serviceDragState({ ...all, lock: { disabled: true, title: 'lock' } })).toMatchObject({
       reason: 'lock',
     });
-    expect(serviceDragState(all)).toMatchObject({ reason: 'Saving the new order' });
-    expect(serviceDragState({ ...all, saving: false })).toMatchObject({
+    expect(serviceDragState(all)).toMatchObject({
       reason: 'Save or clear the typed positions first',
     });
-    expect(serviceDragState({ ...all, saving: false, typedPositions: 0 })).toMatchObject({
+    expect(serviceDragState({ ...all, typedPositions: 0 })).toMatchObject({
       reason: 'Clear the search to drag services',
     });
   });

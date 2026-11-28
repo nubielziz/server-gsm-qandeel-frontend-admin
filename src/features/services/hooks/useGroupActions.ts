@@ -13,7 +13,7 @@ import type { CategoryOrderBody, ServiceCategory } from '../types';
 import { SERVICE_PICKER_KEY } from './keys';
 
 /** What a change of groups makes stale: the group lists, and the service lists and menus that print group names and counts. */
-function useGroupRefresh() {
+export function useGroupRefresh() {
   const invalidate = useInvalidate();
   const queryClient = useQueryClient();
   return useCallback(async () => {
@@ -44,19 +44,14 @@ export function useSetGroupActive() {
 
 /**
  * Saves the new positions of some groups in ONE call, all or none (`POST /admin/service-categories/order`, backend decision 078): what
- * a drop and the up and down buttons both send. The group lists and the service reads that sort by group position are read again. A
- * refusal is a toast with the server's own words (a 422 names the group in the field message); the list is read again too, so it shows what
- * the server holds.
+ * a drop and the up and down buttons both send. It reads nothing again by itself (decision 042): `useReorder` reads the lists once, in the
+ * background, after the last save of a run of drops (`useGroupRefresh`), and at once after a refusal. A refusal is a toast with the
+ * server's own words (a 422 names the group in the field message).
  */
 export function useSaveGroupOrder() {
-  const invalidate = useInvalidate();
   return useApiMutation({
     mutationFn: (body: CategoryOrderBody) => orderCategories(body),
-    invalidates: [{ resource: 'service-categories' }, { resource: 'services' }],
-    invalidateKeys: [SERVICE_ROWS_KEY],
     errorNotification: (error) => ({ message: error.title, description: refusalWords(error) }),
-    onError: () =>
-      void invalidate({ resource: 'service-categories', invalidates: ['list', 'many', 'detail'] }),
   });
 }
 

@@ -1,9 +1,9 @@
 // Tests for dragging the services of the Pricing view to a new place (decision 038), run through the whole app against the dev mock API. A test does not
 // drag with a pointer (jsdom has no layout): it drops through the DndContext's own `onDragEnd`. The grips come with "Set Order" and work for the
 // services of one chosen group that the page holds in full; the cases: the grips, ONE `POST /admin/services/order` with only the services whose
-// position changed, the new order shown at once, the list given back with the server's words on a refusal, and dragging off (no group, a search,
-// typed positions, a save running).
-import { screen, waitFor, within } from '@testing-library/react';
+// position changed, the new order shown at once, the list given back with the server's words on a refusal, dragging off (no group, a search,
+// typed positions), and what a save that runs leaves alone (decision 042): no line, no toast, the grips on, the next drop taken at once.
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -90,10 +90,11 @@ describe('a drop', () => {
         { id: LOST.id, sort: 3 },
       ],
     });
-    expect(await screen.findByText('Order saved')).toBeInTheDocument();
     await waitFor(async () =>
       expect(await serviceNames()).toEqual([MDM.name, WARRANTY.name, CLEAN.name, LOST.name]),
     );
+    // A drop that worked says nothing: the row that stays where it was dropped is the answer (decision 042).
+    expect(screen.queryByText('Order saved')).not.toBeInTheDocument();
     expect(position(MDM.name)).toHaveValue('0');
     expect(position(WARRANTY.name)).toHaveValue('1');
     expect(position(LOST.name)).toHaveValue('3');
@@ -187,28 +188,52 @@ describe('dragging is off', () => {
     await user.click(screen.getByRole('button', { name: 'Save order' }));
     await waitFor(() => expect(grip(MDM.name)).toBeEnabled());
   });
+});
 
-  it('while a save runs: a second drop is ignored', async () => {
+describe('while a save runs (decision 042)', () => {
+  it('leaves the grid alone and takes the next drop at once: no line, no toast, the two saves in order, one read after them', async () => {
     const user = userEvent.setup();
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
+    const bodies: { items: { id: number; sort: number }[] }[] = [];
     mockServer.use(
-      http.post('*/admin/services/order', async () => {
+      http.post('*/admin/services/order', async ({ request }) => {
+        bodies.push((await request.clone().json()) as { items: { id: number; sort: number }[] });
         await gate;
-        return HttpResponse.json({ updated: 3 });
+        // Falls through to the mock, which saves the positions.
+        return undefined;
       }),
     );
     await openPricing(APPLE_GROUP);
     await setOrder(user);
     const requests = recordRequests();
     await dropRow(MDM.id, WARRANTY.id);
-    expect(grip(CLEAN.name)).toBeDisabled();
-    expect(grip(CLEAN.name)).toHaveAttribute('title', 'Saving the new order');
-    expect(screen.getByText('Saving the new order.')).toBeInTheDocument();
-    await dropRow(LOST.id, WARRANTY.id);
-    release();
-    await waitFor(() => expect(grip(CLEAN.name)).toBeEnabled());
     expect(screen.queryByText('Saving the new order.')).not.toBeInTheDocument();
-    expect(sentTo(requests, 'POST', ORDER)).toHaveLength(1);
+    for (const service of APPLE) expect(grip(service.name)).toBeEnabled();
+    await dropRow(LOST.id, MDM.id);
+    // Both drops show, with their numbers, before the server has answered the first.
+    expect(await serviceNames()).toEqual([LOST.name, MDM.name, WARRANTY.name, CLEAN.name]);
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    release();
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    // The second is worked out on the order the first left (MDM 0, Warranty 1, Clean 2, Lost 3): Lost takes the first place.
+    expect(bodies[1].items[0]).toEqual({ id: LOST.id, sort: 0 });
+    await waitFor(() =>
+      expect(
+        requests.sent().filter((sent) => sent.url.pathname === '/admin/services/price-grid'),
+      ).toHaveLength(1),
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    });
+    expect(requests.sent().filter((sent) => sent.url.pathname === '/admin/services/price-grid')).toHaveLength(
+      1,
+    );
+    expect(screen.queryByText('Order saved')).not.toBeInTheDocument();
+    expect(await serviceNames()).toEqual([LOST.name, MDM.name, WARRANTY.name, CLEAN.name]);
+    const held = (
+      await listPriceGrid({ sort: ['sort'], order: ['asc'], filters: { type: 'imei', categoryId: 1 } })
+    ).data;
+    expect(held.map((row) => row.name)).toEqual([LOST.name, MDM.name, WARRANTY.name, CLEAN.name]);
   });
 });

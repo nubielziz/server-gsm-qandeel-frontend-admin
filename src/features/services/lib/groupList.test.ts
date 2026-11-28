@@ -195,9 +195,9 @@ describe('stepIndexes', () => {
 });
 
 describe('groupDragState', () => {
-  const ready = { lock: { disabled: false }, saving: false, searching: false, truncated: false };
+  const ready = { lock: { disabled: false }, searching: false, truncated: false };
 
-  it('is on for a role that may update, with no search and no save running', () => {
+  it('is on for a role that may update, with no search (a save that runs does not turn it off: decision 042)', () => {
     expect(groupDragState(ready)).toEqual({ on: true });
   });
 
@@ -205,14 +205,6 @@ describe('groupDragState', () => {
     expect(groupDragState({ ...ready, lock: { disabled: true, title: 'You need catalog:update' } })).toEqual({
       on: false,
       reason: 'You need catalog:update',
-      hint: true,
-    });
-  });
-
-  it('is off while a save runs, with a line that says it', () => {
-    expect(groupDragState({ ...ready, saving: true })).toEqual({
-      on: false,
-      reason: 'Saving the new order',
       hint: true,
     });
   });
@@ -225,18 +217,13 @@ describe('groupDragState', () => {
     });
   });
 
-  it('tells the reasons in order: the lock, a save, a partial list, then a search', () => {
-    const all = { lock: { disabled: true, title: 'lock' }, saving: true, searching: true, truncated: true };
+  it('tells the reasons in order: the lock, a partial list, then a search', () => {
+    const all = { lock: { disabled: true, title: 'lock' }, searching: true, truncated: true };
     expect(groupDragState(all)).toMatchObject({ reason: 'lock' });
     expect(groupDragState({ ...all, lock: { disabled: false } })).toMatchObject({
-      reason: 'Saving the new order',
-    });
-    expect(groupDragState({ ...all, lock: { disabled: false }, saving: false })).toMatchObject({
       reason: 'Groups cannot be dragged while only some of them are listed',
     });
-    expect(
-      groupDragState({ ...all, lock: { disabled: false }, saving: false, truncated: false }),
-    ).toMatchObject({
+    expect(groupDragState({ ...all, lock: { disabled: false }, truncated: false })).toMatchObject({
       reason: 'Clear the search to drag groups',
     });
   });

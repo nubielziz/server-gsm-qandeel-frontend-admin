@@ -1,6 +1,6 @@
-// The order a list shows while a drop is being saved (decision 038). A drop shows its result at once, so the held list (the new order with the
-// new numbers) stands in for the stored one until the save has ended: on success the stored list has been read again by then and takes over
-// with no jump, on a refusal the hold is let go and the list is what it was.
+// The order a list shows from a drop until the lists have been read again (decisions 038 and 042). A drop shows its result at once, so the
+// held list (the new order with the new numbers) stands in for the stored one: after the saves the stored list is read again and takes over
+// with no jump, on a refusal the hold goes back to the last order the server took.
 import { useCallback, useMemo, useState } from 'react';
 import type { Id } from '@/lib/api';
 import { holdOver } from '../lib/reorder';
